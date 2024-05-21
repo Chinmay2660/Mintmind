@@ -25,7 +25,7 @@ const Hero = () => {
                     </div>
                 </div>
             </div>
-            <Image src={'/dashboard2.png'} alt='dashboard' width={1000} height={700} className='mt-5 rounded-xl border-2' />
+            <Image src={'/dashboard2.png'} alt='dashboard' width={1000} height={700} className='-mt-9 rounded-xl border-2' />
         </section>
     )
 }
