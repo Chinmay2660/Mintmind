@@ -18,7 +18,7 @@ const Hero = () => {
                     <div className="mt-8 flex flex-wrap justify-center gap-4">
                         <a
                             className="block w-full rounded bg-primary px-12 py-3 text-sm font-medium text-white shadow hover:bg-primary/90 focus:outline-none sm:w-auto"
-                            href="#"
+                            href="/dashboard"
                         >
                             Get Started
                         </a>
