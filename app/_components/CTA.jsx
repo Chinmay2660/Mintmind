@@ -2,12 +2,12 @@ import React from 'react'
 
 const CTA = () => {
     return (
-        <section className="bg-gray-900 text-white">
+        <section className="bg-gray-50">
             <div className="mx-auto max-w-screen-xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
                 <div className="mx-auto max-w-lg text-center">
                     <h2 className="text-3xl font-bold sm:text-4xl">Kickstart your marketing</h2>
 
-                    <p className="mt-4 text-gray-300">
+                    <p className="mt-4">
                         Lorem ipsum, dolor sit amet consectetur adipisicing elit. Consequuntur aliquam doloribus
                         nesciunt eos fugiat. Vitae aperiam fugit consequuntur saepe laborum.
                     </p>
@@ -15,12 +15,12 @@ const CTA = () => {
 
                 <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
                     <a
-                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition hover:border-pink-500/10 hover:shadow-pink-500/10"
+                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition hover:border-primary/10 hover:shadow-primary/10"
                         href="#"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="size-10 text-pink-500"
+                            className="size-10 text-primary"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -37,21 +37,21 @@ const CTA = () => {
                             />
                         </svg>
 
-                        <h2 className="mt-4 text-xl font-bold text-white">Digital campaigns</h2>
+                        <h2 className="mt-4 text-xl font-bold">Digital campaigns</h2>
 
-                        <p className="mt-1 text-sm text-gray-300">
+                        <p className="mt-1 text-sm ">
                             Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ut quo possimus adipisci
                             distinctio alias voluptatum blanditiis laudantium.
                         </p>
                     </a>
 
                     <a
-                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition hover:border-pink-500/10 hover:shadow-pink-500/10"
+                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition hover:border-primary/10 hover:shadow-primary/10"
                         href="#"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="size-10 text-pink-500"
+                            className="size-10 text-primary"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -68,21 +68,21 @@ const CTA = () => {
                             />
                         </svg>
 
-                        <h2 className="mt-4 text-xl font-bold text-white">Digital campaigns</h2>
+                        <h2 className="mt-4 text-xl font-bold ">Digital campaigns</h2>
 
-                        <p className="mt-1 text-sm text-gray-300">
+                        <p className="mt-1 text-sm ">
                             Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ut quo possimus adipisci
                             distinctio alias voluptatum blanditiis laudantium.
                         </p>
                     </a>
 
                     <a
-                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition hover:border-pink-500/10 hover:shadow-pink-500/10"
+                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition hover:border-primary/10 hover:shadow-primary/10"
                         href="#"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="size-10 text-pink-500"
+                            className="size-10 text-primary"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -99,21 +99,21 @@ const CTA = () => {
                             />
                         </svg>
 
-                        <h2 className="mt-4 text-xl font-bold text-white">Digital campaigns</h2>
+                        <h2 className="mt-4 text-xl font-bold ">Digital campaigns</h2>
 
-                        <p className="mt-1 text-sm text-gray-300">
+                        <p className="mt-1 text-sm ">
                             Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ut quo possimus adipisci
                             distinctio alias voluptatum blanditiis laudantium.
                         </p>
                     </a>
 
                     <a
-                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition hover:border-pink-500/10 hover:shadow-pink-500/10"
+                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition hover:border-primary/10 hover:shadow-primary/10"
                         href="#"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="size-10 text-pink-500"
+                            className="size-10 text-primary"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -130,21 +130,21 @@ const CTA = () => {
                             />
                         </svg>
 
-                        <h2 className="mt-4 text-xl font-bold text-white">Digital campaigns</h2>
+                        <h2 className="mt-4 text-xl font-bold ">Digital campaigns</h2>
 
-                        <p className="mt-1 text-sm text-gray-300">
+                        <p className="mt-1 text-sm ">
                             Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ut quo possimus adipisci
                             distinctio alias voluptatum blanditiis laudantium.
                         </p>
                     </a>
 
                     <a
-                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition hover:border-pink-500/10 hover:shadow-pink-500/10"
+                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition hover:border-primary/10 hover:shadow-primary/10"
                         href="#"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="size-10 text-pink-500"
+                            className="size-10 text-primary"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -161,21 +161,21 @@ const CTA = () => {
                             />
                         </svg>
 
-                        <h2 className="mt-4 text-xl font-bold text-white">Digital campaigns</h2>
+                        <h2 className="mt-4 text-xl font-bold ">Digital campaigns</h2>
 
-                        <p className="mt-1 text-sm text-gray-300">
+                        <p className="mt-1 text-sm ">
                             Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ut quo possimus adipisci
                             distinctio alias voluptatum blanditiis laudantium.
                         </p>
                     </a>
 
                     <a
-                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition hover:border-pink-500/10 hover:shadow-pink-500/10"
+                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition hover:border-primary/10 hover:shadow-primary/10"
                         href="#"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="size-10 text-pink-500"
+                            className="size-10 text-primary"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -192,23 +192,15 @@ const CTA = () => {
                             />
                         </svg>
 
-                        <h2 className="mt-4 text-xl font-bold text-white">Digital campaigns</h2>
+                        <h2 className="mt-4 text-xl font-bold ">Digital campaigns</h2>
 
-                        <p className="mt-1 text-sm text-gray-300">
+                        <p className="mt-1 text-sm ">
                             Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ut quo possimus adipisci
                             distinctio alias voluptatum blanditiis laudantium.
                         </p>
                     </a>
                 </div>
 
-                <div className="mt-12 text-center">
-                    <a
-                        href="#"
-                        className="inline-block rounded bg-pink-600 px-12 py-3 text-sm font-medium text-white transition hover:bg-pink-700 focus:outline-none focus:ring focus:ring-yellow-400"
-                    >
-                        Get Started Today
-                    </a>
-                </div>
             </div>
         </section>
     )
