@@ -14,9 +14,8 @@ const CTA = () => {
                 </div>
 
                 <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-                    <a
-                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition hover:border-primary/10 hover:shadow-primary/10"
-                        href="#"
+                    <div
+                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -43,11 +42,10 @@ const CTA = () => {
                             Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ut quo possimus adipisci
                             distinctio alias voluptatum blanditiis laudantium.
                         </p>
-                    </a>
+                    </div>
 
-                    <a
-                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition hover:border-primary/10 hover:shadow-primary/10"
-                        href="#"
+                    <div
+                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -74,11 +72,10 @@ const CTA = () => {
                             Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ut quo possimus adipisci
                             distinctio alias voluptatum blanditiis laudantium.
                         </p>
-                    </a>
+                    </div>
 
-                    <a
-                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition hover:border-primary/10 hover:shadow-primary/10"
-                        href="#"
+                    <div
+                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -105,11 +102,10 @@ const CTA = () => {
                             Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ut quo possimus adipisci
                             distinctio alias voluptatum blanditiis laudantium.
                         </p>
-                    </a>
+                    </div>
 
-                    <a
-                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition hover:border-primary/10 hover:shadow-primary/10"
-                        href="#"
+                    <div
+                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition "
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -136,11 +132,10 @@ const CTA = () => {
                             Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ut quo possimus adipisci
                             distinctio alias voluptatum blanditiis laudantium.
                         </p>
-                    </a>
+                    </div>
 
-                    <a
-                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition hover:border-primary/10 hover:shadow-primary/10"
-                        href="#"
+                    <div
+                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -167,11 +162,10 @@ const CTA = () => {
                             Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ut quo possimus adipisci
                             distinctio alias voluptatum blanditiis laudantium.
                         </p>
-                    </a>
+                    </div>
 
-                    <a
-                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition hover:border-primary/10 hover:shadow-primary/10"
-                        href="#"
+                    <div
+                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition "
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -198,7 +192,7 @@ const CTA = () => {
                             Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ut quo possimus adipisci
                             distinctio alias voluptatum blanditiis laudantium.
                         </p>
-                    </a>
+                    </div>
                 </div>
 
             </div>
