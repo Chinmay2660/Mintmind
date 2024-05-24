@@ -1,35 +1,45 @@
+'use client'
 import Image from 'next/image';
 import React from 'react';
 import { Landmark, LayoutDashboard, PiggyBank, ReceiptText, ShieldCheck } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
 const SideNavbar = () => {
     const menuList = [
         {
             id: 1,
             name: 'Dashboard',
-            icon: <LayoutDashboard />
+            icon: <LayoutDashboard />,
+            path: '/dashboard'
         },
         {
             id: 2,
             name: 'Budgets',
-            icon: <PiggyBank />
+            icon: <PiggyBank />,
+            path: '/dashboard/budget'
         },
         {
             id: 3,
             name: 'Bank Accounts',
-            icon: <Landmark />
+            icon: <Landmark />,
+            path: '/dashboard/bank_accounts'
         },
         {
             id: 4,
             name: 'Expenses',
-            icon: <ReceiptText />
+            icon: <ReceiptText />,
+            path: '/dashboard/expenses'
         },
         {
             id: 5,
             name: 'Upgrade',
-            icon: <ShieldCheck />
+            icon: <ShieldCheck />,
+            path: '/dashboard/upgrade'
         }
     ];
+
+    const path = usePathname();
 
     return (
         <div className='h-screen p-5'>
@@ -38,10 +48,14 @@ const SideNavbar = () => {
             </div>
             <div className='mt-5'>
                 {menuList.map(menu => (
-                    <h2 key={menu.id} className='flex gap-2 items-center text-gray-500 font-medium p-5 cursor-pointer hover:rounded-md hover:text-primary hover:bg-blue-100'>
-                        <div className='mr-3'>{menu.icon}</div>
-                        <h2 className='text-lg'>{menu.name}</h2>
-                    </h2>
+                    <Link key={menu.id} href={menu.path}>
+                        <h2
+                            className={`flex gap-2 items-center text-gray-500 font-medium p-5 cursor-pointer hover:rounded-md hover:text-primary hover:bg-blue-100 ${path === menu.path ? 'text-primary bg-blue-100' : ''}`}
+                        >
+                            <div className='mr-3'>{menu.icon}</div>
+                            <h2 className='text-lg'>{menu.name}</h2>
+                        </h2>
+                    </Link>
                 ))}
             </div>
             <div className='fixed bottom-2 p-5 flex gap-2 items-center'>
