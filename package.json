@@ -12,9 +12,11 @@
     "@clerk/nextjs": "^5.1.0",
     "@radix-ui/react-slot": "^1.0.2",
     "@reduxjs/toolkit": "^2.2.5",
+    "@vercel/postgres": "^0.8.0",
     "axios": "^1.7.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "drizzle-orm": "^0.30.10",
     "lucide-react": "^0.378.0",
     "next": "^14.2.3",
     "react": "^18.3.1",
@@ -25,6 +27,7 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.21.4",
     "eslint": "^8",
     "eslint-config-next": "14.2.3",
     "postcss": "^8",
