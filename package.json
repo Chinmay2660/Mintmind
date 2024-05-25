@@ -6,15 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:push": "npx drizzle-kit push",
+    "db:studio": "npx drizzle-kit studio"
   },
   "dependencies": {
     "@clerk/nextjs": "^5.1.0",
     "@radix-ui/react-slot": "^1.0.2",
+    "@neondatabase/serverless": "^0.9.3",
     "@reduxjs/toolkit": "^2.2.5",
-    "@vercel/postgres": "^0.8.0",
     "axios": "^1.7.1",
     "class-variance-authority": "^0.7.0",
+    "dotenv": "^16.4.5",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.30.10",
     "lucide-react": "^0.378.0",
