@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input"
 import { Budgets } from '@/utils/schema'
 import { toast } from "sonner"
 import { DialogClose } from '@radix-ui/react-dialog'
+// import { db } from '@/utils/dbConfig'
+// import { useUser } from '@clerk/nextjs'
 
 
 const CreateBudget = () => {
@@ -23,17 +25,18 @@ const CreateBudget = () => {
     const [name, setName] = useState('')
     const [amount, setAmount] = useState('')
 
+    // const {user} = useUser()
+
     const handleSubmit = async () => {
-        const result = await db.insert(Budgets).values({
-            name: name,
-            amount: amount,
-            createdBy: 'Test',
-            // createdBy: user?.primaryEmailAddress?.emailAddress,
-            icon: emojiIcon
-        }).returning({ insertedId: Budgets.id })
-        if (result) {
-            toast('New Budget Created!')
-        }
+        // const result = await db.insert(Budgets).values({
+        //     name: name,
+        //     amount: amount,
+        //     createdBy: user?.primaryEmailAddress?.emailAddress,
+        //     icon: emojiIcon
+        // }).returning({ insertedId: Budgets.id })
+        // if (result) {
+        //     toast('New Budget Created!')
+        // }
     }
 
     return (
