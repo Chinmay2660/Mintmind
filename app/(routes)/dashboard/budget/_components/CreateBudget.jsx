@@ -19,7 +19,7 @@ import { DialogClose } from '@radix-ui/react-dialog'
 // import { useUser } from '@clerk/nextjs'
 
 
-const CreateBudget = () => {
+const CreateBudget = ({ refreshData }) => {
     const [emojiIcon, setEmojiIcon] = useState('😀')
     const [openEmojiPicker, setOpenEmojiPicker] = useState(false)
     const [name, setName] = useState('')
@@ -35,6 +35,7 @@ const CreateBudget = () => {
         //     icon: emojiIcon
         // }).returning({ insertedId: Budgets.id })
         // if (result) {
+        //     refreshData()
         //     toast('New Budget Created!')
         // }
     }
@@ -54,7 +55,7 @@ const CreateBudget = () => {
                         <DialogDescription>
                             <div className='mt-5'>
                                 <Button className='text-lg' variant='outlined' onClick={() => setOpenEmojiPicker(true)}>{emojiIcon}</Button>
-                                <div className='absolute'>
+                                <div className='absolute z-20'>
                                     <EmojiPicker open={openEmojiPicker} onEmojiClick={(e) => {
                                         setEmojiIcon(e.emoji)
                                         setOpenEmojiPicker(false)
