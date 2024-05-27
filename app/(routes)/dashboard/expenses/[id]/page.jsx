@@ -1,14 +1,16 @@
 'use client'
 import { useUser } from '@clerk/nextjs'
-import { getTableColumns, eq, sql } from 'drizzle-orm'
+import { getTableColumns, eq, sql, desc } from 'drizzle-orm'
 import { Budgets, Expenses } from '@/utils/schema'
 import { db } from '@/utils/dbConfig'
 import React, { useEffect, useState } from 'react'
 import BudgetItem from '../../budget/_components/BudgetItem'
 import AddExpense from '../_components/AddExpense'
+import ExpenseListTable from '../_components/ExpenseListTable'
 
 const ExpensesComponent = ({ params }) => {
     const [budgetInfo, setBudgetInfo] = useState([])
+    const [expensesList, setExpensesList] = useState([])
     const { user } = useUser()
 
     useEffect(() => {
@@ -25,6 +27,14 @@ const ExpensesComponent = ({ params }) => {
             .where(eq(Budgets.id, params.id))
             .groupBy(Budgets.id)
         setBudgetInfo(result[0])
+        getExpensesList()
+    }
+
+    const getExpensesList = async () => {
+        const result = await db.select().from(Expenses)
+            .where(eq(Expenses.budgetId, params.id))
+            .orderBy(desc(Expenses.id))
+        setExpensesList(result)
     }
 
     return (
@@ -36,6 +46,10 @@ const ExpensesComponent = ({ params }) => {
 
                     </div>}
                 <AddExpense budgetId={params.id} user={user} refreshData={() => getBudgetInfo()} />
+            </div>
+            <div className='mt-4'>
+                <h2 className='font-bold text-lg'>Latest Expenses</h2>
+                <ExpenseListTable expenseList={expensesList} />
             </div>
         </div>
     )
