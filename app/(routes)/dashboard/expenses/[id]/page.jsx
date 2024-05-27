@@ -3,7 +3,7 @@ import { useUser } from '@clerk/nextjs'
 import { getTableColumns, eq, sql } from 'drizzle-orm'
 import { Budgets, Expenses } from '@/utils/schema'
 import { db } from '@/utils/dbConfig'
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import BudgetItem from '../../budget/_components/BudgetItem'
 import AddExpense from '../_components/AddExpense'
 
@@ -11,7 +11,7 @@ const ExpensesComponent = ({ params }) => {
 
     const [budgetInfo, setBudgetInfo] = useState([])
 
-    const {user} = useUser()
+    const { user } = useUser()
 
     useEffect(() => {
         user && getBudgetInfo()
@@ -38,7 +38,7 @@ const ExpensesComponent = ({ params }) => {
                     : <div className='w-full bg-slate-200 rounded-lg h-[150px] animate-pulse'>
 
                     </div>}
-                    <AddExpense budgetId={params.id} user={user} refreshData={() => getBudgetInfo()}/>
+                <AddExpense budgetId={params.id} user={user} refreshData={() => getBudgetInfo()} />
             </div>
         </div>
     )
