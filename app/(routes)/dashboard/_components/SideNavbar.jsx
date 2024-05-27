@@ -49,12 +49,12 @@ const SideNavbar = () => {
             <div className='mt-5'>
                 {menuList.map(menu => (
                     <Link key={menu.id} href={menu.path}>
-                        <h2
+                        <div
                             className={`flex gap-2 items-center text-gray-500 font-medium p-5 cursor-pointer hover:rounded-md hover:text-primary hover:bg-blue-100 ${path === menu.path ? 'text-primary bg-blue-100' : ''}`}
                         >
                             <div className='mr-3'>{menu.icon}</div>
                             <h2 className='text-lg'>{menu.name}</h2>
-                        </h2>
+                        </div>
                     </Link>
                 ))}
             </div>
