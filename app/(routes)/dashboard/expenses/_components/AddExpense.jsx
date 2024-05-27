@@ -1,8 +1,8 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-// import { db } from '@/utils/dbConfig'
-// import { Expenses, Budgets } from '@/utils/schema'
+import { db } from '@/utils/dbConfig'
+import { Expenses, Budgets } from '@/utils/schema'
 import { toast } from "sonner"
 
 const AddExpense = ({ budgetId, user, refreshData }) => {

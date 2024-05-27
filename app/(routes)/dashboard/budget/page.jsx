@@ -1,6 +1,5 @@
 import React from 'react'
 import BudgetList from './_components/BudgetList'
-import CreateBudget from './_components/CreateBudget'
 
 const Budget = () => {
   return (
