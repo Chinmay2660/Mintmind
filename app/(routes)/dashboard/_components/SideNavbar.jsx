@@ -4,6 +4,7 @@ import React from 'react';
 import { Landmark, LayoutDashboard, PiggyBank, ReceiptText, ShieldCheck } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { UserButton } from '@clerk/nextjs';
 
 const SideNavbar = () => {
     const menuList = [
@@ -59,6 +60,7 @@ const SideNavbar = () => {
                 ))}
             </div>
             <div className='fixed bottom-2 p-5 flex gap-2 items-center'>
+                <UserButton />
                 <h2>Profile</h2>
             </div>
         </div>
