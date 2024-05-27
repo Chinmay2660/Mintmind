@@ -5,13 +5,14 @@ import { Trash } from 'lucide-react'
 import React from 'react'
 import { toast } from 'sonner'
 
-const ExpenseListTable = ({ expenseList }) => {
+const ExpenseListTable = ({ expenseList, refreshData }) => {
     const deleteExpense = async (expense) => {
         const result = await db.delete(Expenses)
             .where(eq(Expenses.id, expense.id))
             .returning()
         if (result) {
             toast('Expense Deleted!')
+            refreshData()
         }
     }
 
@@ -23,13 +24,13 @@ const ExpenseListTable = ({ expenseList }) => {
                 <h2>Date</h2>
                 <h2>Action</h2>
             </div>
-            {expenseList?.map((expenses, index) => (
+            {expenseList?.map((expense, index) => (
                 <div key={index} className='grid grid-cols-4 bg-slate-50 p-2'>
-                    <h2>{expenses.name}</h2>
-                    <h2>{expenses.amount}</h2>
-                    <h2>{expenses.createdAt}</h2>
+                    <h2>{expense.name}</h2>
+                    <h2>{expense.amount}</h2>
+                    <h2>{expense.createdAt}</h2>
                     <h2>
-                        <Trash onClick={deleteExpense(expenses)} className='text-red-600 cursor-pointer' />
+                        <Trash onClick={() => deleteExpense(expense)} className='text-red-600 cursor-pointer' />
                     </h2>
                 </div>
             ))}
