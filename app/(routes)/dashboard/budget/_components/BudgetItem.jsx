@@ -12,7 +12,10 @@ const BudgetItem = ({ budget }) => {
     }
 
     const handleRedirect = () => {
-        router.push('/dashboard/expenses/' + budget?.id)
+        const targetPath = '/dashboard/expenses/' + budget?.id
+        if (window.location.pathname !== targetPath) {
+            router.push(targetPath)
+        }
     }
 
     return (
