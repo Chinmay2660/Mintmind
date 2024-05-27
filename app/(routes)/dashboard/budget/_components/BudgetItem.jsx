@@ -4,6 +4,9 @@ import { useRouter } from 'next/navigation'
 const BudgetItem = ({ budget }) => {
     const router = useRouter()
     const calculateProgressPercentage = () => {
+        if(budget.totalSpend >= budget.amount){
+            return 100
+        }
         const percentage = (budget.totalSpend / budget.amount) * 100
         return percentage.toFixed(2)
     }
@@ -30,7 +33,7 @@ const BudgetItem = ({ budget }) => {
                     <h2 className='text-xs text-slate-400'>₹{budget.amount - budget.totalSpend} Remaining</h2>
                 </div>
                 <div className='w-full bg-slate-300 h-2 rounded-full'>
-                    <div className='bg-primary h-2 rounded-full' style={{ width: `${calculateProgressPercentage()}%` }}>
+                    <div className='bg-primary h-2 rounded-full' style={{ width: `${calculateProgressPercentage()}%`, backgroundColor: budget.totalSpend >= budget.amount ? "red" : "" }}>
 
                     </div>
                 </div>

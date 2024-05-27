@@ -8,9 +8,7 @@ import BudgetItem from '../../budget/_components/BudgetItem'
 import AddExpense from '../_components/AddExpense'
 
 const ExpensesComponent = ({ params }) => {
-
     const [budgetInfo, setBudgetInfo] = useState([])
-
     const { user } = useUser()
 
     useEffect(() => {
@@ -26,7 +24,6 @@ const ExpensesComponent = ({ params }) => {
             .where(eq(Budgets.createdBy, user?.primaryEmailAddress?.emailAddress))
             .where(eq(Budgets.id, params.id))
             .groupBy(Budgets.id)
-        console.log(result)
         setBudgetInfo(result[0])
     }
 

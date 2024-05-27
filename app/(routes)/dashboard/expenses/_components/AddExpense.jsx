@@ -17,7 +17,6 @@ const AddExpense = ({ budgetId, user, refreshData }) => {
             createdBy: user?.primaryEmailAddress?.emailAddress
         }).returning({ insertedId: Budgets.id })
 
-        console.log(result)
         if (result) {
             refreshData()
             toast('New Expense Added')
