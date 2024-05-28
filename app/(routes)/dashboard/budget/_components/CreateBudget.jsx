@@ -25,7 +25,7 @@ const CreateBudget = ({ refreshData }) => {
     const [name, setName] = useState('')
     const [amount, setAmount] = useState('')
 
-    const {user} = useUser()
+    const { user } = useUser()
 
     const handleSubmit = async () => {
         const result = await db.insert(Budgets).values({
@@ -36,7 +36,12 @@ const CreateBudget = ({ refreshData }) => {
         }).returning({ insertedId: Budgets.id })
         if (result) {
             refreshData()
-            toast('New Budget Created!')
+            toast.success('New Budget Created!', {
+                style: {
+                    background: 'green',
+                    color: 'white'
+                }
+            })
         }
     }
 

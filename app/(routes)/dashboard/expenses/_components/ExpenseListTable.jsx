@@ -11,8 +11,13 @@ const ExpenseListTable = ({ expenseList, refreshData }) => {
             .where(eq(Expenses.id, expense.id))
             .returning()
         if (result) {
-            toast('Expense Deleted!')
             refreshData()
+            toast.success('Expense Deleted!', {
+                style: {
+                    background: 'green',
+                    color: 'white'
+                }
+            })
         }
     }
 

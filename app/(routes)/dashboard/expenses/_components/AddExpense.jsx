@@ -20,7 +20,12 @@ const AddExpense = ({ budgetId, user, refreshData }) => {
 
         if (result) {
             refreshData()
-            toast('New Expense Added')
+            toast.success('New Expense Added!', {
+                style: {
+                    background: 'green',
+                    color: 'white'
+                }
+            })
         }
     }
 
