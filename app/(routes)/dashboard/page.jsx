@@ -54,10 +54,12 @@ const Dashboard = () => {
           <BarChartDashboard budgetList={budgetList} />
           <ExpenseListTable expenseList={expensesList} refreshData={()=> getBudgetList()}/>
         </div>
-        <div className='grid gap-1'>
+        <div>
           <h2 className='font-bold text-lg'>Latest Budgets</h2>
           {budgetList.map((budget, index) => (
-            <BudgetItem key={index} budget={budget} />
+            <div key={index} className='mb-4 mt-2'>
+              <BudgetItem budget={budget} />
+            </div>
           ))}
         </div>
       </div>
