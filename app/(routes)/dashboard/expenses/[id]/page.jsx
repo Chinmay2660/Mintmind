@@ -9,7 +9,7 @@ import AddExpense from '../_components/AddExpense'
 import ExpenseListTable from '../_components/ExpenseListTable'
 import EditBudget from '../_components/EditBudget'
 import { Button } from '@/components/ui/button'
-import { Trash } from 'lucide-react'
+import { Trash, ArrowLeft } from 'lucide-react'
 import {
     AlertDialog,
     AlertDialogAction,
@@ -76,7 +76,10 @@ const ExpensesComponent = ({ params }) => {
     return (
         <div className='p-10'>
             <div className='flex justify-between items-center'>
-                <h2 className='text-2xl font-bold '>My Expenses</h2>
+            <div className='flex items-center gap-2'>
+                    <Button variant='ghost' onClick={() => router.back()}><ArrowLeft /></Button>
+                    <h2 className='text-2xl font-bold '>My Expenses</h2>
+                </div>
                 <div className='flex gap-2 items-center'>
                     <EditBudget budgetInfo={budgetInfo} refreshData={() => getBudgetInfo()} />
 
