@@ -52,7 +52,7 @@ const Dashboard = () => {
       <div className='grid grdi-cols-1 md:grid-cols-3 mt-6 gap-5'>
         <div className='md:col-span-2'>
           <BarChartDashboard budgetList={budgetList} />
-          <ExpenseListTable expenseList={expensesList} refreshData={()=> getBudgetList()}/>
+          <ExpenseListTable expenseList={expensesList} refreshData={() => getBudgetList()} />
         </div>
         <div>
           <h2 className='font-bold text-lg'>Latest Budgets</h2>
