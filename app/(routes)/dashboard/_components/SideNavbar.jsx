@@ -20,24 +20,24 @@ const SideNavbar = () => {
             icon: <PiggyBank />,
             path: '/dashboard/budget'
         },
-        {
-            id: 3,
-            name: 'Bank Accounts',
-            icon: <Landmark />,
-            path: '/dashboard/bank_accounts'
-        },
+        // {
+        //     id: 3,
+        //     name: 'Bank Accounts',
+        //     icon: <Landmark />,
+        //     path: '/dashboard/bank_accounts'
+        // },
         {
             id: 4,
             name: 'Expenses',
             icon: <ReceiptText />,
-            path: '/dashboard/expenses'
+            path: '/dashboard/expenseList'
         },
-        {
-            id: 5,
-            name: 'Upgrade',
-            icon: <ShieldCheck />,
-            path: '/dashboard/upgrade'
-        }
+        // {
+        //     id: 5,
+        //     name: 'Upgrade',
+        //     icon: <ShieldCheck />,
+        //     path: '/dashboard/upgrade'
+        // }
     ];
 
     const path = usePathname();
