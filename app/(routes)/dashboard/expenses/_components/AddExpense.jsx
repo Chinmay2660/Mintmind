@@ -48,7 +48,7 @@ const AddExpense = ({ budgetId, user, refreshData }) => {
                 <h2 className='text-black font-medium my-1'>Expense Amount</h2>
                 <Input type="number" placeholder="e.g. 1000" value={amount} onChange={(e) => setAmount(e.target.value)} />
             </div>
-            <Button onClick={addNewExpense} disabled={(!name && !amount) || loading} className='mt-3 w-full'>{loading ? <Loader className='animate-spin' /> : "Add New Expense"}</Button>
+            <Button onClick={addNewExpense} disabled={!name || !amount || loading} className='mt-3 w-full'>{loading ? <Loader className='animate-spin' /> : "Add New Expense"}</Button>
         </div>
     )
 }
