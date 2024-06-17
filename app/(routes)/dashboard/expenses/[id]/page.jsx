@@ -95,8 +95,8 @@ const ExpensesComponent = ({ params }) => {
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => deleteBudget()}>Continue</AlertDialogAction>
+                                <AlertDialogCancel className='mr-2'>Cancel</AlertDialogCancel>
+                                <AlertDialogAction className='mt-2' onClick={() => deleteBudget()}>Continue</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
@@ -110,7 +110,6 @@ const ExpensesComponent = ({ params }) => {
                 <AddExpense budgetId={params.id} user={user} refreshData={() => getBudgetInfo()} />
             </div>
             <div className='mt-4'>
-                <h2 className='font-bold text-lg'>Latest Expenses</h2>
                 <ExpenseListTable expenseList={expensesList} refreshData={() => getBudgetInfo()} />
             </div>
         </div>

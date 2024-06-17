@@ -7,7 +7,7 @@ export default function Home() {
     <div>
       <Header/>
       <Hero/>
-      <CTA/>
+      {/* <CTA/> */}
     </div>
   );
 }
