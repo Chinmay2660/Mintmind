@@ -30,7 +30,7 @@ const ExpenseListTable = ({ expenseList, refreshData }) => {
                 <h2>Date</h2>
                 <h2>Action</h2>
             </div>
-            {expenseList?.map((expense, index) => (
+            {expenseList?.length > 0 && expenseList?.map((expense, index) => (
                 <div key={index} className='grid grid-cols-4 bg-slate-50 p-2'>
                     <h2>{expense.name}</h2>
                     <h2>{expense.amount}</h2>
@@ -40,6 +40,11 @@ const ExpenseListTable = ({ expenseList, refreshData }) => {
                     </h2>
                 </div>
             ))}
+            {expenseList?.length === 0 &&
+                <div className='bg-slate-50 p-2'>
+                    <h2 className='flex justify-center' >No Data</h2>
+                </div>
+            }
         </div>
     )
 }
