@@ -52,15 +52,19 @@ const Dashboard = () => {
       <div className='grid grdi-cols-1 md:grid-cols-3 mt-6 gap-5'>
         <div className='md:col-span-2'>
           <BarChartDashboard budgetList={budgetList} />
-          <ExpenseListTable expenseList={expensesList} refreshData={() => getBudgetList()} />
+          {expensesList?.length > 0 && <ExpenseListTable expenseList={expensesList} refreshData={() => getBudgetList()} />}
         </div>
         <div>
-          <h2 className='font-bold text-lg'>Latest Budgets</h2>
-          {budgetList.map((budget, index) => (
-            <div key={index} className='mb-4 mt-2'>
-              <BudgetItem budget={budget} />
-            </div>
-          ))}
+          {budgetList?.length > 0 && (
+            <>
+              <h2 className="font-bold text-lg">Latest Budgets</h2>
+              {budgetList.map((budget, index) => (
+                <div key={index} className="mb-4 mt-2">
+                  <BudgetItem budget={budget} />
+                </div>
+              ))}
+            </>
+          )}
         </div>
       </div>
     </div>
