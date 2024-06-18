@@ -10,10 +10,12 @@ import { db } from '@/utils/dbConfig'
 
 const BudgetList = () => {
     const [budgetList, setBudgetList] = useState([])
+    const [isLoading, setIsLoading] = useState(false);
 
     const { user } = useUser()
 
     useEffect(() => {
+        setIsLoading(true);
         user && getBudgetList()
     }, [user])
 
@@ -26,22 +28,21 @@ const BudgetList = () => {
             .where(eq(Budgets.createdBy, user?.primaryEmailAddress?.emailAddress))
             .groupBy(Budgets.id)
             .orderBy(desc(Budgets.id))
-        setBudgetList(result)
+        await setBudgetList(result)
+        setIsLoading(true);
     }
 
     return (
         <div className='mt-7'>
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5'>
                 <CreateBudget refreshData={() => getBudgetList()} />
-                <Suspense fallback={[1, 2, 3, 4, 5].map((item, index) => (
+                {budgetList && budgetList?.length > 0 && isLoading ? budgetList.map((budget, index) => (
+                    <BudgetItem key={index} budget={budget} />
+                )) : [1, 2, 3, 4, 5].map((item, index) => (
                     <div key={index} className='w-full bg-slate-200 rounded-lg h-[170px] animate-pulse'>
 
                     </div>
-                ))}>
-                    {budgetList && budgetList?.length > 0 && budgetList.map((budget, index) => (
-                        <BudgetItem key={index} budget={budget} />
-                    ))}
-                </Suspense>
+                ))}
             </div>
         </div>
     )
