@@ -32,8 +32,11 @@ Check out the live demo: [Mintmind](https://github.com/Chinmay2660/Mintmind)
 ## 🛠️ Built With
 - Next.js: A React framework for production-level applications.
 - Tailwind CSS: A utility-first CSS framework for rapid UI development.
-- Chart.js: For creating visual charts of financial data.
+- Radix UI: A library of accessible components for building high-quality design systems.
+- Recharts: For creating visual charts of financial data.
 - Drizzle ORM: For managing database interactions.
+- Neon: For PostgreSQL database management.
+- Clerk: For authentication and user management.
 
 ## 🤝 Contributing
 Contributions, issues, and feature requests are welcome! Feel free to check out the issues page.
