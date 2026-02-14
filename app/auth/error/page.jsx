@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { AlertCircle, ArrowLeft, Home } from 'lucide-react'
 import { motion } from 'framer-motion'
 import Logo from '@/components/Logo'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 
 const errorMessages = {
   Configuration: 'There is a problem with the server configuration.',
@@ -14,7 +14,7 @@ const errorMessages = {
   Default: 'Something went wrong during authentication. Please try again.',
 }
 
-export default function AuthErrorPage() {
+function AuthErrorContent() {
   const searchParams = useSearchParams()
   const [error, setError] = useState('Default')
   const [errorMessage, setErrorMessage] = useState('')
@@ -115,6 +115,18 @@ export default function AuthErrorPage() {
         </div>
       </motion.div>
     </div>
+  )
+}
+
+export default function AuthErrorPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-950">
+        <div className="text-gray-600 dark:text-gray-400">Loading...</div>
+      </div>
+    }>
+      <AuthErrorContent />
+    </Suspense>
   )
 }
 

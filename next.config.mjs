@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
   // Note: Removed 'output: export' because NextAuth requires server-side API routes
   // For Capacitor, use a deployed server or local dev server
   images: {

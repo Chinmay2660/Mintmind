@@ -10,6 +10,11 @@ import { useAuth } from '@/lib/hooks/useAuth'
 import { motion } from 'framer-motion'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { FormButtonGroup } from '@/components/ui/form-buttons'
+import { EditButton, DeleteButton } from '@/components/ui/icon-button'
+import { FilterButtonGroup } from '@/components/ui/filter-button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Card } from '@/components/ui/card'
 
 const CategoriesPage = () => {
   const { user } = useAuth()
@@ -181,45 +186,25 @@ const CategoriesPage = () => {
                   />
                 </div>
               )}
-              <div className="flex gap-2">
-                <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90">
-                  {editingCategory ? 'Update' : 'Add'} Category
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
-                </Button>
-              </div>
+              <FormButtonGroup
+                submitLabel={editingCategory ? 'Update Category' : 'Add Category'}
+                onCancel={() => setIsDialogOpen(false)}
+              />
             </form>
           </DialogContent>
         </Dialog>
       </PageHeader>
 
       {/* Filter */}
-      <div className="flex gap-2">
-        <Button
-          variant={filterType === 'all' ? 'default' : 'outline'}
-          onClick={() => setFilterType('all')}
-          size="sm"
-        >
-          All
-        </Button>
-        <Button
-          variant={filterType === 'expense' ? 'default' : 'outline'}
-          onClick={() => setFilterType('expense')}
-          size="sm"
-        >
-          <ArrowDownCircle className="w-4 h-4 mr-2" />
-          Expenses
-        </Button>
-        <Button
-          variant={filterType === 'income' ? 'default' : 'outline'}
-          onClick={() => setFilterType('income')}
-          size="sm"
-        >
-          <ArrowUpCircle className="w-4 h-4 mr-2" />
-          Income
-        </Button>
-      </div>
+      <FilterButtonGroup
+        value={filterType}
+        onValueChange={setFilterType}
+        options={[
+          { value: 'all', label: 'All' },
+          { value: 'expense', label: 'Expenses', icon: ArrowDownCircle },
+          { value: 'income', label: 'Income', icon: ArrowUpCircle },
+        ]}
+      />
 
       {/* Categories List */}
       <div className="space-y-6">
@@ -248,35 +233,26 @@ const CategoriesPage = () => {
                 ))}
               </div>
             ) : expenseCategories.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-800"
-              >
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                  <ArrowDownCircle className="w-8 h-8 text-gray-400" />
-                </div>
-                <p className="text-gray-500 dark:text-gray-400 mb-2 font-medium">No expense categories yet</p>
-                <p className="text-sm text-gray-400 dark:text-gray-500 mb-4">Add your first expense category to get started</p>
-                <Button
-                  onClick={() => {
-                    resetForm()
-                    setFormData({ ...formData, type: 'expense' })
-                    setEditingCategory(null)
-                    setIsDialogOpen(true)
-                  }}
-                  className="bg-primary hover:bg-primary/90"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Expense Category
-                </Button>
-              </motion.div>
+              <EmptyState
+                icon={ArrowDownCircle}
+                title="No expense categories yet"
+                description="Add your first expense category to get started"
+                actionLabel="Add Expense Category"
+                onAction={() => {
+                  resetForm()
+                  setFormData({ ...formData, type: 'expense' })
+                  setEditingCategory(null)
+                  setIsDialogOpen(true)
+                }}
+              />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {expenseCategories.map((category) => (
-                  <div
+                {expenseCategories.map((category, index) => (
+                  <Card
                     key={category._id}
-                    className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700"
+                    delay={0.1 + index * 0.05}
+                    hover={true}
+                    className="p-4"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
@@ -296,25 +272,11 @@ const CategoriesPage = () => {
                         </div>
                       </div>
                       <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(category)}
-                          className="text-gray-600 dark:text-gray-400 h-8 w-8 p-0"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(category._id)}
-                          className="text-red-600 dark:text-red-400 h-8 w-8 p-0"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <EditButton onClick={() => handleEdit(category)} />
+                        <DeleteButton onClick={() => handleDelete(category._id)} />
                       </div>
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
             )}
@@ -346,35 +308,26 @@ const CategoriesPage = () => {
                 ))}
               </div>
             ) : incomeCategories.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-800"
-              >
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                  <ArrowUpCircle className="w-8 h-8 text-gray-400" />
-                </div>
-                <p className="text-gray-500 dark:text-gray-400 mb-2 font-medium">No income categories yet</p>
-                <p className="text-sm text-gray-400 dark:text-gray-500 mb-4">Add your first income category to get started</p>
-                <Button
-                  onClick={() => {
-                    resetForm()
-                    setFormData({ ...formData, type: 'income' })
-                    setEditingCategory(null)
-                    setIsDialogOpen(true)
-                  }}
-                  className="bg-primary hover:bg-primary/90"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Income Category
-                </Button>
-              </motion.div>
+              <EmptyState
+                icon={ArrowUpCircle}
+                title="No income categories yet"
+                description="Add your first income category to get started"
+                actionLabel="Add Income Category"
+                onAction={() => {
+                  resetForm()
+                  setFormData({ ...formData, type: 'income' })
+                  setEditingCategory(null)
+                  setIsDialogOpen(true)
+                }}
+              />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {incomeCategories.map((category) => (
-                  <div
+                {incomeCategories.map((category, index) => (
+                  <Card
                     key={category._id}
-                    className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700"
+                    delay={0.1 + index * 0.05}
+                    hover={true}
+                    className="p-4"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -389,25 +342,11 @@ const CategoriesPage = () => {
                         </div>
                       </div>
                       <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(category)}
-                          className="text-gray-600 dark:text-gray-400 h-8 w-8 p-0"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(category._id)}
-                          className="text-red-600 dark:text-red-400 h-8 w-8 p-0"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <EditButton onClick={() => handleEdit(category)} />
+                        <DeleteButton onClick={() => handleDelete(category._id)} />
                       </div>
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
             )}

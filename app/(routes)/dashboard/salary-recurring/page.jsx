@@ -11,6 +11,11 @@ import { format, addDays, addWeeks, addMonths, addQuarters, isAfter, isBefore } 
 import { motion } from 'framer-motion'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { Tabs, Tab } from '@/components/ui/tabs'
+import { Card } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
+import { FormButtonGroup } from '@/components/ui/form-buttons'
+import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 
 const SalaryRecurringPage = () => {
   const { user } = useAuth()
@@ -281,34 +286,14 @@ const SalaryRecurringPage = () => {
       />
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-800">
-        <button
-          onClick={() => setActiveTab('salary')}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === 'salary'
-              ? 'text-primary border-b-2 border-primary'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <DollarSign className="w-4 h-4" />
-            Salary
-          </div>
-        </button>
-        <button
-          onClick={() => setActiveTab('recurring')}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === 'recurring'
-              ? 'text-primary border-b-2 border-primary'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Repeat className="w-4 h-4" />
-            Recurring Expenses
-          </div>
-        </button>
-      </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tab value="salary" activeValue={activeTab} onValueChange={setActiveTab} icon={DollarSign}>
+          Salary
+        </Tab>
+        <Tab value="recurring" activeValue={activeTab} onValueChange={setActiveTab} icon={Repeat}>
+          Recurring Expenses
+        </Tab>
+      </Tabs>
 
       {/* Salary Tab */}
       {activeTab === 'salary' && (
@@ -419,14 +404,10 @@ const SalaryRecurringPage = () => {
                       placeholder="e.g., Software Engineer Salary"
                     />
                   </div>
-                  <div className="flex gap-2">
-                    <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90">
-                      {editingSalary ? 'Update' : 'Add'} Salary
-                    </Button>
-                    <Button type="button" variant="outline" onClick={() => setIsSalaryDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                  </div>
+                  <FormButtonGroup
+                    submitLabel={editingSalary ? 'Update Salary' : 'Add Salary'}
+                    onCancel={() => setIsSalaryDialogOpen(false)}
+                  />
                 </form>
               </DialogContent>
             </Dialog>
@@ -453,36 +434,25 @@ const SalaryRecurringPage = () => {
               </div>
             ))
           ) : salaries.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-800"
-            >
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                <DollarSign className="w-8 h-8 text-gray-400" />
-              </div>
-              <p className="text-gray-500 dark:text-gray-400 mb-2 font-medium">No salary records yet</p>
-              <p className="text-sm text-gray-400 dark:text-gray-500 mb-4">Add your salary to get started</p>
-              <Button
-                onClick={() => {
-                  resetSalaryForm()
-                  setEditingSalary(null)
-                  setIsSalaryDialogOpen(true)
-                }}
-                className="bg-primary hover:bg-primary/90"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Your First Salary
-              </Button>
-            </motion.div>
+            <EmptyState
+              icon={DollarSign}
+              title="No salary records yet"
+              description="Add your salary to get started"
+              actionLabel="Add Your First Salary"
+              onAction={() => {
+                resetSalaryForm()
+                setEditingSalary(null)
+                setIsSalaryDialogOpen(true)
+              }}
+            />
           ) : (
             <div className="space-y-3">
               {salaries.map((salary) => (
-                <motion.div
+                <Card
                   key={salary._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800"
+                  delay={0.1}
+                  hover={true}
+                  className="p-4"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -505,21 +475,11 @@ const SalaryRecurringPage = () => {
                       </div>
                     </div>
                     <div className="flex gap-1">
-                      <button
-                        onClick={() => handleSalaryEdit(salary)}
-                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleSalaryDelete(salary._id)}
-                        className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <EditButton onClick={() => handleSalaryEdit(salary)} />
+                      <DeleteButton onClick={() => handleSalaryDelete(salary._id)} />
                     </div>
                   </div>
-                </motion.div>
+                </Card>
               ))}
             </div>
           )}
@@ -752,14 +712,10 @@ const SalaryRecurringPage = () => {
                       Automatically create transactions when due
                     </label>
                   </div>
-                  <div className="flex gap-2">
-                    <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90">
-                      {editingExpense ? 'Update' : 'Create'} Recurring Expense
-                    </Button>
-                    <Button type="button" variant="outline" onClick={() => setIsExpenseDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                  </div>
+                  <FormButtonGroup
+                    submitLabel={editingExpense ? 'Update Recurring Expense' : 'Create Recurring Expense'}
+                    onCancel={() => setIsExpenseDialogOpen(false)}
+                  />
                 </form>
               </DialogContent>
             </Dialog>
@@ -786,36 +742,25 @@ const SalaryRecurringPage = () => {
               </div>
             ))
           ) : recurringExpenses.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-800"
-            >
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                <Repeat className="w-8 h-8 text-gray-400" />
-              </div>
-              <p className="text-gray-500 dark:text-gray-400 mb-2 font-medium">No recurring expenses yet</p>
-              <p className="text-sm text-gray-400 dark:text-gray-500 mb-4">Add recurring expenses to track them automatically</p>
-              <Button
-                onClick={() => {
-                  resetExpenseForm()
-                  setEditingExpense(null)
-                  setIsExpenseDialogOpen(true)
-                }}
-                className="bg-primary hover:bg-primary/90"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Your First Recurring Expense
-              </Button>
-            </motion.div>
+            <EmptyState
+              icon={Repeat}
+              title="No recurring expenses yet"
+              description="Add recurring expenses to track them automatically"
+              actionLabel="Add Your First Recurring Expense"
+              onAction={() => {
+                resetExpenseForm()
+                setEditingExpense(null)
+                setIsExpenseDialogOpen(true)
+              }}
+            />
           ) : (
             <div className="space-y-3">
               {recurringExpenses.map((expense) => (
-                <motion.div
+                <Card
                   key={expense._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800"
+                  delay={0.1}
+                  hover={true}
+                  className="p-4"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -838,21 +783,11 @@ const SalaryRecurringPage = () => {
                       </div>
                     </div>
                     <div className="flex gap-1">
-                      <button
-                        onClick={() => handleExpenseEdit(expense)}
-                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleExpenseDelete(expense._id)}
-                        className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <EditButton onClick={() => handleExpenseEdit(expense)} />
+                      <DeleteButton onClick={() => handleExpenseDelete(expense._id)} />
                     </div>
                   </div>
-                </motion.div>
+                </Card>
               ))}
             </div>
           )}

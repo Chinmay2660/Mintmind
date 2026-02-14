@@ -11,6 +11,11 @@ import { format } from 'date-fns'
 import { motion } from 'framer-motion'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { FilterButtonGroup } from '@/components/ui/filter-button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Card } from '@/components/ui/card'
+import { FormButtonGroup } from '@/components/ui/form-buttons'
+import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 
 const InvestmentsPage = () => {
   const { user } = useAuth()
@@ -279,14 +284,10 @@ const InvestmentsPage = () => {
                   placeholder="Additional notes"
                 />
               </div>
-              <div className="flex gap-2">
-                <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90">
-                  {editingInvestment ? 'Update' : 'Add'} Investment
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
-                </Button>
-              </div>
+              <FormButtonGroup
+                submitLabel={editingInvestment ? 'Update Investment' : 'Add Investment'}
+                onCancel={() => setIsDialogOpen(false)}
+              />
             </form>
           </DialogContent>
         </Dialog>
@@ -318,36 +319,17 @@ const InvestmentsPage = () => {
       </div>
 
       {/* Filter */}
-      <div className="flex gap-2 flex-wrap">
-        <Button
-          variant={filterType === 'all' ? 'default' : 'outline'}
-          onClick={() => setFilterType('all')}
-          size="sm"
-        >
-          All
-        </Button>
-        <Button
-          variant={filterType === 'FD' ? 'default' : 'outline'}
-          onClick={() => setFilterType('FD')}
-          size="sm"
-        >
-          Fixed Deposits
-        </Button>
-        <Button
-          variant={filterType === 'Mutual Fund' ? 'default' : 'outline'}
-          onClick={() => setFilterType('Mutual Fund')}
-          size="sm"
-        >
-          Mutual Funds
-        </Button>
-        <Button
-          variant={filterType === 'Stock' ? 'default' : 'outline'}
-          onClick={() => setFilterType('Stock')}
-          size="sm"
-        >
-          Stocks
-        </Button>
-      </div>
+      <FilterButtonGroup
+        value={filterType}
+        onValueChange={setFilterType}
+        options={[
+          { value: 'all', label: 'All' },
+          { value: 'FD', label: 'Fixed Deposits' },
+          { value: 'Mutual Fund', label: 'Mutual Funds' },
+          { value: 'Stock', label: 'Stocks' },
+        ]}
+        className="flex-wrap"
+      />
 
       {/* Investments List */}
       <div className="space-y-3">
@@ -369,37 +351,28 @@ const InvestmentsPage = () => {
             </div>
           ))
         ) : investments.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-800"
-          >
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-              <TrendingUp className="w-8 h-8 text-gray-400" />
-            </div>
-            <p className="text-gray-500 dark:text-gray-400 mb-2 font-medium">No investments yet</p>
-            <p className="text-sm text-gray-400 dark:text-gray-500 mb-4">Add your first investment to get started</p>
-            <Button
-              onClick={() => {
-                resetForm()
-                setEditingInvestment(null)
-                setIsDialogOpen(true)
-              }}
-              className="bg-primary hover:bg-primary/90"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Your First Investment
-            </Button>
-          </motion.div>
+          <EmptyState
+            icon={TrendingUp}
+            title="No investments yet"
+            description="Add your first investment to get started"
+            actionLabel="Add Your First Investment"
+            onAction={() => {
+              resetForm()
+              setEditingInvestment(null)
+              setIsDialogOpen(true)
+            }}
+          />
         ) : (
           investments.map((investment) => {
             const gain = (investment.currentValue || investment.amount) - investment.amount
             const gainPercent = investment.amount > 0 ? (gain / investment.amount) * 100 : 0
 
             return (
-              <div
+              <Card
                 key={investment._id}
-                className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700"
+                delay={0.1}
+                hover={true}
+                className="p-5"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
@@ -421,22 +394,8 @@ const InvestmentsPage = () => {
                     )}
                   </div>
                   <div className="flex gap-2 ml-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(investment)}
-                      className="text-gray-600 dark:text-gray-400"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(investment._id)}
-                      className="text-red-600 dark:text-red-400"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <EditButton onClick={() => handleEdit(investment)} />
+                    <DeleteButton onClick={() => handleDelete(investment._id)} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 mt-4">
@@ -481,7 +440,7 @@ const InvestmentsPage = () => {
                     Maturity Type: {investment.maturityType}
                   </p>
                 )}
-              </div>
+              </Card>
             )
           })
         )}

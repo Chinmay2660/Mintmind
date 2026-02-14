@@ -10,6 +10,11 @@ import { motion } from 'framer-motion'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { TabButtonGroup } from '@/components/ui/tab-button'
+import { Card } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
+import { FormButtonGroup } from '@/components/ui/form-buttons'
+import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 
 const BudgetsPage = () => {
   const { user } = useAuth()
@@ -285,17 +290,12 @@ const BudgetsPage = () => {
                 />
               </div>
               <div className="flex gap-3 pt-2">
-                <Button type="submit" className="flex-1 h-12 bg-primary hover:bg-primary/90">
-                  {editingBudget ? 'Update' : 'Create'} Budget
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                  className="h-12"
-                >
-                  Cancel
-                </Button>
+                <FormButtonGroup
+                  submitLabel={editingBudget ? 'Update Budget' : 'Create Budget'}
+                  onCancel={() => setIsDialogOpen(false)}
+                  submitClassName="h-12"
+                  cancelClassName="h-12"
+                />
               </div>
             </form>
           </DialogContent>
@@ -303,24 +303,11 @@ const BudgetsPage = () => {
       </PageHeader>
 
       {/* Period Filter */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4"
-      >
-        {periodOptions.map((option) => (
-          <Button
-            key={option.value}
-            variant={selectedPeriod === option.value ? 'default' : 'outline'}
-            onClick={() => setSelectedPeriod(option.value)}
-            size="sm"
-            className="rounded-full whitespace-nowrap"
-          >
-            {option.label}
-          </Button>
-        ))}
-      </motion.div>
+      <TabButtonGroup
+        value={selectedPeriod}
+        onValueChange={setSelectedPeriod}
+        options={periodOptions}
+      />
 
       {/* Budgets List */}
       <div className="space-y-2">
@@ -344,37 +331,24 @@ const BudgetsPage = () => {
             </div>
           ))
         ) : budgets.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-800"
-          >
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-              <Target className="w-8 h-8 text-gray-400" />
-            </div>
-            <p className="text-gray-500 dark:text-gray-400 mb-2 font-medium">No budgets yet</p>
-            <p className="text-sm text-gray-400 dark:text-gray-500 mb-4">Create your first budget to track spending</p>
-            <Button
-              onClick={() => {
-                resetForm()
-                setEditingBudget(null)
-                setIsDialogOpen(true)
-              }}
-              className="bg-primary hover:bg-primary/90"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Your First Budget
-            </Button>
-          </motion.div>
+          <EmptyState
+            icon={Target}
+            title="No budgets yet"
+            description="Create your first budget to track spending"
+            actionLabel="Create Your First Budget"
+            onAction={() => {
+              resetForm()
+              setEditingBudget(null)
+              setIsDialogOpen(true)
+            }}
+          />
         ) : (
           budgets.map((budget, index) => (
-            <motion.div
+            <Card
               key={budget._id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + index * 0.05 }}
-              whileTap={{ scale: 0.98 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 active:scale-[0.98] transition-transform"
+              delay={0.2 + index * 0.05}
+              hover={true}
+              className="p-4"
             >
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -402,23 +376,11 @@ const BudgetsPage = () => {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => handleEdit(budget)}
-                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => handleDelete(budget._id)}
-                    className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </motion.button>
+                  <EditButton onClick={() => handleEdit(budget)} />
+                  <DeleteButton onClick={() => handleDelete(budget._id)} />
                 </div>
               </div>
-            </motion.div>
+            </Card>
           ))
         )}
       </div>

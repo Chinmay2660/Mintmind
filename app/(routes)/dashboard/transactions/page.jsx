@@ -11,6 +11,12 @@ import { format } from 'date-fns'
 import { motion } from 'framer-motion'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { FilterButtonGroup } from '@/components/ui/filter-button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Card } from '@/components/ui/card'
+import { FormButtonGroup } from '@/components/ui/form-buttons'
+import { ToggleButtonGroup } from '@/components/ui/toggle-button'
+import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 
 const TransactionsPage = () => {
   const { user } = useAuth()
@@ -205,24 +211,14 @@ const TransactionsPage = () => {
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Payment Method</label>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant={formData.isCash ? 'default' : 'outline'}
-                    onClick={() => setFormData({ ...formData, isCash: true, accountId: '' })}
-                    className="flex-1"
-                  >
-                    Cash
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={!formData.isCash ? 'default' : 'outline'}
-                    onClick={() => setFormData({ ...formData, isCash: false })}
-                    className="flex-1"
-                  >
-                    Bank Account
-                  </Button>
-                </div>
+                <ToggleButtonGroup
+                  value={formData.isCash ? 'cash' : 'account'}
+                  onValueChange={(value) => setFormData({ ...formData, isCash: value === 'cash', accountId: value === 'cash' ? '' : formData.accountId })}
+                  options={[
+                    { value: 'cash', label: 'Cash' },
+                    { value: 'account', label: 'Bank Account' },
+                  ]}
+                />
               </div>
               {!formData.isCash && (
                 <div>
@@ -259,53 +255,26 @@ const TransactionsPage = () => {
                   required
                 />
               </div>
-              <div className="flex gap-2">
-                <Button type="submit" className="flex-1 bg-primary hover:bg-primary/90">
-                  {editingTransaction ? 'Update' : 'Add'} Transaction
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
-                </Button>
-              </div>
+              <FormButtonGroup
+                submitLabel={editingTransaction ? 'Update Transaction' : 'Add Transaction'}
+                onCancel={() => setIsDialogOpen(false)}
+              />
             </form>
           </DialogContent>
         </Dialog>
       </PageHeader>
 
-      {/* Filter - Native Style */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4"
-      >
-        <Button
-          variant={filterType === 'all' ? 'default' : 'outline'}
-          onClick={() => setFilterType('all')}
-          size="sm"
-          className="rounded-full whitespace-nowrap"
-        >
-          All
-        </Button>
-        <Button
-          variant={filterType === 'income' ? 'default' : 'outline'}
-          onClick={() => setFilterType('income')}
-          size="sm"
-          className="rounded-full whitespace-nowrap"
-        >
-          <ArrowUpCircle className="w-4 h-4 mr-2" />
-          Income
-        </Button>
-        <Button
-          variant={filterType === 'expense' ? 'default' : 'outline'}
-          onClick={() => setFilterType('expense')}
-          size="sm"
-          className="rounded-full whitespace-nowrap"
-        >
-          <ArrowDownCircle className="w-4 h-4 mr-2" />
-          Expenses
-        </Button>
-      </motion.div>
+      {/* Filter */}
+      <FilterButtonGroup
+        value={filterType}
+        onValueChange={setFilterType}
+        options={[
+          { value: 'all', label: 'All' },
+          { value: 'income', label: 'Income', icon: ArrowUpCircle },
+          { value: 'expense', label: 'Expenses', icon: ArrowDownCircle },
+        ]}
+        className="overflow-x-auto pb-2 -mx-4 px-4"
+      />
 
       {/* Transactions List - Native Style */}
       <div className="space-y-2">
@@ -327,37 +296,24 @@ const TransactionsPage = () => {
             </div>
           ))
         ) : transactions.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-800"
-          >
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-              <ArrowDownCircle className="w-8 h-8 text-gray-400" />
-            </div>
-            <p className="text-gray-500 dark:text-gray-400 mb-2 font-medium">No transactions yet</p>
-            <p className="text-sm text-gray-400 dark:text-gray-500 mb-4">Add your first transaction to get started</p>
-            <Button
-              onClick={() => {
-                resetForm()
-                setEditingTransaction(null)
-                setIsDialogOpen(true)
-              }}
-              className="bg-primary hover:bg-primary/90"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Your First Transaction
-            </Button>
-          </motion.div>
+          <EmptyState
+            icon={ArrowDownCircle}
+            title="No transactions yet"
+            description="Add your first transaction to get started"
+            actionLabel="Add Your First Transaction"
+            onAction={() => {
+              resetForm()
+              setEditingTransaction(null)
+              setIsDialogOpen(true)
+            }}
+          />
         ) : (
           transactions.map((transaction, index) => (
-            <motion.div
+            <Card
               key={transaction._id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + index * 0.03 }}
-              whileTap={{ scale: 0.98 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 active:scale-[0.98] transition-transform"
+              delay={0.2 + index * 0.03}
+              hover={true}
+              className="p-4"
             >
               <div className="flex items-center gap-4">
                 <div
@@ -400,23 +356,11 @@ const TransactionsPage = () => {
                   </p>
                 </div>
                 <div className="flex gap-1">
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => handleEdit(transaction)}
-                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => handleDelete(transaction._id)}
-                    className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </motion.button>
+                  <EditButton onClick={() => handleEdit(transaction)} />
+                  <DeleteButton onClick={() => handleDelete(transaction._id)} />
                 </div>
               </div>
-            </motion.div>
+            </Card>
           ))
         )}
       </div>

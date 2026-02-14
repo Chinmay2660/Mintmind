@@ -10,6 +10,8 @@ import { useAuth } from '@/lib/hooks/useAuth'
 import { motion } from 'framer-motion'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { FormButtonGroup, SubmitButton, CancelButton } from '@/components/ui/form-buttons'
+import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 
 const AccountsPage = () => {
   const { user } = useAuth()
@@ -228,12 +230,12 @@ const AccountsPage = () => {
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
-                <Button type="submit" className="flex-1 h-12 bg-primary hover:bg-primary/90">
-                  {editingAccount ? 'Update' : 'Add'} Account
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="h-12">
-                  Cancel
-                </Button>
+                <FormButtonGroup
+                  submitLabel={editingAccount ? 'Update Account' : 'Add Account'}
+                  onCancel={() => setIsDialogOpen(false)}
+                  submitClassName="h-12"
+                  cancelClassName="h-12"
+                />
               </div>
             </form>
           </DialogContent>
@@ -326,12 +328,12 @@ const AccountsPage = () => {
                         />
                       </div>
                       <div className="flex gap-3">
-                        <Button onClick={handleCashUpdate} className="flex-1 h-12 bg-primary hover:bg-primary/90">
+                        <SubmitButton onClick={handleCashUpdate} type="button" className="h-12">
                           Update
-                        </Button>
-                        <Button variant="outline" onClick={() => setIsCashDialogOpen(false)} className="h-12">
+                        </SubmitButton>
+                        <CancelButton onClick={() => setIsCashDialogOpen(false)} className="h-12">
                           Cancel
-                        </Button>
+                        </CancelButton>
                       </div>
                     </div>
                   </DialogContent>
@@ -414,20 +416,8 @@ const AccountsPage = () => {
                     </p>
                   </div>
                   <div className="flex gap-1">
-                    <motion.button
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => handleEdit(account)}
-                      className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </motion.button>
-                    <motion.button
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => handleDelete(account._id)}
-                      className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </motion.button>
+                    <EditButton onClick={() => handleEdit(account)} />
+                    <DeleteButton onClick={() => handleDelete(account._id)} />
                   </div>
                 </div>
               </motion.div>
