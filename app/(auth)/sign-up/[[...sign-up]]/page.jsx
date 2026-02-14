@@ -1,6 +1,5 @@
-import React from 'react'
-import { SignUp } from "@clerk/nextjs";
+import { redirect } from 'next/navigation'
 
 export default function Page() {
-  return <SignUp />;
+  redirect('/auth/signin')
 }

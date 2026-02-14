@@ -4,7 +4,7 @@ import React from 'react';
 import { Landmark, LayoutDashboard, PiggyBank, ReceiptText, ShieldCheck } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { UserButton } from '@clerk/nextjs';
+import UserProfile from '@/components/UserProfile';
 
 const SideNavbar = () => {
     const menuList = [
@@ -43,11 +43,13 @@ const SideNavbar = () => {
     const path = usePathname();
 
     return (
-        <div className='h-screen p-5'>
+        <div className='h-screen p-5 relative flex flex-col'>
             <div className='mb-8'>
-                <Image src='/logo.svg' alt='logo' width={160} height={100} />
+                <Link href="/">
+                    <Image src='/logo.svg' alt='logo' width={160} height={100} className="cursor-pointer" />
+                </Link>
             </div>
-            <div className='mt-5'>
+            <div className='mt-5 flex-1'>
                 {menuList.map(menu => (
                     <Link key={menu.id} href={menu.path}>
                         <div
@@ -59,9 +61,9 @@ const SideNavbar = () => {
                     </Link>
                 ))}
             </div>
-            <div className='fixed bottom-2 p-5 flex gap-2 items-center'>
-                <UserButton />
-                <h2>Profile</h2>
+            <div className='mt-auto p-4 -mx-5 -mb-5 flex gap-2 items-center bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800'>
+                <UserProfile />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Profile</span>
             </div>
         </div>
     );

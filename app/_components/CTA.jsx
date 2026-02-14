@@ -1,200 +1,122 @@
+'use client'
 import React from 'react'
+import { DollarSign, Target, BarChart3, CreditCard, PiggyBank, TrendingUp } from 'lucide-react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { motion } from 'framer-motion'
 
 const CTA = () => {
-    return (
-        <section className="bg-gray-50">
-            <div className="mx-auto max-w-screen-xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
-                <div className="mx-auto max-w-lg text-center">
-                    <h2 className="text-3xl font-bold sm:text-4xl">Kickstart your marketing</h2>
+    const features = [
+        {
+            icon: <DollarSign className="w-6 h-6" />,
+            title: "Track Expenses",
+            description: "Categorize and monitor all your expenses with detailed insights and analytics."
+        },
+        {
+            icon: <CreditCard className="w-6 h-6" />,
+            title: "Multiple Accounts",
+            description: "Manage multiple bank accounts and cash balances in one place."
+        },
+        {
+            icon: <TrendingUp className="w-6 h-6" />,
+            title: "Investment Portfolio",
+            description: "Track FDs, Mutual Funds, and Stocks with maturity dates and returns."
+        },
+        {
+            icon: <BarChart3 className="w-6 h-6" />,
+            title: "Visual Analytics",
+            description: "Beautiful charts and graphs to understand your spending patterns."
+        },
+        {
+            icon: <Target className="w-6 h-6" />,
+            title: "Budget Planning",
+            description: "Set budgets for different categories and track your progress."
+        },
+        {
+            icon: <PiggyBank className="w-6 h-6" />,
+            title: "Save Money",
+            description: "Identify areas to cut costs and increase your savings effectively."
+        }
+    ]
 
-                    <p className="mt-4">
-                        Lorem ipsum, dolor sit amet consectetur adipisicing elit. Consequuntur aliquam doloribus
-                        nesciunt eos fugiat. Vitae aperiam fugit consequuntur saepe laborum.
+    return (
+        <section className="bg-white dark:bg-gray-900 py-16 sm:py-20">
+            <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-2xl text-center">
+                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Everything You Need to Manage Your Finances</h2>
+                    <p className="mt-4 text-lg text-gray-600">
+                        Powerful features designed to help you take control of your money and achieve your financial goals.
                     </p>
                 </div>
 
-                <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-                    <div
-                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="size-10 text-primary"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {features.map((feature, index) => (
+                        <motion.div
+                            key={index}
+                            initial={{ opacity: 0, y: 30 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.5, delay: index * 0.1 }}
+                            whileHover={{ y: -5 }}
+                            className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 p-6 shadow-sm hover:shadow-lg transition-all duration-300 hover-lift group"
                         >
-                            <path d="M12 14l9-5-9-5-9 5 9 5z" />
-                            <path
-                                d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"
-                            />
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"
-                            />
-                        </svg>
-
-                        <h2 className="mt-4 text-xl font-bold">Digital campaigns</h2>
-
-                        <p className="mt-1 text-sm ">
-                            Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ut quo possimus adipisci
-                            distinctio alias voluptatum blanditiis laudantium.
-                        </p>
-                    </div>
-
-                    <div
-                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="size-10 text-primary"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path d="M12 14l9-5-9-5-9 5 9 5z" />
-                            <path
-                                d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"
-                            />
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"
-                            />
-                        </svg>
-
-                        <h2 className="mt-4 text-xl font-bold ">Digital campaigns</h2>
-
-                        <p className="mt-1 text-sm ">
-                            Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ut quo possimus adipisci
-                            distinctio alias voluptatum blanditiis laudantium.
-                        </p>
-                    </div>
-
-                    <div
-                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="size-10 text-primary"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path d="M12 14l9-5-9-5-9 5 9 5z" />
-                            <path
-                                d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"
-                            />
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"
-                            />
-                        </svg>
-
-                        <h2 className="mt-4 text-xl font-bold ">Digital campaigns</h2>
-
-                        <p className="mt-1 text-sm ">
-                            Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ut quo possimus adipisci
-                            distinctio alias voluptatum blanditiis laudantium.
-                        </p>
-                    </div>
-
-                    <div
-                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition "
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="size-10 text-primary"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path d="M12 14l9-5-9-5-9 5 9 5z" />
-                            <path
-                                d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"
-                            />
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"
-                            />
-                        </svg>
-
-                        <h2 className="mt-4 text-xl font-bold ">Digital campaigns</h2>
-
-                        <p className="mt-1 text-sm ">
-                            Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ut quo possimus adipisci
-                            distinctio alias voluptatum blanditiis laudantium.
-                        </p>
-                    </div>
-
-                    <div
-                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="size-10 text-primary"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path d="M12 14l9-5-9-5-9 5 9 5z" />
-                            <path
-                                d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"
-                            />
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"
-                            />
-                        </svg>
-
-                        <h2 className="mt-4 text-xl font-bold ">Digital campaigns</h2>
-
-                        <p className="mt-1 text-sm ">
-                            Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ut quo possimus adipisci
-                            distinctio alias voluptatum blanditiis laudantium.
-                        </p>
-                    </div>
-
-                    <div
-                        className="block rounded-xl border border-gray-800 p-8 shadow-xl transition "
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="size-10 text-primary"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path d="M12 14l9-5-9-5-9 5 9 5z" />
-                            <path
-                                d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"
-                            />
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"
-                            />
-                        </svg>
-
-                        <h2 className="mt-4 text-xl font-bold ">Digital campaigns</h2>
-
-                        <p className="mt-1 text-sm ">
-                            Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ut quo possimus adipisci
-                            distinctio alias voluptatum blanditiis laudantium.
-                        </p>
-                    </div>
+                                <motion.div
+                                    whileHover={{ scale: 1.1, rotate: 5 }}
+                                    className="rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 p-3 w-fit mb-4 text-primary group-hover:from-primary/30 group-hover:to-accent/30 transition-colors"
+                                >
+                                {feature.icon}
+                            </motion.div>
+                            <h3 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors text-gray-900 dark:text-white">{feature.title}</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                                {feature.description}
+                            </p>
+                        </motion.div>
+                    ))}
                 </div>
 
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6 }}
+                    className="mt-16 text-center"
+                >
+                    <div className="rounded-2xl gradient-bg p-8 sm:p-12 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-black/10"></div>
+                        <div className="relative z-10">
+                            <motion.h2
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.6, delay: 0.2 }}
+                                className="text-2xl sm:text-3xl font-bold text-white mb-4"
+                            >
+                                Ready to Take Control of Your Finances?
+                            </motion.h2>
+                            <motion.p
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.6, delay: 0.3 }}
+                                className="text-white/90 mb-6 max-w-2xl mx-auto"
+                            >
+                                Join thousands of users who are already managing their money better with Mintmind.
+                            </motion.p>
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                whileInView={{ opacity: 1, scale: 1 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.4, delay: 0.4 }}
+                            >
+                                <Link href="/auth/signin">
+                                    <Button size="lg" variant="secondary" className="text-base px-8 py-6 hover-lift bg-white dark:bg-gray-800 text-primary hover:bg-gray-100 dark:hover:bg-gray-700">
+                                        Start Free Today
+                                    </Button>
+                                </Link>
+                            </motion.div>
+                        </div>
+                    </div>
+                </motion.div>
             </div>
         </section>
     )

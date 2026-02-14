@@ -1,11 +1,17 @@
-import React from 'react'
-import BudgetList from './_components/BudgetList'
+'use client'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 const Budget = () => {
+  const router = useRouter()
+
+  useEffect(() => {
+    router.replace('/dashboard/categories')
+  }, [router])
+
   return (
-    <div className='p-10'>
-      <h2 className='font-bold text-3xl'>My Budgets</h2>
-      <BudgetList />
+    <div className="p-4 md:p-8">
+      <p className="text-gray-500">Redirecting to categories...</p>
     </div>
   )
 }

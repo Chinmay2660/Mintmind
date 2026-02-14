@@ -1,38 +1,37 @@
 'use client'
-import React, { useEffect } from 'react'
-import SideNavbar from './_components/SideNavbar'
+import React from 'react'
+import MobileNavbar from './_components/MobileNavbar'
 import DashboardHeader from './_components/DashboardHeader'
-import { useRouter } from 'next/navigation'
-import { eq } from 'drizzle-orm'
-import { useUser } from '@clerk/nextjs'
-import { db } from '@/utils/dbConfig'
-import { Budgets } from '@/utils/schema'
+import NativeLayout from './_components/NativeLayout'
+import { isNativePlatform } from '@/lib/platform'
 
 const DashboardLayout = ({ children }) => {
-    const { user } = useUser()
-    const router = useRouter()
+    const isNative = typeof window !== 'undefined' && isNativePlatform()
 
-    useEffect(() => {
-        user && checkUserBudget()
-    }, [user])
-
-    const checkUserBudget = async () => {
-        const result = await db.select()
-            .from(Budgets)
-            .where(eq(Budgets.createdBy, user?.primaryEmailAddress?.emailAddress))
-        if (result.length === 0) {
-            router.replace('/dashboard/budget')
-        }
+    // Native app layout (full screen, no desktop sidebar)
+    if (isNative) {
+        return (
+            <NativeLayout>
+                <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                    <DashboardHeader />
+                    <main className="min-h-screen pb-20">
+                        {children}
+                    </main>
+                    <MobileNavbar />
+                </div>
+            </NativeLayout>
+        )
     }
 
+    // Web layout (with desktop sidebar)
     return (
-        <div>
-            <div className='fixed md:w-64 hidden md:block shadow-sm border'>
-                <SideNavbar />
-            </div>
-            <div className='md:ml-64'>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+            <MobileNavbar />
+            <div className="md:ml-64">
                 <DashboardHeader />
-                {children}
+                <main className="min-h-screen pb-20 md:pb-0">
+                    {children}
+                </main>
             </div>
         </div>
     )
