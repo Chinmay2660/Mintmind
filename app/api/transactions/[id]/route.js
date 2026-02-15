@@ -42,15 +42,34 @@ export async function PUT(request, { params }) {
       }
     }
 
+    // Validation
+    if (body.categoryId === undefined && !oldTransaction.categoryId) {
+      return NextResponse.json({ error: 'Category is required' }, { status: 400 });
+    }
+    
+    if (body.amount !== undefined && body.amount <= 0) {
+      return NextResponse.json({ error: 'Amount must be greater than 0' }, { status: 400 });
+    }
+    
+    if (body.isCash === false && !body.accountId && !oldTransaction.accountId) {
+      return NextResponse.json({ error: 'Account is required when not using cash' }, { status: 400 });
+    }
+    
     // Update transaction
+    const updateData = {
+      ...body,
+      accountId: body.isCash ? null : (body.accountId || oldTransaction.accountId),
+      date: body.date ? new Date(body.date) : oldTransaction.date,
+    }
+    
     const transaction = await Transaction.findOneAndUpdate(
       { _id: params.id, userId: user._id },
-      { ...body, date: body.date ? new Date(body.date) : oldTransaction.date },
+      updateData,
       { new: true }
     );
 
     // Apply new transaction's effect on balance
-    if (body.isCash || transaction.isCash) {
+    if (transaction.isCash) {
       const cash = await Cash.findOne({ userId: user._id });
       if (cash) {
         if (transaction.type === 'income') {

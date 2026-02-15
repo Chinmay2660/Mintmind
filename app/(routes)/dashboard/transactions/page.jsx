@@ -81,12 +81,35 @@ const TransactionsPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Validation
+    if (!formData.categoryId) {
+      toast.error('Please select a category')
+      return
+    }
+    
+    if (formData.amount <= 0) {
+      toast.error('Amount must be greater than 0')
+      return
+    }
+    
+    if (!formData.isCash && !formData.accountId) {
+      toast.error('Please select an account')
+      return
+    }
+    
     try {
+      const payload = {
+        ...formData,
+        amount: parseFloat(formData.amount),
+        accountId: formData.isCash ? null : formData.accountId,
+      }
+      
       if (editingTransaction) {
-        await axios.put(`/api/transactions/${editingTransaction._id}`, formData)
+        await axios.put(`/api/transactions/${editingTransaction._id}`, payload)
         toast.success('Transaction updated successfully')
       } else {
-        await axios.post('/api/transactions', formData)
+        await axios.post('/api/transactions', payload)
         toast.success('Transaction added successfully')
       }
       setIsDialogOpen(false)
@@ -94,7 +117,8 @@ const TransactionsPage = () => {
       resetForm()
       fetchTransactions()
     } catch (error) {
-      toast.error('Failed to save transaction')
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to save transaction'
+      toast.error(errorMessage)
     }
   }
 

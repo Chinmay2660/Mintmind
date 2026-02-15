@@ -1,7 +1,7 @@
 'use client'
 import Image from 'next/image';
 import React from 'react';
-import { Landmark, LayoutDashboard, PiggyBank, ReceiptText, ShieldCheck } from 'lucide-react';
+import { Landmark, LayoutDashboard, PiggyBank, ReceiptText, ShieldCheck, Users } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import UserProfile from '@/components/UserProfile';
@@ -31,6 +31,12 @@ const SideNavbar = () => {
             name: 'Expenses',
             icon: <ReceiptText />,
             path: '/dashboard/expenseList'
+        },
+        {
+            id: 5,
+            name: 'Family',
+            icon: <Users />,
+            path: '/dashboard/family'
         },
         // {
         //     id: 5,

@@ -43,9 +43,24 @@ export async function POST(request) {
     }
 
     const body = await request.json();
+    
+    // Validation
+    if (!body.categoryId) {
+      return NextResponse.json({ error: 'Category is required' }, { status: 400 });
+    }
+    
+    if (!body.amount || body.amount <= 0) {
+      return NextResponse.json({ error: 'Amount must be greater than 0' }, { status: 400 });
+    }
+    
+    if (!body.isCash && !body.accountId) {
+      return NextResponse.json({ error: 'Account is required when not using cash' }, { status: 400 });
+    }
+    
     const transaction = await Transaction.create({
       ...body,
       userId: user._id,
+      accountId: body.isCash ? null : body.accountId,
       date: body.date ? new Date(body.date) : new Date(),
     });
 

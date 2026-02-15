@@ -1,6 +1,6 @@
 'use client'
 import React, { useState } from 'react'
-import { LayoutDashboard, Wallet, ReceiptText, TrendingUp, PiggyBank, Target, DollarSign, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Wallet, ReceiptText, TrendingUp, PiggyBank, Target, DollarSign, Menu, X, Users } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -71,6 +71,13 @@ const MobileNavbar = () => {
             icon: DollarSign,
             path: '/dashboard/salary-recurring',
             active: pathname === '/dashboard/salary-recurring'
+        },
+        {
+            id: 8,
+            name: 'Family',
+            icon: Users,
+            path: '/dashboard/family',
+            active: pathname === '/dashboard/family'
         },
     ]
 
