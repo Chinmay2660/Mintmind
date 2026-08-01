@@ -24,10 +24,20 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Not part of a family' }, { status: 404 });
     }
 
+    const isHead = family.familyHead.toString() === user._id.toString();
     const body = await request.json();
+
+    const updates = isHead
+      ? body
+      : { currentAmount: body.currentAmount };
+
+    if (!isHead && body.currentAmount == null) {
+      return NextResponse.json({ error: 'Only family head can update goal details' }, { status: 403 });
+    }
+
     const goal = await FamilyGoal.findOneAndUpdate(
       { _id: params.id, familyId: family._id },
-      body,
+      updates,
       { new: true }
     ).populate('createdBy', 'name email');
 
@@ -59,6 +69,11 @@ export async function DELETE(request, { params }) {
 
     if (!family) {
       return NextResponse.json({ error: 'Not part of a family' }, { status: 404 });
+    }
+
+    const isHead = family.familyHead.toString() === user._id.toString();
+    if (!isHead) {
+      return NextResponse.json({ error: 'Only family head can delete goals' }, { status: 403 });
     }
 
     const goal = await FamilyGoal.findOneAndDelete({

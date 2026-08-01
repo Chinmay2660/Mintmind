@@ -29,11 +29,10 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Not part of a family' }, { status: 404 });
     }
 
-    // Get all active member IDs
-    const memberIds = [
-      family.familyHead,
-      ...family.members.filter(m => m.status === 'active').map(m => m.user),
-    ];
+    // Active member user IDs (head is included in members array)
+    const memberIds = family.members
+      .filter(m => m.status === 'active')
+      .map(m => m.user);
 
     // Aggregate family data
     const [

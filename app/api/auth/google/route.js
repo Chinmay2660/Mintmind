@@ -1,13 +1,20 @@
 import { NextResponse } from 'next/server'
 import { getOrCreateGoogleUser, generateToken } from '@/lib/auth'
+import { rateLimitOrRespond } from '@/lib/middleware/api'
 
 export async function POST(request) {
+  const rateLimited = rateLimitOrRespond(request, {
+    name: 'auth-google',
+    limit: 10,
+    windowMs: 15 * 60 * 1000,
+  })
+  if (rateLimited) return rateLimited
+
   try {
-    const { idToken, accessToken, email, name, picture } = await request.json()
+    const { idToken, accessToken } = await request.json()
     
     let googleUser
 
-    // If ID token is provided, verify it
     if (idToken) {
       const response = await fetch(
         `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`
@@ -22,7 +29,6 @@ export async function POST(request) {
 
       googleUser = await response.json()
       
-      // Verify the token is from our app
       if (googleUser.aud !== process.env.GOOGLE_CLIENT_ID && googleUser.aud !== process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
         return NextResponse.json(
           { error: 'Invalid token audience' },
@@ -30,7 +36,6 @@ export async function POST(request) {
         )
       }
     } else if (accessToken) {
-      // If access token is provided, fetch user info from Google
       try {
         const userInfoResponse = await fetch(
           'https://www.googleapis.com/oauth2/v2/userinfo',
@@ -55,28 +60,19 @@ export async function POST(request) {
           name: userInfo.name || userInfo.email?.split('@')[0] || 'User',
           picture: userInfo.picture || '',
         }
-      } catch (error) {
+      } catch {
         return NextResponse.json(
           { error: 'Failed to fetch user profile from Google' },
           { status: 500 }
         )
       }
-    } else if (email) {
-      // If direct user info is provided (from OAuth2 flow), use it
-      googleUser = {
-        sub: email, // Use email as identifier
-        email: email,
-        name: name || email.split('@')[0] || 'User',
-        picture: picture || '',
-      }
     } else {
       return NextResponse.json(
-        { error: 'ID token, access token, or user info is required' },
+        { error: 'ID token or access token is required' },
         { status: 400 }
       )
     }
 
-    // Get or create user
     const user = await getOrCreateGoogleUser({
       id: googleUser.sub || googleUser.id,
       sub: googleUser.sub || googleUser.id,
@@ -85,13 +81,10 @@ export async function POST(request) {
       picture: googleUser.picture,
     })
 
-    // Refresh user from database to ensure we have latest data
     await user.populate()
     
-    // Generate JWT token with fresh user data
     const token = generateToken(user)
 
-    // Create response with cookie
     const res = NextResponse.json({
       success: true,
       user: {
@@ -104,21 +97,19 @@ export async function POST(request) {
       },
     })
 
-    // Set HTTP-only cookie
     res.cookies.set('auth-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60, // 30 days
+      maxAge: 30 * 24 * 60 * 60,
       path: '/',
     })
 
     return res
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Authentication failed' },
       { status: 500 }
     )
   }
 }
-

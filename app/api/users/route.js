@@ -1,15 +1,13 @@
-import { getAuthenticatedUser } from '@/lib/middleware/auth';
+import { requireAuth, sanitizeUser, safeErrorResponse } from '@/lib/middleware/api';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const user = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { user, response } = await requireAuth();
+    if (response) return response;
 
-    return NextResponse.json(user);
+    return NextResponse.json(sanitizeUser(user));
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return safeErrorResponse(error, 'Failed to fetch user');
   }
 }

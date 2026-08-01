@@ -1,10 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Note: Removed 'output: export' because NextAuth requires server-side API routes
-  // For Capacitor, use a deployed server or local dev server
   images: {
-    unoptimized: false, // Re-enabled for better image optimization
+    unoptimized: false,
     remotePatterns: [
       {
         protocol: 'https',
@@ -13,12 +11,22 @@ const nextConfig = {
       },
     ],
   },
-  // Disable trailing slash redirects to prevent 308 redirects on /api/auth/session
   trailingSlash: false,
-  // Turbopack configuration for Next.js 16
-  // Since we removed aws-sdk (no longer needed after removing phone OTP),
-  // we don't need webpack config anymore
   turbopack: {},
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

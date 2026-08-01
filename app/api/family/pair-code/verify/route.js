@@ -1,4 +1,4 @@
-import { getAuthenticatedUser } from '@/lib/middleware/auth';
+import { rateLimitOrRespond, requireAuth, safeErrorResponse } from '@/lib/middleware/api';
 import PairCode from '@/models/PairCode';
 import Family from '@/models/Family';
 import User from '@/models/User';
@@ -7,12 +7,17 @@ import connectDB from '@/lib/mongodb';
 import { isValidPairCodeFormat } from '@/lib/utils/pair-code';
 
 export async function POST(request) {
+  const rateLimited = rateLimitOrRespond(request, {
+    name: 'pair-code-verify',
+    limit: 10,
+    windowMs: 60 * 1000,
+  });
+  if (rateLimited) return rateLimited
+
   try {
     await connectDB();
-    const user = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { user, response } = await requireAuth();
+    if (response) return response;
 
     const body = await request.json();
     const { code } = body;
@@ -128,7 +133,7 @@ export async function POST(request) {
       family: populatedFamily,
     });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return safeErrorResponse(error, 'Failed to verify pair code');
   }
 }
 

@@ -1,25 +1,30 @@
-import { getAuthenticatedUser } from '@/lib/middleware/auth';
+import {
+  requireAuth,
+  pick,
+  assertAccountOwnership,
+  assertCategoryOwnership,
+  safeErrorResponse,
+} from '@/lib/middleware/api';
 import Transaction from '@/models/Transaction';
-import BankAccount from '@/models/BankAccount';
 import Cash from '@/models/Cash';
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 
+const TRANSACTION_FIELDS = ['type', 'amount', 'categoryId', 'accountId', 'isCash', 'description', 'date'];
+
 export async function PUT(request, { params }) {
   try {
     await connectDB();
-    const user = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { user, response } = await requireAuth();
+    if (response) return response;
 
     const body = await request.json();
+    const data = pick(body, TRANSACTION_FIELDS);
     const oldTransaction = await Transaction.findOne({ _id: params.id, userId: user._id });
     if (!oldTransaction) {
       return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
     }
 
-    // Revert old transaction's effect on balance
     if (oldTransaction.isCash) {
       const cash = await Cash.findOne({ userId: user._id });
       if (cash) {
@@ -31,7 +36,7 @@ export async function PUT(request, { params }) {
         await cash.save();
       }
     } else if (oldTransaction.accountId) {
-      const account = await BankAccount.findById(oldTransaction.accountId);
+      const account = await assertAccountOwnership(user._id, oldTransaction.accountId);
       if (account) {
         if (oldTransaction.type === 'income') {
           account.balance -= oldTransaction.amount;
@@ -42,24 +47,42 @@ export async function PUT(request, { params }) {
       }
     }
 
-    // Validation
-    if (body.categoryId === undefined && !oldTransaction.categoryId) {
+    const categoryId = data.categoryId ?? oldTransaction.categoryId;
+    if (!categoryId) {
       return NextResponse.json({ error: 'Category is required' }, { status: 400 });
     }
+
+    const category = await assertCategoryOwnership(user._id, categoryId);
+    if (!category) {
+      return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
+    }
     
-    if (body.amount !== undefined && body.amount <= 0) {
+    const amount = data.amount ?? oldTransaction.amount;
+    if (amount <= 0) {
       return NextResponse.json({ error: 'Amount must be greater than 0' }, { status: 400 });
     }
-    
-    if (body.isCash === false && !body.accountId && !oldTransaction.accountId) {
+
+    const isCash = data.isCash ?? oldTransaction.isCash;
+    const accountId = isCash ? null : (data.accountId || oldTransaction.accountId);
+
+    if (!isCash && !accountId) {
       return NextResponse.json({ error: 'Account is required when not using cash' }, { status: 400 });
     }
+
+    if (!isCash && accountId) {
+      const account = await assertAccountOwnership(user._id, accountId);
+      if (!account) {
+        return NextResponse.json({ error: 'Invalid account' }, { status: 400 });
+      }
+    }
     
-    // Update transaction
     const updateData = {
-      ...body,
-      accountId: body.isCash ? null : (body.accountId || oldTransaction.accountId),
-      date: body.date ? new Date(body.date) : oldTransaction.date,
+      ...data,
+      amount,
+      isCash,
+      categoryId,
+      accountId,
+      date: data.date ? new Date(data.date) : oldTransaction.date,
     }
     
     const transaction = await Transaction.findOneAndUpdate(
@@ -68,7 +91,6 @@ export async function PUT(request, { params }) {
       { new: true }
     );
 
-    // Apply new transaction's effect on balance
     if (transaction.isCash) {
       const cash = await Cash.findOne({ userId: user._id });
       if (cash) {
@@ -79,8 +101,8 @@ export async function PUT(request, { params }) {
         }
         await cash.save();
       }
-    } else if (body.accountId || transaction.accountId) {
-      const account = await BankAccount.findById(transaction.accountId);
+    } else if (transaction.accountId) {
+      const account = await assertAccountOwnership(user._id, transaction.accountId);
       if (account) {
         if (transaction.type === 'income') {
           account.balance += transaction.amount;
@@ -97,24 +119,21 @@ export async function PUT(request, { params }) {
 
     return NextResponse.json(populatedTransaction);
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return safeErrorResponse(error, 'Failed to update transaction');
   }
 }
 
 export async function DELETE(request, { params }) {
   try {
     await connectDB();
-    const user = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { user, response } = await requireAuth();
+    if (response) return response;
 
     const transaction = await Transaction.findOne({ _id: params.id, userId: user._id });
     if (!transaction) {
       return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
     }
 
-    // Revert transaction's effect on balance
     if (transaction.isCash) {
       const cash = await Cash.findOne({ userId: user._id });
       if (cash) {
@@ -126,7 +145,7 @@ export async function DELETE(request, { params }) {
         await cash.save();
       }
     } else if (transaction.accountId) {
-      const account = await BankAccount.findById(transaction.accountId);
+      const account = await assertAccountOwnership(user._id, transaction.accountId);
       if (account) {
         if (transaction.type === 'income') {
           account.balance -= transaction.amount;
@@ -140,6 +159,6 @@ export async function DELETE(request, { params }) {
     await Transaction.findByIdAndDelete(params.id);
     return NextResponse.json({ message: 'Transaction deleted' });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return safeErrorResponse(error, 'Failed to delete transaction');
   }
 }

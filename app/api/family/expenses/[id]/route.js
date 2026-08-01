@@ -24,6 +24,18 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Not part of a family' }, { status: 404 });
     }
 
+    const isHead = family.familyHead.toString() === user._id.toString();
+    const existing = await FamilyExpense.findOne({ _id: params.id, familyId: family._id });
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
+    }
+
+    const isCreator = existing.createdBy.toString() === user._id.toString();
+    if (!isHead && !isCreator) {
+      return NextResponse.json({ error: 'You can only edit your own expenses' }, { status: 403 });
+    }
+
     const body = await request.json();
     const expense = await FamilyExpense.findOneAndUpdate(
       { _id: params.id, familyId: family._id },
@@ -62,6 +74,18 @@ export async function DELETE(request, { params }) {
 
     if (!family) {
       return NextResponse.json({ error: 'Not part of a family' }, { status: 404 });
+    }
+
+    const isHead = family.familyHead.toString() === user._id.toString();
+    const existing = await FamilyExpense.findOne({ _id: params.id, familyId: family._id });
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
+    }
+
+    const isCreator = existing.createdBy.toString() === user._id.toString();
+    if (!isHead && !isCreator) {
+      return NextResponse.json({ error: 'You can only delete your own expenses' }, { status: 403 });
     }
 
     const expense = await FamilyExpense.findOneAndDelete({

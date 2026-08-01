@@ -24,6 +24,11 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Not part of a family' }, { status: 404 });
     }
 
+    const isHead = family.familyHead.toString() === user._id.toString();
+    if (!isHead) {
+      return NextResponse.json({ error: 'Only family head can update budgets' }, { status: 403 });
+    }
+
     const body = await request.json();
     const budget = await FamilyBudget.findOneAndUpdate(
       { _id: params.id, familyId: family._id },
@@ -59,6 +64,11 @@ export async function DELETE(request, { params }) {
 
     if (!family) {
       return NextResponse.json({ error: 'Not part of a family' }, { status: 404 });
+    }
+
+    const isHead = family.familyHead.toString() === user._id.toString();
+    if (!isHead) {
+      return NextResponse.json({ error: 'Only family head can delete budgets' }, { status: 403 });
     }
 
     const budget = await FamilyBudget.findOneAndDelete({

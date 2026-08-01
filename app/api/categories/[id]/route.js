@@ -1,18 +1,22 @@
-import { getAuthenticatedUser } from '@/lib/middleware/auth';
+import { requireAuth, pick, safeErrorResponse } from '@/lib/middleware/api';
 import Category from '@/models/Category';
 import { NextResponse } from 'next/server';
+import connectDB from '@/lib/mongodb';
+
+const CATEGORY_FIELDS = ['name', 'type', 'icon', 'color', 'budget'];
 
 export async function PUT(request, { params }) {
   try {
-    const user = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    await connectDB();
+    const { user, response } = await requireAuth();
+    if (response) return response;
 
     const body = await request.json();
+    const data = pick(body, CATEGORY_FIELDS);
+
     const category = await Category.findOneAndUpdate(
       { _id: params.id, userId: user._id },
-      body,
+      data,
       { new: true }
     );
 
@@ -22,17 +26,15 @@ export async function PUT(request, { params }) {
 
     return NextResponse.json(category);
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return safeErrorResponse(error, 'Failed to update category');
   }
 }
 
 export async function DELETE(request, { params }) {
   try {
     await connectDB();
-    const user = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { user, response } = await requireAuth();
+    if (response) return response;
 
     const category = await Category.findOneAndDelete({ _id: params.id, userId: user._id });
     if (!category) {
@@ -41,6 +43,6 @@ export async function DELETE(request, { params }) {
 
     return NextResponse.json({ message: 'Category deleted' });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return safeErrorResponse(error, 'Failed to delete category');
   }
 }

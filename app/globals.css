@@ -13,7 +13,7 @@
       --popover: 0 0% 100%;
       --popover-foreground: 0 0% 3.9%;
 
-      --primary: 217 91% 60%;
+      --primary: 221 83% 53%;
       --primary-foreground: 0 0% 100%;
 
       --secondary: 0 0% 96.1%;
@@ -32,37 +32,37 @@
       --input: 0 0% 89.8%;
       --ring: 0 0% 3.9%;
 
-      --radius: 0.5rem;
+      --radius: 0.75rem;
     }
 
     .dark {
-      --background: 0 0% 3.9%;
+      --background: 0 0% 7%;
       --foreground: 0 0% 98%;
 
-      --card: 0 0% 3.9%;
+      --card: 0 0% 12%;
       --card-foreground: 0 0% 98%;
 
-      --popover: 0 0% 3.9%;
+      --popover: 0 0% 10%;
       --popover-foreground: 0 0% 98%;
 
-      --primary: 0 0% 98%;
-      --primary-foreground: 0 0% 9%;
+      --primary: 217 91% 60%;
+      --primary-foreground: 0 0% 100%;
 
-      --secondary: 0 0% 14.9%;
+      --secondary: 0 0% 16%;
       --secondary-foreground: 0 0% 98%;
 
-      --muted: 0 0% 14.9%;
-      --muted-foreground: 0 0% 63.9%;
+      --muted: 0 0% 16%;
+      --muted-foreground: 0 0% 58%;
 
-      --accent: 0 0% 14.9%;
+      --accent: 0 0% 18%;
       --accent-foreground: 0 0% 98%;
 
       --destructive: 0 62.8% 30.6%;
       --destructive-foreground: 0 0% 98%;
 
-      --border: 0 0% 14.9%;
-      --input: 0 0% 14.9%;
-      --ring: 0 0% 83.1%;
+      --border: 0 0% 18%;
+      --input: 0 0% 16%;
+      --ring: 217 91% 60%;
     }
   }
 
@@ -91,7 +91,7 @@
     }
 
     .gradient-text {
-      background: linear-gradient(135deg, #2563eb 0%, #0d9488 50%, #059669 100%);
+      background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -100,14 +100,14 @@
     }
 
     .gradient-text-blue-teal {
-      background: linear-gradient(135deg, #2563eb 0%, #0d9488 100%);
+      background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
 
     .gradient-bg {
-      background: linear-gradient(135deg, #2563eb 0%, #0d9488 50%, #059669 100%);
+      background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%);
       background-size: 200% 200%;
       animation: gradient 8s ease infinite;
     }
@@ -117,7 +117,7 @@
     }
 
     .gradient-bg-teal {
-      background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+      background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
     }
 
     .gradient-bg-green {
@@ -197,4 +197,277 @@
     .animation-delay-4000 {
       animation-delay: 4s;
     }
+
+    /* Landing page — 2026 */
+    .dot-grid {
+      background-image: radial-gradient(circle, hsl(var(--foreground) / 0.07) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    .aurora-bg {
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(37, 99, 235, 0.18), transparent),
+        radial-gradient(ellipse 60% 40% at 80% 0%, rgba(59, 130, 246, 0.15), transparent),
+        radial-gradient(ellipse 50% 30% at 50% 100%, rgba(29, 78, 216, 0.1), transparent);
+    }
+
+    .dark .aurora-bg {
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(37, 99, 235, 0.25), transparent),
+        radial-gradient(ellipse 60% 40% at 80% 0%, rgba(59, 130, 246, 0.2), transparent),
+        radial-gradient(ellipse 50% 30% at 50% 100%, rgba(29, 78, 216, 0.12), transparent);
+    }
+
+    .glow-border {
+      position: relative;
+    }
+
+    .glow-border::before {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.4), rgba(59, 130, 246, 0.3), rgba(29, 78, 216, 0.2));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .text-shine {
+      background: linear-gradient(
+        90deg,
+        hsl(var(--foreground)) 0%,
+        hsl(var(--foreground)) 40%,
+        rgba(37, 99, 235, 0.9) 50%,
+        hsl(var(--foreground)) 60%,
+        hsl(var(--foreground)) 100%
+      );
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: text-shine 4s linear infinite;
+    }
+
+    .animate-marquee {
+      animation: marquee 30s linear infinite;
+    }
+
+    .animate-marquee:hover {
+      animation-play-state: paused;
+    }
+
+    /* ── Liquid glass theme (landing) ── */
+    .landing-bg {
+      background:
+        radial-gradient(ellipse 100% 80% at 50% -30%, rgba(37, 99, 235, 0.12), transparent 60%),
+        radial-gradient(ellipse 60% 50% at 100% 50%, rgba(59, 130, 246, 0.08), transparent 50%),
+        radial-gradient(ellipse 50% 40% at 0% 80%, rgba(29, 78, 216, 0.06), transparent 50%),
+        hsl(var(--background));
+    }
+
+    .dark .landing-bg {
+      background:
+        radial-gradient(ellipse 100% 80% at 50% -30%, rgba(37, 99, 235, 0.2), transparent 60%),
+        radial-gradient(ellipse 60% 50% at 100% 50%, rgba(59, 130, 246, 0.12), transparent 50%),
+        radial-gradient(ellipse 50% 40% at 0% 80%, rgba(29, 78, 216, 0.1), transparent 50%),
+        hsl(240 10% 4%);
+    }
+
+    .liquid-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      will-change: transform;
+    }
+
+    .liquid-orb-blue { background: rgba(37, 99, 235, 0.35); }
+    .liquid-orb-cyan { background: rgba(6, 182, 212, 0.3); }
+    .liquid-orb-fuchsia { background: rgba(217, 70, 239, 0.25); }
+    .liquid-orb-indigo { background: rgba(99, 102, 241, 0.3); }
+
+    .liquid-glass {
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.55) 0%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0.35) 100%
+      );
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow:
+        0 8px 32px rgba(37, 99, 235, 0.08),
+        0 2px 8px rgba(0, 0, 0, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .dark .liquid-glass {
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.09) 0%,
+        rgba(255, 255, 255, 0.03) 50%,
+        rgba(255, 255, 255, 0.06) 100%
+      );
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+    }
+
+    .liquid-glass-shine {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .liquid-glass-shine::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        105deg,
+        transparent 40%,
+        rgba(255, 255, 255, 0.35) 50%,
+        transparent 60%
+      );
+      transform: translateX(-100%);
+      animation: liquid-shine 5s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .dark .liquid-glass-shine::before {
+      background: linear-gradient(
+        105deg,
+        transparent 40%,
+        rgba(255, 255, 255, 0.08) 50%,
+        transparent 60%
+      );
+    }
+
+    .liquid-glass-border {
+      position: relative;
+    }
+
+    .liquid-glass-border::after {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(
+        135deg,
+        rgba(37, 99, 235, 0.5),
+        rgba(59, 130, 246, 0.4),
+        rgba(29, 78, 216, 0.3),
+        rgba(96, 165, 250, 0.4)
+      );
+      background-size: 300% 300%;
+      animation: liquid-border 6s ease infinite;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .liquid-gradient-text {
+      background: linear-gradient(135deg, #2563eb 0%, #3b82f6 40%, #60a5fa 70%, #1d4ed8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      background-size: 200% 200%;
+      animation: gradient 4s ease infinite;
+    }
+
+    .liquid-gradient-bg {
+      background: linear-gradient(135deg, #2563eb 0%, #3b82f6 35%, #60a5fa 70%, #1d4ed8 100%);
+      background-size: 200% 200%;
+      animation: gradient 6s ease infinite;
+    }
+
+    .liquid-btn {
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      box-shadow: 0 4px 24px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      transition: box-shadow 0.3s, transform 0.3s;
+    }
+
+    .liquid-btn:hover {
+      box-shadow: 0 8px 32px rgba(37, 99, 235, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+
+    .liquid-pill {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(59, 130, 246, 0.08));
+      border: 1px solid rgba(37, 99, 235, 0.25);
+      backdrop-filter: blur(12px);
+    }
+
+    .dark .liquid-pill {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(59, 130, 246, 0.1));
+      border: 1px solid rgba(37, 99, 235, 0.3);
+    }
+
+    /* App-wide surfaces (dashboard, auth, etc.) — aligned with landing liquid glass */
+    .finance-shell {
+      @apply landing-bg text-foreground min-h-screen relative;
+    }
+
+    .surface-card {
+      @apply liquid-glass text-card-foreground rounded-2xl;
+    }
+
+    .surface-inner {
+      @apply rounded-xl bg-white/40 dark:bg-white/5 border border-white/30 dark:border-white/10 backdrop-blur-sm;
+    }
+
+    .surface-input {
+      @apply bg-white/50 dark:bg-white/5 border-white/30 dark:border-white/10 rounded-xl backdrop-blur-sm;
+    }
+
+    .finance-pill {
+      @apply rounded-full liquid-btn text-white font-semibold border-0;
+    }
+
+    .finance-action-btn {
+      @apply flex flex-col items-center gap-2;
+    }
+
+    .finance-action-icon {
+      @apply w-14 h-14 rounded-full liquid-glass flex items-center justify-center transition-all hover:shadow-lg hover:shadow-primary/10 active:scale-95;
+    }
+  }
+
+  @keyframes liquid-shine {
+    0%, 100% { transform: translateX(-100%); }
+    50% { transform: translateX(200%); }
+  }
+
+  @keyframes liquid-border {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  @keyframes liquid-float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    33% { transform: translateY(-12px) rotate(1deg); }
+    66% { transform: translateY(6px) rotate(-1deg); }
+  }
+
+  @keyframes text-shine {
+    to { background-position: 200% center; }
+  }
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  .animate-liquid-float {
+    animation: liquid-float 6s ease-in-out infinite;
   }

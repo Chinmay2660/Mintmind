@@ -1,21 +1,26 @@
-import { getAuthenticatedUser } from '@/lib/middleware/auth';
+import {
+  requireAuth,
+  pick,
+  assertAccountOwnership,
+  assertCategoryOwnership,
+  safeErrorResponse,
+} from '@/lib/middleware/api';
 import Transaction from '@/models/Transaction';
-import BankAccount from '@/models/BankAccount';
 import Cash from '@/models/Cash';
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 
+const TRANSACTION_FIELDS = ['type', 'amount', 'categoryId', 'accountId', 'isCash', 'description', 'date'];
+
 export async function GET(request) {
   try {
     await connectDB();
-    const user = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { user, response } = await requireAuth();
+    if (response) return response;
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 200);
 
     const query = { userId: user._id };
     if (type) {
@@ -30,58 +35,67 @@ export async function GET(request) {
 
     return NextResponse.json(transactions);
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return safeErrorResponse(error, 'Failed to fetch transactions');
   }
 }
 
 export async function POST(request) {
   try {
     await connectDB();
-    const user = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { user, response } = await requireAuth();
+    if (response) return response;
 
     const body = await request.json();
+    const data = pick(body, TRANSACTION_FIELDS);
     
-    // Validation
-    if (!body.categoryId) {
+    if (!data.categoryId) {
       return NextResponse.json({ error: 'Category is required' }, { status: 400 });
     }
     
-    if (!body.amount || body.amount <= 0) {
+    if (!data.amount || data.amount <= 0) {
       return NextResponse.json({ error: 'Amount must be greater than 0' }, { status: 400 });
     }
     
-    if (!body.isCash && !body.accountId) {
+    if (!data.isCash && !data.accountId) {
       return NextResponse.json({ error: 'Account is required when not using cash' }, { status: 400 });
+    }
+
+    const category = await assertCategoryOwnership(user._id, data.categoryId);
+    if (!category) {
+      return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
+    }
+
+    if (!data.isCash && data.accountId) {
+      const account = await assertAccountOwnership(user._id, data.accountId);
+      if (!account) {
+        return NextResponse.json({ error: 'Invalid account' }, { status: 400 });
+      }
     }
     
     const transaction = await Transaction.create({
-      ...body,
+      ...data,
       userId: user._id,
-      accountId: body.isCash ? null : body.accountId,
-      date: body.date ? new Date(body.date) : new Date(),
+      accountId: data.isCash ? null : data.accountId,
+      date: data.date ? new Date(data.date) : new Date(),
     });
 
-    // Update account balance or cash
-    if (body.isCash) {
+    if (data.isCash) {
       const cash = await Cash.findOne({ userId: user._id });
       if (cash) {
-        if (body.type === 'income') {
-          cash.amount += body.amount;
+        if (data.type === 'income') {
+          cash.amount += data.amount;
         } else {
-          cash.amount -= body.amount;
+          cash.amount -= data.amount;
         }
         await cash.save();
       }
-    } else if (body.accountId) {
-      const account = await BankAccount.findById(body.accountId);
+    } else if (data.accountId) {
+      const account = await assertAccountOwnership(user._id, data.accountId);
       if (account) {
-        if (body.type === 'income') {
-          account.balance += body.amount;
+        if (data.type === 'income') {
+          account.balance += data.amount;
         } else {
-          account.balance -= body.amount;
+          account.balance -= data.amount;
         }
         await account.save();
       }
@@ -93,6 +107,6 @@ export async function POST(request) {
 
     return NextResponse.json(populatedTransaction);
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return safeErrorResponse(error, 'Failed to create transaction');
   }
 }

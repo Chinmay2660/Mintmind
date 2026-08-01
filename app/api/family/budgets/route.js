@@ -62,6 +62,11 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Not part of a family' }, { status: 404 });
     }
 
+    const isHead = family.familyHead.toString() === user._id.toString();
+    if (!isHead) {
+      return NextResponse.json({ error: 'Only family head can create budgets' }, { status: 403 });
+    }
+
     const body = await request.json();
     const budget = await FamilyBudget.create({
       ...body,
