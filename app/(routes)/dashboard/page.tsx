@@ -13,12 +13,16 @@ import {
   Shield,
   CreditCard,
 } from 'lucide-react'
-import { format } from 'date-fns'
+import { endOfMonth, format, startOfMonth } from 'date-fns'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { ActivityChart } from './_components/ActivityChart'
+import {
+  CategoryBreakdownCard,
+  type CategoryStat,
+} from './stats/_components/CategoryBreakdownCard'
 import { formatCurrency } from '@/lib/utils/format'
 import { withFromHome } from '@/lib/utils/navigation'
 import type { DashboardStats } from '@/types/dashboard'
@@ -48,6 +52,8 @@ const Dashboard = () => {
   const { user, loading: authLoading } = useAuth()
   const [stats, setStats] = useState<DashboardStats>({})
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [incomeCategories, setIncomeCategories] = useState<CategoryStat[]>([])
+  const [expenseCategories, setExpenseCategories] = useState<CategoryStat[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -59,16 +65,30 @@ const Dashboard = () => {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const [statsRes, txRes] = await Promise.all([
+      const now = new Date()
+      const monthStart = startOfMonth(now)
+      const monthEnd = endOfMonth(now)
+      const [statsRes, txRes, categoryStatsRes] = await Promise.all([
         request.get('/api/dashboard/stats'),
         request.get('/api/transactions'),
+        request.get('/api/dashboard/transaction-stats', {
+          params: {
+            startDate: monthStart.toISOString(),
+            endDate: monthEnd.toISOString(),
+            types: 'income,expense',
+          },
+        }),
       ])
       setStats(statsRes.data || {})
       setTransactions(txRes.data || [])
+      setIncomeCategories(categoryStatsRes.data?.incomeCategoryWise ?? [])
+      setExpenseCategories(categoryStatsRes.data?.categoryWise ?? [])
     } catch {
       toast.error('Failed to load dashboard data')
       setStats({})
       setTransactions([])
+      setIncomeCategories([])
+      setExpenseCategories([])
     } finally {
       setLoading(false)
     }
@@ -193,6 +213,33 @@ const Dashboard = () => {
           ) : (
             <ActivityChart transactions={transactions} />
           )}
+        </motion.div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+        >
+          <CategoryBreakdownCard
+            title="Income this month"
+            categories={incomeCategories}
+            total={stats?.monthlyIncome ?? 0}
+            loading={loading}
+          />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.14 }}
+        >
+          <CategoryBreakdownCard
+            title="Expenses this month"
+            categories={expenseCategories}
+            total={stats?.monthlyExpenses ?? 0}
+            loading={loading}
+          />
         </motion.div>
       </div>
 

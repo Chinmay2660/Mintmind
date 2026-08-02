@@ -5,7 +5,7 @@ import connectDB from '@/lib/mongodb';
 
 const INSURANCE_FIELDS = [
   'type', 'name', 'policyNumber', 'premium', 'premiumFrequency',
-  'startDate', 'renewalDate', 'coverageAmount', 'accountId', 'isActive', 'notes',
+  'startDate', 'renewalDate', 'endDate', 'coverageAmount', 'accountId', 'isActive', 'notes',
 ];
 
 export async function GET(request) {
@@ -44,6 +44,7 @@ export async function POST(request) {
       userId: user._id,
       startDate: data.startDate ? new Date(data.startDate) : new Date(),
       renewalDate: data.renewalDate ? new Date(data.renewalDate) : null,
+      endDate: data.endDate ? new Date(data.endDate) : null,
     });
 
     const populated = await Insurance.findById(policy._id).populate('accountId');

@@ -1,5 +1,6 @@
 'use client'
 
+import { useLayoutEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   format,
@@ -17,8 +18,8 @@ import {
   startOfYear,
 } from 'date-fns'
 import { Button } from '@/components/ui/button'
-import { FilterButtonGroup } from '@/components/ui/filter-button'
 import { formatDayMonth, formatDayMonthYear, formatOrdinalDay } from '@/lib/utils/format'
+import { scrollPageToTop } from '@/lib/utils/scroll'
 import { getDateRangeForView, type TimeView } from '@/lib/utils/transactions'
 
 const TIME_VIEW_OPTIONS = [
@@ -45,6 +46,16 @@ export function TransactionTimeControls({
   anchorDate,
   onAnchorDateChange,
 }: TransactionTimeControlsProps) {
+  const isFirstRender = useRef(true)
+
+  useLayoutEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
+    scrollPageToTop()
+  }, [timeView])
+
   const showDateNav = timeView !== 'lifetime'
   const showArrows = !['last3months', 'last6months'].includes(timeView)
 
@@ -139,13 +150,18 @@ export function TransactionTimeControls({
         </div>
       )}
 
-      <FilterButtonGroup
+      <select
         value={timeView}
-        onValueChange={(v) => onTimeViewChange(v as TimeView)}
-        options={TIME_VIEW_OPTIONS}
-        className="overflow-x-auto pb-1 -mx-4 px-4 flex-nowrap"
-        size="sm"
-      />
+        onChange={(e) => onTimeViewChange(e.target.value as TimeView)}
+        className="w-full h-10 px-3 rounded-xl border surface-input text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        aria-label="Time view"
+      >
+        {TIME_VIEW_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }

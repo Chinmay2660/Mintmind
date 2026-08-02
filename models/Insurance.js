@@ -8,7 +8,7 @@ const InsuranceSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['Life', 'Health', 'Motor', 'Home', 'Other'],
+    enum: ['Life', 'Term Insurance', 'Health', 'Motor', 'Home', 'Other'],
     required: true,
   },
   name: {
@@ -32,6 +32,9 @@ const InsuranceSchema = new mongoose.Schema({
     required: true,
   },
   renewalDate: {
+    type: Date,
+  },
+  endDate: {
     type: Date,
   },
   coverageAmount: {

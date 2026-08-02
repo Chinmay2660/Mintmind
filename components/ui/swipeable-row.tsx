@@ -1,9 +1,11 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
+import { motion, useMotionValue, useTransform, animate, type PanInfo } from 'framer-motion'
 import { Edit, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useIsMobile } from '@/lib/hooks/useIsMobile'
 
 interface SwipeableRowProps {
   children: ReactNode
@@ -12,42 +14,45 @@ interface SwipeableRowProps {
   className?: string
 }
 
+const ACTION_WIDTH = 64
+
 export function SwipeableRow({ children, onEdit, onDelete, className = '' }: SwipeableRowProps) {
-  const [offset, setOffset] = useState(0)
-  const startX = useRef(0)
-  const actionWidth = (onEdit ? 64 : 0) + (onDelete ? 64 : 0)
+  const isMobile = useIsMobile()
+  const actionWidth = (onEdit ? ACTION_WIDTH : 0) + (onDelete ? ACTION_WIDTH : 0)
+  const x = useMotionValue(0)
+  const actionsOpacity = useTransform(x, [-actionWidth, -16, 0], [1, 0.6, 0])
+  const [isOpen, setIsOpen] = useState(false)
 
   if (!onEdit && !onDelete) {
     return <div className={className}>{children}</div>
   }
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    startX.current = e.touches[0].clientX
+  const snap = (open: boolean) => {
+    setIsOpen(open)
+    animate(x, open ? -actionWidth : 0, {
+      type: 'spring',
+      stiffness: 500,
+      damping: 40,
+      mass: 0.8,
+    })
   }
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const diff = startX.current - e.touches[0].clientX
-    if (diff > 0) {
-      setOffset(Math.min(diff, actionWidth))
-    } else if (offset > 0) {
-      setOffset(Math.max(0, offset + diff))
-    }
-  }
+  const close = () => snap(false)
 
-  const handleTouchEnd = () => {
-    setOffset(offset > actionWidth / 2 ? actionWidth : 0)
+  const handleDragEnd = (_: unknown, info: PanInfo) => {
+    const shouldOpen = info.offset.x < -actionWidth / 2 || info.velocity.x < -400
+    snap(shouldOpen)
   }
-
-  const close = () => setOffset(0)
 
   return (
     <div className={cn('relative overflow-hidden rounded-2xl', className)}>
-      <div
+      <motion.div
         className={cn(
-          'absolute inset-y-0 right-0 z-0 flex md:hidden transition-opacity',
-          offset > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          'absolute inset-y-0 right-0 z-0 flex md:hidden',
+          !isOpen && 'pointer-events-none'
         )}
-        aria-hidden={offset === 0}
+        style={{ opacity: actionsOpacity }}
+        aria-hidden={!isOpen}
       >
         {onEdit && (
           <button
@@ -75,16 +80,18 @@ export function SwipeableRow({ children, onEdit, onDelete, className = '' }: Swi
             <Trash2 className="w-5 h-5 text-white" />
           </button>
         )}
-      </div>
-      <div
-        className="relative z-10 w-full rounded-2xl bg-card transition-transform duration-200 md:!translate-x-0"
-        style={{ transform: `translateX(-${offset}px)` }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+      </motion.div>
+      <motion.div
+        className="relative z-10 w-full rounded-2xl bg-card touch-pan-y will-change-transform md:!translate-x-0"
+        style={{ x }}
+        drag={isMobile ? 'x' : false}
+        dragConstraints={{ left: -actionWidth, right: 0 }}
+        dragDirectionLock
+        dragElastic={0.08}
+        onDragEnd={handleDragEnd}
       >
         {children}
-      </div>
+      </motion.div>
     </div>
   )
 }

@@ -166,7 +166,7 @@ function DesktopSidebar() {
                         <PanelLeftClose className="h-5 w-5" />
                     </Button>
                 </div>
-                <nav className="flex-1 space-y-1 overflow-y-auto p-4">
+                <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
                     {allMenu.map((menu) => {
                         const Icon = menu.icon
                         return (
@@ -174,7 +174,7 @@ function DesktopSidebar() {
                                 key={menu.id}
                                 href={menu.path}
                                 className={cn(
-                                    'flex items-center gap-3 rounded-xl px-4 py-3 transition-all',
+                                    'flex items-center gap-3 rounded-xl px-3 py-2 transition-all',
                                     menu.active
                                         ? 'bg-primary/15 text-primary shadow-sm'
                                         : 'text-muted-foreground hover:bg-muted'
@@ -186,10 +186,8 @@ function DesktopSidebar() {
                         )
                     })}
                 </nav>
-                <div className="border-t border-white/20 p-4 dark:border-white/10">
-                    <div className="flex items-center gap-3 px-4 py-3">
-                        <UserProfile />
-                    </div>
+                <div className="shrink-0 border-t border-white/20 px-3 py-2 dark:border-white/10">
+                    <UserProfile showName />
                 </div>
             </div>
         </aside>

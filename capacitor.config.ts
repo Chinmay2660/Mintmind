@@ -1,20 +1,20 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
+// ponytail: Capacitor needs static webDir for sync; Next.js runs separately via server.url.
+// Simulator: http://localhost:3000
+// Physical device: set CAPACITOR_SERVER_URL=http://<your-mac-ip>:3000
+const serverUrl = process.env.CAPACITOR_SERVER_URL || 'http://localhost:3000';
+
 const config: CapacitorConfig = {
   appId: 'com.mintmind.app',
   appName: 'Mintmind',
-  webDir: '.next', // Changed from 'out' since we're not using static export
-  // For development, uncomment the server config below to point to your local dev server
-  // server: {
-  //   url: 'http://localhost:3000',
-  //   cleartext: true,
-  // },
-  // For production, deploy your Next.js app and set the server URL to your production domain
-  // server: {
-  //   url: 'https://your-production-domain.com',
-  //   androidScheme: 'https',
-  //   iosScheme: 'https',
-  // },
+  webDir: 'www',
+  server: {
+    url: serverUrl,
+    cleartext: serverUrl.startsWith('http://'),
+    androidScheme: 'https',
+    iosScheme: 'https',
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
@@ -34,4 +34,3 @@ const config: CapacitorConfig = {
 };
 
 export default config;
-

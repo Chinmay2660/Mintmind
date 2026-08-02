@@ -120,6 +120,7 @@ const InsurancePageContent = () => {
         options={[
           { value: 'all', label: 'All' },
           { value: 'Life', label: 'Life' },
+          { value: 'Term Insurance', label: 'Term' },
           { value: 'Health', label: 'Health' },
           { value: 'Motor', label: 'Motor' },
           { value: 'Home', label: 'Home' },
@@ -184,19 +185,31 @@ const InsurancePageContent = () => {
                       {policy.policyNumber && (
                         <p className="text-sm text-muted-foreground">#{policy.policyNumber}</p>
                       )}
-                      <p className="text-sm text-muted-foreground">
-                        Started: {format(new Date(policy.startDate), 'MMM dd, yyyy')}
-                      </p>
-                      {policy.renewalDate && (
-                        <p className="text-sm text-muted-foreground">
-                          Renewal: {format(new Date(policy.renewalDate), 'MMM dd, yyyy')}
-                        </p>
-                      )}
                     </div>
                     <DesktopRowActions>
                       <EditButton onClick={() => router.push(`/dashboard/insurance/${policy._id}`)} />
                       <DeleteButton onClick={() => handleDelete(policy._id)} />
                     </DesktopRowActions>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 mt-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Start Date</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {format(new Date(policy.startDate), 'MMM dd, yyyy')}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">End Date</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {policy.endDate ? format(new Date(policy.endDate), 'MMM dd, yyyy') : '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Renewal Date</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {policy.renewalDate ? format(new Date(policy.renewalDate), 'MMM dd, yyyy') : '—'}
+                      </p>
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4 mt-4">
                     <div>

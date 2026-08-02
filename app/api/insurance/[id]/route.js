@@ -36,6 +36,7 @@ export async function PUT(request, { params }) {
     const updateData = { ...body };
     if (body.startDate) updateData.startDate = new Date(body.startDate);
     if (body.renewalDate) updateData.renewalDate = new Date(body.renewalDate);
+    if (body.endDate) updateData.endDate = new Date(body.endDate);
 
     const policy = await Insurance.findOneAndUpdate(
       { _id: id, userId: user._id },

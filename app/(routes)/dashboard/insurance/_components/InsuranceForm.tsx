@@ -17,6 +17,7 @@ const defaultFormData = () => ({
   premiumFrequency: 'Yearly',
   startDate: new Date().toISOString().split('T')[0],
   renewalDate: '',
+  endDate: '',
   coverageAmount: '',
   accountId: '',
   isActive: true,
@@ -55,6 +56,7 @@ export function InsuranceForm({ insuranceId }: InsuranceFormProps) {
           premiumFrequency: policy.premiumFrequency || 'Yearly',
           startDate: format(new Date(policy.startDate), 'yyyy-MM-dd'),
           renewalDate: policy.renewalDate ? format(new Date(policy.renewalDate), 'yyyy-MM-dd') : '',
+          endDate: policy.endDate ? format(new Date(policy.endDate), 'yyyy-MM-dd') : '',
           coverageAmount: policy.coverageAmount || '',
           accountId: policy.accountId?._id || '',
           isActive: policy.isActive !== false,
@@ -106,6 +108,7 @@ export function InsuranceForm({ insuranceId }: InsuranceFormProps) {
           className="w-full h-12 px-3 rounded-lg surface-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="Life">Life</option>
+          <option value="Term Insurance">Term Insurance</option>
           <option value="Health">Health</option>
           <option value="Motor">Motor</option>
           <option value="Home">Home</option>
@@ -171,6 +174,18 @@ export function InsuranceForm({ insuranceId }: InsuranceFormProps) {
           type="date"
           value={formData.renewalDate}
           onChange={(e) => setFormData({ ...formData, renewalDate: e.target.value })}
+          className="h-12"
+        />
+      </div>
+      <div>
+        <label className="text-sm font-medium mb-1 block">
+          End Date {formData.type === 'Term Insurance' ? '' : '(Optional)'}
+        </label>
+        <Input
+          type="date"
+          value={formData.endDate}
+          onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+          required={formData.type === 'Term Insurance'}
           className="h-12"
         />
       </div>

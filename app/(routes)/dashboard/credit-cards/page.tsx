@@ -13,7 +13,12 @@ import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { FAB } from '@/components/ui/fab'
 import { SwipeableRow, DesktopRowActions } from '@/components/ui/swipeable-row'
-import { formatCurrency } from '@/lib/utils/format'
+import {
+  formatCurrency,
+  formatDayMonth,
+  getBillingCycleDates,
+  nextDateForDayOfMonth,
+} from '@/lib/utils/format'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 
 const CreditCardsPageContent = () => {
@@ -112,6 +117,11 @@ const CreditCardsPageContent = () => {
             const available = (card.creditLimit || 0) - (card.currentBalance || 0)
             const cardUtil =
               card.creditLimit > 0 ? ((card.currentBalance || 0) / card.creditLimit) * 100 : 0
+            const today = new Date()
+            const billing =
+              card.statementDay && card.dueDay
+                ? getBillingCycleDates(card.statementDay, card.dueDay, today)
+                : null
 
             return (
               <SwipeableRow
@@ -133,9 +143,21 @@ const CreditCardsPageContent = () => {
                       )}
                       {(card.statementDay || card.dueDay) && (
                         <p className="text-sm text-muted-foreground">
-                          {card.statementDay ? `Statement: ${card.statementDay}th` : ''}
+                          {card.statementDay
+                            ? `Statement: ${formatDayMonth(
+                                billing
+                                  ? billing.statement
+                                  : nextDateForDayOfMonth(card.statementDay, today),
+                              )}`
+                            : ''}
                           {card.statementDay && card.dueDay ? ' · ' : ''}
-                          {card.dueDay ? `Due: ${card.dueDay}th` : ''}
+                          {card.dueDay
+                            ? `Due: ${formatDayMonth(
+                                billing
+                                  ? billing.due
+                                  : nextDateForDayOfMonth(card.dueDay, today),
+                              )}`
+                            : ''}
                         </p>
                       )}
                       {card.rewardsProgram && (

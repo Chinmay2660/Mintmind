@@ -21,7 +21,7 @@ export default function AppSearchTrigger({ className }: AppSearchTriggerProps) {
         size="sm"
         onClick={open}
         className={cn(
-          'hidden h-9 w-full max-w-xs justify-start gap-2 rounded-full border-white/30 bg-white/40 px-3 text-muted-foreground dark:border-white/15 dark:bg-white/5 md:inline-flex',
+          'hidden h-9 w-full max-w-xs justify-start gap-2 rounded-full border-white/30 bg-white/40 px-3 text-muted-foreground dark:border-white/15 dark:bg-white/5 lg:inline-flex',
           className
         )}
         aria-label="Search"
@@ -38,7 +38,7 @@ export default function AppSearchTrigger({ className }: AppSearchTriggerProps) {
         variant="ghost"
         size="icon"
         onClick={open}
-        className="h-9 w-9 md:hidden"
+        className="h-9 w-9 lg:hidden"
         aria-label="Search"
       >
         <Search className="h-4 w-4" />

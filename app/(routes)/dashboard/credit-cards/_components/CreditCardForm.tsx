@@ -12,13 +12,12 @@ const defaultFormData = () => ({
   cardName: '',
   issuer: '',
   lastFourDigits: '',
-  creditLimit: 0,
-  currentBalance: 0,
+  creditLimit: '',
+  utilization: '',
   statementDay: '',
   dueDay: '',
   apr: '',
   rewardsProgram: '',
-  accountId: '',
   notes: '',
 })
 
@@ -29,15 +28,9 @@ interface CreditCardFormProps {
 export function CreditCardForm({ creditCardId }: CreditCardFormProps) {
   const router = useRouter()
   const { user } = useAuth()
-  const [accounts, setAccounts] = useState<{ _id: string; icon?: string; accountName: string }[]>([])
   const [loading, setLoading] = useState(!!creditCardId)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState(defaultFormData)
-
-  useEffect(() => {
-    if (!user) return
-    request.get('/api/bank-accounts').then((res) => setAccounts(res.data)).catch(() => {})
-  }, [user])
 
   useEffect(() => {
     if (!creditCardId || !user) return
@@ -50,13 +43,15 @@ export function CreditCardForm({ creditCardId }: CreditCardFormProps) {
           cardName: card.cardName,
           issuer: card.issuer || '',
           lastFourDigits: card.lastFourDigits || '',
-          creditLimit: card.creditLimit,
-          currentBalance: card.currentBalance || 0,
+          creditLimit: card.creditLimit != null ? String(card.creditLimit) : '',
+          utilization:
+            card.creditLimit > 0 && card.currentBalance != null
+              ? String((card.currentBalance / card.creditLimit) * 100)
+              : '',
           statementDay: card.statementDay || '',
           dueDay: card.dueDay || '',
           apr: card.apr || '',
           rewardsProgram: card.rewardsProgram || '',
-          accountId: card.accountId?._id || '',
           notes: card.notes || '',
         })
       })
@@ -71,12 +66,19 @@ export function CreditCardForm({ creditCardId }: CreditCardFormProps) {
     e.preventDefault()
     setSaving(true)
     try {
+      const creditLimit = parseFloat(formData.creditLimit) || 0
+      const utilization = parseFloat(formData.utilization) || 0
       const payload = {
-        ...formData,
+        cardName: formData.cardName,
+        issuer: formData.issuer,
+        lastFourDigits: formData.lastFourDigits,
+        creditLimit,
+        currentBalance: creditLimit * (utilization / 100),
+        rewardsProgram: formData.rewardsProgram,
+        notes: formData.notes,
         statementDay: formData.statementDay ? parseInt(formData.statementDay) : null,
         dueDay: formData.dueDay ? parseInt(formData.dueDay) : null,
         apr: formData.apr ? parseFloat(formData.apr) : null,
-        accountId: formData.accountId || null,
       }
       if (creditCardId) {
         await request.put(`/api/credit-cards/${creditCardId}`, payload)
@@ -133,7 +135,8 @@ export function CreditCardForm({ creditCardId }: CreditCardFormProps) {
         <Input
           type="number"
           value={formData.creditLimit}
-          onChange={(e) => setFormData({ ...formData, creditLimit: parseFloat(e.target.value) || 0 })}
+          onChange={(e) => setFormData({ ...formData, creditLimit: e.target.value })}
+          placeholder="0"
           required
           step="0.01"
           min="0"
@@ -141,13 +144,15 @@ export function CreditCardForm({ creditCardId }: CreditCardFormProps) {
         />
       </div>
       <div>
-        <label className="text-sm font-medium mb-1 block">Current Balance</label>
+        <label className="text-sm font-medium mb-1 block">Utilization %</label>
         <Input
           type="number"
-          value={formData.currentBalance}
-          onChange={(e) => setFormData({ ...formData, currentBalance: parseFloat(e.target.value) || 0 })}
+          value={formData.utilization}
+          onChange={(e) => setFormData({ ...formData, utilization: e.target.value })}
+          placeholder="0"
           step="0.01"
           min="0"
+          max="100"
           className="h-12"
         />
       </div>
@@ -195,21 +200,9 @@ export function CreditCardForm({ creditCardId }: CreditCardFormProps) {
           className="h-12"
         />
       </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Linked Account (Optional)</label>
-        <select
-          value={formData.accountId}
-          onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
-          className="w-full h-12 px-3 rounded-lg surface-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="">Select account</option>
-          {accounts.map((acc) => (
-            <option key={acc._id} value={acc._id}>
-              {acc.icon} {acc.accountName}
-            </option>
-          ))}
-        </select>
-      </div>
+      <p className="form-field-full text-sm text-muted-foreground">
+        A Credit Card account is created automatically in Accounts for payments.
+      </p>
       <div className="form-field-full">
         <label className="text-sm font-medium mb-1 block">Notes (Optional)</label>
         <Input

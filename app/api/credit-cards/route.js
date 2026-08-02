@@ -1,4 +1,5 @@
 import { requireAuth, pick, safeErrorResponse } from '@/lib/middleware/api';
+import { ensureCreditCardAccount } from '@/lib/api/creditCardAccount';
 import CreditCard from '@/models/CreditCard';
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
@@ -37,6 +38,8 @@ export async function POST(request) {
       ...data,
       userId: user._id,
     });
+
+    await ensureCreditCardAccount(user._id, card);
 
     const populated = await CreditCard.findById(card._id).populate('accountId');
     return NextResponse.json(populated);

@@ -14,14 +14,21 @@ const DashboardHeader = () => {
 
     return (
         <header className="sticky top-0 z-30 w-full bg-background/95 backdrop-blur-xl border-b border-border safe-area-inset-top">
-            <div className="relative flex h-14 items-center justify-between gap-2 px-4 md:px-6">
-                <div className="flex min-w-0 items-center gap-2">
+            <div className="flex h-14 items-center justify-between gap-2 px-4 md:px-6">
+                <div className="flex min-w-0 items-center gap-2 lg:hidden">
+                    <Link href="/dashboard" className="inline-flex scale-90 origin-left">
+                        <Logo compact />
+                    </Link>
+                    <AppSearchTrigger />
+                </div>
+
+                <div className="hidden min-w-0 flex-1 items-center gap-2 lg:flex">
                     {!isOpen && (
                         <Button
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="hidden shrink-0 md:inline-flex"
+                            className="shrink-0"
                             onClick={open}
                             aria-label="Open sidebar"
                         >
@@ -29,12 +36,6 @@ const DashboardHeader = () => {
                         </Button>
                     )}
 
-                    <Link href="/dashboard" className="inline-flex scale-90 origin-left md:hidden">
-                        <Logo />
-                    </Link>
-                </div>
-
-                <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center md:static md:left-auto md:top-auto md:translate-x-0 md:translate-y-0 md:flex-1 md:justify-start">
                     <AppSearchTrigger />
                 </div>
 

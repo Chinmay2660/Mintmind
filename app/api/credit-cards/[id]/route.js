@@ -1,4 +1,6 @@
 import { getAuthenticatedUser } from '@/lib/middleware/auth';
+import { ensureCreditCardAccount } from '@/lib/api/creditCardAccount';
+import BankAccount from '@/models/BankAccount';
 import CreditCard from '@/models/CreditCard';
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
@@ -43,6 +45,8 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Credit card not found' }, { status: 404 });
     }
 
+    await ensureCreditCardAccount(user._id, card);
+
     const populated = await CreditCard.findById(card._id).populate('accountId');
     return NextResponse.json(populated);
   } catch (error) {
@@ -62,6 +66,10 @@ export async function DELETE(request, { params }) {
     const card = await CreditCard.findOneAndDelete({ _id: id, userId: user._id });
     if (!card) {
       return NextResponse.json({ error: 'Credit card not found' }, { status: 404 });
+    }
+
+    if (card.accountId) {
+      await BankAccount.findOneAndDelete({ _id: card.accountId, userId: user._id });
     }
 
     return NextResponse.json({ message: 'Credit card deleted' });

@@ -16,17 +16,28 @@ import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
-export default function UserProfile({ compact = false }: { compact?: boolean }) {
+export default function UserProfile({
+  compact = false,
+  showName = false,
+}: {
+  compact?: boolean
+  showName?: boolean
+}) {
   const { user, loading, signOut } = useAuth()
   const router = useRouter()
 
   if (loading || !user) {
     return (
-      <div className="flex items-center gap-2 p-2">
+      <div className="flex items-center gap-2 px-2 py-1">
         <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
           <User className="w-5 h-5 text-muted-foreground" />
         </div>
-        <span className={cn('text-sm font-medium text-muted-foreground', compact ? 'hidden' : 'hidden lg:block')}>
+        <span
+          className={cn(
+            'text-sm font-medium text-muted-foreground',
+            showName ? 'block' : compact ? 'hidden' : 'hidden lg:block'
+          )}
+        >
           {loading ? 'Loading...' : 'Guest'}
         </span>
       </div>
@@ -43,7 +54,7 @@ export default function UserProfile({ compact = false }: { compact?: boolean }) 
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-2 p-2 rounded-xl hover:bg-white/40 dark:hover:bg-white/5 transition-colors"
+            className="flex w-full items-center gap-2 rounded-xl px-2 py-1 hover:bg-white/40 dark:hover:bg-white/5 transition-colors"
           >
             {user.image ? (
               user.image.startsWith('data:') ? (
@@ -68,7 +79,12 @@ export default function UserProfile({ compact = false }: { compact?: boolean }) 
                 <User className="w-5 h-5 text-primary" />
               </div>
             )}
-            <span className={cn('text-sm font-medium text-foreground', compact ? 'hidden' : 'hidden lg:block')}>
+            <span
+              className={cn(
+                'text-sm font-medium text-foreground',
+                showName ? 'block' : compact ? 'hidden' : 'hidden lg:block'
+              )}
+            >
               {displayName}
             </span>
           </motion.button>
