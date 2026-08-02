@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { clearOfflineData, getMeta, getPendingCount } from '@/lib/offline/db'
+import { getMeta, getPendingCount } from '@/lib/offline/db'
 import { initAppResumeSync, initNetworkMonitoring, isOnline, onConnectivityChange } from '@/lib/offline/network'
 import { syncOfflineData } from '@/lib/offline/sync'
 import type { OfflineContextValue, OfflineProviderProps } from '@/types/offline'
@@ -46,7 +46,6 @@ export function OfflineProvider({ children }: OfflineProviderProps) {
 
   useEffect(() => {
     if (!user) {
-      clearOfflineData()
       setPendingCount(0)
       setLastSyncedAt(null)
       return

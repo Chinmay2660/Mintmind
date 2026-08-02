@@ -6,6 +6,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { OfflineProvider } from '@/contexts/OfflineContext'
 import { SidebarProvider } from '@/contexts/SidebarContext'
+import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
 import '@/lib/offline/selfCheck'
 
 interface ProvidersProps {
@@ -19,6 +20,7 @@ export default function Providers({ children }: ProvidersProps) {
         <OfflineProvider>
           <SidebarProvider>
             <ErrorBoundary>
+              <ServiceWorkerRegistration />
               {children}
             </ErrorBoundary>
           </SidebarProvider>

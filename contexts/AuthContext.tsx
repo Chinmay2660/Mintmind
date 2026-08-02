@@ -3,13 +3,23 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
+import { isOnline } from '@/lib/offline/network'
+import { clearOfflineSession, getCachedUser, setCachedUser } from '@/lib/offline/session'
 import type { AuthContextValue, AuthProviderProps } from '@/types/auth'
 import type { User } from '@/types/user'
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+function normalizeUser(userData: User | null): User | null {
+  if (!userData) return null
+  if (!userData.name && userData.email) {
+    return { ...userData, name: userData.email.split('@')[0] }
+  }
+  return userData
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<User | null>(() => getCachedUser())
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const checkingRef = useRef(false)
@@ -20,23 +30,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (checkingRef.current) return
 
     checkingRef.current = true
+    const cachedUser = normalizeUser(getCachedUser())
 
     try {
+      if (!isOnline()) {
+        if (mountedRef.current) setUser(cachedUser)
+        return
+      }
+
       const response = await axios.get('/api/auth/session', {
         maxRedirects: 0,
         validateStatus: (status) => status < 500,
         headers: { 'Cache-Control': 'no-cache' },
       })
 
-      if (mountedRef.current) {
-        const userData = response.data.user as User | null
-        if (userData && !userData.name && userData.email) {
-          userData.name = userData.email.split('@')[0]
-        }
-        setUser(userData)
+      if (!mountedRef.current) return
+
+      if (response.status === 401 || !response.data.user) {
+        await clearOfflineSession()
+        setUser(null)
+        return
       }
+
+      const userData = normalizeUser(response.data.user as User)
+      setCachedUser(userData)
+      setUser(userData)
     } catch {
-      if (mountedRef.current) setUser(null)
+      if (mountedRef.current) {
+        setUser(cachedUser)
+      }
     } finally {
       if (mountedRef.current) setLoading(false)
       checkingRef.current = false
@@ -58,15 +80,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signOut = async () => {
     try {
-      await axios.post('/api/auth/logout')
-      if (mountedRef.current) {
-        setUser(null)
-        sessionFetchedRef.current = false
+      if (isOnline()) {
+        await axios.post('/api/auth/logout')
       }
-      router.push('/auth/signin')
     } catch {
-      // Error handled silently
+      // local sign-out still works offline
     }
+
+    await clearOfflineSession()
+
+    if (mountedRef.current) {
+      setUser(null)
+      sessionFetchedRef.current = false
+    }
+
+    router.push('/auth/signin')
   }
 
   return (
