@@ -78,7 +78,7 @@ const BudgetsPageContent = () => {
 
   return (
     <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-4">
-      <PageHeader title="Budgets" subtitle="Manage your spending limits" showBack>
+      <PageHeader title="Budgets" subtitle="Manage your spending limits">
         <div className="hidden md:block">
           <AddButton onClick={() => router.push('/dashboard/budgets/new')}>Add Budget</AddButton>
         </div>

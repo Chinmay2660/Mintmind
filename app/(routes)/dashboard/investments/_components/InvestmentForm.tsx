@@ -6,7 +6,7 @@ import { format } from 'date-fns'
 import { toast } from 'sonner'
 import request from '@/lib/api/request'
 import { Input } from '@/components/ui/input'
-import { FormButtonGroup } from '@/components/ui/form-buttons'
+import { SubmitButton } from '@/components/ui/form-buttons'
 import { useAuth } from '@/lib/hooks/useAuth'
 
 const defaultFormData = () => ({
@@ -92,17 +92,17 @@ export function InvestmentForm({ investmentId }: InvestmentFormProps) {
   }
 
   if (loading) {
-    return <div className="surface-card p-6 animate-pulse h-64" />
+    return <div className="w-full animate-pulse h-64 rounded-xl bg-muted/40" />
   }
 
   return (
-    <form onSubmit={handleSubmit} className="surface-card p-4 md:p-6 space-y-4 max-w-2xl">
+    <form onSubmit={handleSubmit} className="form-panel">
       <div>
         <label className="text-sm font-medium mb-1 block">Investment Type</label>
         <select
           value={formData.type}
           onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full h-12 px-3 rounded-lg surface-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="FD">Fixed Deposit</option>
           <option value="Mutual Fund">Mutual Fund</option>
@@ -117,6 +117,7 @@ export function InvestmentForm({ investmentId }: InvestmentFormProps) {
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           required
           placeholder="e.g., HDFC FD, SBI Mutual Fund"
+          className="h-12"
         />
       </div>
       <div>
@@ -128,6 +129,7 @@ export function InvestmentForm({ investmentId }: InvestmentFormProps) {
           required
           step="0.01"
           min="0"
+          className="h-12"
         />
       </div>
       <div>
@@ -137,6 +139,7 @@ export function InvestmentForm({ investmentId }: InvestmentFormProps) {
           value={formData.investedDate}
           onChange={(e) => setFormData({ ...formData, investedDate: e.target.value })}
           required
+          className="h-12"
         />
       </div>
       <div>
@@ -145,6 +148,7 @@ export function InvestmentForm({ investmentId }: InvestmentFormProps) {
           type="date"
           value={formData.maturityDate}
           onChange={(e) => setFormData({ ...formData, maturityDate: e.target.value })}
+          className="h-12"
         />
       </div>
       <div>
@@ -152,7 +156,7 @@ export function InvestmentForm({ investmentId }: InvestmentFormProps) {
         <select
           value={formData.maturityType}
           onChange={(e) => setFormData({ ...formData, maturityType: e.target.value })}
-          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full h-12 px-3 rounded-lg surface-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="Ongoing">Ongoing</option>
           <option value="Payout">Payout</option>
@@ -168,6 +172,7 @@ export function InvestmentForm({ investmentId }: InvestmentFormProps) {
           onChange={(e) => setFormData({ ...formData, currentValue: e.target.value })}
           step="0.01"
           placeholder="Current market value"
+          className="h-12"
         />
       </div>
       <div>
@@ -178,6 +183,7 @@ export function InvestmentForm({ investmentId }: InvestmentFormProps) {
           onChange={(e) => setFormData({ ...formData, interestRate: e.target.value })}
           step="0.01"
           placeholder="Annual interest rate"
+          className="h-12"
         />
       </div>
       <div>
@@ -185,7 +191,7 @@ export function InvestmentForm({ investmentId }: InvestmentFormProps) {
         <select
           value={formData.accountId}
           onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
-          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full h-12 px-3 rounded-lg surface-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="">Select account</option>
           {accounts.map((acc) => (
@@ -195,19 +201,20 @@ export function InvestmentForm({ investmentId }: InvestmentFormProps) {
           ))}
         </select>
       </div>
-      <div>
+      <div className="form-field-full">
         <label className="text-sm font-medium mb-1 block">Notes (Optional)</label>
         <Input
           value={formData.notes}
           onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
           placeholder="Additional notes"
+          className="h-12"
         />
       </div>
-      <FormButtonGroup
-        submitLabel={investmentId ? 'Update Investment' : 'Add Investment'}
-        onCancel={() => router.push('/dashboard/investments')}
-        isLoading={saving}
-      />
+      <div className="form-field-full">
+        <SubmitButton isLoading={saving} className="w-full sm:w-auto min-w-[10rem] h-12">
+          {investmentId ? 'Update Investment' : 'Add Investment'}
+        </SubmitButton>
+      </div>
     </form>
   )
 }

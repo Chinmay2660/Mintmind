@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import request from '@/lib/api/request'
 import { Input } from '@/components/ui/input'
-import { FormButtonGroup } from '@/components/ui/form-buttons'
+import { SubmitButton } from '@/components/ui/form-buttons'
 import { useAuth } from '@/lib/hooks/useAuth'
 
 const calculateEndDate = (startDate: string, period: string) => {
@@ -99,11 +99,11 @@ export function BudgetForm({ budgetId }: BudgetFormProps) {
   }
 
   if (loading) {
-    return <div className="surface-card p-6 animate-pulse h-64" />
+    return <div className="w-full animate-pulse h-64 rounded-xl bg-muted/40" />
   }
 
   return (
-    <form onSubmit={handleSubmit} className="surface-card p-4 md:p-6 space-y-4 max-w-2xl">
+    <form onSubmit={handleSubmit} className="form-panel">
       <div>
         <label className="text-sm font-medium mb-2 block text-foreground">Budget Name</label>
         <Input
@@ -191,7 +191,7 @@ export function BudgetForm({ budgetId }: BudgetFormProps) {
           required
         />
       </div>
-      <div>
+      <div className="form-field-full">
         <label className="text-sm font-medium mb-2 block text-foreground">Description (Optional)</label>
         <Input
           value={formData.description}
@@ -200,13 +200,11 @@ export function BudgetForm({ budgetId }: BudgetFormProps) {
           className="h-12"
         />
       </div>
-      <FormButtonGroup
-        submitLabel={budgetId ? 'Update Budget' : 'Create Budget'}
-        onCancel={() => router.push('/dashboard/budgets')}
-        isLoading={saving}
-        submitClassName="h-12"
-        cancelClassName="h-12"
-      />
+      <div className="form-field-full">
+        <SubmitButton isLoading={saving} className="w-full sm:w-auto min-w-[10rem] h-12">
+          {budgetId ? 'Update Budget' : 'Create Budget'}
+        </SubmitButton>
+      </div>
     </form>
   )
 }

@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import request from '@/lib/api/request'
 import { Input } from '@/components/ui/input'
 import { IconPicker } from '@/components/ui/icon-picker'
-import { FormButtonGroup } from '@/components/ui/form-buttons'
+import { SubmitButton } from '@/components/ui/form-buttons'
 import { useAuth } from '@/lib/hooks/useAuth'
 
 const defaultFormData = (type = 'expense') => ({
@@ -72,17 +72,17 @@ export function CategoryForm({ categoryId }: CategoryFormProps) {
   }
 
   if (loading) {
-    return <div className="surface-card p-6 animate-pulse h-48" />
+    return <div className="w-full animate-pulse h-48 rounded-xl bg-muted/40" />
   }
 
   return (
-    <form onSubmit={handleSubmit} className="surface-card p-4 md:p-6 space-y-4 max-w-2xl">
+    <form onSubmit={handleSubmit} className="form-panel">
       <div>
         <label className="text-sm font-medium mb-1 block">Type</label>
         <select
           value={formData.type}
           onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full h-12 px-3 rounded-lg surface-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="expense">Expense</option>
           <option value="income">Income</option>
@@ -95,6 +95,7 @@ export function CategoryForm({ categoryId }: CategoryFormProps) {
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           required
           placeholder="e.g., Groceries, Salary"
+          className="h-12"
         />
       </div>
       <div>
@@ -102,6 +103,7 @@ export function CategoryForm({ categoryId }: CategoryFormProps) {
         <IconPicker
           value={formData.icon}
           onChange={(icon) => setFormData({ ...formData, icon })}
+          className="h-12"
         />
       </div>
       <div>
@@ -110,6 +112,7 @@ export function CategoryForm({ categoryId }: CategoryFormProps) {
           type="color"
           value={formData.color}
           onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+          className="h-12 w-full"
         />
       </div>
       {formData.type === 'expense' && (
@@ -122,14 +125,15 @@ export function CategoryForm({ categoryId }: CategoryFormProps) {
             step="0.01"
             min="0"
             placeholder="Monthly budget"
+            className="h-12"
           />
         </div>
       )}
-      <FormButtonGroup
-        submitLabel={categoryId ? 'Update Category' : 'Add Category'}
-        onCancel={() => router.push('/dashboard/categories')}
-        isLoading={saving}
-      />
+      <div className="form-field-full">
+        <SubmitButton isLoading={saving} className="w-full sm:w-auto min-w-[10rem] h-12">
+          {categoryId ? 'Update Category' : 'Add Category'}
+        </SubmitButton>
+      </div>
     </form>
   )
 }

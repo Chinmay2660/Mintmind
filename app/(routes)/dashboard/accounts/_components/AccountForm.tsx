@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import request from '@/lib/api/request'
 import { Input } from '@/components/ui/input'
 import { IconPicker } from '@/components/ui/icon-picker'
-import { FormButtonGroup } from '@/components/ui/form-buttons'
+import { SubmitButton } from '@/components/ui/form-buttons'
 import { useAuth } from '@/lib/hooks/useAuth'
 
 const defaultFormData = () => ({
@@ -74,11 +74,11 @@ export function AccountForm({ accountId }: AccountFormProps) {
   }
 
   if (loading) {
-    return <div className="surface-card p-6 animate-pulse h-64" />
+    return <div className="w-full animate-pulse h-64 rounded-xl bg-muted/40" />
   }
 
   return (
-    <form onSubmit={handleSubmit} className="surface-card p-4 md:p-6 space-y-4 max-w-2xl">
+    <form onSubmit={handleSubmit} className="form-panel">
       <div>
         <label className="text-sm font-medium mb-2 block text-foreground">Account Name</label>
         <Input
@@ -132,32 +132,28 @@ export function AccountForm({ accountId }: AccountFormProps) {
           className="h-12"
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-sm font-medium mb-2 block text-foreground">Icon</label>
-          <IconPicker
-            value={formData.icon}
-            onChange={(icon) => setFormData({ ...formData, icon })}
-            className="h-12"
-          />
-        </div>
-        <div>
-          <label className="text-sm font-medium mb-2 block text-foreground">Color</label>
-          <Input
-            type="color"
-            value={formData.color}
-            onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-            className="h-12 w-full"
-          />
-        </div>
+      <div>
+        <label className="text-sm font-medium mb-2 block text-foreground">Icon</label>
+        <IconPicker
+          value={formData.icon}
+          onChange={(icon) => setFormData({ ...formData, icon })}
+          className="h-12"
+        />
       </div>
-      <FormButtonGroup
-        submitLabel={accountId ? 'Update Account' : 'Add Account'}
-        onCancel={() => router.push('/dashboard/accounts')}
-        isLoading={saving}
-        submitClassName="h-12"
-        cancelClassName="h-12"
-      />
+      <div>
+        <label className="text-sm font-medium mb-2 block text-foreground">Color</label>
+        <Input
+          type="color"
+          value={formData.color}
+          onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+          className="h-12 w-full"
+        />
+      </div>
+      <div className="form-field-full">
+        <SubmitButton isLoading={saving} className="w-full sm:w-auto min-w-[10rem] h-12">
+          {accountId ? 'Update Account' : 'Add Account'}
+        </SubmitButton>
+      </div>
     </form>
   )
 }

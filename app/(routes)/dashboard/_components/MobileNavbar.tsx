@@ -4,7 +4,12 @@ import { Menu, PanelLeftClose } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import UserProfile from '@/components/UserProfile'
-import { DASHBOARD_NAV_MAIN, DASHBOARD_NAV_MORE, DASHBOARD_NAV_ALL } from '@/lib/constants/dashboardNav'
+import {
+  DASHBOARD_NAV_MAIN,
+  DASHBOARD_NAV_MORE,
+  DASHBOARD_NAV_ALL,
+  isDashboardNavActive,
+} from '@/lib/constants/dashboardNav'
 import Logo from '@/components/Logo'
 import { useSidebar } from '@/contexts/SidebarContext'
 import { Button } from '@/components/ui/button'
@@ -26,12 +31,12 @@ function MobileBottomNav() {
     const [moreMenuOpen, setMoreMenuOpen] = useState(false)
     const mainMenu = DASHBOARD_NAV_MAIN.map((menu) => ({
         ...menu,
-        active: pathname === menu.path,
+        active: isDashboardNavActive(pathname, menu.path),
     }))
 
     const moreMenu = DASHBOARD_NAV_MORE.map((menu) => ({
         ...menu,
-        active: pathname === menu.path,
+        active: isDashboardNavActive(pathname, menu.path),
     }))
 
     return (
@@ -135,7 +140,7 @@ function DesktopSidebar() {
     const { isOpen, close } = useSidebar()
     const allMenu = DASHBOARD_NAV_ALL.map((menu) => ({
         ...menu,
-        active: pathname === menu.path,
+        active: isDashboardNavActive(pathname, menu.path),
     }))
 
     return (

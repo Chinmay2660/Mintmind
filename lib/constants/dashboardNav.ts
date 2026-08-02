@@ -141,6 +141,11 @@ const DASHBOARD_PAGE_ICONS: Record<string, LucideIcon> = {
   ...EXTRA_ROUTE_ICONS,
 }
 
+export function isDashboardNavActive(pathname: string, menuPath: string): boolean {
+  if (menuPath === '/dashboard') return pathname === '/dashboard'
+  return pathname === menuPath || pathname.startsWith(`${menuPath}/`)
+}
+
 export function getDashboardPageTitle(pathname: string): string {
   if (DASHBOARD_PAGE_TITLES[pathname]) return DASHBOARD_PAGE_TITLES[pathname]
 

@@ -64,7 +64,6 @@ const CategoriesPage = () => {
       <PageHeader
         title="Categories"
         subtitle="Manage your expense and income categories"
-        showBack
       >
         <div className="hidden md:block">
           <AddButton onClick={() => router.push('/dashboard/categories/new')}>

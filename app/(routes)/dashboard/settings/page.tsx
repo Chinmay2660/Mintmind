@@ -1,18 +1,26 @@
 'use client'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useState, useEffect } from 'react'
-import { User, Mail, Save, LogOut } from 'lucide-react'
+import { User, Mail, Save, LogOut, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ProfilePicturePicker } from '@/components/ui/profile-picture-picker'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { motion } from 'framer-motion'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
+import { clearOfflineData } from '@/lib/offline/db'
+import { useOffline } from '@/contexts/OfflineContext'
 
 const SettingsPage = () => {
   const { user, refetch, signOut } = useAuth()
+  const router = useRouter()
+  const { syncNow } = useOffline()
+  const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     firstName: '',
@@ -32,6 +40,22 @@ const SettingsPage = () => {
       })
     }
   }, [user])
+
+  const handleResetData = () => {
+    confirmDelete({
+      title: 'Reset All Data',
+      description:
+        'This permanently deletes all your transactions, accounts, budgets, categories, investments, salary, and recurring expenses. This action cannot be undone.',
+      confirmLabel: 'Reset All Data',
+      onConfirm: async () => {
+        await request.delete('/api/user/data')
+        await clearOfflineData()
+        await syncNow()
+        toast.success('All data has been reset')
+        router.push('/dashboard')
+      },
+    })
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -204,11 +228,33 @@ const SettingsPage = () => {
         </div>
       </motion.div>
 
-      {/* Sign Out */}
+      {/* Reset Data */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
+        className="surface-card p-6 border border-red-200 dark:border-red-900/50"
+      >
+        <h2 className="text-lg font-semibold text-foreground mb-2">Reset Data</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Permanently delete all your financial data. Your account and profile will remain.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleResetData}
+          className="w-full sm:w-auto text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/20"
+        >
+          <Trash2 className="w-4 h-4 mr-2" />
+          Reset All Data
+        </Button>
+      </motion.div>
+
+      {/* Sign Out */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
         className="surface-card p-6"
       >
         <h2 className="text-lg font-semibold text-foreground mb-2">Sign Out</h2>
@@ -225,6 +271,8 @@ const SettingsPage = () => {
           Sign Out
         </Button>
       </motion.div>
+
+      <ConfirmDialog {...confirmDialogProps} />
     </div>
   )
 }

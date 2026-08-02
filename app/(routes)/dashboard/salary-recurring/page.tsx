@@ -1,12 +1,13 @@
 'use client'
 import React, { useEffect, useState } from 'react'
-import { Plus, IndianRupee, Repeat, Calendar, Edit, Trash2, TrendingUp, Clock } from 'lucide-react'
+import { Plus, IndianRupee, Repeat, Clock } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { format, addDays, addWeeks, addMonths, addQuarters, isAfter, isBefore } from 'date-fns'
+import { useRouter } from 'next/navigation'
+import { format, addDays, isAfter, isBefore } from 'date-fns'
 import { motion } from 'framer-motion'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -18,12 +19,12 @@ import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { FAB } from '@/components/ui/fab'
-import { SwipeableRow, DesktopRowActions } from '@/components/ui/swipeable-row'
 import { formatCurrency } from '@/lib/utils/format'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useDocumentTitle } from '@/lib/hooks/useDocumentTitle'
 
 const SalaryRecurringPage = () => {
+  const router = useRouter()
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState('salary')
   useDocumentTitle(
@@ -35,18 +36,6 @@ const SalaryRecurringPage = () => {
   // Salary states
   const [salaries, setSalaries] = useState([])
   const [salaryLoading, setSalaryLoading] = useState(true)
-  const [isSalaryDialogOpen, setIsSalaryDialogOpen] = useState(false)
-  const [editingSalary, setEditingSalary] = useState(null)
-  const [salaryFormData, setSalaryFormData] = useState({
-    amount: '',
-    currency: 'INR',
-    frequency: 'monthly',
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: '',
-    description: '',
-    accountId: '',
-    categoryId: '',
-  })
 
   // Recurring expense states
   const [recurringExpenses, setRecurringExpenses] = useState([])
@@ -126,24 +115,6 @@ const SalaryRecurringPage = () => {
     }
   }
 
-  const handleSalarySubmit = async (e) => {
-    e.preventDefault()
-    try {
-      if (editingSalary) {
-        await request.put(`/api/salary/${editingSalary._id}`, salaryFormData)
-        toast.success('Salary updated successfully')
-      } else {
-        await request.post('/api/salary', salaryFormData)
-        toast.success('Salary added successfully')
-      }
-      setIsSalaryDialogOpen(false)
-      resetSalaryForm()
-      fetchSalaries()
-    } catch (error) {
-      toast.error('Failed to save salary')
-    }
-  }
-
   const handleExpenseSubmit = async (e) => {
     e.preventDefault()
     try {
@@ -193,21 +164,6 @@ const SalaryRecurringPage = () => {
     })
   }
 
-  const handleSalaryEdit = (salary) => {
-    setEditingSalary(salary)
-    setSalaryFormData({
-      amount: salary.amount,
-      currency: salary.currency || 'INR',
-      frequency: salary.frequency,
-      startDate: format(new Date(salary.startDate), 'yyyy-MM-dd'),
-      endDate: salary.endDate ? format(new Date(salary.endDate), 'yyyy-MM-dd') : '',
-      description: salary.description || '',
-      accountId: salary.accountId?._id || '',
-      categoryId: salary.categoryId?._id || '',
-    })
-    setIsSalaryDialogOpen(true)
-  }
-
   const handleExpenseEdit = (expense) => {
     setEditingExpense(expense)
     setExpenseFormData({
@@ -226,20 +182,6 @@ const SalaryRecurringPage = () => {
       autoCreateTransaction: expense.autoCreateTransaction || false,
     })
     setIsExpenseDialogOpen(true)
-  }
-
-  const resetSalaryForm = () => {
-    setSalaryFormData({
-      amount: '',
-      currency: 'INR',
-      frequency: 'monthly',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: '',
-      description: '',
-      accountId: '',
-      categoryId: '',
-    })
-    setEditingSalary(null)
   }
 
   const resetExpenseForm = () => {
@@ -288,7 +230,6 @@ const SalaryRecurringPage = () => {
       <PageHeader
         title="Salary & Recurring Expenses"
         subtitle="Manage your salary and recurring expenses"
-        showBack
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -299,98 +240,6 @@ const SalaryRecurringPage = () => {
           Recurring Expenses
         </Tab>
       </Tabs>
-
-      <FormSheet
-        open={isSalaryDialogOpen}
-        onOpenChange={setIsSalaryDialogOpen}
-        title={editingSalary ? 'Edit Salary' : 'Add Salary'}
-      >
-        <form onSubmit={handleSalarySubmit} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-1 block">Amount</label>
-            <Input
-              type="number"
-              value={salaryFormData.amount}
-              onChange={(e) => setSalaryFormData({ ...salaryFormData, amount: e.target.value })}
-              required
-              step="0.01"
-              min="0"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Frequency</label>
-            <select
-              value={salaryFormData.frequency}
-              onChange={(e) => setSalaryFormData({ ...salaryFormData, frequency: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="monthly">Monthly</option>
-              <option value="bi-weekly">Bi-weekly</option>
-              <option value="weekly">Weekly</option>
-              <option value="yearly">Yearly</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Start Date</label>
-            <Input
-              type="date"
-              value={salaryFormData.startDate}
-              onChange={(e) => setSalaryFormData({ ...salaryFormData, startDate: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">End Date (Optional)</label>
-            <Input
-              type="date"
-              value={salaryFormData.endDate}
-              onChange={(e) => setSalaryFormData({ ...salaryFormData, endDate: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Category (Optional)</label>
-            <select
-              value={salaryFormData.categoryId}
-              onChange={(e) => setSalaryFormData({ ...salaryFormData, categoryId: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="">Select category</option>
-              {categories.filter(cat => cat.type === 'income').map((cat) => (
-                <option key={cat._id} value={cat._id}>
-                  {cat.icon} {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Account (Optional)</label>
-            <select
-              value={salaryFormData.accountId}
-              onChange={(e) => setSalaryFormData({ ...salaryFormData, accountId: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="">Select account</option>
-              {accounts.map((acc) => (
-                <option key={acc._id} value={acc._id}>
-                  {acc.icon} {acc.accountName}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Description (Optional)</label>
-            <Input
-              value={salaryFormData.description}
-              onChange={(e) => setSalaryFormData({ ...salaryFormData, description: e.target.value })}
-              placeholder="e.g., Software Engineer Salary"
-            />
-          </div>
-          <FormButtonGroup
-            submitLabel={editingSalary ? 'Update Salary' : 'Add Salary'}
-            onCancel={() => setIsSalaryDialogOpen(false)}
-          />
-        </form>
-      </FormSheet>
 
       <FormSheet
         open={isExpenseDialogOpen}
@@ -580,8 +429,7 @@ const SalaryRecurringPage = () => {
       <FAB
         onClick={() => {
           if (activeTab === 'salary') {
-            resetSalaryForm()
-            setIsSalaryDialogOpen(true)
+            router.push('/dashboard/salary-recurring/new')
           } else {
             resetExpenseForm()
             setIsExpenseDialogOpen(true)
@@ -594,7 +442,7 @@ const SalaryRecurringPage = () => {
       {activeTab === 'salary' && (
         <div className="space-y-4">
           <div className="flex justify-end hidden md:flex">
-            <AddButton onClick={() => { resetSalaryForm(); setIsSalaryDialogOpen(true) }}>
+            <AddButton onClick={() => router.push('/dashboard/salary-recurring/new')}>
               Add Salary
             </AddButton>
           </div>
@@ -625,11 +473,7 @@ const SalaryRecurringPage = () => {
               title="No salary records yet"
               description="Add your salary to get started"
               actionLabel="Add Your First Salary"
-              onAction={() => {
-                resetSalaryForm()
-                setEditingSalary(null)
-                setIsSalaryDialogOpen(true)
-              }}
+              onAction={() => router.push('/dashboard/salary-recurring/new')}
             />
           ) : (
             <div className="space-y-3">
@@ -661,7 +505,7 @@ const SalaryRecurringPage = () => {
                       </div>
                     </div>
                     <div className="flex gap-1">
-                      <EditButton onClick={() => handleSalaryEdit(salary)} />
+                      <EditButton onClick={() => router.push(`/dashboard/salary-recurring/${salary._id}`)} />
                       <DeleteButton onClick={() => handleSalaryDelete(salary._id)} />
                     </div>
                   </div>

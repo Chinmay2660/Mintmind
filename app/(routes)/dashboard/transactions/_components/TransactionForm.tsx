@@ -140,12 +140,12 @@ export function TransactionForm({ transactionId }: TransactionFormProps) {
   }
 
   if (loading) {
-    return <div className="max-w-2xl animate-pulse h-64 rounded-xl bg-muted/40" />
+    return <div className="w-full animate-pulse h-64 rounded-xl bg-muted/40" />
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-2xl space-y-5">
-      <div>
+    <form onSubmit={handleSubmit} className="form-panel">
+      <div className="form-field-full">
         <label className="text-sm font-medium mb-1 block">Type</label>
         <ToggleButtonGroup
           value={formData.type}
@@ -270,7 +270,7 @@ export function TransactionForm({ transactionId }: TransactionFormProps) {
           )}
         </>
       )}
-      <div>
+      <div className="form-field-full">
         <label className="text-sm font-medium mb-1 block">Description</label>
         <Input
           value={formData.description}
@@ -287,9 +287,11 @@ export function TransactionForm({ transactionId }: TransactionFormProps) {
           required
         />
       </div>
-      <SubmitButton isLoading={saving} className="w-full sm:w-auto min-w-[10rem]">
+      <div className="form-field-full">
+        <SubmitButton isLoading={saving} className="w-full sm:w-auto min-w-[10rem]">
         {transactionId ? 'Update Transaction' : 'Add Transaction'}
-      </SubmitButton>
+        </SubmitButton>
+      </div>
     </form>
   )
 }

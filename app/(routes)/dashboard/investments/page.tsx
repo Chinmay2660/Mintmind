@@ -76,7 +76,6 @@ const InvestmentsPageContent = () => {
       <PageHeader
         title="Investments"
         subtitle="Track your investment portfolio"
-        showBack
       >
         <div className="hidden md:block">
           <AddButton onClick={() => router.push('/dashboard/investments/new')}>

@@ -393,6 +393,14 @@
       @apply bg-background border border-input rounded-xl;
     }
 
+    .form-panel {
+      @apply w-full grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5;
+    }
+
+    .form-field-full {
+      @apply md:col-span-2;
+    }
+
     .skeleton {
       @apply bg-muted animate-pulse rounded-md;
     }

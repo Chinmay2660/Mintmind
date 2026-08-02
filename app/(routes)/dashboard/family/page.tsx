@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import {
   Users, UserPlus, Copy, Clock, Crown, User, Settings, Trash2, LogOut,
-  ArrowRightLeft, Target, IndianRupee, ReceiptText, TrendingUp, Wallet,
+  ArrowRightLeft, Target, IndianRupee, ReceiptText,
 } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
@@ -290,7 +290,6 @@ const FamilyPage = () => {
         <PageHeader
           title="Family Circle"
           subtitle="Create or join a circle to share finances with loved ones"
-          showBack
         />
         <div className="grid md:grid-cols-2 gap-6">
           <Card className="p-6">
@@ -359,7 +358,6 @@ const FamilyPage = () => {
       <PageHeader
         title={family.name}
         subtitle={`${memberCount} member${memberCount !== 1 ? 's' : ''} in your circle`}
-        showBack
       >
         {head && (
           <>
@@ -471,37 +469,21 @@ const FamilyPage = () => {
               <StatCard
                 title="Total Balance"
                 value={stats.totalBalance}
-                icon={Wallet}
-                gradient="from-blue-500 to-blue-600"
-                bgColor="bg-blue-50 dark:bg-blue-950/20"
-                iconColor="text-blue-600 dark:text-blue-400"
                 formatValue={formatCurrency}
               />
               <StatCard
                 title="Investments"
                 value={stats.totalInvestments}
-                icon={TrendingUp}
-                gradient="from-green-500 to-green-600"
-                bgColor="bg-green-50 dark:bg-green-950/20"
-                iconColor="text-green-600 dark:text-green-400"
                 formatValue={formatCurrency}
               />
               <StatCard
                 title="Monthly Income"
                 value={stats.totalIncome}
-                icon={ArrowRightLeft}
-                gradient="from-primary to-primary/80"
-                bgColor="bg-primary/10"
-                iconColor="text-primary"
                 formatValue={formatCurrency}
               />
               <StatCard
                 title="Monthly Expenses"
                 value={stats.totalExpenses}
-                icon={ReceiptText}
-                gradient="from-red-500 to-red-600"
-                bgColor="bg-red-50 dark:bg-red-950/20"
-                iconColor="text-red-600 dark:text-red-400"
                 formatValue={formatCurrency}
               />
             </div>

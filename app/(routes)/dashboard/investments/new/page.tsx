@@ -6,7 +6,7 @@ import { InvestmentForm } from '../_components/InvestmentForm'
 
 function NewInvestmentContent() {
   return (
-    <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6">
+    <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-6">
       <PageHeader
         title="Add Investment"
         subtitle="Track a new investment"
