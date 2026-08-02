@@ -13,9 +13,20 @@ interface ProvidersProps {
   children: ReactNode
 }
 
+// ponytail: next-themes injects a <script> for FOUC prevention; React 19 warns on
+// client re-render. type="application/json" on client only silences the warning —
+// the script already ran during SSR and doesn't execute on client anyway.
+const themeScriptProps =
+  typeof window === 'undefined' ? undefined : ({ type: 'application/json' } as const)
+
 export default function Providers({ children }: ProvidersProps) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="dark"
+      enableSystem
+      scriptProps={themeScriptProps}
+    >
       <AuthProvider>
         <OfflineProvider>
           <SidebarProvider>
