@@ -10,6 +10,8 @@ import {
   PiggyBank,
   ReceiptText,
   Users,
+  Shield,
+  CreditCard,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import request from '@/lib/api/request'
@@ -18,6 +20,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { ActivityChart } from './_components/ActivityChart'
 import { formatCurrency } from '@/lib/utils/format'
+import { withFromHome } from '@/lib/utils/navigation'
 import type { DashboardStats } from '@/types/dashboard'
 import { useRegisterRefresh } from '@/contexts/RefreshContext'
 
@@ -33,10 +36,12 @@ interface Transaction {
 }
 
 const MORE_LINKS = [
-  { label: 'Investments', valueKey: 'totalInvestments' as const, icon: TrendingUp, href: '/dashboard/investments' },
-  { label: 'Budgets', valueKey: null, icon: PiggyBank, href: '/dashboard/budgets' },
-  { label: 'Family', valueKey: null, icon: Users, href: '/dashboard/family' },
-  { label: 'All Transactions', valueKey: null, icon: ReceiptText, href: '/dashboard/transactions' },
+  { label: 'Investments', valueKey: 'totalInvestments' as const, icon: TrendingUp, href: withFromHome('/dashboard/investments') },
+  { label: 'Budgets', valueKey: null, icon: PiggyBank, href: withFromHome('/dashboard/budgets') },
+  { label: 'Insurance', valueKey: null, icon: Shield, href: withFromHome('/dashboard/insurance') },
+  { label: 'Credit Cards', valueKey: null, icon: CreditCard, href: withFromHome('/dashboard/credit-cards') },
+  { label: 'Family', valueKey: null, icon: Users, href: withFromHome('/dashboard/family') },
+  { label: 'All Transactions', valueKey: null, icon: ReceiptText, href: withFromHome('/dashboard/transactions') },
 ]
 
 const Dashboard = () => {
@@ -82,19 +87,19 @@ const Dashboard = () => {
     {
       label: 'Expense',
       icon: ArrowDownCircle,
-      href: '/dashboard/transactions/new?type=expense',
+      href: withFromHome('/dashboard/transactions/new?type=expense'),
       iconClass: 'text-red-500',
     },
     {
       label: 'Income',
       icon: ArrowUpCircle,
-      href: '/dashboard/transactions/new?type=income',
+      href: withFromHome('/dashboard/transactions/new?type=income'),
       iconClass: 'text-green-500',
     },
     {
       label: 'Transfer',
       icon: ArrowLeftRight,
-      href: '/dashboard/transactions/new?type=transfer',
+      href: withFromHome('/dashboard/transactions/new?type=transfer'),
       iconClass: 'text-amber-500',
     },
   ]
@@ -236,7 +241,7 @@ const Dashboard = () => {
           transition={{ delay: 0.2 }}
           className="h-full"
         >
-          <Link href="/dashboard/accounts" className="block h-full">
+          <Link href={withFromHome('/dashboard/accounts')} className="block h-full">
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary/70 p-5 md:p-6 text-primary-foreground shadow-lg shadow-primary/20 h-full flex flex-col justify-center transition-transform active:scale-[0.98] md:hover:shadow-xl md:hover:shadow-primary/25">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm font-semibold text-primary-foreground/90">Your Accounts</p>
@@ -328,7 +333,7 @@ const Dashboard = () => {
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold">Recent Transactions</h2>
           <Link
-            href="/dashboard/transactions"
+            href={withFromHome('/dashboard/transactions')}
             className="text-sm text-primary font-medium hover:underline flex items-center gap-1"
           >
             View all
@@ -354,7 +359,7 @@ const Dashboard = () => {
               return (
               <Link
                 key={tx._id || tx.id}
-                href="/dashboard/transactions"
+                href={withFromHome('/dashboard/transactions')}
                 className="flex items-center gap-3 p-3 rounded-2xl surface-card transition-all active:scale-[0.98] md:hover:shadow-md"
               >
                 <div

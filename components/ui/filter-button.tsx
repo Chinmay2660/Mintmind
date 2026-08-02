@@ -2,7 +2,7 @@
 
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useEffect, useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { scrollPageToTop } from '@/lib/utils/scroll'
@@ -67,7 +67,7 @@ export function FilterButtonGroup({
 }: FilterButtonGroupProps) {
   const isFirstRender = useRef(true)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false
       return

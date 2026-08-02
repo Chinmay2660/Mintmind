@@ -38,9 +38,21 @@ const emptyForm = (type: FormData['type'] = 'expense'): FormData => ({
 
 interface TransactionFormProps {
   transactionId?: string
+  defaultValues?: Partial<FormData>
+  skipBalanceUpdate?: boolean
+  lockType?: boolean
+  lockPaymentMethod?: boolean
+  onSuccess?: () => void
 }
 
-export function TransactionForm({ transactionId }: TransactionFormProps) {
+export function TransactionForm({
+  transactionId,
+  defaultValues,
+  skipBalanceUpdate,
+  lockType,
+  lockPaymentMethod,
+  onSuccess,
+}: TransactionFormProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user } = useAuth()
@@ -51,13 +63,14 @@ export function TransactionForm({ transactionId }: TransactionFormProps) {
   const [saving, setSaving] = useState(false)
 
   const initialType = searchParams.get('type')
-  const [formData, setFormData] = useState<FormData>(() =>
-    emptyForm(
+  const [formData, setFormData] = useState<FormData>(() => {
+    const base = emptyForm(
       initialType === 'income' || initialType === 'expense' || initialType === 'transfer'
         ? initialType
         : 'expense'
     )
-  )
+    return defaultValues ? { ...base, ...defaultValues } : base
+  })
 
   useEffect(() => {
     if (!transactionId || !user) return
@@ -121,6 +134,7 @@ export function TransactionForm({ transactionId }: TransactionFormProps) {
         accountId: formData.isCash ? null : formData.accountId,
         transferToAccountId: formData.transferToIsCash ? null : formData.transferToAccountId,
         categoryId: formData.type === 'transfer' ? undefined : formData.categoryId,
+        ...(skipBalanceUpdate && { skipBalanceUpdate: true }),
       }
 
       if (transactionId) {
@@ -130,7 +144,8 @@ export function TransactionForm({ transactionId }: TransactionFormProps) {
         await request.post('/api/transactions', payload)
         toast.success(online ? 'Transaction added' : 'Saved offline — will sync when connected')
       }
-      router.push('/dashboard/transactions')
+      if (onSuccess) onSuccess()
+      else router.push('/dashboard/transactions')
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to save transaction'
       toast.error(message)
@@ -145,24 +160,26 @@ export function TransactionForm({ transactionId }: TransactionFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="form-panel">
-      <div className="form-field-full">
-        <label className="text-sm font-medium mb-1 block">Type</label>
-        <ToggleButtonGroup
-          value={formData.type}
-          onValueChange={(value) =>
-            setFormData({
-              ...formData,
-              type: value as FormData['type'],
-              categoryId: '',
-            })
-          }
-          options={[
-            { value: 'expense', label: 'Expense' },
-            { value: 'income', label: 'Income' },
-            { value: 'transfer', label: 'Transfer' },
-          ]}
-        />
-      </div>
+      {!lockType && (
+        <div className="form-field-full">
+          <label className="text-sm font-medium mb-1 block">Type</label>
+          <ToggleButtonGroup
+            value={formData.type}
+            onValueChange={(value) =>
+              setFormData({
+                ...formData,
+                type: value as FormData['type'],
+                categoryId: '',
+              })
+            }
+            options={[
+              { value: 'expense', label: 'Expense' },
+              { value: 'income', label: 'Income' },
+              { value: 'transfer', label: 'Transfer' },
+            ]}
+          />
+        </div>
+      )}
       <div>
         <label className="text-sm font-medium mb-1 block">Amount</label>
         <Input
@@ -192,26 +209,28 @@ export function TransactionForm({ transactionId }: TransactionFormProps) {
           </select>
         </div>
       )}
-      <div>
-        <label className="text-sm font-medium mb-1 block">
-          {formData.type === 'transfer' ? 'From' : 'Payment Method'}
-        </label>
-        <ToggleButtonGroup
-          value={formData.isCash ? 'cash' : 'account'}
-          onValueChange={(value) =>
-            setFormData({
-              ...formData,
-              isCash: value === 'cash',
-              accountId: value === 'cash' ? '' : formData.accountId,
-            })
-          }
-          options={[
-            { value: 'cash', label: 'Cash' },
-            { value: 'account', label: 'Bank Account' },
-          ]}
-        />
-      </div>
-      {!formData.isCash && (
+      {!lockPaymentMethod && (
+        <div>
+          <label className="text-sm font-medium mb-1 block">
+            {formData.type === 'transfer' ? 'From' : 'Payment Method'}
+          </label>
+          <ToggleButtonGroup
+            value={formData.isCash ? 'cash' : 'account'}
+            onValueChange={(value) =>
+              setFormData({
+                ...formData,
+                isCash: value === 'cash',
+                accountId: value === 'cash' ? '' : formData.accountId,
+              })
+            }
+            options={[
+              { value: 'cash', label: 'Cash' },
+              { value: 'account', label: 'Bank Account' },
+            ]}
+          />
+        </div>
+      )}
+      {!formData.isCash && !lockPaymentMethod && (
         <div>
           <label className="text-sm font-medium mb-1 block">
             {formData.type === 'transfer' ? 'From Account' : 'Account'}

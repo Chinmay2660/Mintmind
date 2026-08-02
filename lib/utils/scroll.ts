@@ -1,8 +1,25 @@
+let scrollRestorationSet = false
+
 export function scrollPageToTop() {
   if (typeof window === 'undefined') return
-  window.scrollTo(0, 0)
-  document.documentElement.scrollTop = 0
-  document.body.scrollTop = 0
+
+  if (!scrollRestorationSet) {
+    history.scrollRestoration = 'manual'
+    scrollRestorationSet = true
+  }
+
+  const reset = () => {
+    window.scrollTo({ top: 0, left: 0 })
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+  }
+
+  reset()
+  // ponytail: double-rAF beats Next.js restoring scroll after navigation
+  requestAnimationFrame(() => {
+    reset()
+    requestAnimationFrame(reset)
+  })
 }
 
 export function scrollActiveTabIntoView(container: HTMLElement | null) {

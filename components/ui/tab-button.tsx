@@ -2,7 +2,7 @@
 
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useEffect, useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -70,7 +70,7 @@ export function TabButtonGroup({
   const scrollRef = useRef<HTMLDivElement>(null)
   const isFirstRender = useRef(true)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false
       scrollActiveTabIntoView(scrollRef.current)

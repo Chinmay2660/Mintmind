@@ -107,6 +107,10 @@ export function InvestmentForm({ investmentId }: InvestmentFormProps) {
           <option value="FD">Fixed Deposit</option>
           <option value="Mutual Fund">Mutual Fund</option>
           <option value="Stock">Stock</option>
+          <option value="Gold">Gold</option>
+          <option value="Gold ETF">Gold ETF</option>
+          <option value="EPF">EPF</option>
+          <option value="EPS">EPS</option>
           <option value="Other">Other</option>
         </select>
       </div>

@@ -2,7 +2,7 @@
 
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useEffect, useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import { scrollActiveTabIntoView, scrollPageToTop } from '@/lib/utils/scroll'
 
@@ -20,7 +20,7 @@ export function Tabs({ value, children, className = '' }: TabsProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const isFirstRender = useRef(true)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false
       scrollActiveTabIntoView(scrollRef.current)

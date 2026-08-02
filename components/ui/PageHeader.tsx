@@ -1,11 +1,12 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { ChevronLeft } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { getDashboardPageIcon } from '@/lib/constants/dashboardNav'
+import { isFromHome } from '@/lib/utils/navigation'
 import { cn } from '@/lib/utils'
 
 interface PageHeaderProps {
@@ -22,8 +23,17 @@ export function PageHeader({ title, subtitle, icon, children, className = '', sh
   const router = useRouter()
   const pathname = usePathname()
   const PageIcon = icon ?? getDashboardPageIcon(pathname)
+  const [fromHome, setFromHome] = useState(false)
+
+  useEffect(() => {
+    setFromHome(isFromHome())
+  }, [pathname])
 
   const handleBack = () => {
+    if (fromHome) {
+      router.push('/dashboard')
+      return
+    }
     if (backHref) router.push(backHref)
     else router.back()
   }
@@ -39,7 +49,7 @@ export function PageHeader({ title, subtitle, icon, children, className = '', sh
       )}
     >
       <div className="flex items-center gap-2 min-w-0 flex-1">
-        {showBack && (
+        {(showBack || fromHome) && (
           <button
             type="button"
             onClick={handleBack}

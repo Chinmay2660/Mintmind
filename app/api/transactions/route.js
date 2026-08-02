@@ -184,7 +184,9 @@ export async function POST(request) {
       date: data.date ? new Date(data.date) : new Date(),
     });
 
-    await applyTransactionBalances(user._id, transaction);
+    if (!body.skipBalanceUpdate) {
+      await applyTransactionBalances(user._id, transaction);
+    }
 
     const populatedTransaction = await Transaction.findById(transaction._id)
       .populate('categoryId')

@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const InvestmentSchema = new mongoose.Schema({
+const InsuranceSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -8,38 +8,42 @@ const InvestmentSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['FD', 'Mutual Fund', 'Stock', 'Gold', 'Gold ETF', 'EPF', 'EPS', 'Other'],
+    enum: ['Life', 'Health', 'Motor', 'Home', 'Other'],
     required: true,
   },
   name: {
     type: String,
     required: true,
   },
-  amount: {
-    type: Number,
-    required: true,
-  },
-  investedDate: {
-    type: Date,
-    required: true,
-  },
-  maturityDate: {
-    type: Date,
-  },
-  maturityType: {
+  policyNumber: {
     type: String,
-    enum: ['Payout', 'Reinvestment', 'Maturity', 'Ongoing'],
-    default: 'Ongoing',
   },
-  currentValue: {
+  premium: {
     type: Number,
+    required: true,
   },
-  interestRate: {
+  premiumFrequency: {
+    type: String,
+    enum: ['Monthly', 'Quarterly', 'Yearly'],
+    default: 'Yearly',
+  },
+  startDate: {
+    type: Date,
+    required: true,
+  },
+  renewalDate: {
+    type: Date,
+  },
+  coverageAmount: {
     type: Number,
   },
   accountId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'BankAccount',
+  },
+  isActive: {
+    type: Boolean,
+    default: true,
   },
   notes: {
     type: String,
@@ -48,5 +52,4 @@ const InvestmentSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-export default mongoose.models.Investment || mongoose.model('Investment', InvestmentSchema);
-
+export default mongoose.models.Insurance || mongoose.model('Insurance', InsuranceSchema);

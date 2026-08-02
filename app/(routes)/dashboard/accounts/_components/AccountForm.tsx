@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { IconPicker } from '@/components/ui/icon-picker'
 import { SubmitButton } from '@/components/ui/form-buttons'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { useBalanceAdjustmentPrompt } from './BalanceAdjustmentPrompt'
 
 const defaultFormData = () => ({
   accountName: '',
@@ -29,6 +30,9 @@ export function AccountForm({ accountId }: AccountFormProps) {
   const [loading, setLoading] = useState(!!accountId)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState(defaultFormData)
+  const [originalBalance, setOriginalBalance] = useState<number | null>(null)
+  const { prompt: promptBalanceAdjustment, dialogs: balanceAdjustmentDialogs } =
+    useBalanceAdjustmentPrompt()
 
   useEffect(() => {
     if (!accountId || !user) return
@@ -46,6 +50,7 @@ export function AccountForm({ accountId }: AccountFormProps) {
           color: account.color,
           icon: account.icon,
         })
+        setOriginalBalance(account.balance)
       })
       .catch(() => {
         toast.error('Failed to load account')
@@ -61,6 +66,21 @@ export function AccountForm({ accountId }: AccountFormProps) {
       if (accountId) {
         await request.put(`/api/bank-accounts/${accountId}`, formData)
         toast.success('Account updated successfully')
+        const balanceChanged =
+          originalBalance !== null && formData.balance !== originalBalance
+        if (balanceChanged) {
+          promptBalanceAdjustment(
+            {
+              previousBalance: originalBalance,
+              newBalance: formData.balance,
+              isCash: false,
+              accountId,
+              accountName: formData.accountName,
+            },
+            () => router.push('/dashboard/accounts')
+          )
+          return
+        }
       } else {
         await request.post('/api/bank-accounts', formData)
         toast.success('Account added successfully')
@@ -78,6 +98,7 @@ export function AccountForm({ accountId }: AccountFormProps) {
   }
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="form-panel">
       <div>
         <label className="text-sm font-medium mb-2 block text-foreground">Account Name</label>
@@ -122,7 +143,9 @@ export function AccountForm({ accountId }: AccountFormProps) {
         </select>
       </div>
       <div>
-        <label className="text-sm font-medium mb-2 block text-foreground">Initial Balance</label>
+        <label className="text-sm font-medium mb-2 block text-foreground">
+          {accountId ? 'Balance' : 'Initial Balance'}
+        </label>
         <Input
           type="number"
           value={formData.balance}
@@ -155,5 +178,7 @@ export function AccountForm({ accountId }: AccountFormProps) {
         </SubmitButton>
       </div>
     </form>
+    {balanceAdjustmentDialogs}
+  </>
   )
 }

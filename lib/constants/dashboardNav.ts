@@ -13,6 +13,8 @@ import {
   ArrowDownCircle,
   ArrowLeftRight,
   Plus,
+  Shield,
+  CreditCard,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -33,6 +35,8 @@ export const DASHBOARD_NAV_MAIN: DashboardNavItem[] = [
 
 export const DASHBOARD_NAV_MORE: DashboardNavItem[] = [
   { id: 4, name: 'Investments', icon: TrendingUp, path: '/dashboard/investments' },
+  { id: 12, name: 'Insurance', icon: Shield, path: '/dashboard/insurance' },
+  { id: 13, name: 'Credit Cards', icon: CreditCard, path: '/dashboard/credit-cards' },
   { id: 5, name: 'Categories', icon: Tags, path: '/dashboard/categories' },
   { id: 6, name: 'Budgets', icon: PiggyBank, path: '/dashboard/budgets' },
   { id: 7, name: 'Salary & Recurring Expenses', icon: IndianRupee, path: '/dashboard/salary-recurring' },
@@ -108,6 +112,20 @@ export const DASHBOARD_SEARCH_ACTIONS: SearchItem[] = [
     path: '/dashboard/accounts/new',
     icon: Plus,
     keywords: ['bank', 'wallet', 'cash'],
+    group: 'actions',
+  },
+  {
+    name: 'Add insurance policy',
+    path: '/dashboard/insurance/new',
+    icon: Plus,
+    keywords: ['insurance', 'policy', 'premium', 'health', 'life'],
+    group: 'actions',
+  },
+  {
+    name: 'Add credit card',
+    path: '/dashboard/credit-cards/new',
+    icon: Plus,
+    keywords: ['credit card', 'limit', 'balance', 'due date'],
     group: 'actions',
   },
 ]

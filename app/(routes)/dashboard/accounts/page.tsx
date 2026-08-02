@@ -19,6 +19,7 @@ import { SwipeableRow, DesktopRowActions } from '@/components/ui/swipeable-row'
 import { formatCurrency } from '@/lib/utils/format'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useRegisterRefresh } from '@/contexts/RefreshContext'
+import { useBalanceAdjustmentPrompt } from './_components/BalanceAdjustmentPrompt'
 
 const AccountsPageContent = () => {
   const router = useRouter()
@@ -30,6 +31,8 @@ const AccountsPageContent = () => {
   const [isCashDialogOpen, setIsCashDialogOpen] = useState(false)
   const [cashAmount, setCashAmount] = useState(0)
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
+  const { prompt: promptBalanceAdjustment, dialogs: balanceAdjustmentDialogs } =
+    useBalanceAdjustmentPrompt()
 
   useEffect(() => {
     if (searchParams.get('action') === 'add') {
@@ -81,11 +84,17 @@ const AccountsPageContent = () => {
   }
 
   const handleCashUpdate = async () => {
+    const previousBalance = cash?.amount || 0
     try {
       await request.put('/api/cash', { amount: cashAmount })
       toast.success('Cash updated successfully')
       setIsCashDialogOpen(false)
       fetchCash()
+      promptBalanceAdjustment({
+        previousBalance,
+        newBalance: cashAmount,
+        isCash: true,
+      })
     } catch (error) {
       toast.error('Failed to update cash')
     }
@@ -292,6 +301,7 @@ const AccountsPageContent = () => {
       </div>
 
       <ConfirmDialog {...confirmDialogProps} />
+      {balanceAdjustmentDialogs}
     </div>
   )
 }

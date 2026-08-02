@@ -115,9 +115,13 @@ const InvestmentsPageContent = () => {
         onValueChange={setFilterType}
         options={[
           { value: 'all', label: 'All' },
-          { value: 'FD', label: 'Fixed Deposits' },
           { value: 'Mutual Fund', label: 'Mutual Funds' },
+          { value: 'FD', label: 'Fixed Deposits' },
           { value: 'Stock', label: 'Stocks' },
+          { value: 'Gold', label: 'Gold' },
+          { value: 'Gold ETF', label: 'Gold ETF' },
+          { value: 'EPF', label: 'EPF' },
+          { value: 'EPS', label: 'EPS' },
         ]}
         className="flex-wrap"
       />

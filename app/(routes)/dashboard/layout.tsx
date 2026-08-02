@@ -1,6 +1,5 @@
 'use client'
-import React, { useEffect, useRef, useState } from 'react'
-import { usePathname } from 'next/navigation'
+import React, { useEffect, useState } from 'react'
 import MobileNavbar from './_components/MobileNavbar'
 import DashboardHeader from './_components/DashboardHeader'
 import NativeLayout from './_components/NativeLayout'
@@ -9,7 +8,6 @@ import OfflineIndicator from '@/components/OfflineIndicator'
 import AppSearch from '@/components/AppSearch'
 import { AppSearchProvider } from '@/contexts/AppSearchContext'
 import { isNativePlatform } from '@/lib/platform'
-import { scrollPageToTop } from '@/lib/utils/scroll'
 import { DashboardRefreshShell } from './_components/DashboardRefreshShell'
 import { DashboardShell } from './_components/DashboardShell'
 
@@ -29,21 +27,11 @@ function DashboardPageContent({ children }: { children: React.ReactNode }) {
 }
 
 const DashboardLayout = ({ children }) => {
-    const pathname = usePathname()
-    const isFirstRender = useRef(true)
     const [isNative, setIsNative] = useState(false)
 
     useEffect(() => {
         setIsNative(isNativePlatform())
     }, [])
-
-    useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false
-            return
-        }
-        scrollPageToTop()
-    }, [pathname])
 
     return (
         <AppSearchProvider>

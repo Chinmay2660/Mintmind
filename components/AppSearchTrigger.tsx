@@ -38,10 +38,10 @@ export default function AppSearchTrigger({ className }: AppSearchTriggerProps) {
         variant="ghost"
         size="icon"
         onClick={open}
-        className="md:hidden"
+        className="h-9 w-9 md:hidden"
         aria-label="Search"
       >
-        <Search className="h-5 w-5" />
+        <Search className="h-4 w-4" />
       </Button>
     </>
   )
