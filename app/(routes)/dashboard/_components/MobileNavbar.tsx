@@ -40,8 +40,8 @@ function MobileBottomNav() {
     }))
 
     return (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border">
-                <div className="flex items-stretch justify-around px-1 h-16 safe-area-inset-bottom">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border safe-area-inset-bottom">
+                <div className="flex items-stretch justify-around px-1 h-16">
                     {mainMenu.map((menu) => {
                         const Icon = menu.icon
                         return (
@@ -92,8 +92,11 @@ function MobileBottomNav() {
                                 </span>
                             </button>
                         </SheetTrigger>
-                        <SheetContent side="bottom" className="h-[65vh] rounded-t-3xl pb-8">
-                            <SheetHeader className="mb-6">
+                        <SheetContent
+                            side="bottom"
+                            className="flex max-h-[85dvh] flex-col rounded-t-3xl safe-area-inset-bottom pb-8"
+                        >
+                            <SheetHeader className="mb-6 shrink-0">
                                 <SheetTitle className="text-left text-2xl font-bold text-foreground">
                                     More Options
                                 </SheetTitle>
@@ -101,7 +104,7 @@ function MobileBottomNav() {
                                     Access additional features and settings
                                 </p>
                             </SheetHeader>
-                            <div className="space-y-2">
+                            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
                                 {moreMenu.map((menu) => {
                                     const Icon = menu.icon
                                     return (
