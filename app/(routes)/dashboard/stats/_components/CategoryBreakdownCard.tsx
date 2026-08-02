@@ -25,13 +25,30 @@ interface CategoryBreakdownCardProps {
   loading?: boolean
 }
 
+function CategoryChartPlaceholder() {
+  return (
+    <div className="relative h-52 flex items-center justify-center">
+      <div
+        className="w-44 h-44 rounded-full border-[18px] border-primary/15 dark:border-primary/25"
+        aria-hidden
+      />
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <p className="text-xs text-muted-foreground">Total</p>
+        <p className="text-lg font-bold text-muted-foreground/60">—</p>
+        <p className="text-xs text-muted-foreground mt-1">No data found</p>
+      </div>
+    </div>
+  )
+}
+
+
 export function CategoryBreakdownCard({
   title,
   categories,
   total,
   loading = false,
 }: CategoryBreakdownCardProps) {
-  if (!categories.length && !loading) return null
+  const isEmpty = !categories.length && !loading
 
   const chartData = categories.map((c, i) => ({
     categoryName: c.categoryName,
@@ -43,7 +60,11 @@ export function CategoryBreakdownCard({
   return (
     <div className={cn('surface-card p-6 transition-opacity', loading && 'opacity-60')}>
       <h2 className="text-lg font-semibold text-foreground mb-4">{title}</h2>
-      <CategoryDonutChart data={chartData} total={loading ? 0 : total} />
+      {isEmpty ? (
+        <CategoryChartPlaceholder />
+      ) : (
+        <CategoryDonutChart data={chartData} total={loading ? 0 : total} />
+      )}
 
       {categories.length > 0 && (
         <div className="mt-4 space-y-2">

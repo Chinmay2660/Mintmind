@@ -64,15 +64,38 @@ async function validateTransactionData(user, data, oldTransaction = null) {
   return null;
 }
 
+export async function GET(request, { params }) {
+  try {
+    const { id } = await params;
+    await connectDB();
+    const { user, response } = await requireAuth();
+    if (response) return response;
+
+    const transaction = await Transaction.findOne({ _id: id, userId: user._id })
+      .populate('categoryId')
+      .populate('accountId')
+      .populate('transferToAccountId');
+
+    if (!transaction) {
+      return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(transaction);
+  } catch (error) {
+    return safeErrorResponse(error, 'Failed to fetch transaction');
+  }
+}
+
 export async function PUT(request, { params }) {
   try {
+    const { id } = await params;
     await connectDB();
     const { user, response } = await requireAuth();
     if (response) return response;
 
     const body = await request.json();
     const data = pick(body, TRANSACTION_FIELDS);
-    const oldTransaction = await Transaction.findOne({ _id: params.id, userId: user._id });
+    const oldTransaction = await Transaction.findOne({ _id: id, userId: user._id });
     if (!oldTransaction) {
       return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
     }
@@ -102,7 +125,7 @@ export async function PUT(request, { params }) {
     };
 
     const transaction = await Transaction.findOneAndUpdate(
-      { _id: params.id, userId: user._id },
+      { _id: id, userId: user._id },
       updateData,
       { new: true }
     );
@@ -122,17 +145,18 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
+    const { id } = await params;
     await connectDB();
     const { user, response } = await requireAuth();
     if (response) return response;
 
-    const transaction = await Transaction.findOne({ _id: params.id, userId: user._id });
+    const transaction = await Transaction.findOne({ _id: id, userId: user._id });
     if (!transaction) {
       return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
     }
 
     await reverseTransactionBalances(user._id, transaction);
-    await Transaction.findByIdAndDelete(params.id);
+    await Transaction.findByIdAndDelete(id);
     return NextResponse.json({ message: 'Transaction deleted' });
   } catch (error) {
     return safeErrorResponse(error, 'Failed to delete transaction');

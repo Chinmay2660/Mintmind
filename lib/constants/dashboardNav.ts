@@ -9,7 +9,6 @@ import {
   Users,
   Settings,
   BarChart3,
-  CalendarDays,
   ArrowUpCircle,
   ArrowDownCircle,
   ArrowLeftRight,
@@ -29,7 +28,6 @@ export interface DashboardNavItem {
 export const DASHBOARD_NAV_MAIN: DashboardNavItem[] = [
   { id: 1, name: 'Home', icon: LayoutDashboard, path: '/dashboard' },
   { id: 3, name: 'Transactions', icon: ReceiptText, path: '/dashboard/transactions' },
-  { id: 10, name: 'Daily', icon: CalendarDays, path: '/dashboard/stats' },
   { id: 2, name: 'Accounts', icon: Wallet, path: '/dashboard/accounts' },
 ]
 
@@ -37,10 +35,10 @@ export const DASHBOARD_NAV_MORE: DashboardNavItem[] = [
   { id: 4, name: 'Investments', icon: TrendingUp, path: '/dashboard/investments' },
   { id: 5, name: 'Categories', icon: Tags, path: '/dashboard/categories' },
   { id: 6, name: 'Budgets', icon: PiggyBank, path: '/dashboard/budgets' },
-  { id: 7, name: 'Salary', icon: IndianRupee, path: '/dashboard/salary-recurring' },
+  { id: 7, name: 'Salary & Recurring Expenses', icon: IndianRupee, path: '/dashboard/salary-recurring' },
   { id: 8, name: 'Family Circle', icon: Users, path: '/dashboard/family' },
-  { id: 9, name: 'Settings', icon: Settings, path: '/dashboard/settings' },
   { id: 11, name: 'Category Stats', icon: BarChart3, path: '/dashboard/stats/categories' },
+  { id: 9, name: 'Settings', icon: Settings, path: '/dashboard/settings' },
 ]
 
 export const DASHBOARD_NAV_ALL = [...DASHBOARD_NAV_MAIN, ...DASHBOARD_NAV_MORE]
@@ -72,42 +70,42 @@ export const DASHBOARD_SEARCH_PAGES: SearchItem[] = [
 export const DASHBOARD_SEARCH_ACTIONS: SearchItem[] = [
   {
     name: 'Add income',
-    path: '/dashboard/transactions?action=add&type=income',
+    path: '/dashboard/transactions/new?type=income',
     icon: ArrowUpCircle,
     keywords: ['income', 'salary', 'credit', 'deposit'],
     group: 'actions',
   },
   {
     name: 'Add expense',
-    path: '/dashboard/transactions?action=add&type=expense',
+    path: '/dashboard/transactions/new?type=expense',
     icon: ArrowDownCircle,
     keywords: ['expense', 'spend', 'debit', 'payment'],
     group: 'actions',
   },
   {
     name: 'Add transfer',
-    path: '/dashboard/transactions?action=add&type=transfer',
+    path: '/dashboard/transactions/new?type=transfer',
     icon: ArrowLeftRight,
     keywords: ['transfer', 'move', 'between accounts'],
     group: 'actions',
   },
   {
     name: 'Add investment',
-    path: '/dashboard/investments?action=add',
+    path: '/dashboard/investments/new',
     icon: Plus,
     keywords: ['invest', 'stock', 'mutual fund'],
     group: 'actions',
   },
   {
     name: 'Add budget',
-    path: '/dashboard/budgets?action=add',
+    path: '/dashboard/budgets/new',
     icon: Plus,
     keywords: ['budget', 'limit'],
     group: 'actions',
   },
   {
     name: 'Add account',
-    path: '/dashboard/accounts?action=add',
+    path: '/dashboard/accounts/new',
     icon: Plus,
     keywords: ['bank', 'wallet', 'cash'],
     group: 'actions',

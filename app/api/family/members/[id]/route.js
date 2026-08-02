@@ -6,13 +6,13 @@ import connectDB from '@/lib/mongodb';
 // Remove member from family
 export async function DELETE(request, { params }) {
   try {
+    const { id: memberId } = await params;
     await connectDB();
     const user = await getAuthenticatedUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const memberId = params.id;
     const family = await Family.findOne({
       $or: [
         { familyHead: user._id },

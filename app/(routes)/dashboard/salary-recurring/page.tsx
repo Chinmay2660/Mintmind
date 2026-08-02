@@ -609,13 +609,13 @@ const SalaryRecurringPage = () => {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 flex-1">
-                    <div className="w-12 h-12 rounded-xl bg-muted"></div>
+                    <div className="skeleton-icon w-12 h-12"></div>
                     <div className="flex-1">
-                      <div className="h-4 bg-muted rounded w-32 mb-2"></div>
-                      <div className="h-3 bg-muted rounded w-24"></div>
+                      <div className="skeleton h-4 w-32 mb-2"></div>
+                      <div className="skeleton h-3 w-24"></div>
                     </div>
                   </div>
-                  <div className="h-6 bg-muted rounded w-20"></div>
+                  <div className="skeleton h-6 w-20"></div>
                 </div>
               </div>
             ))
@@ -721,13 +721,13 @@ const SalaryRecurringPage = () => {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 flex-1">
-                    <div className="w-12 h-12 rounded-xl bg-muted"></div>
+                    <div className="skeleton-icon w-12 h-12"></div>
                     <div className="flex-1">
-                      <div className="h-4 bg-muted rounded w-32 mb-2"></div>
-                      <div className="h-3 bg-muted rounded w-24"></div>
+                      <div className="skeleton h-4 w-32 mb-2"></div>
+                      <div className="skeleton h-3 w-24"></div>
                     </div>
                   </div>
-                  <div className="h-6 bg-muted rounded w-20"></div>
+                  <div className="skeleton h-6 w-20"></div>
                 </div>
               </div>
             ))

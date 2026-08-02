@@ -5,7 +5,6 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 const STORAGE_KEY = 'mintmind_sidebar_open'
 
 function readStoredSidebarOpen(): boolean {
-  if (typeof window === 'undefined') return true
   const stored = localStorage.getItem(STORAGE_KEY)
   return stored === null ? true : stored === 'true'
 }
@@ -14,6 +13,7 @@ interface SidebarContextValue {
   isOpen: boolean
   open: () => void
   close: () => void
+  toggle: () => void
 }
 
 const SidebarContext = createContext<SidebarContextValue | null>(null)
@@ -21,7 +21,6 @@ const SidebarContext = createContext<SidebarContextValue | null>(null)
 export function SidebarProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(true)
 
-  // ponytail: once per app load — not tied to route/tab changes
   useEffect(() => {
     setIsOpen(readStoredSidebarOpen())
   }, [])
@@ -36,8 +35,16 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, 'false')
   }, [])
 
+  const toggle = useCallback(() => {
+    setIsOpen((prev) => {
+      const next = !prev
+      localStorage.setItem(STORAGE_KEY, String(next))
+      return next
+    })
+  }, [])
+
   return (
-    <SidebarContext.Provider value={{ isOpen, open, close }}>
+    <SidebarContext.Provider value={{ isOpen, open, close, toggle }}>
       {children}
     </SidebarContext.Provider>
   )

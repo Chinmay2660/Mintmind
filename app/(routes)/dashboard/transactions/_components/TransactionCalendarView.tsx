@@ -1,6 +1,6 @@
 'use client'
 
-import { formatCurrency } from '@/lib/utils/format'
+import { formatCurrency, formatOrdinalDay } from '@/lib/utils/format'
 import { cn } from '@/lib/utils'
 import type { CalendarDayData } from '@/lib/utils/transactions'
 
@@ -39,7 +39,7 @@ export function TransactionCalendarView({
               day.hasTransactions && selectedDateKey !== day.dateKey && 'bg-muted/60'
             )}
           >
-            <span className="text-xs font-medium">{day.dayOfMonth}</span>
+            <span className="text-xs font-medium">{formatOrdinalDay(day.dayOfMonth)}</span>
             {day.expense > 0 && (
               <span className="text-[9px] text-red-500 truncate w-full text-center">
                 -{formatCurrency(day.expense, { compact: true })}

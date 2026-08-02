@@ -93,17 +93,32 @@ export function StatCard({
 
   return (
     <Card className={cn('relative overflow-hidden p-5', className)} animate hover {...props}>
-      <div className={cn('absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16', `bg-gradient-to-br ${gradient} opacity-10`)} />
       <div className="relative">
-        <div className="flex items-center justify-between mb-2">
-          <p className={cn('text-sm font-medium text-muted-foreground')}>{title}</p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-muted-foreground leading-5">{title}</p>
+            <p className="text-2xl md:text-3xl font-bold text-foreground mt-2">{formattedValue}</p>
+          </div>
           {Icon && (
-            <div className={cn('p-2 rounded-lg', bgColor)}>
-              <Icon className={cn('w-5 h-5', iconColor)} />
+            <div className="relative shrink-0">
+              <div
+                className={cn(
+                  'pointer-events-none absolute -right-3 -top-3 size-16 rounded-full opacity-20 bg-gradient-to-br',
+                  gradient
+                )}
+                aria-hidden
+              />
+              <div
+                className={cn(
+                  'relative flex size-12 items-center justify-center rounded-xl',
+                  bgColor
+                )}
+              >
+                <Icon className={cn('size-6 shrink-0', iconColor)} strokeWidth={2} aria-hidden />
+              </div>
             </div>
           )}
         </div>
-        <p className="text-2xl md:text-3xl font-bold text-foreground">{formattedValue}</p>
       </div>
     </Card>
   )

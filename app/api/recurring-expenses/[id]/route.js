@@ -5,6 +5,7 @@ import { getAuthenticatedUser } from '@/lib/middleware/auth'
 
 export async function GET(request, { params }) {
   try {
+    const { id } = await params
     const user = await getAuthenticatedUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -13,7 +14,7 @@ export async function GET(request, { params }) {
     await connectDB()
 
     const expense = await RecurringExpense.findOne({
-      _id: params.id,
+      _id: id,
       userId: user._id,
     })
       .populate('categoryId', 'name icon type')
@@ -35,6 +36,7 @@ export async function GET(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
+    const { id } = await params
     const user = await getAuthenticatedUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -79,7 +81,7 @@ export async function PUT(request, { params }) {
 
     // Recalculate next due date if frequency or start date changed
     if (frequency || startDate) {
-      const expense = await RecurringExpense.findById(params.id)
+      const expense = await RecurringExpense.findById(id)
       if (expense) {
         const start = startDate ? new Date(startDate) : expense.startDate
         const freq = frequency || expense.frequency
@@ -135,7 +137,7 @@ export async function PUT(request, { params }) {
     }
 
     const expense = await RecurringExpense.findOneAndUpdate(
-      { _id: params.id, userId: user._id },
+      { _id: id, userId: user._id },
       updateData,
       { new: true, runValidators: true }
     )
@@ -158,6 +160,7 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
+    const { id } = await params
     const user = await getAuthenticatedUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -166,7 +169,7 @@ export async function DELETE(request, { params }) {
     await connectDB()
 
     const expense = await RecurringExpense.findOneAndDelete({
-      _id: params.id,
+      _id: id,
       userId: user._id,
     })
 

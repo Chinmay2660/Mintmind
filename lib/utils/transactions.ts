@@ -5,14 +5,24 @@ import {
   endOfWeek,
   startOfMonth,
   endOfMonth,
+  startOfYear,
+  endOfYear,
+  subMonths,
   format,
   parseISO,
   isWithinInterval,
-  isToday,
-  isYesterday,
 } from 'date-fns'
+import { formatWeekdayDayMonth } from '@/lib/utils/format'
 
-export type TimeView = 'daily' | 'calendar' | 'weekly' | 'monthly' | 'total'
+export type TimeView =
+  | 'daily'
+  | 'calendar'
+  | 'weekly'
+  | 'monthly'
+  | 'yearly'
+  | 'last3months'
+  | 'last6months'
+  | 'lifetime'
 export type TransactionType = 'income' | 'expense' | 'transfer'
 
 export interface TransactionLike {
@@ -49,6 +59,7 @@ export function getMonthRange(date: Date) {
 }
 
 export function getDateRangeForView(view: TimeView, anchor: Date): DateRange {
+  const now = new Date()
   switch (view) {
     case 'daily':
       return { start: startOfDay(anchor), end: endOfDay(anchor) }
@@ -56,8 +67,15 @@ export function getDateRangeForView(view: TimeView, anchor: Date): DateRange {
       return { start: startOfWeek(anchor, { weekStartsOn: 1 }), end: endOfWeek(anchor, { weekStartsOn: 1 }) }
     case 'monthly':
       return { start: startOfMonth(anchor), end: endOfMonth(anchor) }
+    case 'yearly':
+      return { start: startOfYear(anchor), end: endOfYear(anchor) }
+    case 'last3months':
+      return { start: startOfDay(subMonths(now, 3)), end: endOfDay(now) }
+    case 'last6months':
+      return { start: startOfDay(subMonths(now, 6)), end: endOfDay(now) }
+    case 'lifetime':
+      return { start: new Date(2000, 0, 1), end: endOfDay(now) }
     case 'calendar':
-    case 'total':
     default:
       return { start: startOfMonth(anchor), end: endOfMonth(anchor) }
   }
@@ -107,10 +125,7 @@ export function sumDayTransactions(transactions: TransactionLike[]) {
 }
 
 export function formatDateGroupHeader(dateStr: string): string {
-  const date = parseISO(dateStr)
-  if (isToday(date)) return 'Today'
-  if (isYesterday(date)) return 'Yesterday'
-  return format(date, 'EEE, MMM d')
+  return formatWeekdayDayMonth(parseISO(dateStr))
 }
 
 export interface DayGroup<T extends TransactionLike> {

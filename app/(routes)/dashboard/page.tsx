@@ -19,6 +19,7 @@ import Link from 'next/link'
 import { ActivityChart } from './_components/ActivityChart'
 import { formatCurrency } from '@/lib/utils/format'
 import type { DashboardStats } from '@/types/dashboard'
+import { useRegisterRefresh } from '@/contexts/RefreshContext'
 
 interface Transaction {
   _id?: string
@@ -68,6 +69,8 @@ const Dashboard = () => {
     }
   }
 
+  useRegisterRefresh(fetchData)
+
   const balance = (stats?.totalBankBalance || 0) + (stats?.totalCash || 0)
   const savings = stats?.monthlySavings || 0
   const savingsPct =
@@ -79,19 +82,19 @@ const Dashboard = () => {
     {
       label: 'Expense',
       icon: ArrowDownCircle,
-      href: '/dashboard/transactions?action=add&type=expense',
+      href: '/dashboard/transactions/new?type=expense',
       iconClass: 'text-red-500',
     },
     {
       label: 'Income',
       icon: ArrowUpCircle,
-      href: '/dashboard/transactions?action=add&type=income',
+      href: '/dashboard/transactions/new?type=income',
       iconClass: 'text-green-500',
     },
     {
       label: 'Transfer',
       icon: ArrowLeftRight,
-      href: '/dashboard/transactions?action=add&type=transfer',
+      href: '/dashboard/transactions/new?type=transfer',
       iconClass: 'text-amber-500',
     },
   ]
@@ -108,7 +111,7 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           className="pt-2 shrink-0"
         >
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground" suppressHydrationWarning>
             {format(new Date(), 'EEEE, MMM d')}
           </p>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mt-1">
@@ -178,15 +181,10 @@ const Dashboard = () => {
           transition={{ delay: 0.1 }}
           className="lg:col-span-3 surface-card p-5 md:p-6"
         >
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-semibold">Activities</h2>
-            <Link href="/dashboard/stats" className="text-sm text-primary font-medium hover:underline">
-              View daily
-            </Link>
-          </div>
+          <h2 className="text-lg font-semibold mb-2">Activities</h2>
           <p className="text-sm text-muted-foreground mb-4">Expenses this week</p>
           {loading ? (
-            <div className="h-36 md:h-44 lg:h-48 rounded-2xl bg-muted animate-pulse" />
+            <div className="h-36 md:h-44 lg:h-48 rounded-xl skeleton" />
           ) : (
             <ActivityChart transactions={transactions} />
           )}
@@ -340,7 +338,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {loading ? (
             Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-16 rounded-2xl bg-muted animate-pulse" />
+              <div key={i} className="surface-card h-16 animate-pulse" />
             ))
           ) : recentTransactions.length === 0 ? (
             <div className="surface-card p-6 text-center text-muted-foreground text-sm md:col-span-2 xl:col-span-3">

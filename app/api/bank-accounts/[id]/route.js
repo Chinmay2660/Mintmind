@@ -4,12 +4,13 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request, { params }) {
   try {
+    const { id } = await params;
     const user = await getAuthenticatedUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const account = await BankAccount.findOne({ _id: params.id, userId: user._id });
+    const account = await BankAccount.findOne({ _id: id, userId: user._id });
     if (!account) {
       return NextResponse.json({ error: 'Account not found' }, { status: 404 });
     }
@@ -22,6 +23,7 @@ export async function GET(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
+    const { id } = await params;
     const user = await getAuthenticatedUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -29,7 +31,7 @@ export async function PUT(request, { params }) {
 
     const body = await request.json();
     const account = await BankAccount.findOneAndUpdate(
-      { _id: params.id, userId: user._id },
+      { _id: id, userId: user._id },
       body,
       { new: true }
     );
@@ -46,12 +48,13 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
+    const { id } = await params;
     const user = await getAuthenticatedUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const account = await BankAccount.findOneAndDelete({ _id: params.id, userId: user._id });
+    const account = await BankAccount.findOneAndDelete({ _id: id, userId: user._id });
     if (!account) {
       return NextResponse.json({ error: 'Account not found' }, { status: 404 });
     }

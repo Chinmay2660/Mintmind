@@ -3,6 +3,13 @@
 import { Filter } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -10,6 +17,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { formatCurrency } from '@/lib/utils/format'
+import { useIsMobile } from '@/lib/hooks/useIsMobile'
 
 export interface TransactionFilters {
   types: {
@@ -36,12 +44,103 @@ interface TransactionFilterSheetProps {
   cashBalance?: number
 }
 
+function FilterForm({
+  filters,
+  onFiltersChange,
+  accounts,
+  cashBalance,
+  resetFilters,
+  toggleType,
+  toggleAccount,
+}: {
+  filters: TransactionFilters
+  onFiltersChange: (filters: TransactionFilters) => void
+  accounts: AccountOption[]
+  cashBalance: number
+  resetFilters: () => void
+  toggleType: (key: keyof TransactionFilters['types']) => void
+  toggleAccount: (accountId: string) => void
+}) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-sm font-semibold mb-3">Transaction Type</h3>
+        <div className="space-y-2">
+          {[
+            { key: 'income' as const, label: 'Income' },
+            { key: 'expense' as const, label: 'Expenses' },
+            { key: 'transferIn' as const, label: 'Transfer-In' },
+            { key: 'transferOut' as const, label: 'Transfer-Out' },
+          ].map(({ key, label }) => (
+            <label key={key} className="flex items-center gap-3 p-3 rounded-xl surface-inner cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.types[key]}
+                onChange={() => toggleType(key)}
+                className="w-4 h-4 rounded border-border"
+              />
+              <span className="font-medium">{label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-semibold mb-3">Accounts</h3>
+        <div className="space-y-2">
+          <label className="flex items-center justify-between gap-3 p-3 rounded-xl surface-inner cursor-pointer">
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={filters.includeCash}
+                onChange={() =>
+                  onFiltersChange({ ...filters, includeCash: !filters.includeCash })
+                }
+                className="w-4 h-4 rounded border-border"
+              />
+              <span>💵 Cash</span>
+            </div>
+            <span className="text-sm text-muted-foreground">{formatCurrency(cashBalance)}</span>
+          </label>
+
+          {accounts.map((account) => (
+            <label
+              key={account._id}
+              className="flex items-center justify-between gap-3 p-3 rounded-xl surface-inner cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={filters.accountIds.includes(account._id)}
+                  onChange={() => toggleAccount(account._id)}
+                  className="w-4 h-4 rounded border-border"
+                />
+                <span>
+                  {account.icon} {account.accountName}
+                </span>
+              </div>
+              <span className="text-sm text-muted-foreground">
+                {formatCurrency(account.balance ?? 0)}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <Button variant="outline" className="w-full" onClick={resetFilters}>
+        Reset Filters
+      </Button>
+    </div>
+  )
+}
+
 export function TransactionFilterSheet({
   filters,
   onFiltersChange,
   accounts,
   cashBalance = 0,
 }: TransactionFilterSheetProps) {
+  const isMobile = useIsMobile()
   const isFiltered =
     !filters.types.income ||
     !filters.types.expense ||
@@ -72,93 +171,52 @@ export function TransactionFilterSheet({
     })
   }
 
+  const trigger = (
+    <Button variant="outline" size="sm" className="rounded-full gap-2">
+      <Filter className="w-4 h-4" />
+      Filter
+      {isFiltered && (
+        <span className="bg-primary text-primary-foreground text-[10px] rounded-full px-1.5">
+          •
+        </span>
+      )}
+    </Button>
+  )
+
+  const form = (
+    <FilterForm
+      filters={filters}
+      onFiltersChange={onFiltersChange}
+      accounts={accounts}
+      cashBalance={cashBalance}
+      resetFilters={resetFilters}
+      toggleType={toggleType}
+      toggleAccount={toggleAccount}
+    />
+  )
+
+  if (!isMobile) {
+    return (
+      <Dialog>
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Filter Transactions</DialogTitle>
+          </DialogHeader>
+          {form}
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
   return (
     <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className="rounded-full gap-2">
-          <Filter className="w-4 h-4" />
-          Filter
-          {isFiltered && (
-            <span className="bg-primary text-primary-foreground text-[10px] rounded-full px-1.5">
-              •
-            </span>
-          )}
-        </Button>
-      </SheetTrigger>
+      <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent side="bottom" className="h-[75vh] rounded-t-3xl overflow-y-auto">
         <SheetHeader className="mb-4">
           <SheetTitle>Filter Transactions</SheetTitle>
         </SheetHeader>
-
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-sm font-semibold mb-3">Transaction Type</h3>
-            <div className="space-y-2">
-              {[
-                { key: 'income' as const, label: 'Income' },
-                { key: 'expense' as const, label: 'Expenses' },
-                { key: 'transferIn' as const, label: 'Transfer-In' },
-                { key: 'transferOut' as const, label: 'Transfer-Out' },
-              ].map(({ key, label }) => (
-                <label key={key} className="flex items-center gap-3 p-3 rounded-xl surface-inner cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={filters.types[key]}
-                    onChange={() => toggleType(key)}
-                    className="w-4 h-4 rounded border-border"
-                  />
-                  <span className="font-medium">{label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-sm font-semibold mb-3">Accounts</h3>
-            <div className="space-y-2">
-              <label className="flex items-center justify-between gap-3 p-3 rounded-xl surface-inner cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={filters.includeCash}
-                    onChange={() =>
-                      onFiltersChange({ ...filters, includeCash: !filters.includeCash })
-                    }
-                    className="w-4 h-4 rounded border-border"
-                  />
-                  <span>💵 Cash</span>
-                </div>
-                <span className="text-sm text-muted-foreground">{formatCurrency(cashBalance)}</span>
-              </label>
-
-              {accounts.map((account) => (
-                <label
-                  key={account._id}
-                  className="flex items-center justify-between gap-3 p-3 rounded-xl surface-inner cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={filters.accountIds.includes(account._id)}
-                      onChange={() => toggleAccount(account._id)}
-                      className="w-4 h-4 rounded border-border"
-                    />
-                    <span>
-                      {account.icon} {account.accountName}
-                    </span>
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    {formatCurrency(account.balance ?? 0)}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <Button variant="outline" className="w-full" onClick={resetFilters}>
-            Reset Filters
-          </Button>
-        </div>
+        {form}
       </SheetContent>
     </Sheet>
   )

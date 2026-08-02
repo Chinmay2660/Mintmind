@@ -43,10 +43,11 @@ export function PageHeader({ title, subtitle, icon, children, className = '', sh
           <button
             type="button"
             onClick={handleBack}
-            className="md:hidden flex-shrink-0 p-2 -ml-2 rounded-xl hover:bg-muted transition-colors"
+            className="flex-shrink-0 flex items-center gap-0.5 p-2 -ml-2 rounded-xl hover:bg-muted transition-colors"
             aria-label="Go back"
           >
             <ChevronLeft className="w-6 h-6 text-muted-foreground" />
+            <span className="text-sm font-medium text-muted-foreground hidden sm:inline">Back</span>
           </button>
         )}
         {PageIcon && (

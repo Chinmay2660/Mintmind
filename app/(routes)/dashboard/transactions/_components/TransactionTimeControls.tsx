@@ -1,17 +1,35 @@
 'use client'
 
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { format, addMonths, subMonths } from 'date-fns'
+import {
+  format,
+  addMonths,
+  subMonths,
+  addDays,
+  subDays,
+  addWeeks,
+  subWeeks,
+  addYears,
+  subYears,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+  startOfYear,
+} from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { FilterButtonGroup } from '@/components/ui/filter-button'
-import type { TimeView } from '@/lib/utils/transactions'
+import { formatDayMonth, formatDayMonthYear, formatOrdinalDay } from '@/lib/utils/format'
+import { getDateRangeForView, type TimeView } from '@/lib/utils/transactions'
 
 const TIME_VIEW_OPTIONS = [
   { value: 'daily', label: 'Daily' },
   { value: 'calendar', label: 'Calendar' },
   { value: 'weekly', label: 'Weekly' },
   { value: 'monthly', label: 'Monthly' },
-  { value: 'total', label: 'Total' },
+  { value: 'last3months', label: '3 Months' },
+  { value: 'last6months', label: '6 Months' },
+  { value: 'yearly', label: 'Yearly' },
+  { value: 'lifetime', label: 'Lifetime' },
 ]
 
 interface TransactionTimeControlsProps {
@@ -27,33 +45,97 @@ export function TransactionTimeControls({
   anchorDate,
   onAnchorDateChange,
 }: TransactionTimeControlsProps) {
-  const showMonthNav = timeView !== 'total'
+  const showDateNav = timeView !== 'lifetime'
+  const showArrows = !['last3months', 'last6months'].includes(timeView)
+
+  const dateLabel =
+    timeView === 'daily'
+      ? formatDayMonthYear(anchorDate)
+      : timeView === 'weekly'
+        ? (() => {
+            const { start, end } = getDateRangeForView('weekly', anchorDate)
+            return `${formatDayMonth(start)} – ${formatOrdinalDay(end.getDate())} ${format(end, 'MMM, yyyy')}`
+          })()
+        : timeView === 'yearly'
+          ? format(anchorDate, 'yyyy')
+          : timeView === 'last3months'
+            ? 'Last 3 months'
+            : timeView === 'last6months'
+              ? 'Last 6 months'
+              : format(anchorDate, 'yyyy MMM')
+
+  const goToPrevious = () => {
+    if (timeView === 'daily') onAnchorDateChange(subDays(anchorDate, 1))
+    else if (timeView === 'weekly') onAnchorDateChange(subWeeks(anchorDate, 1))
+    else if (timeView === 'yearly') onAnchorDateChange(subYears(anchorDate, 1))
+    else onAnchorDateChange(subMonths(anchorDate, 1))
+  }
+
+  const goToNext = () => {
+    if (timeView === 'daily') onAnchorDateChange(addDays(anchorDate, 1))
+    else if (timeView === 'weekly') onAnchorDateChange(addWeeks(anchorDate, 1))
+    else if (timeView === 'yearly') onAnchorDateChange(addYears(anchorDate, 1))
+    else onAnchorDateChange(addMonths(anchorDate, 1))
+  }
+
+  const isNextDisabled =
+    timeView === 'daily'
+      ? startOfDay(anchorDate) >= startOfDay(new Date())
+      : timeView === 'weekly'
+        ? startOfWeek(anchorDate, { weekStartsOn: 1 }) >= startOfWeek(new Date(), { weekStartsOn: 1 })
+        : timeView === 'yearly'
+          ? startOfYear(anchorDate) >= startOfYear(new Date())
+          : startOfMonth(anchorDate) >= startOfMonth(new Date())
+
+  const prevAriaLabel =
+    timeView === 'daily'
+      ? 'Previous day'
+      : timeView === 'weekly'
+        ? 'Previous week'
+        : timeView === 'yearly'
+          ? 'Previous year'
+          : 'Previous month'
+  const nextAriaLabel =
+    timeView === 'daily'
+      ? 'Next day'
+      : timeView === 'weekly'
+        ? 'Next week'
+        : timeView === 'yearly'
+          ? 'Next year'
+          : 'Next month'
 
   return (
     <div className="space-y-3">
-      {showMonthNav && (
+      {showDateNav && (
         <div className="flex items-center justify-between">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => onAnchorDateChange(subMonths(anchorDate, 1))}
-            aria-label="Previous month"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </Button>
-          <span className="text-base font-semibold text-foreground">
-            {format(anchorDate, 'yyyy MMM')}
-          </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => onAnchorDateChange(addMonths(anchorDate, 1))}
-            aria-label="Next month"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </Button>
+          {showArrows ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={goToPrevious}
+              aria-label={prevAriaLabel}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+          ) : (
+            <div className="w-10" />
+          )}
+          <span className="text-base font-semibold text-foreground">{dateLabel}</span>
+          {showArrows ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={goToNext}
+              aria-label={nextAriaLabel}
+              disabled={isNextDisabled}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          ) : (
+            <div className="w-10" />
+          )}
         </div>
       )}
 

@@ -23,3 +23,34 @@ export function formatDate(date: string | Date | null | undefined, pattern = 'MM
 export function formatNumber(num: number | null | undefined): string {
   return new Intl.NumberFormat('en-IN').format(num || 0)
 }
+
+export function formatOrdinalDay(day: number): string {
+  const n = Math.floor(day)
+  const mod100 = n % 100
+  if (mod100 >= 11 && mod100 <= 13) return `${n}th`
+  const mod10 = n % 10
+  if (mod10 === 1) return `${n}st`
+  if (mod10 === 2) return `${n}nd`
+  if (mod10 === 3) return `${n}rd`
+  return `${n}th`
+}
+
+/** e.g. "2nd Aug 2026" */
+export function formatDayMonthYear(date: Date): string {
+  return `${formatOrdinalDay(date.getDate())} ${formatDateFns(date, 'MMM yyyy')}`
+}
+
+/** e.g. "Sun, 2nd Aug" */
+export function formatWeekdayDayMonth(date: Date): string {
+  return `${formatDateFns(date, 'EEE')}, ${formatOrdinalDay(date.getDate())} ${formatDateFns(date, 'MMM')}`
+}
+
+/** e.g. "2nd Aug" */
+export function formatDayMonth(date: Date): string {
+  return `${formatOrdinalDay(date.getDate())} ${formatDateFns(date, 'MMM')}`
+}
+
+/** e.g. "2nd August 2026" */
+export function formatDayMonthYearLong(date: Date): string {
+  return `${formatOrdinalDay(date.getDate())} ${formatDateFns(date, 'MMMM yyyy')}`
+}

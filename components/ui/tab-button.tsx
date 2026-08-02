@@ -39,11 +39,11 @@ export function TabButton({
       onClick={() => onClick(value)}
       size={size}
       data-active={isActive}
-      className={cn('shrink-0 rounded-full whitespace-nowrap', className)}
+      className={cn('shrink-0 gap-1.5 rounded-full whitespace-nowrap', className)}
       {...props}
     >
-      {Icon && <Icon className="w-4 h-4 mr-2" />}
-      {children}
+      {Icon && <Icon className="block size-4 shrink-0 pointer-events-none" aria-hidden />}
+      <span className="leading-none">{children}</span>
     </Button>
   )
 }

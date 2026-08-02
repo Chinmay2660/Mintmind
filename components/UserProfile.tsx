@@ -14,8 +14,9 @@ import {
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
+import { cn } from '@/lib/utils'
 
-export default function UserProfile() {
+export default function UserProfile({ compact = false }: { compact?: boolean }) {
   const { user, loading, signOut } = useAuth()
   const router = useRouter()
 
@@ -25,7 +26,7 @@ export default function UserProfile() {
         <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
           <User className="w-5 h-5 text-muted-foreground" />
         </div>
-        <span className="hidden lg:block text-sm font-medium text-muted-foreground">
+        <span className={cn('text-sm font-medium text-muted-foreground', compact ? 'hidden' : 'hidden lg:block')}>
           {loading ? 'Loading...' : 'Guest'}
         </span>
       </div>
@@ -45,19 +46,29 @@ export default function UserProfile() {
             className="flex items-center gap-2 p-2 rounded-xl hover:bg-white/40 dark:hover:bg-white/5 transition-colors"
           >
             {user.image ? (
-              <Image
-                src={user.image}
-                alt={user.name || 'User'}
-                width={32}
-                height={32}
-                className="rounded-full border-2 border-primary/20"
-              />
+              user.image.startsWith('data:') ? (
+                <img
+                  src={user.image}
+                  alt={user.name || 'User'}
+                  width={32}
+                  height={32}
+                  className="h-8 w-8 rounded-full border-2 border-primary/20 object-cover"
+                />
+              ) : (
+                <Image
+                  src={user.image}
+                  alt={user.name || 'User'}
+                  width={32}
+                  height={32}
+                  className="rounded-full border-2 border-primary/20"
+                />
+              )
             ) : (
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/20">
                 <User className="w-5 h-5 text-primary" />
               </div>
             )}
-            <span className="hidden lg:block text-sm font-medium text-foreground">
+            <span className={cn('text-sm font-medium text-foreground', compact ? 'hidden' : 'hidden lg:block')}>
               {displayName}
             </span>
           </motion.button>

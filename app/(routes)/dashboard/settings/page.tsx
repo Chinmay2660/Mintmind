@@ -1,9 +1,10 @@
 'use client'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useState, useEffect } from 'react'
-import { User, Mail, Image as ImageIcon, Save, LogOut } from 'lucide-react'
+import { User, Mail, Save, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { ProfilePicturePicker } from '@/components/ui/profile-picture-picker'
 import { motion } from 'framer-motion'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
@@ -66,7 +67,7 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6 max-w-4xl mx-auto">
+    <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-6">
       <PageHeader
         title="Settings"
         subtitle="Manage your account settings and preferences"
@@ -82,12 +83,12 @@ const SettingsPage = () => {
         className="surface-card p-6"
       >
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/20">
-            {user.image ? (
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/20 overflow-hidden">
+            {formData.image ? (
               <img
-                src={user.image}
+                src={formData.image}
                 alt={user.name || 'User'}
-                className="w-full h-full rounded-full object-cover"
+                className="w-full h-full object-cover"
               />
             ) : (
               <User className="w-8 h-8 text-primary" />
@@ -154,21 +155,11 @@ const SettingsPage = () => {
             </p>
           </div>
 
-          <div>
-            <label className="text-sm font-medium mb-2 block text-foreground">
-              Profile Picture URL
-            </label>
-            <div className="relative">
-              <ImageIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                type="url"
-                value={formData.image}
-                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                placeholder="https://example.com/image.jpg"
-                className="pl-10 h-12"
-              />
-            </div>
-          </div>
+          <ProfilePicturePicker
+            value={formData.image}
+            onChange={(image) => setFormData((prev) => ({ ...prev, image }))}
+            name={user.name}
+          />
 
           <div className="flex justify-end gap-3 pt-4">
             <Button

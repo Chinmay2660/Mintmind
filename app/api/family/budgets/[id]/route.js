@@ -7,6 +7,7 @@ import connectDB from '@/lib/mongodb';
 // Update family budget
 export async function PUT(request, { params }) {
   try {
+    const { id } = await params;
     await connectDB();
     const user = await getAuthenticatedUser();
     if (!user) {
@@ -31,7 +32,7 @@ export async function PUT(request, { params }) {
 
     const body = await request.json();
     const budget = await FamilyBudget.findOneAndUpdate(
-      { _id: params.id, familyId: family._id },
+      { _id: id, familyId: family._id },
       body,
       { new: true }
     ).populate('createdBy', 'name email');
@@ -49,6 +50,7 @@ export async function PUT(request, { params }) {
 // Delete family budget
 export async function DELETE(request, { params }) {
   try {
+    const { id } = await params;
     await connectDB();
     const user = await getAuthenticatedUser();
     if (!user) {
@@ -72,7 +74,7 @@ export async function DELETE(request, { params }) {
     }
 
     const budget = await FamilyBudget.findOneAndDelete({
-      _id: params.id,
+      _id: id,
       familyId: family._id,
     });
 

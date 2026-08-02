@@ -15,6 +15,7 @@ import connectDB from '@/lib/mongodb';
 // Update family goal
 export async function PUT(request, { params }) {
   try {
+    const { id } = await params;
     await connectDB();
     const user = await getAuthenticatedUser();
     if (!user) {
@@ -35,7 +36,7 @@ export async function PUT(request, { params }) {
     const isHead = family.familyHead.toString() === user._id.toString();
     const body = await request.json();
 
-    const goal = await FamilyGoal.findOne({ _id: params.id, familyId: family._id });
+    const goal = await FamilyGoal.findOne({ _id: id, familyId: family._id });
     if (!goal) {
       return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
     }
@@ -114,6 +115,7 @@ export async function PUT(request, { params }) {
 // Delete family goal
 export async function DELETE(request, { params }) {
   try {
+    const { id } = await params;
     await connectDB();
     const user = await getAuthenticatedUser();
     if (!user) {
@@ -137,7 +139,7 @@ export async function DELETE(request, { params }) {
     }
 
     const goal = await FamilyGoal.findOneAndDelete({
-      _id: params.id,
+      _id: id,
       familyId: family._id,
     });
 

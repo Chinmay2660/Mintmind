@@ -393,6 +393,18 @@
       @apply bg-background border border-input rounded-xl;
     }
 
+    .skeleton {
+      @apply bg-muted animate-pulse rounded-md;
+    }
+
+    .skeleton-icon {
+      @apply bg-muted animate-pulse rounded-xl;
+    }
+
+    .skeleton-icon-sm {
+      @apply bg-muted animate-pulse rounded-lg;
+    }
+
     .finance-pill {
       @apply rounded-full bg-primary text-primary-foreground font-semibold border-0 shadow-sm hover:bg-primary/90;
     }

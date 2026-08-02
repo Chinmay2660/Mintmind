@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useMemo, useState } from 'react'
-import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns'
+import { addDays, endOfDay, startOfDay, subDays } from 'date-fns'
 import { ChevronLeft, ChevronRight, ReceiptText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import request from '@/lib/api/request'
@@ -20,7 +20,14 @@ import {
 import { TransactionSummaryBar } from '../transactions/_components/TransactionSummaryBar'
 import { TransactionGroupedList } from '../transactions/_components/TransactionGroupedList'
 import { useBankAccounts } from '@/lib/hooks/useReferenceData'
-import { groupByDay, type TransactionLike } from '@/lib/utils/transactions'
+import {
+  filterByDateRange,
+  groupByDay,
+  summarizeTransactions,
+  type TransactionLike,
+} from '@/lib/utils/transactions'
+import { formatDayMonthYear, formatDayMonthYearLong } from '@/lib/utils/format'
+import { useRegisterRefresh } from '@/contexts/RefreshContext'
 
 interface StatsData {
   summary: {
@@ -43,24 +50,24 @@ const DailyStatsPage = () => {
   const [filters, setFilters] = useState<TransactionFilters>(DEFAULT_TRANSACTION_FILTERS)
   const [loading, setLoading] = useState(true)
 
-  const monthRange = useMemo(
+  const dayRange = useMemo(
     () => ({
-      start: startOfMonth(anchorDate),
-      end: endOfMonth(anchorDate),
+      start: startOfDay(anchorDate),
+      end: endOfDay(anchorDate),
     }),
     [anchorDate]
   )
 
   useEffect(() => {
     if (user) fetchStats()
-  }, [user, monthRange, filters])
+  }, [user, dayRange, filters])
 
   const fetchStats = async () => {
     try {
       setLoading(true)
       const params: Record<string, string> = {
-        startDate: monthRange.start.toISOString(),
-        endDate: monthRange.end.toISOString(),
+        startDate: dayRange.start.toISOString(),
+        endDate: dayRange.end.toISOString(),
       }
 
       const types: string[] = []
@@ -81,11 +88,15 @@ const DailyStatsPage = () => {
     }
   }
 
+  useRegisterRefresh(fetchStats)
+
   const filteredTransactions = useMemo(() => {
     if (!stats?.transactions) return []
-    return applyClientFilters(stats.transactions, filters)
-  }, [stats?.transactions, filters])
+    let items = filterByDateRange(stats.transactions, dayRange)
+    return applyClientFilters(items, filters)
+  }, [stats?.transactions, dayRange, filters])
 
+  const summary = useMemo(() => summarizeTransactions(filteredTransactions), [filteredTransactions])
   const dayGroups = useMemo(() => groupByDay(filteredTransactions), [filteredTransactions])
 
   const isInitialLoad = loading && !stats
@@ -109,43 +120,32 @@ const DailyStatsPage = () => {
           type="button"
           variant="ghost"
           size="icon"
-          onClick={() => setAnchorDate((d) => subMonths(d, 1))}
-          aria-label="Previous month"
+          onClick={() => setAnchorDate((d) => subDays(d, 1))}
+          aria-label="Previous day"
         >
           <ChevronLeft className="w-5 h-5" />
         </Button>
-        <span className="text-base font-semibold text-foreground">{format(anchorDate, 'yyyy MMM')}</span>
+        <span className="text-base font-semibold text-foreground">{formatDayMonthYear(anchorDate)}</span>
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          onClick={() => setAnchorDate((d) => addMonths(d, 1))}
-          aria-label="Next month"
-          disabled={anchorDate >= startOfMonth(new Date())}
+          onClick={() => setAnchorDate((d) => addDays(d, 1))}
+          aria-label="Next day"
+          disabled={startOfDay(anchorDate) >= startOfDay(new Date())}
         >
           <ChevronRight className="w-5 h-5" />
         </Button>
       </div>
 
-      {stats?.summary && (
-        <TransactionSummaryBar
-          summary={{
-            income: stats.summary.income,
-            expense: stats.summary.expense,
-            net: stats.summary.net,
-            transferIn: stats.summary.transferIn,
-            transferOut: stats.summary.transferOut,
-          }}
-          loading={isRefreshing}
-        />
-      )}
+      <TransactionSummaryBar summary={summary} loading={isRefreshing} />
 
       <div className={cn('space-y-3 transition-opacity', isRefreshing && 'opacity-60')}>
         {filteredTransactions.length === 0 ? (
           <EmptyState
             icon={ReceiptText}
             title="No transactions"
-            description={`No transactions found for ${format(anchorDate, 'MMMM yyyy')}`}
+            description={`No transactions found for ${formatDayMonthYearLong(anchorDate)}`}
           />
         ) : (
           <TransactionGroupedList groups={dayGroups} />

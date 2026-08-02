@@ -3,7 +3,7 @@
 import { ArrowLeftRight } from 'lucide-react'
 import { SwipeableRow, DesktopRowActions } from '@/components/ui/swipeable-row'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
-import { formatCurrency } from '@/lib/utils/format'
+import { formatCurrency, formatOrdinalDay } from '@/lib/utils/format'
 import {
   getTransactionSubtitle,
   getTransactionTitle,
@@ -20,30 +20,34 @@ interface TransactionGroupedListProps {
 }
 
 export function TransactionGroupedList({ groups, onEdit, onDelete }: TransactionGroupedListProps) {
+  const showGroupHeaders = groups.length > 1
+
   return (
     <div className="space-y-4">
       {groups.map((group) => (
         <div key={group.dateKey} className="surface-card overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2.5 bg-muted/40 border-b border-border/50">
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold text-muted-foreground/50 w-7 text-center">
-                {group.dayOfMonth}
-              </span>
-              <span className="text-sm font-semibold text-foreground">{group.label}</span>
-            </div>
-            <div className="flex gap-3 text-xs">
-              {group.summary.income > 0 && (
-                <span className="text-green-600 dark:text-green-400 font-medium">
-                  +{formatCurrency(group.summary.income)}
+          {showGroupHeaders && (
+            <div className="flex items-center justify-between px-4 py-2.5 bg-muted/40 border-b border-border/50">
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold text-muted-foreground/50 w-7 text-center">
+                  {formatOrdinalDay(group.dayOfMonth)}
                 </span>
-              )}
-              {group.summary.expense > 0 && (
-                <span className="text-red-600 dark:text-red-400 font-medium">
-                  -{formatCurrency(group.summary.expense)}
-                </span>
-              )}
+                <span className="text-sm font-semibold text-foreground">{group.label}</span>
+              </div>
+              <div className="flex gap-3 text-xs">
+                {group.summary.income > 0 && (
+                  <span className="text-green-600 dark:text-green-400 font-medium">
+                    +{formatCurrency(group.summary.income)}
+                  </span>
+                )}
+                {group.summary.expense > 0 && (
+                  <span className="text-red-600 dark:text-red-400 font-medium">
+                    -{formatCurrency(group.summary.expense)}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="divide-y divide-border/40">
             {group.transactions.map((transaction) => {

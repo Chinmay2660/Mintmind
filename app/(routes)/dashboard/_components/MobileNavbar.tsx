@@ -18,9 +18,12 @@ import {
 } from '@/components/ui/sheet'
 
 const MobileNavbar = () => {
+    return <MobileBottomNav />
+}
+
+function MobileBottomNav() {
     const pathname = usePathname()
     const [moreMenuOpen, setMoreMenuOpen] = useState(false)
-    const { isOpen, open, close } = useSidebar()
     const mainMenu = DASHBOARD_NAV_MAIN.map((menu) => ({
         ...menu,
         active: pathname === menu.path,
@@ -31,15 +34,8 @@ const MobileNavbar = () => {
         active: pathname === menu.path,
     }))
 
-    const allMenu = DASHBOARD_NAV_ALL.map((menu) => ({
-        ...menu,
-        active: pathname === menu.path,
-    }))
-
     return (
-        <>
-            {/* Mobile Bottom Tab Bar - main tabs + More */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border">
                 <div className="flex items-stretch justify-around px-1 h-16 safe-area-inset-bottom">
                     {mainMenu.map((menu) => {
                         const Icon = menu.icon
@@ -131,58 +127,69 @@ const MobileNavbar = () => {
                     </Sheet>
                 </div>
             </nav>
-
-            {/* Desktop sidebar (md+); mobile uses bottom tab bar + More sheet */}
-            <aside
-                className={cn(
-                    'sticky top-0 z-40 hidden h-screen shrink-0 flex-col overflow-hidden border-r border-white/20 bg-background/95 backdrop-blur-xl transition-[width] duration-300 ease-in-out dark:border-white/10 md:flex',
-                    isOpen ? 'w-64' : 'w-0 border-r-0'
-                )}
-            >
-                <div className="flex h-full w-64 flex-col">
-                    <div className="flex h-14 shrink-0 items-center justify-between border-b border-white/20 px-4 dark:border-white/10">
-                        <Link href="/dashboard" className="min-w-0">
-                            <Logo />
-                        </Link>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="shrink-0"
-                            onClick={close}
-                            aria-label="Close sidebar"
-                        >
-                            <PanelLeftClose className="h-5 w-5" />
-                        </Button>
-                    </div>
-                    <nav className="flex-1 space-y-1 overflow-y-auto p-4">
-                        {allMenu.map((menu) => {
-                            const Icon = menu.icon
-                            return (
-                                <Link
-                                    key={menu.id}
-                                    href={menu.path}
-                                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                                        menu.active
-                                            ? 'bg-primary/15 text-primary shadow-sm'
-                                            : 'text-muted-foreground hover:bg-muted'
-                                    }`}
-                                >
-                                    <Icon className="w-5 h-5 flex-shrink-0" />
-                                    <span className="font-medium">{menu.name}</span>
-                                </Link>
-                            )
-                        })}
-                    </nav>
-                    <div className="border-t border-white/20 p-4 dark:border-white/10">
-                        <div className="flex items-center gap-3 px-4 py-3">
-                            <UserProfile />
-                        </div>
-                    </div>
-                </div>
-            </aside>
-        </>
     )
 }
 
+function DesktopSidebar() {
+    const pathname = usePathname()
+    const { isOpen, close } = useSidebar()
+    const allMenu = DASHBOARD_NAV_ALL.map((menu) => ({
+        ...menu,
+        active: pathname === menu.path,
+    }))
+
+    return (
+        <aside
+            className={cn(
+                'fixed inset-y-0 left-0 z-40 hidden h-svh shrink-0 flex-col overflow-hidden border-r border-white/20 bg-background/95 backdrop-blur-xl transition-[width] duration-300 ease-in-out dark:border-white/10 md:flex',
+                isOpen ? 'w-64' : 'w-0 border-r-0 pointer-events-none'
+            )}
+        >
+            <div className="flex h-full w-64 flex-col">
+                <div className="flex h-14 shrink-0 items-center justify-between border-b border-white/20 px-4 dark:border-white/10">
+                    <Link href="/dashboard" className="min-w-0">
+                        <Logo />
+                    </Link>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0"
+                        onClick={close}
+                        aria-label="Close sidebar"
+                    >
+                        <PanelLeftClose className="h-5 w-5" />
+                    </Button>
+                </div>
+                <nav className="flex-1 space-y-1 overflow-y-auto p-4">
+                    {allMenu.map((menu) => {
+                        const Icon = menu.icon
+                        return (
+                            <Link
+                                key={menu.id}
+                                href={menu.path}
+                                className={cn(
+                                    'flex items-center gap-3 rounded-xl px-4 py-3 transition-all',
+                                    menu.active
+                                        ? 'bg-primary/15 text-primary shadow-sm'
+                                        : 'text-muted-foreground hover:bg-muted'
+                                )}
+                            >
+                                <Icon className="h-5 w-5 shrink-0" />
+                                <span className="font-medium">{menu.name}</span>
+                            </Link>
+                        )
+                    })}
+                </nav>
+                <div className="border-t border-white/20 p-4 dark:border-white/10">
+                    <div className="flex items-center gap-3 px-4 py-3">
+                        <UserProfile />
+                    </div>
+                </div>
+            </div>
+        </aside>
+    )
+}
+
+export { DesktopSidebar, MobileBottomNav }
 export default MobileNavbar

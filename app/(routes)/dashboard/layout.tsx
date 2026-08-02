@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import MobileNavbar from './_components/MobileNavbar'
 import DashboardHeader from './_components/DashboardHeader'
@@ -10,24 +10,32 @@ import AppSearch from '@/components/AppSearch'
 import { AppSearchProvider } from '@/contexts/AppSearchContext'
 import { isNativePlatform } from '@/lib/platform'
 import { scrollPageToTop } from '@/lib/utils/scroll'
+import { DashboardRefreshShell } from './_components/DashboardRefreshShell'
+import { DashboardShell } from './_components/DashboardShell'
 
 const shellClass = 'finance-shell aurora-bg'
 
-function DashboardMain({ children }: { children: React.ReactNode }) {
+function DashboardPageContent({ children }: { children: React.ReactNode }) {
     return (
-        <div className="min-w-0 flex-1 flex flex-col">
+        <>
             <PageTitle />
             <OfflineIndicator />
             <DashboardHeader />
-            <main className="min-h-screen mobile-content-pb md:pb-0">{children}</main>
-        </div>
+            <DashboardRefreshShell>
+                <main className="flex-1 mobile-content-pb md:pb-0">{children}</main>
+            </DashboardRefreshShell>
+        </>
     )
 }
 
 const DashboardLayout = ({ children }) => {
     const pathname = usePathname()
     const isFirstRender = useRef(true)
-    const isNative = typeof window !== 'undefined' && isNativePlatform()
+    const [isNative, setIsNative] = useState(false)
+
+    useEffect(() => {
+        setIsNative(isNativePlatform())
+    }, [])
 
     useEffect(() => {
         if (isFirstRender.current) {
@@ -46,19 +54,20 @@ const DashboardLayout = ({ children }) => {
                             <PageTitle />
                             <OfflineIndicator />
                             <DashboardHeader />
-                            <main className="min-h-screen mobile-content-pb">
-                                {children}
-                            </main>
+                            <DashboardRefreshShell>
+                                <main className="min-h-screen mobile-content-pb">
+                                    {children}
+                                </main>
+                            </DashboardRefreshShell>
                             <MobileNavbar />
                         </div>
                     </div>
                 </NativeLayout>
             ) : (
                 <div className={shellClass}>
-                    <div className="relative z-10 flex min-h-screen">
-                        <MobileNavbar />
-                        <DashboardMain>{children}</DashboardMain>
-                    </div>
+                    <DashboardShell>
+                        <DashboardPageContent>{children}</DashboardPageContent>
+                    </DashboardShell>
                 </div>
             )}
             <AppSearch />

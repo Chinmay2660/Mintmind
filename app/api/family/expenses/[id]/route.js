@@ -7,6 +7,7 @@ import connectDB from '@/lib/mongodb';
 // Update family expense
 export async function PUT(request, { params }) {
   try {
+    const { id } = await params;
     await connectDB();
     const user = await getAuthenticatedUser();
     if (!user) {
@@ -25,7 +26,7 @@ export async function PUT(request, { params }) {
     }
 
     const isHead = family.familyHead.toString() === user._id.toString();
-    const existing = await FamilyExpense.findOne({ _id: params.id, familyId: family._id });
+    const existing = await FamilyExpense.findOne({ _id: id, familyId: family._id });
 
     if (!existing) {
       return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
@@ -38,7 +39,7 @@ export async function PUT(request, { params }) {
 
     const body = await request.json();
     const expense = await FamilyExpense.findOneAndUpdate(
-      { _id: params.id, familyId: family._id },
+      { _id: id, familyId: family._id },
       { ...body, date: body.date ? new Date(body.date) : undefined },
       { new: true }
     )
@@ -59,6 +60,7 @@ export async function PUT(request, { params }) {
 // Delete family expense
 export async function DELETE(request, { params }) {
   try {
+    const { id } = await params;
     await connectDB();
     const user = await getAuthenticatedUser();
     if (!user) {
@@ -77,7 +79,7 @@ export async function DELETE(request, { params }) {
     }
 
     const isHead = family.familyHead.toString() === user._id.toString();
-    const existing = await FamilyExpense.findOne({ _id: params.id, familyId: family._id });
+    const existing = await FamilyExpense.findOne({ _id: id, familyId: family._id });
 
     if (!existing) {
       return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
@@ -89,7 +91,7 @@ export async function DELETE(request, { params }) {
     }
 
     const expense = await FamilyExpense.findOneAndDelete({
-      _id: params.id,
+      _id: id,
       familyId: family._id,
     });
 

@@ -3,8 +3,29 @@ import Investment from '@/models/Investment';
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 
+export async function GET(request, { params }) {
+  try {
+    const { id } = await params;
+    await connectDB();
+    const user = await getAuthenticatedUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const investment = await Investment.findOne({ _id: id, userId: user._id }).populate('accountId');
+    if (!investment) {
+      return NextResponse.json({ error: 'Investment not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(investment);
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
 export async function PUT(request, { params }) {
   try {
+    const { id } = await params;
     await connectDB();
     const user = await getAuthenticatedUser();
     if (!user) {
@@ -21,7 +42,7 @@ export async function PUT(request, { params }) {
     }
 
     const investment = await Investment.findOneAndUpdate(
-      { _id: params.id, userId: user._id },
+      { _id: id, userId: user._id },
       updateData,
       { new: true }
     );
@@ -41,13 +62,14 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
+    const { id } = await params;
     await connectDB();
     const user = await getAuthenticatedUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const investment = await Investment.findOneAndDelete({ _id: params.id, userId: user._id });
+    const investment = await Investment.findOneAndDelete({ _id: id, userId: user._id });
     if (!investment) {
       return NextResponse.json({ error: 'Investment not found' }, { status: 404 });
     }

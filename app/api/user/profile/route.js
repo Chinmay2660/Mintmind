@@ -15,6 +15,17 @@ export async function PUT(request) {
     const body = await request.json()
     const { firstName, lastName, image } = body
 
+    if (image !== undefined && image !== '') {
+      const isDataUrl = typeof image === 'string' && image.startsWith('data:image/')
+      const isHttpUrl = typeof image === 'string' && /^https?:\/\//.test(image)
+      if (!isDataUrl && !isHttpUrl) {
+        return NextResponse.json({ error: 'Invalid image' }, { status: 400 })
+      }
+      if (isDataUrl && image.length > 600000) {
+        return NextResponse.json({ error: 'Image too large' }, { status: 400 })
+      }
+    }
+
     // Update user profile
     const updatedUser = await User.findByIdAndUpdate(
       user._id,
