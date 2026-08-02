@@ -45,13 +45,13 @@ const SettingsPage = () => {
     confirmDelete({
       title: 'Reset All Data',
       description:
-        'This permanently deletes all your transactions, accounts, budgets, categories, investments, salary, and recurring expenses. This action cannot be undone.',
+        'This permanently deletes your personal transactions, accounts, budgets, categories, investments, salary, and recurring expenses. Family shared data stays intact. This action cannot be undone.',
       confirmLabel: 'Reset All Data',
       onConfirm: async () => {
         await request.delete('/api/user/data')
         await clearOfflineData()
         await syncNow()
-        toast.success('All data has been reset')
+        toast.success('Your personal data has been reset')
         router.push('/dashboard')
       },
     })
@@ -237,7 +237,8 @@ const SettingsPage = () => {
       >
         <h2 className="text-lg font-semibold text-foreground mb-2">Reset Data</h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Permanently delete all your financial data. Your account and profile will remain.
+          Permanently delete your personal financial data. Family budgets, goals, and expenses are
+          not affected. Your account and profile will remain.
         </p>
         <Button
           type="button"

@@ -24,8 +24,15 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.next())
   }
 
+  if (pathname === '/') {
+    const authToken = request.cookies.get('auth-token')
+    if (authToken) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    return applySecurityHeaders(NextResponse.next())
+  }
+
   if (
-    pathname === '/' ||
     pathname.startsWith('/auth') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon.ico') ||
@@ -48,5 +55,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/api/:path*'],
+  matcher: ['/', '/dashboard/:path*', '/api/:path*'],
 }

@@ -11,10 +11,8 @@ import Salary from '@/models/Salary'
 import RecurringExpense from '@/models/RecurringExpense'
 import Goal from '@/models/Goal'
 import PairCode from '@/models/PairCode'
-import Family from '@/models/Family'
-import FamilyGoal from '@/models/FamilyGoal'
-import FamilyBudget from '@/models/FamilyBudget'
-import FamilyExpense from '@/models/FamilyExpense'
+import Insurance from '@/models/Insurance'
+import CreditCard from '@/models/CreditCard'
 
 async function deleteUserData(userId) {
   await Promise.all([
@@ -28,6 +26,8 @@ async function deleteUserData(userId) {
     RecurringExpense.deleteMany({ userId }),
     Goal.deleteMany({ userId }),
     PairCode.deleteMany({ userId }),
+    Insurance.deleteMany({ userId }),
+    CreditCard.deleteMany({ userId }),
   ])
 }
 
@@ -39,48 +39,9 @@ export async function DELETE() {
     }
 
     await connectDB()
-
-    const family = await Family.findOne({
-      $or: [
-        { familyHead: user._id },
-        { 'members.user': user._id, 'members.status': 'active' },
-      ],
-    })
-
-    if (family) {
-      const isHead = family.familyHead.toString() === user._id.toString()
-
-      if (isHead) {
-        const otherActiveMembers = family.members.filter(
-          (member) =>
-            member.status === 'active' &&
-            member.user.toString() !== user._id.toString()
-        )
-
-        if (otherActiveMembers.length > 0) {
-          return NextResponse.json(
-            {
-              error:
-                'You are the family head with other members. Transfer headship or remove all members before resetting data.',
-            },
-            { status: 400 }
-          )
-        }
-
-        const familyId = family._id
-        await Promise.all([
-          FamilyGoal.deleteMany({ familyId }),
-          FamilyBudget.deleteMany({ familyId }),
-          FamilyExpense.deleteMany({ familyId }),
-          PairCode.deleteMany({ familyId }),
-          Family.findByIdAndDelete(familyId),
-        ])
-      }
-    }
-
     await deleteUserData(user._id)
 
-    return NextResponse.json({ message: 'All data reset successfully' })
+    return NextResponse.json({ message: 'All personal data reset successfully' })
   } catch (error) {
     console.error('Error resetting user data:', error)
     return NextResponse.json({ error: 'Failed to reset data' }, { status: 500 })
