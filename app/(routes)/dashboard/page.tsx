@@ -2,10 +2,10 @@
 import { useAuth } from '@/lib/hooks/useAuth'
 import React, { useEffect, useState } from 'react'
 import {
-  Wallet,
   TrendingUp,
   ArrowDownCircle,
   ArrowUpCircle,
+  ArrowLeftRight,
   ChevronRight,
   PiggyBank,
   ReceiptText,
@@ -28,6 +28,7 @@ interface Transaction {
   description?: string
   date?: string
   category?: { name?: string }
+  categoryId?: { name?: string; icon?: string; color?: string }
 }
 
 const MORE_LINKS = [
@@ -76,28 +77,22 @@ const Dashboard = () => {
 
   const quickActions = [
     {
-      label: 'Income',
-      icon: ArrowUpCircle,
-      href: '/dashboard/transactions?action=add&type=income',
-      iconClass: 'text-green-500',
-    },
-    {
       label: 'Expense',
       icon: ArrowDownCircle,
       href: '/dashboard/transactions?action=add&type=expense',
       iconClass: 'text-red-500',
     },
     {
-      label: 'Accounts',
-      icon: Wallet,
-      href: '/dashboard/accounts',
-      iconClass: 'text-primary',
+      label: 'Income',
+      icon: ArrowUpCircle,
+      href: '/dashboard/transactions?action=add&type=income',
+      iconClass: 'text-green-500',
     },
     {
-      label: 'Budget',
-      icon: PiggyBank,
-      href: '/dashboard/budgets',
-      iconClass: 'text-primary',
+      label: 'Transfer',
+      icon: ArrowLeftRight,
+      href: '/dashboard/transactions?action=add&type=transfer',
+      iconClass: 'text-amber-500',
     },
   ]
 
@@ -125,7 +120,7 @@ const Dashboard = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="grid grid-cols-4 gap-2 md:gap-3 lg:max-w-xl lg:flex-1"
+          className="grid grid-cols-3 gap-2 md:gap-3 lg:max-w-md lg:flex-1"
         >
           {quickActions.map((action) => {
             const Icon = action.icon
@@ -185,8 +180,8 @@ const Dashboard = () => {
         >
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg font-semibold">Activities</h2>
-            <Link href="/dashboard/budget-analysis" className="text-sm text-primary font-medium hover:underline">
-              View stats
+            <Link href="/dashboard/stats" className="text-sm text-primary font-medium hover:underline">
+              View daily
             </Link>
           </div>
           <p className="text-sm text-muted-foreground mb-4">Expenses this week</p>
@@ -198,15 +193,15 @@ const Dashboard = () => {
         </motion.div>
       </div>
 
-      {/* Middle row: savings, accounts, quick links */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+      {/* Middle row: savings, accounts, investments, budgets */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="surface-card p-5 md:p-6"
+          className="surface-card p-5 md:p-6 h-full flex items-center"
         >
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 w-full">
             <div className="relative w-20 h-20 md:w-24 md:h-24 shrink-0">
               <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                 <circle cx="50" cy="50" r="42" fill="none" stroke="hsl(var(--muted))" strokeWidth="8" />
@@ -241,16 +236,14 @@ const Dashboard = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="sm:col-span-1"
+          className="h-full"
         >
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold">Your Accounts</h2>
-            <Link href="/dashboard/accounts" className="text-muted-foreground hover:text-foreground transition-colors">
-              <ChevronRight className="w-5 h-5" />
-            </Link>
-          </div>
-          <Link href="/dashboard/accounts" className="block h-[calc(100%-2rem)]">
+          <Link href="/dashboard/accounts" className="block h-full">
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary/70 p-5 md:p-6 text-primary-foreground shadow-lg shadow-primary/20 h-full flex flex-col justify-center transition-transform active:scale-[0.98] md:hover:shadow-xl md:hover:shadow-primary/25">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-semibold text-primary-foreground/90">Your Accounts</p>
+                <ChevronRight className="w-5 h-5 text-primary-foreground/70" />
+              </div>
               <p className="text-xs text-primary-foreground/70 uppercase tracking-wider">Total Balance</p>
               <p className="text-2xl md:text-3xl font-bold mt-2">
                 {loading ? '—' : formatCurrency(balance)}
@@ -262,7 +255,7 @@ const Dashboard = () => {
           </Link>
         </motion.div>
 
-        {MORE_LINKS.map((item, i) => {
+        {MORE_LINKS.slice(0, 2).map((item, i) => {
           const Icon = item.icon
           const value = item.valueKey ? stats?.[item.valueKey] : null
           return (
@@ -271,6 +264,41 @@ const Dashboard = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 + i * 0.05 }}
+              className="h-full"
+            >
+              <Link
+                href={item.href}
+                className="surface-card p-5 h-full flex items-center gap-4 transition-all active:scale-[0.98] md:hover:shadow-lg md:hover:shadow-primary/5"
+              >
+                <div className="w-11 h-11 rounded-full bg-muted flex items-center justify-center shrink-0">
+                  <Icon className="w-5 h-5 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{item.label}</p>
+                  {value != null && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {loading ? '—' : formatCurrency(value || 0)}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            </motion.div>
+          )
+        })}
+      </div>
+
+      {/* Quick links row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-stretch">
+        {MORE_LINKS.slice(2).map((item, i) => {
+          const Icon = item.icon
+          const value = item.valueKey ? stats?.[item.valueKey] : null
+          return (
+            <motion.div
+              key={item.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 + i * 0.05 }}
+              className="h-full"
             >
               <Link
                 href={item.href}
@@ -316,40 +344,49 @@ const Dashboard = () => {
             ))
           ) : recentTransactions.length === 0 ? (
             <div className="surface-card p-6 text-center text-muted-foreground text-sm md:col-span-2 xl:col-span-3">
-              No transactions yet. Add income or an expense to get started.
+              No transactions yet. Add an expense, income, or transfer to get started.
             </div>
           ) : (
-            recentTransactions.map((tx) => (
+            recentTransactions.map((tx) => {
+              const catColor = tx.categoryId?.color || '#4845d2'
+              const catIcon = tx.categoryId?.icon
+              const catName = tx.categoryId?.name
+              const isIncome = tx.type === 'income'
+              const isTransfer = tx.type === 'transfer'
+              return (
               <Link
                 key={tx._id || tx.id}
                 href="/dashboard/transactions"
-                className="flex items-center gap-4 p-4 rounded-2xl surface-card transition-all active:scale-[0.98] md:hover:shadow-md"
+                className="flex items-center gap-3 p-3 rounded-2xl surface-card transition-all active:scale-[0.98] md:hover:shadow-md"
               >
-                <div className="w-11 h-11 rounded-full bg-muted flex items-center justify-center shrink-0">
-                  {tx.type === 'income' ? (
-                    <ArrowUpCircle className="w-5 h-5 text-green-500" />
-                  ) : (
-                    <ArrowDownCircle className="w-5 h-5 text-red-500" />
-                  )}
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-base"
+                  style={{ backgroundColor: `${isTransfer ? '#f59e0b' : catColor}22` }}
+                >
+                  {isTransfer ? '↔' : catIcon || (isIncome ? '💰' : '📁')}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">
-                    {tx.description || tx.category?.name || 'Transaction'}
+                  <p className="font-medium text-sm truncate">
+                    {tx.description || (isTransfer ? 'Transfer' : catName) || 'Transaction'}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {tx.date ? format(new Date(tx.date), 'MMM d, yyyy') : ''}
                   </p>
                 </div>
                 <p
-                  className={`font-semibold shrink-0 ${
-                    tx.type === 'income' ? 'text-green-500' : 'text-foreground'
+                  className={`text-sm font-semibold shrink-0 ${
+                    isIncome
+                      ? 'text-green-600 dark:text-green-400'
+                      : isTransfer
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-foreground'
                   }`}
                 >
-                  {tx.type === 'income' ? '+' : '-'}
+                  {isIncome ? '+' : isTransfer ? '↔' : '-'}
                   {formatCurrency(tx.amount || 0)}
                 </p>
               </Link>
-            ))
+            )})
           )}
         </div>
       </motion.div>

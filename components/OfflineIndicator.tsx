@@ -11,17 +11,19 @@ export default function OfflineIndicator() {
 
   return (
     <div
-      className={`flex items-center justify-between gap-3 px-4 py-2 text-sm ${
+      className={`sticky top-0 z-40 flex items-center justify-between gap-3 px-4 py-2 text-sm safe-area-top ${
         online
           ? 'bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-100'
           : 'bg-gray-800 text-gray-100'
       }`}
     >
-      <div className="flex items-center gap-2">
-        {online ? <CloudUpload className="h-4 w-4" /> : <CloudOff className="h-4 w-4" />}
-        <span>
+      <div className="flex min-w-0 items-center gap-2">
+        {online ? <CloudUpload className="h-4 w-4 shrink-0" /> : <CloudOff className="h-4 w-4 shrink-0" />}
+        <span className="truncate">
           {!online
-            ? 'Offline — changes save locally and sync when you reconnect'
+            ? pendingCount > 0
+              ? `Offline — ${pendingCount} change${pendingCount === 1 ? '' : 's'} saved locally`
+              : 'Offline — changes save locally and sync when you reconnect'
             : `${pendingCount} change${pendingCount === 1 ? '' : 's'} waiting to sync`}
         </span>
       </div>

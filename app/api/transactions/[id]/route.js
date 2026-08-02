@@ -5,12 +5,64 @@ import {
   assertCategoryOwnership,
   safeErrorResponse,
 } from '@/lib/middleware/api';
+import { applyTransactionBalances, reverseTransactionBalances } from '@/lib/api/transactionBalance';
 import Transaction from '@/models/Transaction';
-import Cash from '@/models/Cash';
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 
-const TRANSACTION_FIELDS = ['type', 'amount', 'categoryId', 'accountId', 'isCash', 'description', 'date'];
+const TRANSACTION_FIELDS = [
+  'type', 'amount', 'categoryId', 'accountId', 'isCash',
+  'description', 'date', 'transferToAccountId', 'transferToIsCash',
+];
+
+async function validateTransactionData(user, data, oldTransaction = null) {
+  const type = data.type ?? oldTransaction?.type;
+  const amount = data.amount ?? oldTransaction?.amount;
+  const isCash = data.isCash ?? oldTransaction?.isCash;
+  const accountId = isCash ? null : (data.accountId ?? oldTransaction?.accountId);
+  const transferToIsCash = data.transferToIsCash ?? oldTransaction?.transferToIsCash;
+  const transferToAccountId = transferToIsCash
+    ? null
+    : (data.transferToAccountId ?? oldTransaction?.transferToAccountId);
+  const categoryId = data.categoryId ?? oldTransaction?.categoryId;
+
+  if (!amount || amount <= 0) {
+    return { error: 'Amount must be greater than 0' };
+  }
+
+  if (type === 'transfer') {
+    const hasFrom = isCash || accountId;
+    const hasTo = transferToIsCash || transferToAccountId;
+    if (!hasFrom || !hasTo) {
+      return { error: 'Both source and destination accounts are required for transfers' };
+    }
+    if (!isCash && accountId) {
+      const account = await assertAccountOwnership(user._id, accountId);
+      if (!account) return { error: 'Invalid source account' };
+    }
+    if (!transferToIsCash && transferToAccountId) {
+      const account = await assertAccountOwnership(user._id, transferToAccountId);
+      if (!account) return { error: 'Invalid destination account' };
+    }
+    return null;
+  }
+
+  if (!categoryId) return { error: 'Category is required' };
+
+  const category = await assertCategoryOwnership(user._id, categoryId);
+  if (!category) return { error: 'Invalid category' };
+
+  if (!isCash && !accountId) {
+    return { error: 'Account is required when not using cash' };
+  }
+
+  if (!isCash && accountId) {
+    const account = await assertAccountOwnership(user._id, accountId);
+    if (!account) return { error: 'Invalid account' };
+  }
+
+  return null;
+}
 
 export async function PUT(request, { params }) {
   try {
@@ -25,97 +77,42 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
     }
 
-    if (oldTransaction.isCash) {
-      const cash = await Cash.findOne({ userId: user._id });
-      if (cash) {
-        if (oldTransaction.type === 'income') {
-          cash.amount -= oldTransaction.amount;
-        } else {
-          cash.amount += oldTransaction.amount;
-        }
-        await cash.save();
-      }
-    } else if (oldTransaction.accountId) {
-      const account = await assertAccountOwnership(user._id, oldTransaction.accountId);
-      if (account) {
-        if (oldTransaction.type === 'income') {
-          account.balance -= oldTransaction.amount;
-        } else {
-          account.balance += oldTransaction.amount;
-        }
-        await account.save();
-      }
-    }
+    await reverseTransactionBalances(user._id, oldTransaction);
 
-    const categoryId = data.categoryId ?? oldTransaction.categoryId;
-    if (!categoryId) {
-      return NextResponse.json({ error: 'Category is required' }, { status: 400 });
-    }
-
-    const category = await assertCategoryOwnership(user._id, categoryId);
-    if (!category) {
-      return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
-    }
-    
-    const amount = data.amount ?? oldTransaction.amount;
-    if (amount <= 0) {
-      return NextResponse.json({ error: 'Amount must be greater than 0' }, { status: 400 });
+    const validationError = await validateTransactionData(user, data, oldTransaction);
+    if (validationError) {
+      await applyTransactionBalances(user._id, oldTransaction);
+      return NextResponse.json({ error: validationError.error }, { status: 400 });
     }
 
     const isCash = data.isCash ?? oldTransaction.isCash;
-    const accountId = isCash ? null : (data.accountId || oldTransaction.accountId);
+    const transferToIsCash = data.transferToIsCash ?? oldTransaction.transferToIsCash;
 
-    if (!isCash && !accountId) {
-      return NextResponse.json({ error: 'Account is required when not using cash' }, { status: 400 });
-    }
-
-    if (!isCash && accountId) {
-      const account = await assertAccountOwnership(user._id, accountId);
-      if (!account) {
-        return NextResponse.json({ error: 'Invalid account' }, { status: 400 });
-      }
-    }
-    
     const updateData = {
       ...data,
-      amount,
+      amount: data.amount ?? oldTransaction.amount,
       isCash,
-      categoryId,
-      accountId,
+      categoryId: data.categoryId ?? oldTransaction.categoryId,
+      accountId: isCash ? null : (data.accountId || oldTransaction.accountId),
+      transferToAccountId: transferToIsCash
+        ? null
+        : (data.transferToAccountId || oldTransaction.transferToAccountId),
+      transferToIsCash,
       date: data.date ? new Date(data.date) : oldTransaction.date,
-    }
-    
+    };
+
     const transaction = await Transaction.findOneAndUpdate(
       { _id: params.id, userId: user._id },
       updateData,
       { new: true }
     );
 
-    if (transaction.isCash) {
-      const cash = await Cash.findOne({ userId: user._id });
-      if (cash) {
-        if (transaction.type === 'income') {
-          cash.amount += transaction.amount;
-        } else {
-          cash.amount -= transaction.amount;
-        }
-        await cash.save();
-      }
-    } else if (transaction.accountId) {
-      const account = await assertAccountOwnership(user._id, transaction.accountId);
-      if (account) {
-        if (transaction.type === 'income') {
-          account.balance += transaction.amount;
-        } else {
-          account.balance -= transaction.amount;
-        }
-        await account.save();
-      }
-    }
+    await applyTransactionBalances(user._id, transaction);
 
     const populatedTransaction = await Transaction.findById(transaction._id)
       .populate('categoryId')
-      .populate('accountId');
+      .populate('accountId')
+      .populate('transferToAccountId');
 
     return NextResponse.json(populatedTransaction);
   } catch (error) {
@@ -134,28 +131,7 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
     }
 
-    if (transaction.isCash) {
-      const cash = await Cash.findOne({ userId: user._id });
-      if (cash) {
-        if (transaction.type === 'income') {
-          cash.amount -= transaction.amount;
-        } else {
-          cash.amount += transaction.amount;
-        }
-        await cash.save();
-      }
-    } else if (transaction.accountId) {
-      const account = await assertAccountOwnership(user._id, transaction.accountId);
-      if (account) {
-        if (transaction.type === 'income') {
-          account.balance -= transaction.amount;
-        } else {
-          account.balance += transaction.amount;
-        }
-        await account.save();
-      }
-    }
-
+    await reverseTransactionBalances(user._id, transaction);
     await Transaction.findByIdAndDelete(params.id);
     return NextResponse.json({ message: 'Transaction deleted' });
   } catch (error) {

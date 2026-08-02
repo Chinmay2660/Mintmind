@@ -3,7 +3,6 @@ import React, { useState } from 'react'
 import { Menu, PanelLeftClose } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
 import UserProfile from '@/components/UserProfile'
 import { DASHBOARD_NAV_MAIN, DASHBOARD_NAV_MORE, DASHBOARD_NAV_ALL } from '@/lib/constants/dashboardNav'
 import Logo from '@/components/Logo'
@@ -21,8 +20,7 @@ import {
 const MobileNavbar = () => {
     const pathname = usePathname()
     const [moreMenuOpen, setMoreMenuOpen] = useState(false)
-    const { isOpen, toggle } = useSidebar()
-
+    const { isOpen, open, close } = useSidebar()
     const mainMenu = DASHBOARD_NAV_MAIN.map((menu) => ({
         ...menu,
         active: pathname === menu.path,
@@ -40,39 +38,32 @@ const MobileNavbar = () => {
 
     return (
         <>
-            {/* Mobile Bottom Tab Bar - Only 3 main buttons + More */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 liquid-glass border-t border-white/20 dark:border-white/10 safe-area-inset-bottom">
-                <div className="flex items-center justify-around h-16 px-2">
+            {/* Mobile Bottom Tab Bar - main tabs + More */}
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border">
+                <div className="flex items-stretch justify-around px-1 h-16 safe-area-inset-bottom">
                     {mainMenu.map((menu) => {
                         const Icon = menu.icon
                         return (
                             <Link
                                 key={menu.id}
                                 href={menu.path}
-                                className="flex-1 flex flex-col items-center justify-center gap-1 min-w-0 relative"
+                                className={cn(
+                                    'flex-1 flex flex-col items-center justify-center gap-0.5 min-w-0 py-1',
+                                    menu.active
+                                        ? 'border-t-2 border-primary text-primary -mt-px'
+                                        : 'border-t-2 border-transparent text-muted-foreground'
+                                )}
                                 onClick={() => setMoreMenuOpen(false)}
                             >
-                                {menu.active && (
-                                    <motion.div
-                                        layoutId="activeTab"
-                                        className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-primary rounded-b-full"
-                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                    />
-                                )}
-                                <div className={`flex flex-col items-center justify-center gap-1 transition-colors ${
-                                    menu.active ? 'text-primary' : 'text-muted-foreground'
-                                }`}>
-                                    <div className={`p-2 rounded-xl transition-colors ${
-                                        menu.active ? 'bg-primary/15' : ''
-                                    }`}>
-                                        <Icon className={`w-5 h-5 ${menu.active ? 'text-primary' : ''}`} />
-                                    </div>
-                                    <span className={`text-[10px] font-medium truncate w-full text-center ${
-                                        menu.active ? 'text-primary' : 'text-muted-foreground'
-                                    }`}>
-                                        {menu.name}
-                                    </span>
+                                <div className={cn(
+                                    'p-1.5 rounded-xl transition-colors',
+                                    menu.active && 'bg-primary/15'
+                                )}>
+                                    <Icon className="w-5 h-5" />
                                 </div>
+                                <span className="text-[10px] font-medium truncate w-full text-center">
+                                    {menu.name}
+                                </span>
                             </Link>
                         )
                     })}
@@ -80,28 +71,24 @@ const MobileNavbar = () => {
                     {/* More Menu Button - Hamburger Icon */}
                     <Sheet open={moreMenuOpen} onOpenChange={setMoreMenuOpen}>
                         <SheetTrigger asChild>
-                            <button className="flex-1 flex flex-col items-center justify-center gap-1 min-w-0 relative">
-                                {moreMenu.some(m => m.active) && (
-                                    <motion.div
-                                        layoutId="activeTabMore"
-                                        className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-primary rounded-b-full"
-                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                    />
+                            <button
+                                type="button"
+                                className={cn(
+                                    'flex-1 flex flex-col items-center justify-center gap-0.5 min-w-0 py-1',
+                                    moreMenu.some(m => m.active)
+                                        ? 'border-t-2 border-primary text-primary -mt-px'
+                                        : 'border-t-2 border-transparent text-muted-foreground'
                                 )}
-                                <div className={`flex flex-col items-center justify-center gap-1 transition-colors ${
-                                    moreMenu.some(m => m.active) ? 'text-primary' : 'text-muted-foreground'
-                                }`}>
-                                    <div className={`p-2 rounded-xl transition-colors ${
-                                        moreMenu.some(m => m.active) ? 'bg-primary/15' : ''
-                                    }`}>
-                                        <Menu className={`w-5 h-5 ${moreMenu.some(m => m.active) ? 'text-primary' : ''}`} />
-                                    </div>
-                                    <span className={`text-[10px] font-medium truncate w-full text-center ${
-                                        moreMenu.some(m => m.active) ? 'text-primary' : 'text-muted-foreground'
-                                    }`}>
-                                        More
-                                    </span>
+                            >
+                                <div className={cn(
+                                    'p-1.5 rounded-xl transition-colors',
+                                    moreMenu.some(m => m.active) && 'bg-primary/15'
+                                )}>
+                                    <Menu className="w-5 h-5" />
                                 </div>
+                                <span className="text-[10px] font-medium truncate w-full text-center">
+                                    More
+                                </span>
                             </button>
                         </SheetTrigger>
                         <SheetContent side="bottom" className="h-[65vh] rounded-t-3xl pb-8">
@@ -145,10 +132,10 @@ const MobileNavbar = () => {
                 </div>
             </nav>
 
-            {/* Desktop Sidebar */}
+            {/* Desktop sidebar (md+); mobile uses bottom tab bar + More sheet */}
             <aside
                 className={cn(
-                    'sticky top-0 z-40 hidden h-screen shrink-0 flex-col overflow-hidden border-r border-white/20 liquid-glass transition-[width] duration-300 ease-in-out dark:border-white/10 md:flex',
+                    'sticky top-0 z-40 hidden h-screen shrink-0 flex-col overflow-hidden border-r border-white/20 bg-background/95 backdrop-blur-xl transition-[width] duration-300 ease-in-out dark:border-white/10 md:flex',
                     isOpen ? 'w-64' : 'w-0 border-r-0'
                 )}
             >
@@ -162,7 +149,7 @@ const MobileNavbar = () => {
                             variant="ghost"
                             size="icon"
                             className="shrink-0"
-                            onClick={toggle}
+                            onClick={close}
                             aria-label="Close sidebar"
                         >
                             <PanelLeftClose className="h-5 w-5" />

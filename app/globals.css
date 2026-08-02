@@ -33,6 +33,11 @@
       --ring: 0 0% 3.9%;
 
       --radius: 0.75rem;
+
+      --mobile-tab-bar-height: 4rem;
+      --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
+      --mobile-content-pb: calc(var(--mobile-tab-bar-height) + var(--mobile-safe-bottom));
+      --mobile-fab-bottom: calc(var(--mobile-content-pb) + 0.75rem);
     }
 
     .dark {
@@ -139,7 +144,15 @@
     }
 
     .safe-area-inset-bottom {
-      padding-bottom: env(safe-area-inset-bottom);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .mobile-content-pb {
+      padding-bottom: var(--mobile-content-pb);
+    }
+
+    .mobile-fab-bottom {
+      bottom: var(--mobile-fab-bottom);
     }
 
     /* Native-like touch targets */
@@ -260,65 +273,44 @@
       animation-play-state: paused;
     }
 
-    /* ── Liquid glass theme (landing) ── */
+    /* ── Marketing accents (landing, auth hero) ── */
     .landing-bg {
       background:
-        radial-gradient(ellipse 100% 80% at 50% -30%, rgba(37, 99, 235, 0.12), transparent 60%),
-        radial-gradient(ellipse 60% 50% at 100% 50%, rgba(59, 130, 246, 0.08), transparent 50%),
-        radial-gradient(ellipse 50% 40% at 0% 80%, rgba(29, 78, 216, 0.06), transparent 50%),
+        radial-gradient(ellipse 90% 60% at 50% -20%, hsl(var(--primary) / 0.1), transparent 55%),
+        radial-gradient(ellipse 50% 40% at 100% 40%, hsl(var(--primary) / 0.06), transparent 50%),
         hsl(var(--background));
     }
 
     .dark .landing-bg {
       background:
-        radial-gradient(ellipse 100% 80% at 50% -30%, rgba(37, 99, 235, 0.2), transparent 60%),
-        radial-gradient(ellipse 60% 50% at 100% 50%, rgba(59, 130, 246, 0.12), transparent 50%),
-        radial-gradient(ellipse 50% 40% at 0% 80%, rgba(29, 78, 216, 0.1), transparent 50%),
-        hsl(240 10% 4%);
+        radial-gradient(ellipse 90% 60% at 50% -20%, hsl(var(--primary) / 0.16), transparent 55%),
+        radial-gradient(ellipse 50% 40% at 100% 40%, hsl(var(--primary) / 0.08), transparent 50%),
+        hsl(var(--background));
     }
 
     .liquid-orb {
       position: absolute;
       border-radius: 50%;
-      filter: blur(80px);
+      filter: blur(72px);
       will-change: transform;
     }
 
-    .liquid-orb-blue { background: rgba(37, 99, 235, 0.35); }
-    .liquid-orb-cyan { background: rgba(6, 182, 212, 0.3); }
-    .liquid-orb-fuchsia { background: rgba(217, 70, 239, 0.25); }
-    .liquid-orb-indigo { background: rgba(99, 102, 241, 0.3); }
+    .liquid-orb-blue { background: hsl(var(--primary) / 0.22); }
+    .liquid-orb-cyan { background: hsl(var(--primary) / 0.14); }
+    .liquid-orb-fuchsia { background: hsl(var(--primary) / 0.1); }
+    .liquid-orb-indigo { background: hsl(var(--primary) / 0.12); }
 
     .liquid-glass {
-      background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.55) 0%,
-        rgba(255, 255, 255, 0.2) 50%,
-        rgba(255, 255, 255, 0.35) 100%
-      );
-      backdrop-filter: blur(24px) saturate(180%);
-      -webkit-backdrop-filter: blur(24px) saturate(180%);
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      box-shadow:
-        0 8px 32px rgba(37, 99, 235, 0.08),
-        0 2px 8px rgba(0, 0, 0, 0.04),
-        inset 0 1px 0 rgba(255, 255, 255, 0.7),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.2);
+      background: hsl(var(--card) / 0.82);
+      backdrop-filter: blur(16px) saturate(140%);
+      -webkit-backdrop-filter: blur(16px) saturate(140%);
+      border: 1px solid hsl(var(--border));
+      box-shadow: 0 4px 24px hsl(var(--foreground) / 0.04);
     }
 
     .dark .liquid-glass {
-      background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.09) 0%,
-        rgba(255, 255, 255, 0.03) 50%,
-        rgba(255, 255, 255, 0.06) 100%
-      );
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.3),
-        0 0 0 1px rgba(255, 255, 255, 0.05),
-        inset 0 1px 0 rgba(255, 255, 255, 0.15),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+      background: hsl(var(--card) / 0.72);
+      box-shadow: 0 8px 32px hsl(0 0% 0% / 0.24);
     }
 
     .liquid-glass-shine {
@@ -326,33 +318,9 @@
       overflow: hidden;
     }
 
-    .liquid-glass-shine::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(
-        105deg,
-        transparent 40%,
-        rgba(255, 255, 255, 0.35) 50%,
-        transparent 60%
-      );
-      transform: translateX(-100%);
-      animation: liquid-shine 5s ease-in-out infinite;
-      pointer-events: none;
-      z-index: 1;
-    }
-
-    .dark .liquid-glass-shine::before {
-      background: linear-gradient(
-        105deg,
-        transparent 40%,
-        rgba(255, 255, 255, 0.08) 50%,
-        transparent 60%
-      );
-    }
-
     .liquid-glass-border {
       position: relative;
+      border: 1px solid hsl(var(--border));
     }
 
     .liquid-glass-border::after {
@@ -363,13 +331,10 @@
       padding: 1px;
       background: linear-gradient(
         135deg,
-        rgba(37, 99, 235, 0.5),
-        rgba(59, 130, 246, 0.4),
-        rgba(29, 78, 216, 0.3),
-        rgba(96, 165, 250, 0.4)
+        hsl(var(--primary) / 0.45),
+        hsl(var(--primary) / 0.2),
+        hsl(var(--primary) / 0.35)
       );
-      background-size: 300% 300%;
-      animation: liquid-border 6s ease infinite;
       -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
@@ -378,60 +343,58 @@
     }
 
     .liquid-gradient-text {
-      background: linear-gradient(135deg, #2563eb 0%, #3b82f6 40%, #60a5fa 70%, #1d4ed8 100%);
+      background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(217 91% 68%) 50%, hsl(var(--primary)) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      background-size: 200% 200%;
-      animation: gradient 4s ease infinite;
     }
 
     .liquid-gradient-bg {
-      background: linear-gradient(135deg, #2563eb 0%, #3b82f6 35%, #60a5fa 70%, #1d4ed8 100%);
-      background-size: 200% 200%;
-      animation: gradient 6s ease infinite;
+      background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(217 91% 62%) 100%);
     }
 
     .liquid-btn {
-      background: linear-gradient(135deg, #2563eb, #3b82f6);
-      box-shadow: 0 4px 24px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-      transition: box-shadow 0.3s, transform 0.3s;
+      background: hsl(var(--primary));
+      box-shadow: 0 2px 12px hsl(var(--primary) / 0.28);
+      transition: background-color 0.2s, box-shadow 0.2s, transform 0.2s;
+      color: hsl(var(--primary-foreground));
     }
 
     .liquid-btn:hover {
-      box-shadow: 0 8px 32px rgba(37, 99, 235, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      background: hsl(var(--primary) / 0.92);
+      box-shadow: 0 4px 20px hsl(var(--primary) / 0.35);
     }
 
     .liquid-pill {
-      background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(59, 130, 246, 0.08));
-      border: 1px solid rgba(37, 99, 235, 0.25);
-      backdrop-filter: blur(12px);
+      background: hsl(var(--primary) / 0.1);
+      border: 1px solid hsl(var(--primary) / 0.2);
+      color: hsl(var(--primary));
     }
 
     .dark .liquid-pill {
-      background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(59, 130, 246, 0.1));
-      border: 1px solid rgba(37, 99, 235, 0.3);
+      background: hsl(var(--primary) / 0.15);
+      border: 1px solid hsl(var(--primary) / 0.28);
     }
 
-    /* App-wide surfaces (dashboard, auth, etc.) — aligned with landing liquid glass */
+    /* App surfaces — clean cards, no animated glass */
     .finance-shell {
-      @apply landing-bg text-foreground min-h-screen relative;
+      @apply bg-background text-foreground min-h-screen relative;
     }
 
     .surface-card {
-      @apply liquid-glass text-card-foreground rounded-2xl;
+      @apply bg-card text-card-foreground rounded-2xl border border-border shadow-sm;
     }
 
     .surface-inner {
-      @apply rounded-xl bg-white/40 dark:bg-white/5 border border-white/30 dark:border-white/10 backdrop-blur-sm;
+      @apply rounded-xl bg-muted/50 border border-border;
     }
 
     .surface-input {
-      @apply bg-white/50 dark:bg-white/5 border-white/30 dark:border-white/10 rounded-xl backdrop-blur-sm;
+      @apply bg-background border border-input rounded-xl;
     }
 
     .finance-pill {
-      @apply rounded-full liquid-btn text-white font-semibold border-0;
+      @apply rounded-full bg-primary text-primary-foreground font-semibold border-0 shadow-sm hover:bg-primary/90;
     }
 
     .finance-action-btn {
@@ -439,18 +402,8 @@
     }
 
     .finance-action-icon {
-      @apply w-14 h-14 rounded-full liquid-glass flex items-center justify-center transition-all hover:shadow-lg hover:shadow-primary/10 active:scale-95;
+      @apply w-14 h-14 rounded-full bg-card border border-border shadow-sm flex items-center justify-center transition-all hover:shadow-md hover:border-primary/30 active:scale-95;
     }
-  }
-
-  @keyframes liquid-shine {
-    0%, 100% { transform: translateX(-100%); }
-    50% { transform: translateX(200%); }
-  }
-
-  @keyframes liquid-border {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
   }
 
   @keyframes liquid-float {

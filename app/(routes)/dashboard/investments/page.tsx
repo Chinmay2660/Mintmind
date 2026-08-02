@@ -1,6 +1,6 @@
 'use client'
 import React, { Suspense, useEffect, useState } from 'react'
-import { Plus, TrendingUp, Edit, Trash2, Calendar, DollarSign } from 'lucide-react'
+import { Plus, TrendingUp, Edit, Trash2, Calendar } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'

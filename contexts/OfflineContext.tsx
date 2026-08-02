@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { clearOfflineData, getMeta, getPendingCount } from '@/lib/offline/db'
-import { isOnline, onConnectivityChange } from '@/lib/offline/network'
+import { initAppResumeSync, initNetworkMonitoring, isOnline, onConnectivityChange } from '@/lib/offline/network'
 import { syncOfflineData } from '@/lib/offline/sync'
 import type { OfflineContextValue, OfflineProviderProps } from '@/types/offline'
 
@@ -33,8 +33,15 @@ export function OfflineProvider({ children }: OfflineProviderProps) {
   }, [user, refreshMeta])
 
   useEffect(() => {
-    setOnline(isOnline())
-    return onConnectivityChange(setOnline)
+    let cancelled = false
+
+    initNetworkMonitoring().then(() => {
+      if (!cancelled) setOnline(isOnline())
+    })
+
+    return onConnectivityChange((nextOnline) => {
+      if (!cancelled) setOnline(nextOnline)
+    })
   }, [])
 
   useEffect(() => {
@@ -53,6 +60,15 @@ export function OfflineProvider({ children }: OfflineProviderProps) {
     syncNow()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [online])
+
+  useEffect(() => {
+    if (!user) return
+    let cleanup = () => {}
+    initAppResumeSync(syncNow).then((dispose) => {
+      cleanup = dispose
+    })
+    return () => cleanup()
+  }, [user, syncNow])
 
   useEffect(() => {
     if (!user) return

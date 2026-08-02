@@ -37,55 +37,50 @@ export async function GET(request) {
         startDate = new Date(now.getFullYear(), now.getMonth(), 1)
     }
 
-    // Get expenses for the period
-    const expenses = await Transaction.find({
-      userId: user._id,
-      type: 'expense',
-      date: { $gte: startDate, $lte: now },
-    }).populate('categoryId', 'name icon type')
+    const dateFilter = { $gte: startDate, $lte: now }
 
-    // Calculate total expenses
-    const totalExpenses = expenses.reduce(
-      (sum, expense) => sum + expense.amount,
-      0
-    )
+    const [expenses, incomes] = await Promise.all([
+      Transaction.find({ userId: user._id, type: 'expense', date: dateFilter })
+        .populate('categoryId', 'name icon type color'),
+      Transaction.find({ userId: user._id, type: 'income', date: dateFilter })
+        .populate('categoryId', 'name icon type color'),
+    ])
 
-    // Group by category
-    const categoryWise = expenses.reduce((acc, expense) => {
-      const categoryId = expense.categoryId?._id?.toString() || 'uncategorized'
-      const categoryName = expense.categoryId?.name || 'Uncategorized'
-      const categoryIcon = expense.categoryId?.icon || '📁'
+    const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0)
+    const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0)
 
-      if (!acc[categoryId]) {
-        acc[categoryId] = {
-          categoryId,
-          categoryName,
-          categoryIcon,
-          total: 0,
-          count: 0,
-          transactions: [],
+    const groupByCategory = (items) =>
+      items.reduce((acc, item) => {
+        const categoryId = item.categoryId?._id?.toString() || 'uncategorized'
+        const categoryName = item.categoryId?.name || 'Uncategorized'
+        const categoryIcon = item.categoryId?.icon || '📁'
+        const categoryColor = item.categoryId?.color || '#2563eb'
+
+        if (!acc[categoryId]) {
+          acc[categoryId] = {
+            categoryId,
+            categoryName,
+            categoryIcon,
+            categoryColor,
+            total: 0,
+            count: 0,
+          }
         }
-      }
 
-      acc[categoryId].total += expense.amount
-      acc[categoryId].count += 1
-      acc[categoryId].transactions.push(expense)
+        acc[categoryId].total += item.amount
+        acc[categoryId].count += 1
+        return acc
+      }, {})
 
-      return acc
-    }, {})
+    const categoryWise = groupByCategory(expenses)
+    const incomeCategoryWise = groupByCategory(incomes)
 
-    // Convert to array and sort by total
-    const categoryStats = Object.values(categoryWise).sort(
-      (a, b) => b.total - a.total
-    )
+    const categoryStats = Object.values(categoryWise).sort((a, b) => b.total - a.total)
+    const incomeCategoryStats = Object.values(incomeCategoryWise).sort((a, b) => b.total - a.total)
 
-    // Monthly breakdown
     const monthlyBreakdown = expenses.reduce((acc, expense) => {
       const monthKey = format(new Date(expense.date), 'MMM yyyy')
-      if (!acc[monthKey]) {
-        acc[monthKey] = 0
-      }
-      acc[monthKey] += expense.amount
+      acc[monthKey] = (acc[monthKey] || 0) + expense.amount
       return acc
     }, {})
 
@@ -94,12 +89,15 @@ export async function GET(request) {
       startDate,
       endDate: now,
       totalExpenses,
+      totalIncome,
+      netSavings: totalIncome - totalExpenses,
       categoryWise: categoryStats,
+      incomeCategoryWise: incomeCategoryStats,
       monthlyBreakdown: Object.entries(monthlyBreakdown).map(([month, amount]) => ({
         month,
         amount,
       })),
-      transactionCount: expenses.length,
+      transactionCount: expenses.length + incomes.length,
     })
   } catch (error) {
     console.error('Error fetching expense stats:', error)

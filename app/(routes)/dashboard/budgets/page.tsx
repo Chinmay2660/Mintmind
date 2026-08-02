@@ -20,6 +20,7 @@ import { FormSheet } from '@/components/ui/form-sheet'
 import { FAB } from '@/components/ui/fab'
 import { SwipeableRow, DesktopRowActions } from '@/components/ui/swipeable-row'
 import { formatCurrency } from '@/lib/utils/format'
+import { cn } from '@/lib/utils'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 
 const BudgetsPageContent = () => {
@@ -168,6 +169,9 @@ const BudgetsPageContent = () => {
     }
   }, [searchParams])
 
+  const isInitialLoad = loading && budgets.length === 0
+  const isRefreshing = loading && budgets.length > 0
+
   const budgetForm = (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
@@ -314,15 +318,17 @@ const BudgetsPageContent = () => {
       <FAB onClick={openAddForm} label="Add budget" />
 
       {/* Period Filter */}
-      <TabButtonGroup
-        value={selectedPeriod}
-        onValueChange={setSelectedPeriod}
-        options={periodOptions}
-      />
+      <div className="flex items-center gap-3 min-w-0">
+        <TabButtonGroup
+          value={selectedPeriod}
+          onValueChange={setSelectedPeriod}
+          options={periodOptions}
+        />
+      </div>
 
       {/* Budgets List */}
-      <div className="space-y-2">
-        {loading ? (
+      <div className={cn('space-y-2 transition-opacity', isRefreshing && 'opacity-60 pointer-events-none')}>
+        {isInitialLoad ? (
           // Show skeletons while loading
           [1, 2, 3].map((i) => (
             <div

@@ -1,7 +1,7 @@
 'use client'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useState, useEffect } from 'react'
-import { User, Mail, Image as ImageIcon, Save } from 'lucide-react'
+import { User, Mail, Image as ImageIcon, Save, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { motion } from 'framer-motion'
@@ -11,7 +11,7 @@ import Link from 'next/link'
 import { PageHeader } from '@/components/ui/PageHeader'
 
 const SettingsPage = () => {
-  const { user, refetch } = useAuth()
+  const { user, refetch, signOut } = useAuth()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     firstName: '',
@@ -66,7 +66,7 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-6 max-w-4xl mx-auto">
+    <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6 max-w-4xl mx-auto">
       <PageHeader
         title="Settings"
         subtitle="Manage your account settings and preferences"
@@ -211,6 +211,28 @@ const SettingsPage = () => {
             <span className="text-sm text-foreground">Google Account</span>
           </div>
         </div>
+      </motion.div>
+
+      {/* Sign Out */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="surface-card p-6"
+      >
+        <h2 className="text-lg font-semibold text-foreground mb-2">Sign Out</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Sign out of your account on this device.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={signOut}
+          className="w-full sm:w-auto text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/20"
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          Sign Out
+        </Button>
       </motion.div>
     </div>
   )

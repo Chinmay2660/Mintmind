@@ -19,7 +19,7 @@ const Marquee = () => {
   const doubled = [...items, ...items]
 
   return (
-    <section className="relative py-6 overflow-hidden liquid-glass border-y border-white/20">
+    <section className="relative py-6 overflow-hidden border-y border-border bg-muted/30">
       <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-white/40 dark:from-gray-950/40 to-transparent z-10" />
       <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-white/40 dark:from-gray-950/40 to-transparent z-10" />
       <div className="flex animate-marquee whitespace-nowrap">

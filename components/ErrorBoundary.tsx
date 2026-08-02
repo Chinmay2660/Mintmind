@@ -38,6 +38,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         <ErrorFallback
           error={this.state.error}
           reset={this.handleReset}
+          fullPage
         />
       )
     }

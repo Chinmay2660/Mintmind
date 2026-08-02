@@ -1,6 +1,10 @@
 import { getAuthenticatedUser } from '@/lib/middleware/auth';
 import Family from '@/models/Family';
 import FamilyGoal from '@/models/FamilyGoal';
+import {
+  resolveMemberSplits,
+  syncPersonalGoalsFromFamilyGoal,
+} from '@/lib/utils/familyGoals';
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 
@@ -26,6 +30,7 @@ export async function GET(request) {
 
     const goals = await FamilyGoal.find({ familyId: family._id })
       .populate('createdBy', 'name email')
+      .populate('memberSplits.user', 'name email image')
       .sort({ createdAt: -1 });
 
     return NextResponse.json(goals);
@@ -60,19 +65,28 @@ export async function POST(request) {
     }
 
     const body = await request.json();
+    const memberSplits = resolveMemberSplits(family, body.targetAmount, body.splitPercentages);
+
     const goal = await FamilyGoal.create({
-      ...body,
+      title: body.title,
+      description: body.description,
+      targetAmount: body.targetAmount,
+      currentAmount: body.currentAmount || 0,
+      targetDate: body.targetDate || undefined,
+      category: body.category || 'savings',
       familyId: family._id,
       createdBy: user._id,
-      currentAmount: body.currentAmount || 0,
+      memberSplits,
     });
 
+    await syncPersonalGoalsFromFamilyGoal(goal);
+
     const populatedGoal = await FamilyGoal.findById(goal._id)
-      .populate('createdBy', 'name email');
+      .populate('createdBy', 'name email')
+      .populate('memberSplits.user', 'name email image');
 
     return NextResponse.json(populatedGoal);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-

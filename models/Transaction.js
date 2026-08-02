@@ -8,7 +8,7 @@ const TransactionSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['expense', 'income'],
+    enum: ['expense', 'income', 'transfer'],
     required: true,
   },
   amount: {
@@ -18,7 +18,14 @@ const TransactionSchema = new mongoose.Schema({
   categoryId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
-    required: true,
+  },
+  transferToAccountId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'BankAccount',
+  },
+  transferToIsCash: {
+    type: Boolean,
+    default: false,
   },
   accountId: {
     type: mongoose.Schema.Types.ObjectId,

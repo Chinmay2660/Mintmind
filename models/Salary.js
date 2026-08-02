@@ -16,7 +16,7 @@ const SalarySchema = new mongoose.Schema(
     currency: {
       type: String,
       default: 'INR',
-      enum: ['INR', 'USD', 'EUR', 'GBP'],
+      enum: ['INR'],
     },
     frequency: {
       type: String,

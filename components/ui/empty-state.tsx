@@ -32,7 +32,7 @@ export function EmptyState({
         className
       )}
     >
-      <div className="w-16 h-16 mx-auto mb-4 rounded-full liquid-pill flex items-center justify-center">
+      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
         {Icon && <Icon className="w-8 h-8 text-primary" />}
       </div>
       <p className="text-muted-foreground mb-2 font-medium">{title}</p>
@@ -40,7 +40,7 @@ export function EmptyState({
         <p className="text-sm text-muted-foreground/80 mb-4">{description}</p>
       )}
       {onAction && actionLabel && (
-        <Button onClick={onAction} className="liquid-btn border-0 text-white">
+        <Button onClick={onAction}>
           <Plus className="w-4 h-4 mr-2" />
           {actionLabel}
         </Button>

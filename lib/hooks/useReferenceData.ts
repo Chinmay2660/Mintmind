@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import request from '@/lib/api/request'
+import { useOffline } from '@/contexts/OfflineContext'
 
 const CACHE_TTL_MS = 60_000
 
@@ -24,6 +25,7 @@ export function invalidateReferenceDataCache() {
 }
 
 export function useCategories(userId?: string) {
+  const { online } = useOffline()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -50,7 +52,7 @@ export function useCategories(userId?: string) {
       categoriesCache.income = { data: incomeCats.data, fetchedAt: Date.now() }
       setCategories([...expenseCats.data, ...incomeCats.data])
     } catch {
-      setCategories([])
+      setCategories((prev) => prev)
     } finally {
       setLoading(false)
     }
@@ -58,12 +60,13 @@ export function useCategories(userId?: string) {
 
   useEffect(() => {
     if (userId) fetchCategories()
-  }, [userId, fetchCategories])
+  }, [userId, online, fetchCategories])
 
   return { categories, loading, refetch: () => fetchCategories(true) }
 }
 
 export function useBankAccounts(userId?: string) {
+  const { online } = useOffline()
   const [accounts, setAccounts] = useState<BankAccount[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -82,7 +85,7 @@ export function useBankAccounts(userId?: string) {
       accountsCache = { data: response.data, fetchedAt: Date.now() }
       setAccounts(response.data)
     } catch {
-      setAccounts([])
+      setAccounts((prev) => prev)
     } finally {
       setLoading(false)
     }
@@ -90,7 +93,7 @@ export function useBankAccounts(userId?: string) {
 
   useEffect(() => {
     if (userId) fetchAccounts()
-  }, [userId, fetchAccounts])
+  }, [userId, online, fetchAccounts])
 
   return { accounts, loading, refetch: () => fetchAccounts(true) }
 }

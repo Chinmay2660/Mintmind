@@ -62,7 +62,7 @@ export function CardContent({ children, className = '' }: { children: ReactNode;
 
 export function CardFooter({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('p-5 pt-3 border-t border-white/20 dark:border-white/10', className)}>
+    <div className={cn('p-5 pt-3 border-t border-border', className)}>
       {children}
     </div>
   )
@@ -92,7 +92,7 @@ export function StatCard({
   const formattedValue = formatValue ? formatValue(value) : value
 
   return (
-    <Card className={cn('relative overflow-hidden', className)} animate hover {...props}>
+    <Card className={cn('relative overflow-hidden p-5', className)} animate hover {...props}>
       <div className={cn('absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16', `bg-gradient-to-br ${gradient} opacity-10`)} />
       <div className="relative">
         <div className="flex items-center justify-between mb-2">

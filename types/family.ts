@@ -39,6 +39,13 @@ export interface FamilyStats {
   memberCount: number
 }
 
+export interface FamilyGoalMemberSplit {
+  user: FamilyUser
+  percentage: number
+  targetAmount: number
+  currentAmount: number
+}
+
 export interface FamilyGoal {
   _id: string
   title: string
@@ -49,6 +56,19 @@ export interface FamilyGoal {
   category: 'savings' | 'investment' | 'expense' | 'other'
   status?: 'active' | 'completed' | 'cancelled'
   createdBy?: FamilyUser
+  memberSplits?: FamilyGoalMemberSplit[]
+}
+
+export interface PersonalGoal {
+  _id: string
+  title: string
+  description?: string
+  targetAmount: number
+  currentAmount: number
+  targetDate?: string
+  category: 'savings' | 'investment' | 'expense' | 'other'
+  status?: 'active' | 'completed' | 'cancelled'
+  familyGoalId?: { _id: string; title?: string } | string
 }
 
 export interface FamilyBudget {

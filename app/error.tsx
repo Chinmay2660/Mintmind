@@ -13,5 +13,5 @@ export default function Error({ error, reset }: ErrorPageProps) {
     console.error(error)
   }, [error])
 
-  return <ErrorFallback error={error} reset={reset} />
+  return <ErrorFallback error={error} reset={reset} fullPage />
 }

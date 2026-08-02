@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { OfflineProvider } from '@/contexts/OfflineContext'
+import { SidebarProvider } from '@/contexts/SidebarContext'
 import '@/lib/offline/selfCheck'
 
 interface ProvidersProps {
@@ -16,9 +17,11 @@ export default function Providers({ children }: ProvidersProps) {
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <AuthProvider>
         <OfflineProvider>
-          <ErrorBoundary>
-            {children}
-          </ErrorBoundary>
+          <SidebarProvider>
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </SidebarProvider>
         </OfflineProvider>
       </AuthProvider>
     </ThemeProvider>

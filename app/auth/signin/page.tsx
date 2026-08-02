@@ -16,7 +16,6 @@ import {
 import { isNativePlatform } from '@/lib/platform'
 import axios from 'axios'
 import { toast } from 'sonner'
-import LiquidBackground from '@/app/_components/LiquidBackground'
 
 function SignInContent() {
   const router = useRouter()
@@ -203,8 +202,7 @@ function SignInContent() {
   // Native app layout (simplified, full-screen)
   if (isNative) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center landing-bg text-foreground p-6 relative overflow-hidden">
-        <LiquidBackground className="opacity-70" />
+      <div className="min-h-screen flex flex-col items-center justify-center landing-bg aurora-bg text-foreground p-6 relative overflow-hidden">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -234,7 +232,7 @@ function SignInContent() {
           {!loading && (
             <Button
               onClick={handleGoogleSignInClick}
-              className="w-full h-14 text-base font-medium liquid-btn text-white border-0 rounded-xl"
+              className="w-full h-14 text-base font-medium rounded-xl"
             >
               <div className="flex items-center justify-center gap-3">
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -261,8 +259,7 @@ function SignInContent() {
 
   // Web layout (existing split-screen design)
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row items-center justify-center landing-bg text-foreground p-4 relative overflow-hidden">
-      <LiquidBackground />
+    <div className="min-h-screen flex flex-col lg:flex-row items-center justify-center landing-bg aurora-bg text-foreground p-4 relative overflow-hidden">
 
       {/* Back to Home Button */}
       <motion.div
@@ -345,7 +342,7 @@ function SignInContent() {
           {!loading && (
             <Button
               onClick={handleGoogleSignInClick}
-              className="w-full h-12 text-base font-medium liquid-btn text-white border-0 rounded-xl"
+              className="w-full h-12 text-base font-medium rounded-xl"
             >
               <div className="flex items-center justify-center gap-3">
                 <svg className="w-5 h-5" viewBox="0 0 24 24">

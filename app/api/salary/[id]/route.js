@@ -5,6 +5,7 @@ import { getAuthenticatedUser } from '@/lib/middleware/auth'
 
 export async function GET(request, { params }) {
   try {
+    const { id } = await params
     const user = await getAuthenticatedUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -13,7 +14,7 @@ export async function GET(request, { params }) {
     await connectDB()
 
     const salary = await Salary.findOne({
-      _id: params.id,
+      _id: id,
       userId: user._id,
     })
       .populate('accountId', 'accountName icon')
@@ -35,6 +36,7 @@ export async function GET(request, { params }) {
 
 export async function PUT(request, { params }) {
   try {
+    const { id } = await params
     const user = await getAuthenticatedUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -56,7 +58,7 @@ export async function PUT(request, { params }) {
     } = body
 
     const salary = await Salary.findOneAndUpdate(
-      { _id: params.id, userId: user._id },
+      { _id: id, userId: user._id },
       {
         ...(amount !== undefined && { amount: parseFloat(amount) }),
         ...(currency && { currency }),
@@ -89,6 +91,7 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
+    const { id } = await params
     const user = await getAuthenticatedUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -97,7 +100,7 @@ export async function DELETE(request, { params }) {
     await connectDB()
 
     const salary = await Salary.findOneAndDelete({
-      _id: params.id,
+      _id: id,
       userId: user._id,
     })
 

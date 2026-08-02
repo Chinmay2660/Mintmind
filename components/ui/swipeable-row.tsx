@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { useRef, useState } from 'react'
 import { Edit, Trash2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface SwipeableRowProps {
   children: ReactNode
@@ -40,12 +41,21 @@ export function SwipeableRow({ children, onEdit, onDelete, className = '' }: Swi
   const close = () => setOffset(0)
 
   return (
-    <div className={`relative overflow-hidden rounded-xl ${className}`}>
-      <div className="absolute inset-y-0 right-0 flex md:hidden">
+    <div className={cn('relative overflow-hidden rounded-2xl', className)}>
+      <div
+        className={cn(
+          'absolute inset-y-0 right-0 z-0 flex md:hidden transition-opacity',
+          offset > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}
+        aria-hidden={offset === 0}
+      >
         {onEdit && (
           <button
             type="button"
-            onClick={() => { close(); onEdit() }}
+            onClick={() => {
+              close()
+              onEdit()
+            }}
             className="w-16 bg-blue-500 flex items-center justify-center"
             aria-label="Edit"
           >
@@ -55,8 +65,11 @@ export function SwipeableRow({ children, onEdit, onDelete, className = '' }: Swi
         {onDelete && (
           <button
             type="button"
-            onClick={() => { close(); onDelete() }}
-            className="w-16 bg-red-500 flex items-center justify-center"
+            onClick={() => {
+              close()
+              onDelete()
+            }}
+            className="w-16 bg-red-500 flex items-center justify-center rounded-r-2xl"
             aria-label="Delete"
           >
             <Trash2 className="w-5 h-5 text-white" />
@@ -64,7 +77,7 @@ export function SwipeableRow({ children, onEdit, onDelete, className = '' }: Swi
         )}
       </div>
       <div
-        className="relative bg-inherit transition-transform duration-200 md:!translate-x-0"
+        className="relative z-10 w-full rounded-2xl bg-card transition-transform duration-200 md:!translate-x-0"
         style={{ transform: `translateX(-${offset}px)` }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import {
   Users, UserPlus, Copy, Clock, Crown, User, Settings, Trash2, LogOut,
-  ArrowRightLeft, Target, DollarSign, ReceiptText, TrendingUp, Wallet,
+  ArrowRightLeft, Target, IndianRupee, ReceiptText, TrendingUp, Wallet,
 } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
@@ -286,7 +286,7 @@ const FamilyPage = () => {
 
   if (!family) {
     return (
-      <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-6">
+      <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-6 overflow-x-hidden">
         <PageHeader
           title="Family Circle"
           subtitle="Create or join a circle to share finances with loved ones"
@@ -355,7 +355,7 @@ const FamilyPage = () => {
   const activeMembers = getActiveMembers(family)
 
   return (
-    <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-6">
+    <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-6 overflow-x-hidden">
       <PageHeader
         title={family.name}
         subtitle={`${memberCount} member${memberCount !== 1 ? 's' : ''} in your circle`}
@@ -363,11 +363,25 @@ const FamilyPage = () => {
       >
         {head && (
           <>
-            <Button variant="outline" size="sm" onClick={() => setIsSettingsDialogOpen(true)}>
-              <Settings className="w-4 h-4 mr-2" />Settings
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 w-9 p-0 sm:w-auto sm:px-3"
+              onClick={() => setIsSettingsDialogOpen(true)}
+              aria-label="Circle settings"
+            >
+              <Settings className="w-4 h-4" />
+              <span className="hidden sm:inline ml-2">Settings</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setIsTransferDialogOpen(true)}>
-              <ArrowRightLeft className="w-4 h-4 mr-2" />Transfer Headship
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 w-9 p-0 sm:w-auto sm:px-3"
+              onClick={() => setIsTransferDialogOpen(true)}
+              aria-label="Transfer headship"
+            >
+              <ArrowRightLeft className="w-4 h-4" />
+              <span className="hidden sm:inline ml-2">Transfer Headship</span>
             </Button>
           </>
         )}
@@ -445,7 +459,7 @@ const FamilyPage = () => {
         options={[
           { value: 'overview', label: 'Overview', icon: Users },
           { value: 'goals', label: 'Goals', icon: Target },
-          { value: 'budgets', label: 'Budgets', icon: DollarSign },
+          { value: 'budgets', label: 'Budgets', icon: IndianRupee },
           { value: 'expenses', label: 'Expenses', icon: ReceiptText },
         ]}
       />
@@ -637,12 +651,14 @@ const FamilyPage = () => {
         </>
       )}
 
-      {activeTab === 'goals' && (
+      {activeTab === 'goals' && family && (
         <FamilyGoalsSection
           goals={goals}
           loading={goalsLoading}
           onRefresh={fetchGoals}
           isFamilyHead={head}
+          family={family}
+          currentUserId={user?.id}
         />
       )}
       {activeTab === 'budgets' && (

@@ -1,217 +1,328 @@
 'use client'
-import React, { Suspense, useEffect, useState } from 'react'
-import { Plus, ArrowUpCircle, ArrowDownCircle, Edit, Trash2, Filter } from 'lucide-react'
+
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { ArrowDownCircle, Search } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { format } from 'date-fns'
-import { motion } from 'framer-motion'
+import { useOffline } from '@/contexts/OfflineContext'
+import { format, startOfDay, endOfDay } from 'date-fns'
 import { useSearchParams } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { FilterButtonGroup } from '@/components/ui/filter-button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Card } from '@/components/ui/card'
 import { FormButtonGroup } from '@/components/ui/form-buttons'
 import { ToggleButtonGroup } from '@/components/ui/toggle-button'
-import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { ListItemSkeleton } from '@/components/ui/loading-skeleton'
+import { cn } from '@/lib/utils'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { FAB } from '@/components/ui/fab'
-import { SwipeableRow, DesktopRowActions } from '@/components/ui/swipeable-row'
-import { formatCurrency } from '@/lib/utils/format'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useCategories, useBankAccounts } from '@/lib/hooks/useReferenceData'
+import {
+  buildCalendarDays,
+  filterByDateRange,
+  filterBySearch,
+  getDateRangeForView,
+  groupByDay,
+  summarizeTransactions,
+  type TimeView,
+  type TransactionLike,
+} from '@/lib/utils/transactions'
+import { TransactionSummaryBar } from './_components/TransactionSummaryBar'
+import { TransactionTimeControls } from './_components/TransactionTimeControls'
+import { TransactionCalendarView } from './_components/TransactionCalendarView'
+import { TransactionGroupedList } from './_components/TransactionGroupedList'
+import {
+  TransactionFilterSheet,
+  DEFAULT_TRANSACTION_FILTERS,
+  applyClientFilters,
+  type TransactionFilters,
+} from './_components/TransactionFilterSheet'
+
+interface FormData {
+  type: 'expense' | 'income' | 'transfer'
+  amount: number
+  categoryId: string
+  accountId: string
+  isCash: boolean
+  transferToAccountId: string
+  transferToIsCash: boolean
+  description: string
+  date: string
+}
+
+const EMPTY_FORM: FormData = {
+  type: 'expense',
+  amount: 0,
+  categoryId: '',
+  accountId: '',
+  isCash: false,
+  transferToAccountId: '',
+  transferToIsCash: false,
+  description: '',
+  date: new Date().toISOString().split('T')[0],
+}
 
 const TransactionsPageContent = () => {
   const { user } = useAuth()
+  const { online } = useOffline()
   const searchParams = useSearchParams()
-  const [transactions, setTransactions] = useState([])
+  const [transactions, setTransactions] = useState<TransactionLike[]>([])
   const { categories } = useCategories(user?.id)
   const { accounts } = useBankAccounts(user?.id)
+  const [cashBalance, setCashBalance] = useState(0)
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingTransaction, setEditingTransaction] = useState(null)
-  const [filterType, setFilterType] = useState('all')
+  const [editingTransaction, setEditingTransaction] = useState<TransactionLike | null>(null)
+  const [timeView, setTimeView] = useState<TimeView>('monthly')
+  const [anchorDate, setAnchorDate] = useState(new Date())
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filters, setFilters] = useState<TransactionFilters>(DEFAULT_TRANSACTION_FILTERS)
+  const [formData, setFormData] = useState<FormData>(EMPTY_FORM)
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
-  const [formData, setFormData] = useState({
-    type: 'expense',
-    amount: 0,
-    categoryId: '',
-    accountId: '',
-    isCash: false,
-    description: '',
-    date: new Date().toISOString().split('T')[0],
-  })
 
-  useEffect(() => {
-    if (user) fetchTransactions()
-  }, [user, filterType])
-
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
+    if (!user) return
     try {
       setLoading(true)
-      const params = filterType !== 'all' ? { type: filterType } : {}
-      const response = await request.get('/api/transactions', { params })
-      setTransactions(response.data)
-    } catch (error) {
-      toast.error('Failed to load transactions')
+      const range =
+        timeView === 'total'
+          ? { start: new Date(2000, 0, 1), end: new Date() }
+          : getDateRangeForView(timeView === 'calendar' ? 'monthly' : timeView, anchorDate)
+
+      const params: Record<string, string> = {
+        startDate: range.start.toISOString(),
+        endDate: range.end.toISOString(),
+        limit: '1000',
+      }
+      if (searchQuery.trim()) params.search = searchQuery.trim()
+
+      const [txResponse, cashResponse] = await Promise.all([
+        request.get('/api/transactions', { params }),
+        request.get('/api/cash'),
+      ])
+      setTransactions(txResponse.data)
+      setCashBalance(cashResponse.data?.amount ?? 0)
+    } catch {
+      if (!online) {
+        toast.message('Showing saved transactions — connect to refresh from server')
+      } else {
+        toast.error('Failed to load transactions')
+      }
     } finally {
       setLoading(false)
     }
-  }
+  }, [user, timeView, anchorDate, searchQuery, online])
 
-  const handleSubmit = async (e) => {
+  useEffect(() => {
+    fetchTransactions()
+  }, [fetchTransactions])
+
+  // ponytail: process due recurring on transactions page load
+  useEffect(() => {
+    if (!user) return
+    request.post('/api/recurring-expenses/process-due').catch(() => {})
+  }, [user])
+
+  const filteredTransactions = useMemo(() => {
+    let items = [...transactions]
+
+    if (timeView === 'daily') {
+      items = filterByDateRange(items, getDateRangeForView('daily', anchorDate))
+    } else if (timeView === 'weekly') {
+      items = filterByDateRange(items, getDateRangeForView('weekly', anchorDate))
+    } else if (timeView === 'calendar' && selectedCalendarDate) {
+      const day = new Date(selectedCalendarDate)
+      items = filterByDateRange(items, {
+        start: startOfDay(day),
+        end: endOfDay(day),
+      })
+    }
+
+    items = applyClientFilters(items, filters)
+    items = filterBySearch(items, searchQuery)
+    return items
+  }, [transactions, timeView, anchorDate, selectedCalendarDate, filters, searchQuery])
+
+  const summary = useMemo(() => summarizeTransactions(filteredTransactions), [filteredTransactions])
+  const dayGroups = useMemo(() => groupByDay(filteredTransactions), [filteredTransactions])
+  const calendarDays = useMemo(
+    () => buildCalendarDays(anchorDate, transactions),
+    [anchorDate, transactions]
+  )
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Validation
-    if (!formData.categoryId) {
+
+    if (formData.type !== 'transfer' && !formData.categoryId) {
       toast.error('Please select a category')
       return
     }
-    
     if (formData.amount <= 0) {
       toast.error('Amount must be greater than 0')
       return
     }
-    
-    if (!formData.isCash && !formData.accountId) {
+    if (formData.type === 'transfer') {
+      const hasFrom = formData.isCash || formData.accountId
+      const hasTo = formData.transferToIsCash || formData.transferToAccountId
+      if (!hasFrom || !hasTo) {
+        toast.error('Please select both source and destination')
+        return
+      }
+    } else if (!formData.isCash && !formData.accountId) {
       toast.error('Please select an account')
       return
     }
-    
+
     try {
       const payload = {
         ...formData,
         amount: Number(formData.amount),
         accountId: formData.isCash ? null : formData.accountId,
+        transferToAccountId: formData.transferToIsCash ? null : formData.transferToAccountId,
+        categoryId: formData.type === 'transfer' ? undefined : formData.categoryId,
       }
-      
+
       if (editingTransaction) {
         await request.put(`/api/transactions/${editingTransaction._id}`, payload)
-        toast.success('Transaction updated successfully')
+        toast.success(online ? 'Transaction updated' : 'Updated offline — will sync when connected')
       } else {
         await request.post('/api/transactions', payload)
-        toast.success('Transaction added successfully')
+        toast.success(online ? 'Transaction added' : 'Saved offline — will sync when connected')
       }
       setIsDialogOpen(false)
       setEditingTransaction(null)
-      resetForm()
+      setFormData(EMPTY_FORM)
       fetchTransactions()
-    } catch (error) {
-      const errorMessage = error.message || 'Failed to save transaction'
-      toast.error(errorMessage)
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to save transaction'
+      toast.error(message)
     }
   }
 
-  const handleDelete = (id) => {
+  const handleDelete = (id: string) => {
     confirmDelete({
       title: 'Delete Transaction',
       description: 'Are you sure you want to delete this transaction?',
       onConfirm: async () => {
         await request.delete(`/api/transactions/${id}`)
-        toast.success('Transaction deleted successfully')
+        toast.success(online ? 'Transaction deleted' : 'Deleted offline — will sync when connected')
         fetchTransactions()
       },
     })
   }
 
-  const handleEdit = (transaction) => {
+  const handleEdit = (transaction: TransactionLike) => {
     setEditingTransaction(transaction)
     setFormData({
-      type: transaction.type,
+      type: transaction.type as FormData['type'],
       amount: transaction.amount,
       categoryId: transaction.categoryId?._id || '',
-      accountId: transaction.accountId?._id || '',
-      isCash: transaction.isCash,
+      accountId:
+        typeof transaction.accountId === 'object' ? transaction.accountId?._id || '' : '',
+      isCash: transaction.isCash ?? false,
+      transferToAccountId:
+        typeof transaction.transferToAccountId === 'object'
+          ? transaction.transferToAccountId?._id || ''
+          : '',
+      transferToIsCash: transaction.transferToIsCash ?? false,
       description: transaction.description || '',
       date: format(new Date(transaction.date), 'yyyy-MM-dd'),
     })
     setIsDialogOpen(true)
   }
 
-  const resetForm = () => {
-    setFormData({
-      type: 'expense',
-      amount: 0,
-      categoryId: '',
-      accountId: '',
-      isCash: false,
-      description: '',
-      date: new Date().toISOString().split('T')[0],
-    })
+  const openAddForm = () => {
+    setFormData(EMPTY_FORM)
+    setEditingTransaction(null)
+    setIsDialogOpen(true)
   }
 
   useEffect(() => {
     if (searchParams.get('action') === 'add') {
       const type = searchParams.get('type')
-      resetForm()
-      if (type === 'income' || type === 'expense') {
-        setFormData((prev) => ({ ...prev, type }))
-      }
+      setFormData({
+        ...EMPTY_FORM,
+        type: type === 'income' || type === 'expense' || type === 'transfer' ? type : 'expense',
+      })
       setEditingTransaction(null)
       setIsDialogOpen(true)
     }
   }, [searchParams])
 
-  const filteredCategories = categories.filter((cat) => cat.type === formData.type)
+  const filteredCategories = categories.filter((cat) =>
+    formData.type === 'transfer' ? true : cat.type === formData.type
+  )
 
-  const openAddForm = () => {
-    resetForm()
-    setEditingTransaction(null)
-    setIsDialogOpen(true)
-  }
+  const isInitialLoad = loading && transactions.length === 0
+  const isRefreshing = loading && transactions.length > 0
 
   const transactionForm = (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="text-sm font-medium mb-1 block">Type</label>
-        <select
+        <ToggleButtonGroup
           value={formData.type}
-          onChange={(e) => {
-            setFormData({ ...formData, type: e.target.value, categoryId: '' })
-          }}
-          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="expense">Expense</option>
-          <option value="income">Income</option>
-        </select>
+          onValueChange={(value) =>
+            setFormData({
+              ...formData,
+              type: value as FormData['type'],
+              categoryId: '',
+            })
+          }
+          options={[
+            { value: 'expense', label: 'Expense' },
+            { value: 'income', label: 'Income' },
+            { value: 'transfer', label: 'Transfer' },
+          ]}
+        />
       </div>
       <div>
         <label className="text-sm font-medium mb-1 block">Amount</label>
         <Input
           type="number"
-          value={formData.amount}
+          value={formData.amount || ''}
           onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
           required
           step="0.01"
           min="0"
         />
       </div>
+      {formData.type !== 'transfer' && (
+        <div>
+          <label className="text-sm font-medium mb-1 block">Category</label>
+          <select
+            value={formData.categoryId}
+            onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            required
+          >
+            <option value="">Select category</option>
+            {filteredCategories.map((cat) => (
+              <option key={cat._id} value={cat._id}>
+                {cat.icon} {cat.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div>
-        <label className="text-sm font-medium mb-1 block">Category</label>
-        <select
-          value={formData.categoryId}
-          onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          required
-        >
-          <option value="">Select category</option>
-          {filteredCategories.map((cat) => (
-            <option key={cat._id} value={cat._id}>
-              {cat.icon} {cat.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Payment Method</label>
+        <label className="text-sm font-medium mb-1 block">
+          {formData.type === 'transfer' ? 'From' : 'Payment Method'}
+        </label>
         <ToggleButtonGroup
           value={formData.isCash ? 'cash' : 'account'}
-          onValueChange={(value) => setFormData({ ...formData, isCash: value === 'cash', accountId: value === 'cash' ? '' : formData.accountId })}
+          onValueChange={(value) =>
+            setFormData({
+              ...formData,
+              isCash: value === 'cash',
+              accountId: value === 'cash' ? '' : formData.accountId,
+            })
+          }
           options={[
             { value: 'cash', label: 'Cash' },
             { value: 'account', label: 'Bank Account' },
@@ -220,7 +331,9 @@ const TransactionsPageContent = () => {
       </div>
       {!formData.isCash && (
         <div>
-          <label className="text-sm font-medium mb-1 block">Account</label>
+          <label className="text-sm font-medium mb-1 block">
+            {formData.type === 'transfer' ? 'From Account' : 'Account'}
+          </label>
           <select
             value={formData.accountId}
             onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
@@ -235,6 +348,47 @@ const TransactionsPageContent = () => {
             ))}
           </select>
         </div>
+      )}
+      {formData.type === 'transfer' && (
+        <>
+          <div>
+            <label className="text-sm font-medium mb-1 block">To</label>
+            <ToggleButtonGroup
+              value={formData.transferToIsCash ? 'cash' : 'account'}
+              onValueChange={(value) =>
+                setFormData({
+                  ...formData,
+                  transferToIsCash: value === 'cash',
+                  transferToAccountId: value === 'cash' ? '' : formData.transferToAccountId,
+                })
+              }
+              options={[
+                { value: 'cash', label: 'Cash' },
+                { value: 'account', label: 'Bank Account' },
+              ]}
+            />
+          </div>
+          {!formData.transferToIsCash && (
+            <div>
+              <label className="text-sm font-medium mb-1 block">To Account</label>
+              <select
+                value={formData.transferToAccountId}
+                onChange={(e) =>
+                  setFormData({ ...formData, transferToAccountId: e.target.value })
+                }
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                required={!formData.transferToIsCash}
+              >
+                <option value="">Select account</option>
+                {accounts.map((acc) => (
+                  <option key={acc._id} value={acc._id}>
+                    {acc.icon} {acc.accountName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </>
       )}
       <div>
         <label className="text-sm font-medium mb-1 block">Description</label>
@@ -262,14 +416,53 @@ const TransactionsPageContent = () => {
 
   return (
     <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-4">
-      <PageHeader
-        title="Transactions"
-        subtitle="Track your income and expenses"
-      >
-        <div className="hidden md:block">
+      <PageHeader title="Transactions" subtitle="Track income, expenses & transfers">
+        <div className="hidden md:flex gap-2">
+          <TransactionFilterSheet
+            filters={filters}
+            onFiltersChange={setFilters}
+            accounts={accounts as { _id: string; accountName: string; icon?: string; balance?: number }[]}
+            cashBalance={cashBalance}
+          />
           <AddButton onClick={openAddForm}>Add Transaction</AddButton>
         </div>
       </PageHeader>
+
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search transactions..."
+            className="pl-9"
+          />
+        </div>
+        <div className="md:hidden">
+          <TransactionFilterSheet
+            filters={filters}
+            onFiltersChange={setFilters}
+            accounts={accounts as { _id: string; accountName: string; icon?: string; balance?: number }[]}
+            cashBalance={cashBalance}
+          />
+        </div>
+      </div>
+
+      <TransactionTimeControls
+        timeView={timeView}
+        onTimeViewChange={(view) => {
+          setTimeView(view)
+          if (view !== 'calendar') setSelectedCalendarDate(null)
+        }}
+        anchorDate={anchorDate}
+        onAnchorDateChange={setAnchorDate}
+      />
+
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="flex-1 min-w-0">
+          <TransactionSummaryBar summary={summary} loading={isRefreshing} />
+        </div>
+      </div>
 
       <FormSheet
         open={isDialogOpen}
@@ -281,92 +474,39 @@ const TransactionsPageContent = () => {
 
       <FAB onClick={openAddForm} label="Add transaction" />
 
-      {/* Filter */}
-      <FilterButtonGroup
-        value={filterType}
-        onValueChange={setFilterType}
-        options={[
-          { value: 'all', label: 'All' },
-          { value: 'income', label: 'Income', icon: ArrowUpCircle },
-          { value: 'expense', label: 'Expenses', icon: ArrowDownCircle },
-        ]}
-        className="overflow-x-auto pb-2 -mx-4 px-4"
-      />
+      {timeView === 'calendar' && (
+        <TransactionCalendarView
+          days={calendarDays}
+          selectedDateKey={selectedCalendarDate}
+          onSelectDate={(key) =>
+            setSelectedCalendarDate((prev) => (prev === key ? null : key))
+          }
+        />
+      )}
 
-      {/* Transactions List - Native Style */}
-      <div className="space-y-2">
-        {loading ? (
-          <ListItemSkeleton count={5} />
-        ) : transactions.length === 0 ? (
-          <EmptyState
-            icon={ArrowDownCircle}
-            title="No transactions yet"
-            description="Add your first transaction to get started"
-            actionLabel="Add Your First Transaction"
-            onAction={openAddForm}
+      {isInitialLoad ? (
+        <ListItemSkeleton count={5} />
+      ) : filteredTransactions.length === 0 ? (
+        <EmptyState
+          icon={ArrowDownCircle}
+          title="No transactions found"
+          description={
+            timeView === 'calendar' && !selectedCalendarDate
+              ? 'Select a day on the calendar to view transactions'
+              : 'Add your first transaction to get started'
+          }
+          actionLabel="Add Transaction"
+          onAction={openAddForm}
+        />
+      ) : (
+        <div className={cn('transition-opacity', isRefreshing && 'opacity-60 pointer-events-none')}>
+          <TransactionGroupedList
+            groups={dayGroups}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
           />
-        ) : (
-          transactions.map((transaction, index) => (
-            <SwipeableRow
-              key={transaction._id}
-              onEdit={() => handleEdit(transaction)}
-              onDelete={() => handleDelete(transaction._id)}
-            >
-              <Card
-                delay={0.2 + index * 0.03}
-                hover={true}
-                className="p-4"
-              >
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                      transaction.type === 'income'
-                        ? 'bg-green-100 dark:bg-green-900/20'
-                        : 'bg-red-100 dark:bg-red-900/20'
-                    }`}
-                  >
-                    {transaction.type === 'income' ? (
-                      <ArrowUpCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
-                    ) : (
-                      <ArrowDownCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground text-base mb-1 truncate">
-                      {transaction.categoryId?.name || 'Uncategorized'}
-                    </h3>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {transaction.description || 'No description'}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {format(new Date(transaction.date), 'MMM dd, yyyy')} •{' '}
-                      {transaction.isCash
-                        ? 'Cash'
-                        : transaction.accountId?.accountName || 'Unknown Account'}
-                    </p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p
-                      className={`text-lg font-bold ${
-                        transaction.type === 'income'
-                          ? 'text-green-600 dark:text-green-400'
-                          : 'text-red-600 dark:text-red-400'
-                      }`}
-                    >
-                      {transaction.type === 'income' ? '+' : '-'}
-                      {formatCurrency(transaction.amount)}
-                    </p>
-                  </div>
-                  <DesktopRowActions>
-                    <EditButton onClick={() => handleEdit(transaction)} />
-                    <DeleteButton onClick={() => handleDelete(transaction._id)} />
-                  </DesktopRowActions>
-                </div>
-              </Card>
-            </SwipeableRow>
-          ))
-        )}
-      </div>
+        </div>
+      )}
 
       <ConfirmDialog {...confirmDialogProps} />
     </div>
@@ -380,4 +520,3 @@ export default function TransactionsPage() {
     </Suspense>
   )
 }
-

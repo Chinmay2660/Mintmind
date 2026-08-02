@@ -1,30 +1,52 @@
 'use client'
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
+import { usePathname } from 'next/navigation'
 import MobileNavbar from './_components/MobileNavbar'
 import DashboardHeader from './_components/DashboardHeader'
 import NativeLayout from './_components/NativeLayout'
 import PageTitle from './_components/PageTitle'
 import OfflineIndicator from '@/components/OfflineIndicator'
-import LiquidBackground from '@/app/_components/LiquidBackground'
-import { SidebarProvider } from '@/contexts/SidebarContext'
+import AppSearch from '@/components/AppSearch'
+import { AppSearchProvider } from '@/contexts/AppSearchContext'
 import { isNativePlatform } from '@/lib/platform'
+import { scrollPageToTop } from '@/lib/utils/scroll'
 
-const shellClass = 'finance-shell'
+const shellClass = 'finance-shell aurora-bg'
+
+function DashboardMain({ children }: { children: React.ReactNode }) {
+    return (
+        <div className="min-w-0 flex-1 flex flex-col">
+            <PageTitle />
+            <OfflineIndicator />
+            <DashboardHeader />
+            <main className="min-h-screen mobile-content-pb md:pb-0">{children}</main>
+        </div>
+    )
+}
 
 const DashboardLayout = ({ children }) => {
+    const pathname = usePathname()
+    const isFirstRender = useRef(true)
     const isNative = typeof window !== 'undefined' && isNativePlatform()
 
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false
+            return
+        }
+        scrollPageToTop()
+    }, [pathname])
+
     return (
-        <SidebarProvider>
+        <AppSearchProvider>
             {isNative ? (
                 <NativeLayout>
                     <div className={shellClass}>
-                        <LiquidBackground className="opacity-50" />
                         <div className="relative z-10">
                             <PageTitle />
                             <OfflineIndicator />
                             <DashboardHeader />
-                            <main className="min-h-screen pb-20">
+                            <main className="min-h-screen mobile-content-pb">
                                 {children}
                             </main>
                             <MobileNavbar />
@@ -33,21 +55,14 @@ const DashboardLayout = ({ children }) => {
                 </NativeLayout>
             ) : (
                 <div className={shellClass}>
-                    <LiquidBackground className="opacity-40" />
                     <div className="relative z-10 flex min-h-screen">
-                        <PageTitle />
-                        <OfflineIndicator />
                         <MobileNavbar />
-                        <div className="flex min-w-0 flex-1 flex-col">
-                            <DashboardHeader />
-                            <main className="min-h-screen flex-1 pb-20 md:pb-0">
-                                {children}
-                            </main>
-                        </div>
+                        <DashboardMain>{children}</DashboardMain>
                     </div>
                 </div>
             )}
-        </SidebarProvider>
+            <AppSearch />
+        </AppSearchProvider>
     )
 }
 

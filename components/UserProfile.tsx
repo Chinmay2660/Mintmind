@@ -86,15 +86,6 @@ export default function UserProfile() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <motion.button
-        whileTap={{ scale: 0.95 }}
-        onClick={signOut}
-        className="md:hidden p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 dark:text-red-400 transition-colors"
-        aria-label="Sign Out"
-      >
-        <LogOut className="w-5 h-5" />
-      </motion.button>
     </div>
   )
 }

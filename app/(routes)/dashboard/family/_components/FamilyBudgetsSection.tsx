@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { DollarSign } from 'lucide-react'
+import { IndianRupee } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { FormSheet } from '@/components/ui/form-sheet'
@@ -204,7 +204,7 @@ export function FamilyBudgetsSection({
         <ListItemSkeleton />
       ) : budgets.length === 0 ? (
         <EmptyState
-          icon={DollarSign}
+          icon={IndianRupee}
           title="No Budgets Yet"
           description="Create your first family budget to manage spending"
           actionLabel={isFamilyHead ? 'Add Budget' : null}

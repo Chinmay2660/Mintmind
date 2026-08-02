@@ -41,6 +41,29 @@ const FamilyGoalSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
+  memberSplits: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    percentage: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+    },
+    targetAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    currentAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+  }],
 }, {
   timestamps: true,
 });

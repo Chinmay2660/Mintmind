@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { AlertCircle, ArrowLeft, Home } from 'lucide-react'
 import { motion } from 'framer-motion'
 import Logo from '@/components/Logo'
-import LiquidBackground from '@/app/_components/LiquidBackground'
 import { useEffect, useState, Suspense } from 'react'
 
 const errorMessages = {
@@ -31,8 +30,7 @@ function AuthErrorContent() {
   }, [searchParams])
 
   return (
-    <div className="min-h-screen flex items-center justify-center landing-bg text-foreground p-4 relative overflow-hidden">
-      <LiquidBackground className="opacity-70" />
+    <div className="min-h-screen flex items-center justify-center landing-bg aurora-bg text-foreground p-4 relative overflow-hidden">
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}

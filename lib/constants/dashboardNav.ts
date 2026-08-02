@@ -5,10 +5,15 @@ import {
   TrendingUp,
   Tags,
   PiggyBank,
-  DollarSign,
+  IndianRupee,
   Users,
   Settings,
   BarChart3,
+  CalendarDays,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  ArrowLeftRight,
+  Plus,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -23,28 +28,107 @@ export interface DashboardNavItem {
 
 export const DASHBOARD_NAV_MAIN: DashboardNavItem[] = [
   { id: 1, name: 'Home', icon: LayoutDashboard, path: '/dashboard' },
-  { id: 2, name: 'Accounts', icon: Wallet, path: '/dashboard/accounts' },
   { id: 3, name: 'Transactions', icon: ReceiptText, path: '/dashboard/transactions' },
+  { id: 10, name: 'Daily', icon: CalendarDays, path: '/dashboard/stats' },
+  { id: 2, name: 'Accounts', icon: Wallet, path: '/dashboard/accounts' },
 ]
 
 export const DASHBOARD_NAV_MORE: DashboardNavItem[] = [
   { id: 4, name: 'Investments', icon: TrendingUp, path: '/dashboard/investments' },
   { id: 5, name: 'Categories', icon: Tags, path: '/dashboard/categories' },
   { id: 6, name: 'Budgets', icon: PiggyBank, path: '/dashboard/budgets' },
-  { id: 7, name: 'Salary', icon: DollarSign, path: '/dashboard/salary-recurring' },
+  { id: 7, name: 'Salary', icon: IndianRupee, path: '/dashboard/salary-recurring' },
   { id: 8, name: 'Family Circle', icon: Users, path: '/dashboard/family' },
   { id: 9, name: 'Settings', icon: Settings, path: '/dashboard/settings' },
+  { id: 11, name: 'Category Stats', icon: BarChart3, path: '/dashboard/stats/categories' },
 ]
 
 export const DASHBOARD_NAV_ALL = [...DASHBOARD_NAV_MAIN, ...DASHBOARD_NAV_MORE]
 
+export interface SearchItem {
+  name: string
+  path: string
+  icon: LucideIcon
+  keywords?: string[]
+  group?: 'pages' | 'actions'
+}
+
+export const DASHBOARD_SEARCH_PAGES: SearchItem[] = [
+  ...DASHBOARD_NAV_ALL.map((item) => ({
+    name: item.name,
+    path: item.path,
+    icon: item.icon,
+    group: 'pages' as const,
+  })),
+  {
+    name: 'Budget Analysis',
+    path: '/dashboard/budget-analysis',
+    icon: BarChart3,
+    keywords: ['charts', 'analysis', 'spending', 'budget'],
+    group: 'pages',
+  },
+]
+
+export const DASHBOARD_SEARCH_ACTIONS: SearchItem[] = [
+  {
+    name: 'Add income',
+    path: '/dashboard/transactions?action=add&type=income',
+    icon: ArrowUpCircle,
+    keywords: ['income', 'salary', 'credit', 'deposit'],
+    group: 'actions',
+  },
+  {
+    name: 'Add expense',
+    path: '/dashboard/transactions?action=add&type=expense',
+    icon: ArrowDownCircle,
+    keywords: ['expense', 'spend', 'debit', 'payment'],
+    group: 'actions',
+  },
+  {
+    name: 'Add transfer',
+    path: '/dashboard/transactions?action=add&type=transfer',
+    icon: ArrowLeftRight,
+    keywords: ['transfer', 'move', 'between accounts'],
+    group: 'actions',
+  },
+  {
+    name: 'Add investment',
+    path: '/dashboard/investments?action=add',
+    icon: Plus,
+    keywords: ['invest', 'stock', 'mutual fund'],
+    group: 'actions',
+  },
+  {
+    name: 'Add budget',
+    path: '/dashboard/budgets?action=add',
+    icon: Plus,
+    keywords: ['budget', 'limit'],
+    group: 'actions',
+  },
+  {
+    name: 'Add account',
+    path: '/dashboard/accounts?action=add',
+    icon: Plus,
+    keywords: ['bank', 'wallet', 'cash'],
+    group: 'actions',
+  },
+]
+
+export const DASHBOARD_SEARCH_ALL: SearchItem[] = [
+  ...DASHBOARD_SEARCH_PAGES,
+  ...DASHBOARD_SEARCH_ACTIONS,
+]
+
 const EXTRA_ROUTE_TITLES: Record<string, string> = {
-  '/dashboard/budget-analysis': 'Budget Analysis',
+  '/dashboard/stats': 'Daily Stats',
+  '/dashboard/stats/categories': 'Category Stats',
+  '/dashboard/budget-analysis': 'Statistics',
   '/dashboard/budget': 'Budget',
   '/dashboard/expenseList': 'Expenses',
 }
 
 const EXTRA_ROUTE_ICONS: Record<string, LucideIcon> = {
+  '/dashboard/stats/categories': BarChart3,
   '/dashboard/budget-analysis': BarChart3,
   '/dashboard/expenseList': ReceiptText,
 }

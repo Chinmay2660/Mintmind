@@ -2,9 +2,14 @@
 
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { scrollActiveTabIntoView, scrollPageToTop } from '@/lib/utils/scroll'
+
+const tabScrollClassName =
+  'flex gap-2 overflow-x-auto overscroll-x-contain px-4 pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden'
 
 interface TabButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> {
   value: string
@@ -33,7 +38,8 @@ export function TabButton({
       variant={isActive ? 'default' : 'outline'}
       onClick={() => onClick(value)}
       size={size}
-      className={cn('rounded-full whitespace-nowrap', className)}
+      data-active={isActive}
+      className={cn('shrink-0 rounded-full whitespace-nowrap', className)}
       {...props}
     >
       {Icon && <Icon className="w-4 h-4 mr-2" />}
@@ -61,24 +67,40 @@ export function TabButtonGroup({
   options,
   className = '',
 }: TabButtonGroupProps) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const isFirstRender = useRef(true)
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      scrollActiveTabIntoView(scrollRef.current)
+      return
+    }
+    scrollPageToTop()
+    scrollActiveTabIntoView(scrollRef.current)
+  }, [value])
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1 }}
-      className={cn('flex gap-2 overflow-x-auto pb-2 -mx-4 px-4', className)}
-    >
-      {options.map((option) => (
-        <TabButton
-          key={option.value}
-          value={option.value}
-          activeValue={value}
-          onClick={onValueChange}
-          icon={option.icon}
-        >
-          {option.label}
-        </TabButton>
-      ))}
-    </motion.div>
+    <div className={cn('min-w-0 flex-1 -mx-4 overflow-hidden', className)}>
+      <motion.div
+        ref={scrollRef}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className={tabScrollClassName}
+      >
+        {options.map((option) => (
+          <TabButton
+            key={option.value}
+            value={option.value}
+            activeValue={value}
+            onClick={onValueChange}
+            icon={option.icon}
+          >
+            {option.label}
+          </TabButton>
+        ))}
+      </motion.div>
+    </div>
   )
 }

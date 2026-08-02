@@ -1,6 +1,6 @@
 'use client'
 import React, { useEffect, useState } from 'react'
-import { Plus, DollarSign, Repeat, Calendar, Edit, Trash2, TrendingUp, Clock } from 'lucide-react'
+import { Plus, IndianRupee, Repeat, Calendar, Edit, Trash2, TrendingUp, Clock } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
@@ -291,6 +291,15 @@ const SalaryRecurringPage = () => {
         showBack
       />
 
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tab value="salary" activeValue={activeTab} onValueChange={setActiveTab} icon={IndianRupee}>
+          Salary
+        </Tab>
+        <Tab value="recurring" activeValue={activeTab} onValueChange={setActiveTab} icon={Repeat}>
+          Recurring Expenses
+        </Tab>
+      </Tabs>
+
       <FormSheet
         open={isSalaryDialogOpen}
         onOpenChange={setIsSalaryDialogOpen}
@@ -307,19 +316,6 @@ const SalaryRecurringPage = () => {
               step="0.01"
               min="0"
             />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Currency</label>
-            <select
-              value={salaryFormData.currency}
-              onChange={(e) => setSalaryFormData({ ...salaryFormData, currency: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="INR">INR (₹)</option>
-              <option value="USD">USD ($)</option>
-              <option value="EUR">EUR (€)</option>
-              <option value="GBP">GBP (£)</option>
-            </select>
           </div>
           <div>
             <label className="text-sm font-medium mb-1 block">Frequency</label>
@@ -594,16 +590,6 @@ const SalaryRecurringPage = () => {
         label={activeTab === 'salary' ? 'Add salary' : 'Add recurring expense'}
       />
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <Tab value="salary" activeValue={activeTab} onValueChange={setActiveTab} icon={DollarSign}>
-          Salary
-        </Tab>
-        <Tab value="recurring" activeValue={activeTab} onValueChange={setActiveTab} icon={Repeat}>
-          Recurring Expenses
-        </Tab>
-      </Tabs>
-
       {/* Salary Tab */}
       {activeTab === 'salary' && (
         <div className="space-y-4">
@@ -635,7 +621,7 @@ const SalaryRecurringPage = () => {
             ))
           ) : salaries.length === 0 ? (
             <EmptyState
-              icon={DollarSign}
+              icon={IndianRupee}
               title="No salary records yet"
               description="Add your salary to get started"
               actionLabel="Add Your First Salary"
@@ -658,7 +644,7 @@ const SalaryRecurringPage = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                          <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
+                          <IndianRupee className="w-6 h-6 text-green-600 dark:text-green-400" />
                         </div>
                         <div className="flex-1">
                           <h3 className="font-semibold text-foreground">

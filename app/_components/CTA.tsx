@@ -1,7 +1,7 @@
 'use client'
 import React from 'react'
 import {
-  DollarSign, Target, BarChart3, CreditCard, PiggyBank, TrendingUp,
+  IndianRupee, Target, BarChart3, CreditCard, PiggyBank, TrendingUp,
   Wifi, Users, ArrowRight
 } from 'lucide-react'
 import Link from 'next/link'
@@ -12,7 +12,7 @@ import { useGetStartedHref } from '@/lib/hooks/useGetStartedHref'
 
 const features = [
   {
-    icon: DollarSign,
+    icon: IndianRupee,
     title: 'Track Expenses',
     description: 'Categorize and monitor every transaction with smart insights.',
     className: 'lg:col-span-2 lg:row-span-2',
@@ -50,7 +50,7 @@ const features = [
   {
     icon: Wifi,
     title: 'Works Offline',
-    description: 'Full functionality without internet. Syncs when you reconnect.',
+    description: 'Track expenses, budgets, and investments offline. Syncs when you reconnect.',
     className: 'lg:col-span-2',
     gradient: 'from-cyan-500/15 via-primary/10 to-transparent',
     highlight: true,
@@ -167,7 +167,8 @@ const CTA = () => {
               <Link href={getStartedHref}>
                 <Button
                   size="lg"
-                  className="rounded-full px-8 py-6 bg-white text-gray-900 hover:bg-gray-100 shadow-xl font-semibold border-0 group"
+                  variant="outline"
+                  className="rounded-full px-8 py-6 bg-white text-gray-900 hover:bg-gray-100 shadow-xl font-semibold border-0 backdrop-blur-none group"
                 >
                   Start Free Today
                   <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
