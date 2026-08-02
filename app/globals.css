@@ -140,11 +140,25 @@
 
     /* Native App Styles */
     .safe-area-inset-top {
-      padding-top: env(safe-area-inset-top);
+      padding-top: env(safe-area-inset-top, 0px);
     }
 
     .safe-area-inset-bottom {
       padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .top-below-header {
+      top: calc(4rem + env(safe-area-inset-top, 0px));
+    }
+
+    .pt-below-header {
+      padding-top: calc(6rem + env(safe-area-inset-top, 0px));
+    }
+
+    @media (min-width: 640px) {
+      .pt-below-header {
+        padding-top: calc(7rem + env(safe-area-inset-top, 0px));
+      }
     }
 
     .mobile-content-pb {

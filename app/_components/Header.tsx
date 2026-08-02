@@ -44,7 +44,7 @@ const Header = () => {
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className={`fixed top-0 z-50 w-full transition-all duration-500 ${
+      className={`fixed top-0 z-50 w-full safe-area-inset-top transition-all duration-500 ${
         mobileOpen || scrolled
           ? 'bg-background/95 backdrop-blur-xl border-b border-border shadow-sm'
           : 'bg-transparent'
@@ -133,7 +133,7 @@ const Header = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="md:hidden fixed inset-0 top-16 z-40 bg-black/60 backdrop-blur-sm"
+              className="md:hidden fixed inset-0 top-below-header z-40 bg-black/60 backdrop-blur-sm"
               onClick={() => setMobileOpen(false)}
               aria-hidden
             />

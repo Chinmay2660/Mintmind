@@ -179,7 +179,7 @@ const Hero = () => {
       <div className="absolute inset-0 dot-grid opacity-40" />
       <LiquidBackground />
 
-      <motion.div style={{ y, opacity, scale }} className="relative w-full pt-24 pb-16 sm:pt-28 sm:pb-20">
+      <motion.div style={{ y, opacity, scale }} className="relative w-full pt-below-header pb-16 sm:pb-20">
         <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div>
