@@ -38,15 +38,19 @@ import {
   applyClientFilters,
   type TransactionFilters,
 } from './_components/TransactionFilterSheet'
-import { useRegisterRefresh } from '@/contexts/RefreshContext'
+import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
+import { listLocal, getSingleton } from '@/lib/offline/repository'
+
+let processDueRan = false
 
 const TransactionsPageContent = () => {
   const router = useRouter()
   const { user } = useAuth()
-  const { online } = useOffline()
+  const userId = user?.id
+  const { online, syncing, lastSyncedAt } = useOffline()
   const searchParams = useSearchParams()
   const [transactions, setTransactions] = useState<TransactionLike[]>([])
-  const { accounts } = useBankAccounts(user?.id)
+  const { accounts } = useBankAccounts(userId)
   const [cashBalance, setCashBalance] = useState(0)
   const [loading, setLoading] = useState(true)
   const [timeView, setTimeView] = useState<TimeView>('daily')
@@ -66,49 +70,48 @@ const TransactionsPageContent = () => {
     }
   }, [searchParams, router])
 
-  const fetchTransactions = useCallback(async () => {
-    if (!user) return
-    try {
-      setLoading(true)
-      const range = getDateRangeForView(
-        timeView === 'calendar' ? 'monthly' : timeView,
-        anchorDate
-      )
+  const loadFromCache = useCallback(async () => {
+    const [txData, cashDoc] = await Promise.all([
+      listLocal('transactions'),
+      getSingleton('cash', 'cash'),
+    ])
+    setTransactions(txData ?? [])
+    setCashBalance(cashDoc?.amount ?? 0)
+  }, [])
 
-      const params: Record<string, string> = {
-        startDate: range.start.toISOString(),
-        endDate: range.end.toISOString(),
-        limit: '1000',
-      }
-      if (searchQuery.trim()) params.search = searchQuery.trim()
-
-      const [txResponse, cashResponse] = await Promise.all([
-        request.get('/api/transactions', { params }),
-        request.get('/api/cash'),
-      ])
-      setTransactions(txResponse.data)
-      setCashBalance(cashResponse.data?.amount ?? 0)
-    } catch {
-      if (!online) {
-        toast.message('Showing saved transactions — connect to refresh from server')
-      } else {
-        toast.error('Failed to load transactions')
-      }
-    } finally {
+  useEffect(() => {
+    if (!userId) {
       setLoading(false)
+      return
     }
-  }, [user, timeView, anchorDate, searchQuery, online])
+    if (syncing) return
+
+    let cancelled = false
+    setLoading(true)
+    loadFromCache()
+      .catch(() => {
+        if (!cancelled && !online) {
+          toast.message('Showing saved transactions — connect to refresh from server')
+        } else if (!cancelled) {
+          toast.error('Failed to load transactions')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [userId, syncing, lastSyncedAt, loadFromCache, online])
+
+  useSyncedRefresh(loadFromCache)
 
   useEffect(() => {
-    fetchTransactions()
-  }, [fetchTransactions])
-
-  useRegisterRefresh(fetchTransactions)
-
-  useEffect(() => {
-    if (!user) return
+    if (!userId || processDueRan) return
+    processDueRan = true
     request.post('/api/recurring-expenses/process-due').catch(() => {})
-  }, [user])
+  }, [userId])
 
   const filteredTransactions = useMemo(() => {
     let items = [...transactions]
@@ -177,7 +180,7 @@ const TransactionsPageContent = () => {
       onConfirm: async () => {
         await request.delete(`/api/transactions/${id}`)
         toast.success(online ? 'Transaction deleted' : 'Deleted offline — will sync when connected')
-        fetchTransactions()
+        await loadFromCache()
       },
     })
   }

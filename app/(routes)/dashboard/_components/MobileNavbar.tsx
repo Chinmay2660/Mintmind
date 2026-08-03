@@ -22,10 +22,6 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 
-const MobileNavbar = () => {
-    return <MobileBottomNav />
-}
-
 function MobileBottomNav() {
     const pathname = usePathname()
     const [moreMenuOpen, setMoreMenuOpen] = useState(false)
@@ -94,17 +90,17 @@ function MobileBottomNav() {
                         </SheetTrigger>
                         <SheetContent
                             side="bottom"
-                            className="flex max-h-[85dvh] flex-col rounded-t-3xl safe-area-inset-bottom pb-8"
+                            className="max-h-[85dvh] gap-0 overflow-y-auto rounded-t-3xl safe-area-inset-bottom pb-8"
                         >
-                            <SheetHeader className="mb-6 shrink-0">
+                            <SheetHeader className="mb-3 space-y-1 text-left">
                                 <SheetTitle className="text-left text-2xl font-bold text-foreground">
                                     More Options
                                 </SheetTitle>
-                                <p className="text-sm text-muted-foreground mt-1">
+                                <p className="text-sm text-muted-foreground">
                                     Access additional features and settings
                                 </p>
                             </SheetHeader>
-                            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
+                            <div className="space-y-2">
                                 {moreMenu.map((menu) => {
                                     const Icon = menu.icon
                                     return (
@@ -198,4 +194,4 @@ function DesktopSidebar() {
 }
 
 export { DesktopSidebar, MobileBottomNav }
-export default MobileNavbar
+export default MobileBottomNav

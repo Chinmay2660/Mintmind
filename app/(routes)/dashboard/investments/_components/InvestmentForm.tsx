@@ -26,26 +26,23 @@ interface InvestmentFormProps {
   investmentId?: string
 }
 
+import { useBankAccounts } from '@/lib/hooks/useReferenceData'
+import { getLocal } from '@/lib/offline/repository'
+
 export function InvestmentForm({ investmentId }: InvestmentFormProps) {
   const router = useRouter()
   const { user } = useAuth()
-  const [accounts, setAccounts] = useState<{ _id: string; icon?: string; accountName: string }[]>([])
+  const { accounts } = useBankAccounts(user?.id)
   const [loading, setLoading] = useState(!!investmentId)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState(defaultFormData)
 
   useEffect(() => {
-    if (!user) return
-    request.get('/api/bank-accounts').then((res) => setAccounts(res.data)).catch(() => {})
-  }, [user])
-
-  useEffect(() => {
     if (!investmentId || !user) return
     setLoading(true)
-    request
-      .get(`/api/investments/${investmentId}`)
-      .then((res) => {
-        const inv = res.data
+    getLocal('investments', investmentId)
+      .then((inv) => {
+        if (!inv) throw new Error('Not found')
         setFormData({
           type: inv.type,
           name: inv.name,
@@ -128,8 +125,9 @@ export function InvestmentForm({ investmentId }: InvestmentFormProps) {
         <label className="text-sm font-medium mb-1 block">Amount Invested</label>
         <Input
           type="number"
-          value={formData.amount}
+          value={formData.amount || ''}
           onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+          placeholder="0"
           required
           step="0.01"
           min="0"

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { SubmitButton } from '@/components/ui/form-buttons'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useCategories, useBankAccounts } from '@/lib/hooks/useReferenceData'
+import { getLocal } from '@/lib/offline/repository'
 
 const defaultFormData = () => ({
   amount: '',
@@ -39,10 +40,9 @@ export function SalaryForm({ salaryId }: SalaryFormProps) {
   useEffect(() => {
     if (!salaryId || !user) return
     setLoading(true)
-    request
-      .get(`/api/salary/${salaryId}`)
-      .then((res) => {
-        const salary = res.data
+    getLocal('salary', salaryId)
+      .then((salary) => {
+        if (!salary) throw new Error('Not found')
         setFormData({
           amount: salary.amount,
           currency: salary.currency || 'INR',
@@ -92,6 +92,7 @@ export function SalaryForm({ salaryId }: SalaryFormProps) {
           type="number"
           value={formData.amount}
           onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+          placeholder="0"
           required
           step="0.01"
           min="0"

@@ -5,7 +5,7 @@ export interface OfflineContextValue {
   pendingCount: number
   lastSyncedAt: string | null
   syncing: boolean
-  syncNow: () => Promise<void>
+  syncNow: (options?: { force?: boolean }) => Promise<void>
 }
 
 export interface OfflineProviderProps {

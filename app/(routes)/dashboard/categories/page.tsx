@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
@@ -13,36 +13,26 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Card } from '@/components/ui/card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { FAB } from '@/components/ui/fab'
-import { SwipeableRow, DesktopRowActions } from '@/components/ui/swipeable-row'
+import { RowActions } from '@/components/ui/swipeable-row'
 import { formatCurrency } from '@/lib/utils/format'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
+import { useCategories } from '@/lib/hooks/useReferenceData'
+import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
 
 const CategoriesPage = () => {
   const router = useRouter()
   const { user } = useAuth()
-  const [categories, setCategories] = useState([])
-  const [loading, setLoading] = useState(true)
+  const userId = user?.id
+  const { categories: allCategories, loading, refetch: reload } = useCategories(userId)
   const [filterType, setFilterType] = useState('all')
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
 
-  useEffect(() => {
-    if (user) {
-      fetchCategories()
-    }
-  }, [user, filterType])
+  const categories =
+    filterType === 'all'
+      ? allCategories
+      : allCategories.filter((cat) => cat.type === filterType)
 
-  const fetchCategories = async () => {
-    try {
-      setLoading(true)
-      const params = filterType !== 'all' ? { type: filterType } : {}
-      const response = await request.get('/api/categories', { params })
-      setCategories(response.data)
-    } catch (error) {
-      toast.error('Failed to load categories')
-    } finally {
-      setLoading(false)
-    }
-  }
+  useSyncedRefresh(reload)
 
   const handleDelete = (id) => {
     confirmDelete({
@@ -51,7 +41,7 @@ const CategoriesPage = () => {
       onConfirm: async () => {
         await request.delete(`/api/categories/${id}`)
         toast.success('Category deleted successfully')
-        fetchCategories()
+        await reload()
       },
     })
   }
@@ -116,12 +106,7 @@ const CategoriesPage = () => {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {expenseCategories.map((category, index) => (
-                  <SwipeableRow
-                    key={category._id}
-                    onEdit={() => router.push(`/dashboard/categories/${category._id}`)}
-                    onDelete={() => handleDelete(category._id)}
-                  >
-                    <Card delay={0.1 + index * 0.05} hover={true} className="p-4">
+                    <Card key={category._id} delay={0.1 + index * 0.05} hover={true} className="p-4">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
                           <div
@@ -139,15 +124,14 @@ const CategoriesPage = () => {
                             )}
                           </div>
                         </div>
-                        <DesktopRowActions>
+                        <RowActions>
                           <EditButton
                             onClick={() => router.push(`/dashboard/categories/${category._id}`)}
                           />
                           <DeleteButton onClick={() => handleDelete(category._id)} />
-                        </DesktopRowActions>
+                        </RowActions>
                       </div>
                     </Card>
-                  </SwipeableRow>
                 ))}
               </div>
             )}
@@ -185,12 +169,7 @@ const CategoriesPage = () => {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {incomeCategories.map((category, index) => (
-                  <SwipeableRow
-                    key={category._id}
-                    onEdit={() => router.push(`/dashboard/categories/${category._id}`)}
-                    onDelete={() => handleDelete(category._id)}
-                  >
-                    <Card delay={0.1 + index * 0.05} hover={true} className="p-4">
+                    <Card key={category._id} delay={0.1 + index * 0.05} hover={true} className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div
@@ -203,15 +182,14 @@ const CategoriesPage = () => {
                             <h3 className="font-semibold text-foreground">{category.name}</h3>
                           </div>
                         </div>
-                        <DesktopRowActions>
+                        <RowActions>
                           <EditButton
                             onClick={() => router.push(`/dashboard/categories/${category._id}`)}
                           />
                           <DeleteButton onClick={() => handleDelete(category._id)} />
-                        </DesktopRowActions>
+                        </RowActions>
                       </div>
                     </Card>
-                  </SwipeableRow>
                 ))}
               </div>
             )}

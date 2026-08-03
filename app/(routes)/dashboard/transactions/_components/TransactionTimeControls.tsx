@@ -69,10 +69,11 @@ export function TransactionTimeControls({
           })()
         : timeView === 'yearly'
           ? format(anchorDate, 'yyyy')
-          : timeView === 'last3months'
-            ? 'Last 3 months'
-            : timeView === 'last6months'
-              ? 'Last 6 months'
+          : timeView === 'last3months' || timeView === 'last6months'
+            ? (() => {
+                const { start, end } = getDateRangeForView(timeView, anchorDate)
+                return `${formatDayMonth(start)} – ${formatOrdinalDay(end.getDate())} ${format(end, 'MMM, yyyy')}`
+              })()
               : format(anchorDate, 'yyyy MMM')
 
   const goToPrevious = () => {

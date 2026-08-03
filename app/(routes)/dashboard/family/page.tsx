@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
   Users, UserPlus, Copy, Clock, Crown, User, Settings, Trash2, LogOut,
   ArrowRightLeft, Target, IndianRupee, ReceiptText,
@@ -33,6 +33,9 @@ import type {
   FamilyStats,
 } from '@/types/family'
 import { getActiveMembers, getMemberCount, isFamilyHead, normalizeId } from '@/lib/utils/family'
+import { computeFamilyStats } from '@/lib/offline/computed'
+import { getSingleton, listLocal } from '@/lib/offline/repository'
+import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
 
 const defaultSettings: FamilySettings = {
   shareInvestments: true,
@@ -94,8 +97,7 @@ const FamilyPage = () => {
 
   const fetchFamily = async () => {
     try {
-      const response = await request.get('/api/family')
-      const fetched = response.data.family as Family | null
+      const fetched = (await getSingleton('family', 'family')) as Family | null
       setFamily(fetched)
       if (fetched) {
         setFamilyName(fetched.name)
@@ -110,8 +112,8 @@ const FamilyPage = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await request.get('/api/family/stats')
-      setStats(response.data as FamilyStats)
+      const computed = await computeFamilyStats()
+      setStats(computed as FamilyStats)
     } catch {
       // not in a family
     }
@@ -247,8 +249,8 @@ const FamilyPage = () => {
   const fetchGoals = async () => {
     setGoalsLoading(true)
     try {
-      const response = await request.get('/api/family/goals')
-      setGoals(response.data as FamilyGoal[])
+      const rows = await listLocal('familyGoals')
+      setGoals(rows as FamilyGoal[])
     } catch {
       toast.error('Failed to load goals')
     } finally {
@@ -259,8 +261,8 @@ const FamilyPage = () => {
   const fetchBudgets = async () => {
     setBudgetsLoading(true)
     try {
-      const response = await request.get('/api/family/budgets')
-      setBudgets(response.data as FamilyBudget[])
+      const rows = await listLocal('familyBudgets')
+      setBudgets(rows as FamilyBudget[])
     } catch {
       toast.error('Failed to load budgets')
     } finally {
@@ -271,14 +273,25 @@ const FamilyPage = () => {
   const fetchExpenses = async () => {
     setExpensesLoading(true)
     try {
-      const response = await request.get('/api/family/expenses')
-      setExpenses(response.data as FamilyExpense[])
+      const rows = await listLocal('familyExpenses')
+      setExpenses(rows as FamilyExpense[])
     } catch {
       toast.error('Failed to load expenses')
     } finally {
       setExpensesLoading(false)
     }
   }
+
+  const reloadAll = useCallback(async () => {
+    await fetchFamily()
+    await fetchStats()
+    if (activeTab === 'goals') await fetchGoals()
+    else if (activeTab === 'budgets') {
+      await Promise.all([fetchBudgets(), fetchExpenses()])
+    } else if (activeTab === 'expenses') await fetchExpenses()
+  }, [activeTab])
+
+  useSyncedRefresh(reloadAll)
 
   const head = isFamilyHead(family, user?.id)
 

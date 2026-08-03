@@ -1,22 +1,25 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { useOffline } from '@/contexts/OfflineContext'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/button'
 import { PageSkeleton } from '@/components/ui/loading-skeleton'
 import {
   TransactionFilterSheet,
   DEFAULT_TRANSACTION_FILTERS,
+  buildTypesParam,
   type TransactionFilters,
 } from '../../transactions/_components/TransactionFilterSheet'
 import { CategoryBreakdownCard, type CategoryStat } from '../_components/CategoryBreakdownCard'
 import { useBankAccounts } from '@/lib/hooks/useReferenceData'
+import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
+import { computeTransactionStats } from '@/lib/offline/computed'
 
 interface StatsData {
   summary: {
@@ -31,7 +34,9 @@ interface StatsData {
 
 const CategoryStatsPage = () => {
   const { user } = useAuth()
-  const { accounts } = useBankAccounts(user?.id)
+  const userId = user?.id
+  const { syncing, lastSyncedAt } = useOffline()
+  const { accounts } = useBankAccounts(userId)
   const [stats, setStats] = useState<StatsData | null>(null)
   const [anchorDate, setAnchorDate] = useState(new Date())
   const [filters, setFilters] = useState<TransactionFilters>(DEFAULT_TRANSACTION_FILTERS)
@@ -45,35 +50,39 @@ const CategoryStatsPage = () => {
     [anchorDate]
   )
 
+  const loadStats = useCallback(async () => {
+    const types = buildTypesParam(filters)
+    const result = await computeTransactionStats({
+      startDate: monthRange.start.toISOString(),
+      endDate: monthRange.end.toISOString(),
+      types,
+    })
+    setStats(result as StatsData)
+  }, [monthRange, filters])
+
   useEffect(() => {
-    if (user) fetchStats()
-  }, [user, monthRange, filters])
-
-  const fetchStats = async () => {
-    try {
-      setLoading(true)
-      const params: Record<string, string> = {
-        startDate: monthRange.start.toISOString(),
-        endDate: monthRange.end.toISOString(),
-      }
-
-      const types: string[] = []
-      if (filters.types.income) types.push('income')
-      if (filters.types.expense) types.push('expense')
-      if (filters.types.transferIn || filters.types.transferOut) types.push('transfer')
-      if (types.length) params.types = types.join(',')
-
-      if (filters.accountIds.length) params.accountIds = filters.accountIds.join(',')
-      if (filters.includeCash) params.includeCash = 'true'
-
-      const response = await request.get('/api/dashboard/transaction-stats', { params })
-      setStats(response.data)
-    } catch {
-      toast.error('Failed to load category statistics')
-    } finally {
+    if (!userId) {
       setLoading(false)
+      return
     }
-  }
+    if (syncing) return
+
+    let cancelled = false
+    setLoading(true)
+    loadStats()
+      .catch(() => {
+        if (!cancelled) toast.error('Failed to load category statistics')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [userId, syncing, lastSyncedAt, loadStats])
+
+  useSyncedRefresh(loadStats)
 
   const isInitialLoad = loading && !stats
   const isRefreshing = loading && !!stats
@@ -94,59 +103,44 @@ const CategoryStatsPage = () => {
         />
       </PageHeader>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <Button
-          type="button"
-          variant="ghost"
+          variant="outline"
           size="icon"
           onClick={() => setAnchorDate((d) => subMonths(d, 1))}
           aria-label="Previous month"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="h-4 w-4" />
         </Button>
-        <span className="text-base font-semibold text-foreground">{format(anchorDate, 'yyyy MMM')}</span>
+        <span className="text-sm font-medium">{format(anchorDate, 'MMMM yyyy')}</span>
         <Button
-          type="button"
-          variant="ghost"
+          variant="outline"
           size="icon"
           onClick={() => setAnchorDate((d) => addMonths(d, 1))}
           aria-label="Next month"
-          disabled={anchorDate >= startOfMonth(new Date())}
         >
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
 
-      {hasCategoryCharts ? (
-        <div
-          className={cn(
-            'grid gap-6 transition-opacity',
-            showIncomeChart && showExpenseChart ? 'md:grid-cols-2' : 'grid-cols-1',
-            isRefreshing && 'opacity-60'
-          )}
-        >
-          {showIncomeChart && (
-            <CategoryBreakdownCard
-              title="Income by Category"
-              categories={stats?.incomeCategoryWise ?? []}
-              total={stats?.summary.income ?? 0}
-              loading={isRefreshing}
-            />
-          )}
-          {showExpenseChart && (
-            <CategoryBreakdownCard
-              title="Expenses by Category"
-              categories={stats?.categoryWise ?? []}
-              total={stats?.summary.expense ?? 0}
-              loading={isRefreshing}
-            />
-          )}
-        </div>
-      ) : (
-        <p className="text-sm text-muted-foreground text-center py-8">
-          Enable income or expense filters to view category breakdown.
-        </p>
-      )}
+      <div className={cn('grid gap-4', hasCategoryCharts ? 'md:grid-cols-2' : 'md:grid-cols-1')}>
+        {showIncomeChart && (
+          <CategoryBreakdownCard
+            title="Income by category"
+            categories={stats?.incomeCategoryWise ?? []}
+            total={stats?.summary?.income ?? 0}
+            loading={isRefreshing}
+          />
+        )}
+        {showExpenseChart && (
+          <CategoryBreakdownCard
+            title="Expenses by category"
+            categories={stats?.categoryWise ?? []}
+            total={stats?.summary?.expense ?? 0}
+            loading={isRefreshing}
+          />
+        )}
+      </div>
     </div>
   )
 }

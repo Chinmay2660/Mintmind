@@ -8,6 +8,8 @@ import request from '@/lib/api/request'
 import { Input } from '@/components/ui/input'
 import { SubmitButton } from '@/components/ui/form-buttons'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { useBankAccounts } from '@/lib/hooks/useReferenceData'
+import { getLocal } from '@/lib/offline/repository'
 
 const defaultFormData = () => ({
   type: 'Health',
@@ -31,23 +33,17 @@ interface InsuranceFormProps {
 export function InsuranceForm({ insuranceId }: InsuranceFormProps) {
   const router = useRouter()
   const { user } = useAuth()
-  const [accounts, setAccounts] = useState<{ _id: string; icon?: string; accountName: string }[]>([])
+  const { accounts } = useBankAccounts(user?.id)
   const [loading, setLoading] = useState(!!insuranceId)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState(defaultFormData)
 
   useEffect(() => {
-    if (!user) return
-    request.get('/api/bank-accounts').then((res) => setAccounts(res.data)).catch(() => {})
-  }, [user])
-
-  useEffect(() => {
     if (!insuranceId || !user) return
     setLoading(true)
-    request
-      .get(`/api/insurance/${insuranceId}`)
-      .then((res) => {
-        const policy = res.data
+    getLocal('insurance', insuranceId)
+      .then((policy) => {
+        if (!policy) throw new Error('Not found')
         setFormData({
           type: policy.type,
           name: policy.name,
@@ -138,8 +134,9 @@ export function InsuranceForm({ insuranceId }: InsuranceFormProps) {
         <label className="text-sm font-medium mb-1 block">Premium Amount</label>
         <Input
           type="number"
-          value={formData.premium}
+          value={formData.premium || ''}
           onChange={(e) => setFormData({ ...formData, premium: parseFloat(e.target.value) || 0 })}
+          placeholder="0"
           required
           step="0.01"
           min="0"

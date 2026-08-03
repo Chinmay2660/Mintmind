@@ -11,6 +11,7 @@ import { ToggleButtonGroup } from '@/components/ui/toggle-button'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useOffline } from '@/contexts/OfflineContext'
 import { useCategories, useBankAccounts } from '@/lib/hooks/useReferenceData'
+import { getLocal } from '@/lib/offline/repository'
 
 interface FormData {
   type: 'expense' | 'income' | 'transfer'
@@ -75,10 +76,9 @@ export function TransactionForm({
   useEffect(() => {
     if (!transactionId || !user) return
     setLoading(true)
-    request
-      .get(`/api/transactions/${transactionId}`)
-      .then((res) => {
-        const tx = res.data
+    getLocal('transactions', transactionId)
+      .then((tx) => {
+        if (!tx) throw new Error('Not found')
         setFormData({
           type: tx.type,
           amount: tx.amount,
@@ -186,6 +186,7 @@ export function TransactionForm({
           type="number"
           value={formData.amount || ''}
           onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+          placeholder="0"
           required
           step="0.01"
           min="0"

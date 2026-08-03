@@ -1,12 +1,12 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { addDays, endOfDay, startOfDay, subDays } from 'date-fns'
 import { ChevronLeft, ChevronRight, ReceiptText } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { useOffline } from '@/contexts/OfflineContext'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/button'
 import { PageSkeleton } from '@/components/ui/loading-skeleton'
@@ -15,11 +15,14 @@ import {
   TransactionFilterSheet,
   DEFAULT_TRANSACTION_FILTERS,
   applyClientFilters,
+  buildTypesParam,
   type TransactionFilters,
 } from '../transactions/_components/TransactionFilterSheet'
 import { TransactionSummaryBar } from '../transactions/_components/TransactionSummaryBar'
 import { TransactionGroupedList } from '../transactions/_components/TransactionGroupedList'
 import { useBankAccounts } from '@/lib/hooks/useReferenceData'
+import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
+import { computeTransactionStats } from '@/lib/offline/computed'
 import {
   filterByDateRange,
   groupByDay,
@@ -27,7 +30,6 @@ import {
   type TransactionLike,
 } from '@/lib/utils/transactions'
 import { formatDayMonthYear, formatDayMonthYearLong } from '@/lib/utils/format'
-import { useRegisterRefresh } from '@/contexts/RefreshContext'
 
 interface StatsData {
   summary: {
@@ -44,7 +46,9 @@ interface StatsData {
 
 const DailyStatsPage = () => {
   const { user } = useAuth()
-  const { accounts } = useBankAccounts(user?.id)
+  const userId = user?.id
+  const { syncing, lastSyncedAt } = useOffline()
+  const { accounts } = useBankAccounts(userId)
   const [stats, setStats] = useState<StatsData | null>(null)
   const [anchorDate, setAnchorDate] = useState(new Date())
   const [filters, setFilters] = useState<TransactionFilters>(DEFAULT_TRANSACTION_FILTERS)
@@ -58,37 +62,39 @@ const DailyStatsPage = () => {
     [anchorDate]
   )
 
+  const loadStats = useCallback(async () => {
+    const types = buildTypesParam(filters)
+    const result = await computeTransactionStats({
+      startDate: dayRange.start.toISOString(),
+      endDate: dayRange.end.toISOString(),
+      types,
+    })
+    setStats(result as StatsData)
+  }, [dayRange, filters])
+
   useEffect(() => {
-    if (user) fetchStats()
-  }, [user, dayRange, filters])
-
-  const fetchStats = async () => {
-    try {
-      setLoading(true)
-      const params: Record<string, string> = {
-        startDate: dayRange.start.toISOString(),
-        endDate: dayRange.end.toISOString(),
-      }
-
-      const types: string[] = []
-      if (filters.types.income) types.push('income')
-      if (filters.types.expense) types.push('expense')
-      if (filters.types.transferIn || filters.types.transferOut) types.push('transfer')
-      if (types.length) params.types = types.join(',')
-
-      if (filters.accountIds.length) params.accountIds = filters.accountIds.join(',')
-      if (filters.includeCash) params.includeCash = 'true'
-
-      const response = await request.get('/api/dashboard/transaction-stats', { params })
-      setStats(response.data)
-    } catch {
-      toast.error('Failed to load daily statistics')
-    } finally {
+    if (!userId) {
       setLoading(false)
+      return
     }
-  }
+    if (syncing) return
 
-  useRegisterRefresh(fetchStats)
+    let cancelled = false
+    setLoading(true)
+    loadStats()
+      .catch(() => {
+        if (!cancelled) toast.error('Failed to load daily statistics')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [userId, syncing, lastSyncedAt, loadStats])
+
+  useSyncedRefresh(loadStats)
 
   const filteredTransactions = useMemo(() => {
     if (!stats?.transactions) return []
@@ -105,8 +111,8 @@ const DailyStatsPage = () => {
   if (isInitialLoad) return <PageSkeleton className="pb-24 md:pb-6" />
 
   return (
-    <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-4 overflow-x-hidden">
-      <PageHeader title="Daily Stats" subtitle="Day wise transaction breakdown">
+    <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-4">
+      <PageHeader title="Daily Stats" subtitle={formatDayMonthYearLong(anchorDate)}>
         <TransactionFilterSheet
           filters={filters}
           onFiltersChange={setFilters}
@@ -115,42 +121,35 @@ const DailyStatsPage = () => {
         />
       </PageHeader>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <Button
-          type="button"
-          variant="ghost"
+          variant="outline"
           size="icon"
           onClick={() => setAnchorDate((d) => subDays(d, 1))}
           aria-label="Previous day"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="h-4 w-4" />
         </Button>
-        <span className="text-base font-semibold text-foreground">{formatDayMonthYear(anchorDate)}</span>
+        <span className="text-sm font-medium text-foreground">{formatDayMonthYear(anchorDate)}</span>
         <Button
-          type="button"
-          variant="ghost"
+          variant="outline"
           size="icon"
           onClick={() => setAnchorDate((d) => addDays(d, 1))}
           aria-label="Next day"
-          disabled={startOfDay(anchorDate) >= startOfDay(new Date())}
         >
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
 
       <TransactionSummaryBar summary={summary} loading={isRefreshing} />
 
-      <div className={cn('space-y-3 transition-opacity', isRefreshing && 'opacity-60')}>
-        {filteredTransactions.length === 0 ? (
-          <EmptyState
-            icon={ReceiptText}
-            title="No transactions"
-            description={`No transactions found for ${formatDayMonthYearLong(anchorDate)}`}
-          />
-        ) : (
+      {filteredTransactions.length === 0 ? (
+        <EmptyState icon={ReceiptText} title="No transactions" description="Nothing recorded for this day" />
+      ) : (
+        <div className={cn('transition-opacity', isRefreshing && 'opacity-60 pointer-events-none')}>
           <TransactionGroupedList groups={dayGroups} />
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

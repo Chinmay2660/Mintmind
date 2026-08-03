@@ -5,8 +5,9 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 
 const CREDIT_CARD_FIELDS = [
-  'cardName', 'issuer', 'lastFourDigits', 'creditLimit', 'currentBalance',
-  'statementDay', 'dueDay', 'apr', 'rewardsProgram', 'accountId', 'notes',
+  'cardName', 'issuer', 'cardNumber', 'cardType', 'lastFourDigits', 'creditLimit',
+  'currentBalance', 'statementDay', 'dueDay', 'apr', 'rewardsProgram', 'accountId', 'notes',
+  'color',
 ];
 
 export async function GET(request) {

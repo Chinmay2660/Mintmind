@@ -7,6 +7,8 @@ import request from '@/lib/api/request'
 import { Input } from '@/components/ui/input'
 import { SubmitButton } from '@/components/ui/form-buttons'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { useCategories } from '@/lib/hooks/useReferenceData'
+import { getLocal } from '@/lib/offline/repository'
 
 const calculateEndDate = (startDate: string, period: string) => {
   if (!startDate) return ''
@@ -45,23 +47,18 @@ interface BudgetFormProps {
 export function BudgetForm({ budgetId }: BudgetFormProps) {
   const router = useRouter()
   const { user } = useAuth()
-  const [categories, setCategories] = useState<{ _id: string; icon?: string; name: string }[]>([])
+  const { categories: allCategories } = useCategories(user?.id)
+  const categories = allCategories.filter((c) => c.type === 'expense')
   const [loading, setLoading] = useState(!!budgetId)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState(defaultFormData)
 
   useEffect(() => {
-    if (!user) return
-    request.get('/api/categories?type=expense').then((res) => setCategories(res.data)).catch(() => {})
-  }, [user])
-
-  useEffect(() => {
     if (!budgetId || !user) return
     setLoading(true)
-    request
-      .get(`/api/budgets/${budgetId}`)
-      .then((res) => {
-        const budget = res.data
+    getLocal('budgets', budgetId)
+      .then((budget) => {
+        if (!budget) throw new Error('Not found')
         setFormData({
           categoryId: budget.categoryId._id,
           name: budget.name,

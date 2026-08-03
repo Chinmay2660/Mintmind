@@ -1,10 +1,10 @@
 'use client'
-import React, { Suspense, useEffect, useState } from 'react'
+import React, { Suspense, useState } from 'react'
 import { CreditCard } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -12,44 +12,32 @@ import { Card } from '@/components/ui/card'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { FAB } from '@/components/ui/fab'
-import { SwipeableRow, DesktopRowActions } from '@/components/ui/swipeable-row'
+import { RowActions } from '@/components/ui/swipeable-row'
 import {
   formatCurrency,
   formatDayMonth,
   getBillingCycleDates,
   nextDateForDayOfMonth,
 } from '@/lib/utils/format'
+import {
+  DEFAULT_CARD_COLOR,
+  maskCardNumber,
+} from '@/lib/utils/creditCard'
+import { getUtilizationBarClass } from '@/lib/utils/utilization'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
+import { useLocalList } from '@/lib/hooks/useLocalData'
+import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
+import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 
 const CreditCardsPageContent = () => {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { user } = useAuth()
-  const [cards, setCards] = useState([])
-  const [loading, setLoading] = useState(true)
+  const userId = user?.id
+  const { data: cards, loading, reload } = useLocalList('creditCards', userId)
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
 
-  useEffect(() => {
-    if (searchParams.get('action') === 'add') {
-      router.replace('/dashboard/credit-cards/new')
-    }
-  }, [searchParams, router])
-
-  useEffect(() => {
-    if (user) fetchCards()
-  }, [user])
-
-  const fetchCards = async () => {
-    try {
-      setLoading(true)
-      const response = await request.get('/api/credit-cards')
-      setCards(response.data)
-    } catch {
-      toast.error('Failed to load credit cards')
-    } finally {
-      setLoading(false)
-    }
-  }
+  useSyncedRefresh(reload)
+  useAddActionRedirect('/dashboard/credit-cards/new')
 
   const handleDelete = (id: string) => {
     confirmDelete({
@@ -58,7 +46,7 @@ const CreditCardsPageContent = () => {
       onConfirm: async () => {
         await request.delete(`/api/credit-cards/${id}`)
         toast.success('Credit card deleted')
-        fetchCards()
+        await reload()
       },
     })
   }
@@ -66,7 +54,6 @@ const CreditCardsPageContent = () => {
   const totalLimit = cards.reduce((sum, c) => sum + (c.creditLimit || 0), 0)
   const totalBalance = cards.reduce((sum, c) => sum + (c.currentBalance || 0), 0)
   const totalAvailable = totalLimit - totalBalance
-  const utilization = totalLimit > 0 ? (totalBalance / totalLimit) * 100 : 0
 
   return (
     <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6">
@@ -92,7 +79,7 @@ const CreditCardsPageContent = () => {
         <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-5 text-white shadow-lg">
           <p className="text-white/80 text-sm mb-1">Available Credit</p>
           <p className="text-2xl font-bold">{formatCurrency(totalAvailable)}</p>
-          <p className="text-white/70 text-xs mt-1">{utilization.toFixed(0)}% utilized</p>
+          <p className="text-white/70 text-xs mt-1">{formatCurrency(totalBalance)} utilized</p>
         </div>
       </div>
 
@@ -124,20 +111,33 @@ const CreditCardsPageContent = () => {
                 : null
 
             return (
-              <SwipeableRow
-                key={card._id}
-                onEdit={() => router.push(`/dashboard/credit-cards/${card._id}`)}
-                onDelete={() => handleDelete(card._id)}
-              >
-                <Card delay={0.1} hover className="p-5">
-                  <div className="flex items-start justify-between mb-3">
+                <Card key={card._id} delay={0.1} hover className="p-5">
+                  <div className="flex items-start justify-between mb-3 gap-3">
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{
+                        backgroundColor: `${card.color || DEFAULT_CARD_COLOR}15`,
+                        color: card.color || DEFAULT_CARD_COLOR,
+                      }}
+                    >
+                      <CreditCard className="w-6 h-6" />
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <h3 className="font-semibold text-foreground truncate">{card.cardName}</h3>
-                        {card.lastFourDigits && (
-                          <span className="text-sm text-muted-foreground">•••• {card.lastFourDigits}</span>
+                        {card.cardType && (
+                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                            {card.cardType}
+                          </span>
                         )}
                       </div>
+                      {(card.cardNumber || card.lastFourDigits) && (
+                        <p className="text-sm text-muted-foreground font-mono tracking-wide">
+                          {card.cardNumber
+                            ? maskCardNumber(card.cardNumber)
+                            : `•••• ${card.lastFourDigits}`}
+                        </p>
+                      )}
                       {card.issuer && (
                         <p className="text-sm text-muted-foreground">{card.issuer}</p>
                       )}
@@ -160,30 +160,24 @@ const CreditCardsPageContent = () => {
                             : ''}
                         </p>
                       )}
-                      {card.rewardsProgram && (
-                        <p className="text-xs text-muted-foreground mt-1">{card.rewardsProgram}</p>
+                      {card.notes && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{card.notes}</p>
                       )}
                     </div>
-                    <DesktopRowActions>
+                    <RowActions>
                       <EditButton onClick={() => router.push(`/dashboard/credit-cards/${card._id}`)} />
                       <DeleteButton onClick={() => handleDelete(card._id)} />
-                    </DesktopRowActions>
+                    </RowActions>
                   </div>
 
                   <div className="mt-3 mb-2">
                     <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                      <span>{cardUtil.toFixed(0)}% used</span>
+                      <span>{formatCurrency(card.currentBalance || 0)} utilized</span>
                       <span>{formatCurrency(available)} available</span>
                     </div>
                     <div className="h-2 rounded-full bg-muted overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all ${
-                          cardUtil > 80
-                            ? 'bg-red-500'
-                            : cardUtil > 50
-                              ? 'bg-amber-500'
-                              : 'bg-emerald-500'
-                        }`}
+                        className={`h-full rounded-full transition-all ${getUtilizationBarClass(cardUtil)}`}
                         style={{ width: `${Math.min(100, cardUtil)}%` }}
                       />
                     </div>
@@ -203,11 +197,7 @@ const CreditCardsPageContent = () => {
                       </p>
                     </div>
                   </div>
-                  {card.apr && (
-                    <p className="text-xs text-muted-foreground mt-2">APR: {card.apr}%</p>
-                  )}
                 </Card>
-              </SwipeableRow>
             )
           })
         )}

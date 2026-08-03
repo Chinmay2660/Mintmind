@@ -13,6 +13,13 @@ const CreditCardSchema = new mongoose.Schema({
   issuer: {
     type: String,
   },
+  cardNumber: {
+    type: String,
+  },
+  cardType: {
+    type: String,
+    enum: ['Visa', 'Mastercard', 'RuPay', 'Amex', 'Other'],
+  },
   lastFourDigits: {
     type: String,
     maxlength: 4,
@@ -47,6 +54,10 @@ const CreditCardSchema = new mongoose.Schema({
   },
   notes: {
     type: String,
+  },
+  color: {
+    type: String,
+    default: '#7c3aed',
   },
 }, {
   timestamps: true,

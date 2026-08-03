@@ -1,11 +1,11 @@
 'use client'
-import React, { Suspense, useEffect, useState } from 'react'
+import React, { Suspense, useState } from 'react'
 import { TrendingUp } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { format } from 'date-fns'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { FilterButtonGroup } from '@/components/ui/filter-button'
@@ -14,43 +14,28 @@ import { Card } from '@/components/ui/card'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { FAB } from '@/components/ui/fab'
-import { SwipeableRow, DesktopRowActions } from '@/components/ui/swipeable-row'
+import { RowActions } from '@/components/ui/swipeable-row'
 import { formatCurrency } from '@/lib/utils/format'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
+import { useLocalList } from '@/lib/hooks/useLocalData'
+import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
+import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 
 const InvestmentsPageContent = () => {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { user } = useAuth()
-  const [investments, setInvestments] = useState([])
-  const [loading, setLoading] = useState(true)
+  const userId = user?.id
+  const { data: allInvestments, loading, reload } = useLocalList('investments', userId)
   const [filterType, setFilterType] = useState('all')
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
 
-  useEffect(() => {
-    if (searchParams.get('action') === 'add') {
-      router.replace('/dashboard/investments/new')
-    }
-  }, [searchParams, router])
+  const investments =
+    filterType === 'all'
+      ? allInvestments
+      : allInvestments.filter((inv) => inv.type === filterType)
 
-  useEffect(() => {
-    if (user) {
-      fetchInvestments()
-    }
-  }, [user, filterType])
-
-  const fetchInvestments = async () => {
-    try {
-      setLoading(true)
-      const params = filterType !== 'all' ? { type: filterType } : {}
-      const response = await request.get('/api/investments', { params })
-      setInvestments(response.data)
-    } catch (error) {
-      toast.error('Failed to load investments')
-    } finally {
-      setLoading(false)
-    }
-  }
+  useSyncedRefresh(reload)
+  useAddActionRedirect('/dashboard/investments/new')
 
   const handleDelete = (id) => {
     confirmDelete({
@@ -59,7 +44,7 @@ const InvestmentsPageContent = () => {
       onConfirm: async () => {
         await request.delete(`/api/investments/${id}`)
         toast.success('Investment deleted successfully')
-        fetchInvestments()
+        await reload()
       },
     })
   }
@@ -154,12 +139,7 @@ const InvestmentsPageContent = () => {
             const gainPercent = investment.amount > 0 ? (gain / investment.amount) * 100 : 0
 
             return (
-              <SwipeableRow
-                key={investment._id}
-                onEdit={() => router.push(`/dashboard/investments/${investment._id}`)}
-                onDelete={() => handleDelete(investment._id)}
-              >
-                <Card delay={0.1} hover={true} className="p-5">
+                <Card key={investment._id} delay={0.1} hover={true} className="p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -179,12 +159,12 @@ const InvestmentsPageContent = () => {
                         </p>
                       )}
                     </div>
-                    <DesktopRowActions>
+                    <RowActions>
                       <EditButton
                         onClick={() => router.push(`/dashboard/investments/${investment._id}`)}
                       />
                       <DeleteButton onClick={() => handleDelete(investment._id)} />
-                    </DesktopRowActions>
+                    </RowActions>
                   </div>
                   <div className="grid grid-cols-2 gap-4 mt-4">
                     <div>
@@ -229,7 +209,6 @@ const InvestmentsPageContent = () => {
                     </p>
                   )}
                 </Card>
-              </SwipeableRow>
             )
           })
         )}

@@ -8,12 +8,14 @@ import { Input } from '@/components/ui/input'
 import { IconPicker } from '@/components/ui/icon-picker'
 import { SubmitButton } from '@/components/ui/form-buttons'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { getLocal } from '@/lib/offline/repository'
+import { DEFAULT_CATEGORY_COLOR } from '@/lib/constants/colors'
 
 const defaultFormData = (type = 'expense') => ({
   name: '',
   type,
   icon: '📁',
-  color: '#4845d2',
+  color: DEFAULT_CATEGORY_COLOR,
   budget: 0,
 })
 
@@ -33,10 +35,9 @@ export function CategoryForm({ categoryId }: CategoryFormProps) {
   useEffect(() => {
     if (!categoryId || !user) return
     setLoading(true)
-    request
-      .get(`/api/categories/${categoryId}`)
-      .then((res) => {
-        const cat = res.data
+    getLocal('categories', categoryId)
+      .then((cat) => {
+        if (!cat) throw new Error('Not found')
         setFormData({
           name: cat.name,
           type: cat.type,
@@ -120,11 +121,11 @@ export function CategoryForm({ categoryId }: CategoryFormProps) {
           <label className="text-sm font-medium mb-1 block">Budget (Optional)</label>
           <Input
             type="number"
-            value={formData.budget}
+            value={formData.budget || ''}
             onChange={(e) => setFormData({ ...formData, budget: parseFloat(e.target.value) || 0 })}
             step="0.01"
             min="0"
-            placeholder="Monthly budget"
+            placeholder="0"
             className="h-12"
           />
         </div>

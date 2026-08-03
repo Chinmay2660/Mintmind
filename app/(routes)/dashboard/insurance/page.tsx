@@ -1,11 +1,11 @@
 'use client'
-import React, { Suspense, useEffect, useState } from 'react'
+import React, { Suspense, useState } from 'react'
 import { Shield, AlertTriangle } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { format, differenceInDays, isPast } from 'date-fns'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { FilterButtonGroup } from '@/components/ui/filter-button'
@@ -14,9 +14,12 @@ import { Card } from '@/components/ui/card'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { FAB } from '@/components/ui/fab'
-import { SwipeableRow, DesktopRowActions } from '@/components/ui/swipeable-row'
+import { RowActions } from '@/components/ui/swipeable-row'
 import { formatCurrency } from '@/lib/utils/format'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
+import { useLocalList } from '@/lib/hooks/useLocalData'
+import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
+import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 
 const FREQUENCY_MULTIPLIER: Record<string, number> = {
   Monthly: 12,
@@ -26,35 +29,19 @@ const FREQUENCY_MULTIPLIER: Record<string, number> = {
 
 const InsurancePageContent = () => {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { user } = useAuth()
-  const [policies, setPolicies] = useState([])
-  const [loading, setLoading] = useState(true)
+  const userId = user?.id
+  const { data: allPolicies, loading, reload } = useLocalList('insurance', userId)
   const [filterType, setFilterType] = useState('all')
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
 
-  useEffect(() => {
-    if (searchParams.get('action') === 'add') {
-      router.replace('/dashboard/insurance/new')
-    }
-  }, [searchParams, router])
+  const policies =
+    filterType === 'all'
+      ? allPolicies
+      : allPolicies.filter((p) => p.type === filterType)
 
-  useEffect(() => {
-    if (user) fetchPolicies()
-  }, [user, filterType])
-
-  const fetchPolicies = async () => {
-    try {
-      setLoading(true)
-      const params = filterType !== 'all' ? { type: filterType } : {}
-      const response = await request.get('/api/insurance', { params })
-      setPolicies(response.data)
-    } catch {
-      toast.error('Failed to load insurance policies')
-    } finally {
-      setLoading(false)
-    }
-  }
+  useSyncedRefresh(reload)
+  useAddActionRedirect('/dashboard/insurance/new')
 
   const handleDelete = (id: string) => {
     confirmDelete({
@@ -63,7 +50,7 @@ const InsurancePageContent = () => {
       onConfirm: async () => {
         await request.delete(`/api/insurance/${id}`)
         toast.success('Policy deleted')
-        fetchPolicies()
+        await reload()
       },
     })
   }
@@ -153,12 +140,7 @@ const InsurancePageContent = () => {
             const renewalPast = policy.renewalDate && isPast(new Date(policy.renewalDate))
 
             return (
-              <SwipeableRow
-                key={policy._id}
-                onEdit={() => router.push(`/dashboard/insurance/${policy._id}`)}
-                onDelete={() => handleDelete(policy._id)}
-              >
-                <Card delay={0.1} hover className="p-5">
+                <Card key={policy._id} delay={0.1} hover className="p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -186,10 +168,10 @@ const InsurancePageContent = () => {
                         <p className="text-sm text-muted-foreground">#{policy.policyNumber}</p>
                       )}
                     </div>
-                    <DesktopRowActions>
+                    <RowActions>
                       <EditButton onClick={() => router.push(`/dashboard/insurance/${policy._id}`)} />
                       <DeleteButton onClick={() => handleDelete(policy._id)} />
-                    </DesktopRowActions>
+                    </RowActions>
                   </div>
                   <div className="grid grid-cols-3 gap-3 mt-3">
                     <div>
@@ -231,7 +213,6 @@ const InsurancePageContent = () => {
                     )}
                   </div>
                 </Card>
-              </SwipeableRow>
             )
           })
         )}

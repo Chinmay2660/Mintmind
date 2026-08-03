@@ -1,10 +1,10 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { getMeta, getPendingCount } from '@/lib/offline/db'
-import { initAppResumeSync, initNetworkMonitoring, isOnline, onConnectivityChange } from '@/lib/offline/network'
-import { syncOfflineData } from '@/lib/offline/sync'
+import { initNetworkMonitoring, isOnline, onConnectivityChange } from '@/lib/offline/network'
+import { pushOutboxOnly, syncOfflineData } from '@/lib/offline/sync'
 import type { OfflineContextValue, OfflineProviderProps } from '@/types/offline'
 
 const OfflineContext = createContext<OfflineContextValue | null>(null)
@@ -15,22 +15,26 @@ export function OfflineProvider({ children }: OfflineProviderProps) {
   const [pendingCount, setPendingCount] = useState(0)
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
+  const wasOnlineRef = useRef(true)
 
   const refreshMeta = useCallback(async () => {
     setPendingCount(await getPendingCount())
     setLastSyncedAt(await getMeta('lastSyncedAt'))
   }, [])
 
-  const syncNow = useCallback(async () => {
-    if (!user) return
-    setSyncing(true)
-    try {
-      await syncOfflineData()
-      await refreshMeta()
-    } finally {
-      setSyncing(false)
-    }
-  }, [user, refreshMeta])
+  const syncNow = useCallback(
+    async (options?: { force?: boolean }) => {
+      if (!user) return
+      setSyncing(true)
+      try {
+        await syncOfflineData({ force: options?.force ?? false })
+        await refreshMeta()
+      } finally {
+        setSyncing(false)
+      }
+    },
+    [user, refreshMeta]
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -44,30 +48,60 @@ export function OfflineProvider({ children }: OfflineProviderProps) {
     })
   }, [])
 
+  // First login: one full pull when cache is empty. Otherwise read local only.
   useEffect(() => {
-    if (!user) {
+    if (!user?.id) {
       setPendingCount(0)
       setLastSyncedAt(null)
       return
     }
-    syncNow()
+
+    let cancelled = false
+
+    const bootstrap = async () => {
+      await refreshMeta()
+      if (cancelled || !online) return
+
+      const last = await getMeta('lastSyncedAt')
+      if (!last) {
+        await syncNow({ force: true })
+      }
+    }
+
+    bootstrap()
+
+    return () => {
+      cancelled = true
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
 
+  // Reconnect: push pending changes only — no full API pull.
   useEffect(() => {
-    if (!user || !online) return
-    syncNow()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [online])
+    if (!user?.id || !online) {
+      wasOnlineRef.current = online
+      return
+    }
 
-  useEffect(() => {
-    if (!user) return
-    let cleanup = () => {}
-    initAppResumeSync(syncNow).then((dispose) => {
-      cleanup = dispose
-    })
-    return () => cleanup()
-  }, [user, syncNow])
+    const cameOnline = !wasOnlineRef.current && online
+    wasOnlineRef.current = online
+    if (!cameOnline) return
+
+    let cancelled = false
+
+    const push = async () => {
+      const last = await getMeta('lastSyncedAt')
+      if (cancelled || !last) return
+      await pushOutboxOnly()
+      await refreshMeta()
+    }
+
+    push()
+
+    return () => {
+      cancelled = true
+    }
+  }, [online, user?.id, refreshMeta])
 
   useEffect(() => {
     if (!user) return

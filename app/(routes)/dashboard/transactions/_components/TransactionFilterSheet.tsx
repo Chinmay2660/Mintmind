@@ -228,6 +228,14 @@ export const DEFAULT_TRANSACTION_FILTERS: TransactionFilters = {
   includeCash: true,
 }
 
+export function buildTypesParam(filters: TransactionFilters) {
+  const types: string[] = []
+  if (filters.types.income) types.push('income')
+  if (filters.types.expense) types.push('expense')
+  if (filters.types.transferIn || filters.types.transferOut) types.push('transfer')
+  return types.length ? types.join(',') : undefined
+}
+
 export function applyClientFilters<T extends {
   type: string
   isCash?: boolean

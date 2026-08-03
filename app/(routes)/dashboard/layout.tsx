@@ -1,6 +1,6 @@
 'use client'
 import React, { useEffect, useState } from 'react'
-import MobileNavbar from './_components/MobileNavbar'
+import MobileBottomNav from './_components/MobileNavbar'
 import DashboardHeader from './_components/DashboardHeader'
 import NativeLayout from './_components/NativeLayout'
 import PageTitle from './_components/PageTitle'
@@ -28,14 +28,18 @@ function DashboardPageContent({ children }: { children: React.ReactNode }) {
 
 const DashboardLayout = ({ children }) => {
     const [isNative, setIsNative] = useState(false)
+    const [ready, setReady] = useState(false)
 
     useEffect(() => {
         setIsNative(isNativePlatform())
+        setReady(true)
     }, [])
 
     return (
         <AppSearchProvider>
-            {isNative ? (
+            {!ready ? (
+                <div className={shellClass} aria-hidden />
+            ) : isNative ? (
                 <NativeLayout>
                     <div className={shellClass}>
                         <div className="relative z-10">
@@ -47,7 +51,7 @@ const DashboardLayout = ({ children }) => {
                                     {children}
                                 </main>
                             </DashboardRefreshShell>
-                            <MobileNavbar />
+                            <MobileBottomNav />
                         </div>
                     </div>
                 </NativeLayout>

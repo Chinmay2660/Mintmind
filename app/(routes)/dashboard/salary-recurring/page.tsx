@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Plus, IndianRupee, Repeat, Clock } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
@@ -16,30 +16,46 @@ import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { FormButtonGroup } from '@/components/ui/form-buttons'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
+import { RowActions } from '@/components/ui/swipeable-row'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { FAB } from '@/components/ui/fab'
 import { formatCurrency } from '@/lib/utils/format'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useDocumentTitle } from '@/lib/hooks/useDocumentTitle'
+import { useLocalList } from '@/lib/hooks/useLocalData'
+import { useCategories, useBankAccounts } from '@/lib/hooks/useReferenceData'
+import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
 
 const SalaryRecurringPage = () => {
   const router = useRouter()
   const { user } = useAuth()
+  const userId = user?.id
   const [activeTab, setActiveTab] = useState('salary')
   useDocumentTitle(
     activeTab === 'salary' ? 'Salary' : 'Recurring Expenses',
     'Salary & Recurring',
   )
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
-  
-  // Salary states
-  const [salaries, setSalaries] = useState([])
-  const [salaryLoading, setSalaryLoading] = useState(true)
 
-  // Recurring expense states
-  const [recurringExpenses, setRecurringExpenses] = useState([])
-  const [expenseLoading, setExpenseLoading] = useState(true)
+  const {
+    data: salaries,
+    loading: salaryLoading,
+    reload: reloadSalaries,
+  } = useLocalList('salary', userId)
+  const {
+    data: recurringExpenses,
+    loading: expenseLoading,
+    reload: reloadRecurring,
+  } = useLocalList('recurringExpenses', userId)
+  const { categories } = useCategories(userId)
+  const { accounts } = useBankAccounts(userId)
+
+  const reloadAll = async () => {
+    await Promise.all([reloadSalaries(), reloadRecurring()])
+  }
+
+  useSyncedRefresh(reloadAll)
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false)
   const [editingExpense, setEditingExpense] = useState(null)
   const [expenseFormData, setExpenseFormData] = useState({
@@ -57,63 +73,6 @@ const SalaryRecurringPage = () => {
     description: '',
     autoCreateTransaction: false,
   })
-
-  const [categories, setCategories] = useState([])
-  const [accounts, setAccounts] = useState([])
-
-  useEffect(() => {
-    if (user) {
-      fetchSalaries()
-      fetchRecurringExpenses()
-      fetchCategories()
-      fetchAccounts()
-    }
-  }, [user])
-
-  const fetchSalaries = async () => {
-    try {
-      setSalaryLoading(true)
-      const response = await request.get('/api/salary')
-      setSalaries(response.data)
-    } catch (error) {
-      toast.error('Failed to load salaries')
-    } finally {
-      setSalaryLoading(false)
-    }
-  }
-
-  const fetchRecurringExpenses = async () => {
-    try {
-      setExpenseLoading(true)
-      const response = await request.get('/api/recurring-expenses')
-      setRecurringExpenses(response.data)
-    } catch (error) {
-      toast.error('Failed to load recurring expenses')
-    } finally {
-      setExpenseLoading(false)
-    }
-  }
-
-  const fetchCategories = async () => {
-    try {
-      const [expenseCats, incomeCats] = await Promise.all([
-        request.get('/api/categories?type=expense'),
-        request.get('/api/categories?type=income'),
-      ])
-      setCategories([...expenseCats.data, ...incomeCats.data])
-    } catch (error) {
-      // Error handled silently
-    }
-  }
-
-  const fetchAccounts = async () => {
-    try {
-      const response = await request.get('/api/bank-accounts')
-      setAccounts(response.data)
-    } catch (error) {
-      // Error handled silently
-    }
-  }
 
   const handleExpenseSubmit = async (e) => {
     e.preventDefault()
@@ -134,7 +93,7 @@ const SalaryRecurringPage = () => {
       }
       setIsExpenseDialogOpen(false)
       resetExpenseForm()
-      fetchRecurringExpenses()
+      await reloadRecurring()
     } catch (error) {
       toast.error('Failed to save recurring expense')
     }
@@ -147,7 +106,7 @@ const SalaryRecurringPage = () => {
       onConfirm: async () => {
         await request.delete(`/api/salary/${id}`)
         toast.success('Salary deleted successfully')
-        fetchSalaries()
+        await reloadSalaries()
       },
     })
   }
@@ -159,7 +118,7 @@ const SalaryRecurringPage = () => {
       onConfirm: async () => {
         await request.delete(`/api/recurring-expenses/${id}`)
         toast.success('Recurring expense deleted successfully')
-        fetchRecurringExpenses()
+        await reloadRecurring()
       },
     })
   }
@@ -262,6 +221,7 @@ const SalaryRecurringPage = () => {
               type="number"
               value={expenseFormData.amount}
               onChange={(e) => setExpenseFormData({ ...expenseFormData, amount: e.target.value })}
+              placeholder="0"
               required
               step="0.01"
               min="0"
@@ -504,10 +464,10 @@ const SalaryRecurringPage = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-1">
+                    <RowActions>
                       <EditButton onClick={() => router.push(`/dashboard/salary-recurring/${salary._id}`)} />
                       <DeleteButton onClick={() => handleSalaryDelete(salary._id)} />
-                    </div>
+                    </RowActions>
                   </div>
                 </Card>
               ))}
@@ -616,10 +576,10 @@ const SalaryRecurringPage = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-1">
+                    <RowActions>
                       <EditButton onClick={() => handleExpenseEdit(expense)} />
                       <DeleteButton onClick={() => handleExpenseDelete(expense._id)} />
-                    </div>
+                    </RowActions>
                   </div>
                 </Card>
               ))}

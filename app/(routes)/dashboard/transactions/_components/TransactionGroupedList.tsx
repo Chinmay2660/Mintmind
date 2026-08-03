@@ -1,7 +1,7 @@
 'use client'
 
 import { ArrowLeftRight } from 'lucide-react'
-import { SwipeableRow, DesktopRowActions } from '@/components/ui/swipeable-row'
+import { RowActions } from '@/components/ui/swipeable-row'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 import { formatCurrency, formatOrdinalDay } from '@/lib/utils/format'
 import {
@@ -12,6 +12,7 @@ import {
   type DayGroup,
   type TransactionLike,
 } from '@/lib/utils/transactions'
+import { DEFAULT_CATEGORY_COLOR } from '@/lib/constants/colors'
 
 interface TransactionGroupedListProps {
   groups: DayGroup<TransactionLike>[]
@@ -51,7 +52,7 @@ export function TransactionGroupedList({ groups, onEdit, onDelete }: Transaction
 
           <div className="divide-y divide-border/40">
             {group.transactions.map((transaction) => {
-              const catColor = transaction.categoryId?.color || '#4845d2'
+              const catColor = transaction.categoryId?.color || DEFAULT_CATEGORY_COLOR
               const isTransfer = transaction.type === 'transfer'
               const interactive = Boolean(onEdit && onDelete)
               const row = (
@@ -85,27 +86,15 @@ export function TransactionGroupedList({ groups, onEdit, onDelete }: Transaction
                       {formatCurrency(transaction.amount)}
                     </p>
                     {interactive && (
-                      <DesktopRowActions>
+                      <RowActions>
                         <EditButton onClick={() => onEdit?.(transaction)} />
                         <DeleteButton onClick={() => onDelete?.(transaction._id)} />
-                      </DesktopRowActions>
+                      </RowActions>
                     )}
                   </div>
               )
 
-              if (!interactive) {
-                return <div key={transaction._id}>{row}</div>
-              }
-
-              return (
-                <SwipeableRow
-                  key={transaction._id}
-                  onEdit={() => onEdit?.(transaction)}
-                  onDelete={() => onDelete?.(transaction._id)}
-                >
-                  {row}
-                </SwipeableRow>
-              )
+              return <div key={transaction._id}>{row}</div>
             })}
           </div>
         </div>

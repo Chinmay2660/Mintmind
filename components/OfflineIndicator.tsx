@@ -32,7 +32,7 @@ export default function OfflineIndicator() {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={syncNow}
+          onClick={() => syncNow({ force: true })}
           disabled={syncing}
           className="h-8 shrink-0"
         >

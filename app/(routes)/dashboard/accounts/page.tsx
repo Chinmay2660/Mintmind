@@ -1,5 +1,5 @@
 'use client'
-import React, { Suspense, useEffect, useState } from 'react'
+import React, { Suspense, useCallback, useState } from 'react'
 import { Wallet, Banknote, Edit } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { motion } from 'framer-motion'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SubmitButton, CancelButton } from '@/components/ui/form-buttons'
@@ -15,61 +15,40 @@ import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { FAB } from '@/components/ui/fab'
-import { SwipeableRow, DesktopRowActions } from '@/components/ui/swipeable-row'
+import { RowActions } from '@/components/ui/swipeable-row'
+import { ListItemSkeleton } from '@/components/ui/loading-skeleton'
 import { formatCurrency } from '@/lib/utils/format'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
-import { useRegisterRefresh } from '@/contexts/RefreshContext'
+import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
+import { useBankAccounts } from '@/lib/hooks/useReferenceData'
+import { useLocalSingleton } from '@/lib/hooks/useLocalData'
+import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 import { useBalanceAdjustmentPrompt } from './_components/BalanceAdjustmentPrompt'
 
 const AccountsPageContent = () => {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { user } = useAuth()
-  const [accounts, setAccounts] = useState([])
-  const [cash, setCash] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const userId = user?.id
+  const { accounts, loading: accountsLoading, refetch: reloadAccounts } = useBankAccounts(userId)
+  const { data: cash, loading: cashLoading, reload: reloadCash } = useLocalSingleton(
+    'cash',
+    'cash',
+    userId
+  )
+  const loading = accountsLoading || cashLoading
   const [isCashDialogOpen, setIsCashDialogOpen] = useState(false)
   const [cashAmount, setCashAmount] = useState(0)
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
   const { prompt: promptBalanceAdjustment, dialogs: balanceAdjustmentDialogs } =
     useBalanceAdjustmentPrompt()
 
-  useEffect(() => {
-    if (searchParams.get('action') === 'add') {
-      router.replace('/dashboard/accounts/new')
-    }
-  }, [searchParams, router])
+  useAddActionRedirect('/dashboard/accounts/new')
 
-  useEffect(() => {
-    if (user) {
-      fetchAccounts()
-      fetchCash()
-    }
-  }, [user])
+  const reload = useCallback(async () => {
+    await Promise.all([reloadAccounts(), reloadCash()])
+  }, [reloadAccounts, reloadCash])
 
-  const fetchAccounts = async () => {
-    try {
-      const response = await request.get('/api/bank-accounts')
-      setAccounts(response.data)
-    } catch (error) {
-      toast.error('Failed to load accounts')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchCash = async () => {
-    try {
-      const response = await request.get('/api/cash')
-      setCash(response.data)
-    } catch (error) {
-      // Error handled silently - cash will remain null
-    }
-  }
-
-  useRegisterRefresh(async () => {
-    await Promise.all([fetchAccounts(), fetchCash()])
-  })
+  useSyncedRefresh(reload)
 
   const handleDelete = (id) => {
     confirmDelete({
@@ -78,7 +57,7 @@ const AccountsPageContent = () => {
       onConfirm: async () => {
         await request.delete(`/api/bank-accounts/${id}`)
         toast.success('Account deleted successfully')
-        fetchAccounts()
+        await reload()
       },
     })
   }
@@ -89,7 +68,7 @@ const AccountsPageContent = () => {
       await request.put('/api/cash', { amount: cashAmount })
       toast.success('Cash updated successfully')
       setIsCashDialogOpen(false)
-      fetchCash()
+      await reload()
       promptBalanceAdjustment({
         previousBalance,
         newBalance: cashAmount,
@@ -108,8 +87,9 @@ const AccountsPageContent = () => {
         <label className="text-sm font-medium mb-2 block text-foreground">Amount</label>
         <Input
           type="number"
-          value={cashAmount}
+          value={cashAmount || ''}
           onChange={(e) => setCashAmount(parseFloat(e.target.value) || 0)}
+          placeholder="0"
           step="0.01"
           className="h-12"
         />
@@ -222,18 +202,7 @@ const AccountsPageContent = () => {
           <span className="text-sm text-muted-foreground">{loading ? '...' : accounts.length}</span>
         </div>
         {loading ? (
-          [1, 2, 3].map((i) => (
-            <div key={i} className="surface-card p-4 animate-pulse">
-              <div className="flex items-center gap-4">
-                <div className="skeleton-icon w-12 h-12"></div>
-                <div className="flex-1">
-                  <div className="skeleton h-4 w-32 mb-2"></div>
-                  <div className="skeleton h-3 w-24"></div>
-                </div>
-                <div className="skeleton h-6 w-20"></div>
-              </div>
-            </div>
-          ))
+          <ListItemSkeleton count={3} />
         ) : accounts.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
@@ -249,12 +218,8 @@ const AccountsPageContent = () => {
         ) : (
           <div className="space-y-2">
             {accounts.map((account, index) => (
-              <SwipeableRow
-                key={account._id}
-                onEdit={() => router.push(`/dashboard/accounts/${account._id}`)}
-                onDelete={() => handleDelete(account._id)}
-              >
                 <motion.div
+                  key={account._id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 + index * 0.05 }}
@@ -286,15 +251,14 @@ const AccountsPageContent = () => {
                         {formatCurrency(account.balance)}
                       </p>
                     </div>
-                    <DesktopRowActions>
+                    <RowActions>
                       <EditButton
                         onClick={() => router.push(`/dashboard/accounts/${account._id}`)}
                       />
                       <DeleteButton onClick={() => handleDelete(account._id)} />
-                    </DesktopRowActions>
+                    </RowActions>
                   </div>
                 </motion.div>
-              </SwipeableRow>
             ))}
           </div>
         )}

@@ -1,7 +1,7 @@
 'use client'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useState, useEffect } from 'react'
-import { User, Mail, Save, LogOut, Trash2 } from 'lucide-react'
+import { User, Mail, Save, LogOut, Trash2, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ProfilePicturePicker } from '@/components/ui/profile-picture-picker'
@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { motion } from 'framer-motion'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
+import { format } from 'date-fns'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -19,7 +20,7 @@ import { useOffline } from '@/contexts/OfflineContext'
 const SettingsPage = () => {
   const { user, refetch, signOut } = useAuth()
   const router = useRouter()
-  const { syncNow } = useOffline()
+  const { syncNow, lastSyncedAt, syncing } = useOffline()
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -28,6 +29,20 @@ const SettingsPage = () => {
     email: '',
     image: '',
   })
+
+  const [syncLoading, setSyncLoading] = useState(false)
+
+  const handleSyncData = async () => {
+    try {
+      setSyncLoading(true)
+      await syncNow({ force: true })
+      toast.success('Data synced from server')
+    } catch {
+      toast.error('Sync failed — check your connection')
+    } finally {
+      setSyncLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (user) {
@@ -50,7 +65,7 @@ const SettingsPage = () => {
       onConfirm: async () => {
         await request.delete('/api/user/data')
         await clearOfflineData()
-        await syncNow()
+        await syncNow({ force: true })
         toast.success('Your personal data has been reset')
         router.push('/dashboard')
       },
@@ -95,8 +110,6 @@ const SettingsPage = () => {
       <PageHeader
         title="Settings"
         subtitle="Manage your account settings and preferences"
-        showBack
-        backHref="/dashboard"
       />
 
       {/* Profile Section */}
@@ -226,6 +239,32 @@ const SettingsPage = () => {
             <span className="text-sm text-foreground">Google Account</span>
           </div>
         </div>
+      </motion.div>
+
+      {/* Sync data */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+        className="surface-card p-6"
+      >
+        <h2 className="text-lg font-semibold text-foreground mb-2">Sync data</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          MintMind keeps data on your device. Pull fresh data from the server when you need it.
+          {lastSyncedAt
+            ? ` Last synced ${format(new Date(lastSyncedAt), 'MMM d, yyyy h:mm a')}.`
+            : ' Not synced yet.'}
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleSyncData}
+          disabled={syncLoading || syncing}
+          className="w-full sm:w-auto"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${syncLoading || syncing ? 'animate-spin' : ''}`} />
+          {syncLoading || syncing ? 'Syncing…' : 'Sync now'}
+        </Button>
       </motion.div>
 
       {/* Reset Data */}

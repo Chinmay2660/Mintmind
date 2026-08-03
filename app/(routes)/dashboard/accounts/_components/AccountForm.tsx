@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { IconPicker } from '@/components/ui/icon-picker'
 import { SubmitButton } from '@/components/ui/form-buttons'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { getLocal } from '@/lib/offline/repository'
 import { useBalanceAdjustmentPrompt } from './BalanceAdjustmentPrompt'
 
 const defaultFormData = () => ({
@@ -37,10 +38,9 @@ export function AccountForm({ accountId }: AccountFormProps) {
   useEffect(() => {
     if (!accountId || !user) return
     setLoading(true)
-    request
-      .get(`/api/bank-accounts/${accountId}`)
-      .then((res) => {
-        const account = res.data
+    getLocal('bankAccounts', accountId)
+      .then((account) => {
+        if (!account) throw new Error('Not found')
         setFormData({
           accountName: account.accountName,
           bankName: account.bankName,
@@ -148,8 +148,9 @@ export function AccountForm({ accountId }: AccountFormProps) {
         </label>
         <Input
           type="number"
-          value={formData.balance}
+          value={formData.balance || ''}
           onChange={(e) => setFormData({ ...formData, balance: parseFloat(e.target.value) || 0 })}
+          placeholder="0"
           required
           step="0.01"
           className="h-12"

@@ -1,9 +1,9 @@
 'use client'
-import React, { Suspense, useEffect, useState } from 'react'
-import { Calendar, Target, PiggyBank } from 'lucide-react'
+import React, { Suspense, useCallback, useEffect, useState } from 'react'
+import { Calendar, PiggyBank } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -13,46 +13,69 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { FAB } from '@/components/ui/fab'
-import { SwipeableRow, DesktopRowActions } from '@/components/ui/swipeable-row'
+import { RowActions } from '@/components/ui/swipeable-row'
 import { formatCurrency } from '@/lib/utils/format'
 import { cn } from '@/lib/utils'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
-import { useRegisterRefresh } from '@/contexts/RefreshContext'
+import { useLocalList } from '@/lib/hooks/useLocalData'
+import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
+import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useOffline } from '@/contexts/OfflineContext'
+import { computeBudgetStats } from '@/lib/offline/computed'
+import { getUtilizationBarClass } from '@/lib/utils/utilization'
+import { DEFAULT_CATEGORY_COLOR } from '@/lib/constants/colors'
+
+type BudgetStat = {
+  budgetId: string
+  spent: number
+  remaining: number
+  percentage: number
+  isOverBudget: boolean
+  categoryColor?: string | null
+}
 
 const BudgetsPageContent = () => {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { user } = useAuth()
-  const [budgets, setBudgets] = useState([])
-  const [loading, setLoading] = useState(true)
+  const userId = user?.id
+  const { syncing, lastSyncedAt } = useOffline()
   const [selectedPeriod, setSelectedPeriod] = useState('1M')
+  const { data: budgets, loading, reload } = useLocalList('budgets', userId, {
+    period: selectedPeriod,
+  })
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
+  const [budgetStatsById, setBudgetStatsById] = useState<Record<string, BudgetStat>>({})
+
+  const loadBudgetStats = useCallback(async () => {
+    const stats = await computeBudgetStats({ period: selectedPeriod })
+    setBudgetStatsById(
+      Object.fromEntries(
+        stats.categories.map((item) => [
+          item.budgetId,
+          {
+            budgetId: item.budgetId,
+            spent: item.spent,
+            remaining: item.remaining,
+            percentage: item.percentage,
+            isOverBudget: item.isOverBudget,
+            categoryColor: item.categoryColor,
+          },
+        ])
+      )
+    )
+  }, [selectedPeriod])
+
+  useSyncedRefresh(async () => {
+    await reload()
+    await loadBudgetStats()
+  })
 
   useEffect(() => {
-    if (searchParams.get('action') === 'add') {
-      router.replace('/dashboard/budgets/new')
-    }
-  }, [searchParams, router])
+    if (!userId || syncing) return
+    loadBudgetStats()
+  }, [userId, syncing, lastSyncedAt, loadBudgetStats])
 
-  useEffect(() => {
-    if (user) {
-      fetchBudgets()
-    }
-  }, [user, selectedPeriod])
-
-  const fetchBudgets = async () => {
-    try {
-      setLoading(true)
-      const response = await request.get(`/api/budgets?period=${selectedPeriod}`)
-      setBudgets(response.data)
-    } catch (error) {
-      toast.error('Failed to load budgets')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useRegisterRefresh(fetchBudgets)
+  useAddActionRedirect('/dashboard/budgets/new')
 
   const handleDelete = (id) => {
     confirmDelete({
@@ -61,7 +84,7 @@ const BudgetsPageContent = () => {
       onConfirm: async () => {
         await request.delete(`/api/budgets/${id}`)
         toast.success('Budget deleted successfully')
-        fetchBudgets()
+        await reload()
       },
     })
   }
@@ -119,15 +142,22 @@ const BudgetsPageContent = () => {
             onAction={() => router.push('/dashboard/budgets/new')}
           />
         ) : (
-          budgets.map((budget, index) => (
-            <SwipeableRow
-              key={budget._id}
-              onEdit={() => router.push(`/dashboard/budgets/${budget._id}`)}
-              onDelete={() => handleDelete(budget._id)}
-            >
-              <Card delay={0.2 + index * 0.05} hover={true} className="p-4">
+          budgets.map((budget, index) => {
+            const stat = budgetStatsById[budget._id]
+            const spent = stat?.spent ?? 0
+            const remaining = stat?.remaining ?? budget.amount
+            const utilization = stat?.percentage ?? 0
+            const isOverBudget = stat?.isOverBudget ?? false
+            const categoryColor =
+              budget.categoryId?.color || stat?.categoryColor || DEFAULT_CATEGORY_COLOR
+
+            return (
+              <Card key={budget._id} delay={0.2 + index * 0.05} hover={true} className="p-4">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: `${categoryColor}15`, color: categoryColor }}
+                  >
                     <span className="text-2xl">{budget.categoryId?.icon || '📁'}</span>
                   </div>
                   <div className="flex-1 min-w-0">
@@ -135,10 +165,30 @@ const BudgetsPageContent = () => {
                     <p className="text-sm text-muted-foreground mb-2">
                       {budget.categoryId?.name || 'Uncategorized'} • {budget.period}
                     </p>
+
+                    <div className="mb-2">
+                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <span className={isOverBudget ? 'text-red-500 font-medium' : ''}>
+                          {formatCurrency(spent)} spent
+                        </span>
+                        <span>{formatCurrency(remaining)} left</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            isOverBudget ? 'bg-red-500' : getUtilizationBarClass(utilization)
+                          }`}
+                          style={{ width: `${Math.min(100, utilization)}%` }}
+                        />
+                      </div>
+                    </div>
+
                     <div className="flex items-center gap-2 text-sm">
-                      <Target className="w-4 h-4 text-primary" />
                       <span className="font-bold text-foreground">
                         {formatCurrency(budget.amount)}
+                      </span>
+                      <span className="text-muted-foreground">
+                        · {Math.round(utilization)}% used
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
@@ -149,14 +199,14 @@ const BudgetsPageContent = () => {
                       </span>
                     </div>
                   </div>
-                  <DesktopRowActions>
+                  <RowActions>
                     <EditButton onClick={() => router.push(`/dashboard/budgets/${budget._id}`)} />
                     <DeleteButton onClick={() => handleDelete(budget._id)} />
-                  </DesktopRowActions>
+                  </RowActions>
                 </div>
               </Card>
-            </SwipeableRow>
-          ))
+            )
+          })
         )}
       </div>
 

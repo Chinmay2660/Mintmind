@@ -7,18 +7,28 @@ import request from '@/lib/api/request'
 import { Input } from '@/components/ui/input'
 import { SubmitButton } from '@/components/ui/form-buttons'
 import { useAuth } from '@/lib/hooks/useAuth'
+import { getLocal } from '@/lib/offline/repository'
+import { cn } from '@/lib/utils'
+import {
+  DEFAULT_CARD_COLOR,
+  detectCardType,
+  formatCardNumber,
+  getLastFourDigits,
+  stripCardDigits,
+  type CardType,
+} from '@/lib/utils/creditCard'
 
 const defaultFormData = () => ({
   cardName: '',
   issuer: '',
-  lastFourDigits: '',
+  cardNumber: '',
+  cardType: '' as CardType | '',
   creditLimit: '',
-  utilization: '',
+  utilizedLimit: '',
   statementDay: '',
   dueDay: '',
-  apr: '',
-  rewardsProgram: '',
   notes: '',
+  color: DEFAULT_CARD_COLOR,
 })
 
 interface CreditCardFormProps {
@@ -35,24 +45,20 @@ export function CreditCardForm({ creditCardId }: CreditCardFormProps) {
   useEffect(() => {
     if (!creditCardId || !user) return
     setLoading(true)
-    request
-      .get(`/api/credit-cards/${creditCardId}`)
-      .then((res) => {
-        const card = res.data
+    getLocal('creditCards', creditCardId)
+      .then((card) => {
+        if (!card) throw new Error('Not found')
         setFormData({
           cardName: card.cardName,
           issuer: card.issuer || '',
-          lastFourDigits: card.lastFourDigits || '',
+          cardNumber: card.cardNumber || '',
+          cardType: card.cardType || '',
           creditLimit: card.creditLimit != null ? String(card.creditLimit) : '',
-          utilization:
-            card.creditLimit > 0 && card.currentBalance != null
-              ? String((card.currentBalance / card.creditLimit) * 100)
-              : '',
+          utilizedLimit: card.currentBalance != null ? String(card.currentBalance) : '',
           statementDay: card.statementDay || '',
           dueDay: card.dueDay || '',
-          apr: card.apr || '',
-          rewardsProgram: card.rewardsProgram || '',
           notes: card.notes || '',
+          color: card.color || DEFAULT_CARD_COLOR,
         })
       })
       .catch(() => {
@@ -67,18 +73,20 @@ export function CreditCardForm({ creditCardId }: CreditCardFormProps) {
     setSaving(true)
     try {
       const creditLimit = parseFloat(formData.creditLimit) || 0
-      const utilization = parseFloat(formData.utilization) || 0
+      const cardDigits = stripCardDigits(formData.cardNumber)
+      const cardType = cardDigits ? detectCardType(cardDigits) : null
       const payload = {
         cardName: formData.cardName,
         issuer: formData.issuer,
-        lastFourDigits: formData.lastFourDigits,
+        cardNumber: cardDigits || null,
+        cardType: cardType || null,
+        lastFourDigits: cardDigits ? getLastFourDigits(cardDigits) : null,
         creditLimit,
-        currentBalance: creditLimit * (utilization / 100),
-        rewardsProgram: formData.rewardsProgram,
+        currentBalance: parseFloat(formData.utilizedLimit) || 0,
         notes: formData.notes,
         statementDay: formData.statementDay ? parseInt(formData.statementDay) : null,
         dueDay: formData.dueDay ? parseInt(formData.dueDay) : null,
-        apr: formData.apr ? parseFloat(formData.apr) : null,
+        color: formData.color,
       }
       if (creditCardId) {
         await request.put(`/api/credit-cards/${creditCardId}`, payload)
@@ -121,14 +129,29 @@ export function CreditCardForm({ creditCardId }: CreditCardFormProps) {
         />
       </div>
       <div>
-        <label className="text-sm font-medium mb-1 block">Last 4 Digits (Optional)</label>
-        <Input
-          value={formData.lastFourDigits}
-          onChange={(e) => setFormData({ ...formData, lastFourDigits: e.target.value.slice(0, 4) })}
-          placeholder="1234"
-          maxLength={4}
-          className="h-12"
-        />
+        <label className="text-sm font-medium mb-1 block">Card Number (Optional)</label>
+        <div className="relative">
+          <Input
+            value={formatCardNumber(formData.cardNumber)}
+            onChange={(e) => {
+              const digits = stripCardDigits(e.target.value).slice(0, 19)
+              setFormData({
+                ...formData,
+                cardNumber: digits,
+                cardType: detectCardType(digits) || '',
+              })
+            }}
+            placeholder="1234 5678 9012 3456"
+            inputMode="numeric"
+            autoComplete="cc-number"
+            className="h-12 pr-28"
+          />
+          {formData.cardType && (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground">
+              {formData.cardType}
+            </span>
+          )}
+        </div>
       </div>
       <div>
         <label className="text-sm font-medium mb-1 block">Credit Limit</label>
@@ -144,15 +167,14 @@ export function CreditCardForm({ creditCardId }: CreditCardFormProps) {
         />
       </div>
       <div>
-        <label className="text-sm font-medium mb-1 block">Utilization %</label>
+        <label className="text-sm font-medium mb-1 block">Utilized Limit</label>
         <Input
           type="number"
-          value={formData.utilization}
-          onChange={(e) => setFormData({ ...formData, utilization: e.target.value })}
+          value={formData.utilizedLimit}
+          onChange={(e) => setFormData({ ...formData, utilizedLimit: e.target.value })}
           placeholder="0"
           step="0.01"
           min="0"
-          max="100"
           className="h-12"
         />
       </div>
@@ -181,35 +203,27 @@ export function CreditCardForm({ creditCardId }: CreditCardFormProps) {
         />
       </div>
       <div>
-        <label className="text-sm font-medium mb-1 block">APR % (Optional)</label>
+        <label className="text-sm font-medium mb-1 block">Color</label>
         <Input
-          type="number"
-          value={formData.apr}
-          onChange={(e) => setFormData({ ...formData, apr: e.target.value })}
-          step="0.01"
-          placeholder="Annual percentage rate"
-          className="h-12"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Rewards Program (Optional)</label>
-        <Input
-          value={formData.rewardsProgram}
-          onChange={(e) => setFormData({ ...formData, rewardsProgram: e.target.value })}
-          placeholder="e.g., SmartBuy, Reward Points"
-          className="h-12"
+          type="color"
+          value={formData.color}
+          onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+          className="h-12 w-full"
         />
       </div>
       <p className="form-field-full text-sm text-muted-foreground">
         A Credit Card account is created automatically in Accounts for payments.
       </p>
       <div className="form-field-full">
-        <label className="text-sm font-medium mb-1 block">Notes (Optional)</label>
-        <Input
+        <label className="text-sm font-medium mb-1 block">Description (Optional)</label>
+        <textarea
           value={formData.notes}
           onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-          placeholder="Additional notes"
-          className="h-12"
+          placeholder="Rewards, benefits, reminders, or other card details..."
+          rows={4}
+          className={cn(
+            'flex min-h-[6rem] w-full rounded-xl border surface-input px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y'
+          )}
         />
       </div>
       <div className="form-field-full">

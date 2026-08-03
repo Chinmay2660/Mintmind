@@ -2,7 +2,7 @@
 
 import { useSidebar } from '@/contexts/SidebarContext'
 import { cn } from '@/lib/utils'
-import MobileNavbar, { DesktopSidebar } from './MobileNavbar'
+import MobileBottomNav, { DesktopSidebar } from './MobileNavbar'
 
 function DashboardMain({ children }: { children: React.ReactNode }) {
   return (
@@ -18,7 +18,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <DesktopSidebar />
-      <MobileNavbar />
+      <MobileBottomNav />
       <div
         className={cn(
           'relative z-10 flex min-h-screen min-w-0 flex-col transition-[margin-left] duration-300 ease-in-out',

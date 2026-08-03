@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { FormButtonGroup } from '@/components/ui/form-buttons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
+import { RowActions } from '@/components/ui/swipeable-row'
 import { AddButton } from '@/components/ui/AddButton'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { ListItemSkeleton } from '@/components/ui/loading-skeleton'
@@ -221,6 +222,7 @@ export function FamilyGoalsSection({
               type="number"
               value={formData.targetAmount || ''}
               onChange={(e) => setFormData({ ...formData, targetAmount: parseFloat(e.target.value) || 0 })}
+              placeholder="0"
               required
               min="0"
             />
@@ -432,10 +434,10 @@ export function FamilyGoalsSection({
                     )}
                   </div>
                   {isFamilyHead && (
-                    <div className="flex gap-1 shrink-0">
+                    <RowActions>
                       <EditButton onClick={() => handleEdit(goal)} />
                       <DeleteButton onClick={() => handleDelete(goal._id)} />
-                    </div>
+                    </RowActions>
                   )}
                 </div>
               </Card>

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { FormButtonGroup } from '@/components/ui/form-buttons'
 import { EmptyState } from '@/components/ui/empty-state'
+import { RowActions } from '@/components/ui/swipeable-row'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 import { AddButton } from '@/components/ui/AddButton'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -127,8 +128,9 @@ export function FamilyExpensesSection({ expenses, loading, onRefresh, family, us
             <label className="text-sm font-medium mb-1 block">Amount</label>
             <Input
               type="number"
-              value={formData.amount}
+              value={formData.amount || ''}
               onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+              placeholder="0"
               required
               min="0"
             />
@@ -223,10 +225,10 @@ export function FamilyExpensesSection({ expenses, loading, onRefresh, family, us
                     </div>
                   </div>
                   {canEdit && (
-                    <div className="flex gap-1 shrink-0">
+                    <RowActions>
                       <EditButton onClick={() => handleEdit(expense)} />
                       <DeleteButton onClick={() => handleDelete(expense._id)} />
-                    </div>
+                    </RowActions>
                   )}
                 </div>
               </Card>

@@ -1,6 +1,6 @@
 'use client'
 import { useAuth } from '@/lib/hooks/useAuth'
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
   TrendingUp,
   ArrowDownCircle,
@@ -14,7 +14,6 @@ import {
   CreditCard,
 } from 'lucide-react'
 import { endOfMonth, format, startOfMonth } from 'date-fns'
-import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
@@ -26,7 +25,11 @@ import {
 import { formatCurrency } from '@/lib/utils/format'
 import { withFromHome } from '@/lib/utils/navigation'
 import type { DashboardStats } from '@/types/dashboard'
-import { useRegisterRefresh } from '@/contexts/RefreshContext'
+import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
+import { useOffline } from '@/contexts/OfflineContext'
+import { computeDashboardStats, computeTransactionStats } from '@/lib/offline/computed'
+import { listLocal } from '@/lib/offline/repository'
+import { DEFAULT_CATEGORY_COLOR } from '@/lib/constants/colors'
 
 interface Transaction {
   _id?: string
@@ -50,51 +53,64 @@ const MORE_LINKS = [
 
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth()
+  const userId = user?.id
+  const { syncing, lastSyncedAt } = useOffline()
   const [stats, setStats] = useState<DashboardStats>({})
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [incomeCategories, setIncomeCategories] = useState<CategoryStat[]>([])
   const [expenseCategories, setExpenseCategories] = useState<CategoryStat[]>([])
   const [loading, setLoading] = useState(true)
 
+  const loadFromCache = useCallback(async () => {
+    const now = new Date()
+    const monthStart = startOfMonth(now)
+    const monthEnd = endOfMonth(now)
+
+    const [statsData, txData, categoryStats] = await Promise.all([
+      computeDashboardStats(),
+      listLocal('transactions'),
+      computeTransactionStats({
+        startDate: monthStart.toISOString(),
+        endDate: monthEnd.toISOString(),
+        types: 'income,expense',
+      }),
+    ])
+
+    setStats(statsData || {})
+    setTransactions(txData ?? [])
+    setIncomeCategories(categoryStats?.incomeCategoryWise ?? [])
+    setExpenseCategories(categoryStats?.categoryWise ?? [])
+  }, [])
+
   useEffect(() => {
-    if (user) {
-      fetchData()
-    }
-  }, [user])
-
-  const fetchData = async () => {
-    try {
-      setLoading(true)
-      const now = new Date()
-      const monthStart = startOfMonth(now)
-      const monthEnd = endOfMonth(now)
-      const [statsRes, txRes, categoryStatsRes] = await Promise.all([
-        request.get('/api/dashboard/stats'),
-        request.get('/api/transactions'),
-        request.get('/api/dashboard/transaction-stats', {
-          params: {
-            startDate: monthStart.toISOString(),
-            endDate: monthEnd.toISOString(),
-            types: 'income,expense',
-          },
-        }),
-      ])
-      setStats(statsRes.data || {})
-      setTransactions(txRes.data || [])
-      setIncomeCategories(categoryStatsRes.data?.incomeCategoryWise ?? [])
-      setExpenseCategories(categoryStatsRes.data?.categoryWise ?? [])
-    } catch {
-      toast.error('Failed to load dashboard data')
-      setStats({})
-      setTransactions([])
-      setIncomeCategories([])
-      setExpenseCategories([])
-    } finally {
+    if (!userId) {
       setLoading(false)
+      return
     }
-  }
+    if (syncing) return
 
-  useRegisterRefresh(fetchData)
+    let cancelled = false
+    setLoading(true)
+    loadFromCache()
+      .catch(() => {
+        if (!cancelled) {
+          toast.error('Failed to load dashboard data')
+          setStats({})
+          setTransactions([])
+          setIncomeCategories([])
+          setExpenseCategories([])
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [userId, syncing, lastSyncedAt, loadFromCache])
+
+  useSyncedRefresh(loadFromCache)
 
   const balance = (stats?.totalBankBalance || 0) + (stats?.totalCash || 0)
   const savings = stats?.monthlySavings || 0
@@ -398,7 +414,7 @@ const Dashboard = () => {
             </div>
           ) : (
             recentTransactions.map((tx) => {
-              const catColor = tx.categoryId?.color || '#4845d2'
+              const catColor = tx.categoryId?.color || DEFAULT_CATEGORY_COLOR
               const catIcon = tx.categoryId?.icon
               const catName = tx.categoryId?.name
               const isIncome = tx.type === 'income'
