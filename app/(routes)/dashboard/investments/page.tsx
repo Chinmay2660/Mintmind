@@ -5,7 +5,6 @@ import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { format } from 'date-fns'
-import { useRouter } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { FilterButtonGroup } from '@/components/ui/filter-button'
@@ -20,18 +19,17 @@ import { formatCurrency } from '@/lib/utils/format'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useLocalList } from '@/lib/hooks/useLocalData'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
-import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useAddActionRedirect, useEditActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 import { useFormSheet } from '@/lib/hooks/useFormSheet'
 import { InvestmentForm } from './_components/InvestmentForm'
 
 const InvestmentsPageContent = () => {
-  const router = useRouter()
   const { user } = useAuth()
   const userId = user?.id
   const { data: allInvestments, loading, reload } = useLocalList('investments', userId)
   const [filterType, setFilterType] = useState('all')
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
-  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
+  const { open, setOpen, entityId, openSheet, closeSheet } = useFormSheet()
 
   const investments =
     filterType === 'all'
@@ -40,6 +38,7 @@ const InvestmentsPageContent = () => {
 
   useSyncedRefresh(reload)
   useAddActionRedirect(openSheet)
+  useEditActionRedirect(openSheet)
 
   const handleDelete = (id) => {
     confirmDelete({
@@ -164,9 +163,7 @@ const InvestmentsPageContent = () => {
                       )}
                     </div>
                     <RowActions>
-                      <EditButton
-                        onClick={() => router.push(`/dashboard/investments/${investment._id}`)}
-                      />
+                      <EditButton onClick={() => openSheet(investment._id)} />
                       <DeleteButton onClick={() => handleDelete(investment._id)} />
                     </RowActions>
                   </div>
@@ -218,8 +215,10 @@ const InvestmentsPageContent = () => {
         )}
       </div>
 
-      <FormSheet open={open} onOpenChange={setOpen} title="Add Investment">
+      <FormSheet open={open} onOpenChange={setOpen} title={entityId ? 'Edit Investment' : 'Add Investment'}>
         <InvestmentForm
+          key={entityId ?? 'new'}
+          investmentId={entityId}
           variant="sheet"
           onSuccess={() => {
             closeSheet()

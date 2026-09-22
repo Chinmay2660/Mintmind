@@ -3,7 +3,6 @@ import React, { Suspense, useCallback, useEffect, useState } from 'react'
 import { Calendar, PiggyBank } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -20,7 +19,7 @@ import { cn } from '@/lib/utils'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useLocalList } from '@/lib/hooks/useLocalData'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
-import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useAddActionRedirect, useEditActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 import { useFormSheet } from '@/lib/hooks/useFormSheet'
 import { BudgetForm } from './_components/BudgetForm'
 import { fetchBudgetStats } from '@/lib/api/stats'
@@ -37,7 +36,6 @@ type BudgetStat = {
 }
 
 const BudgetsPageContent = () => {
-  const router = useRouter()
   const { user } = useAuth()
   const userId = user?.id
   const [selectedPeriod, setSelectedPeriod] = useState('1M')
@@ -46,7 +44,7 @@ const BudgetsPageContent = () => {
   })
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
   const [budgetStatsById, setBudgetStatsById] = useState<Record<string, BudgetStat>>({})
-  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
+  const { open, setOpen, entityId, openSheet, closeSheet } = useFormSheet()
 
   const loadBudgetStats = useCallback(async () => {
     const stats = await fetchBudgetStats({ period: selectedPeriod })
@@ -78,6 +76,7 @@ const BudgetsPageContent = () => {
   }, [userId, loadBudgetStats])
 
   useAddActionRedirect(openSheet)
+  useEditActionRedirect(openSheet)
 
   const handleDelete = (id) => {
     confirmDelete({
@@ -202,7 +201,7 @@ const BudgetsPageContent = () => {
                     </div>
                   </div>
                   <RowActions>
-                    <EditButton onClick={() => router.push(`/dashboard/budgets/${budget._id}`)} />
+                    <EditButton onClick={() => openSheet(budget._id)} />
                     <DeleteButton onClick={() => handleDelete(budget._id)} />
                   </RowActions>
                 </div>
@@ -212,8 +211,14 @@ const BudgetsPageContent = () => {
         )}
       </div>
 
-      <FormSheet open={open} onOpenChange={setOpen} title="Add Budget">
+      <FormSheet
+        open={open}
+        onOpenChange={setOpen}
+        title={entityId ? 'Edit Budget' : 'Add Budget'}
+      >
         <BudgetForm
+          key={entityId ?? 'new'}
+          budgetId={entityId}
           variant="sheet"
           onSuccess={async () => {
             closeSheet()

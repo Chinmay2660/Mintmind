@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { startOfDay, endOfDay } from 'date-fns'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -39,14 +39,13 @@ import {
   type TransactionFilters,
 } from './_components/TransactionFilterSheet'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
-import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useAddActionRedirect, useEditActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 import { useFormSheet } from '@/lib/hooks/useFormSheet'
 import { TransactionForm } from './_components/TransactionForm'
 
 let processDueRan = false
 
 const TransactionsPageContent = () => {
-  const router = useRouter()
   const { user } = useAuth()
   const userId = user?.id
   const searchParams = useSearchParams()
@@ -60,7 +59,7 @@ const TransactionsPageContent = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [filters, setFilters] = useState<TransactionFilters>(DEFAULT_TRANSACTION_FILTERS)
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
-  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
+  const { open, setOpen, entityId, openSheet, closeSheet } = useFormSheet()
   const [sheetType, setSheetType] = useState<'expense' | 'income' | 'transfer' | undefined>()
 
   const openAddSheet = useCallback(() => {
@@ -73,7 +72,16 @@ const TransactionsPageContent = () => {
     openSheet()
   }, [searchParams, openSheet])
 
+  const openEditSheet = useCallback(
+    (id: string) => {
+      setSheetType(undefined)
+      openSheet(id)
+    },
+    [openSheet]
+  )
+
   useAddActionRedirect(openAddSheet)
+  useEditActionRedirect(openEditSheet)
 
   const loadData = useCallback(async () => {
     const [txRes, cashRes] = await Promise.all([
@@ -265,17 +273,22 @@ const TransactionsPageContent = () => {
         <div className={cn('transition-opacity', isRefreshing && 'opacity-60 pointer-events-none')}>
           <TransactionGroupedList
             groups={dayGroups}
-            onEdit={(tx) => router.push(`/dashboard/transactions/${tx._id}`)}
+            onEdit={(tx) => openEditSheet(tx._id)}
             onDelete={handleDelete}
           />
         </div>
       )}
 
-      <FormSheet open={open} onOpenChange={setOpen} title="Add Transaction">
+      <FormSheet
+        open={open}
+        onOpenChange={setOpen}
+        title={entityId ? 'Edit Transaction' : 'Add Transaction'}
+      >
         <TransactionForm
-          key={sheetType ?? 'default'}
+          key={entityId ?? sheetType ?? 'new'}
+          transactionId={entityId}
           variant="sheet"
-          defaultValues={sheetType ? { type: sheetType } : undefined}
+          defaultValues={!entityId && sheetType ? { type: sheetType } : undefined}
           onSuccess={() => {
             closeSheet()
             loadData()

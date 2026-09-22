@@ -4,7 +4,6 @@ import React, { Suspense, useState } from 'react'
 import { Download, FileText } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { FilterButtonGroup } from '@/components/ui/filter-button'
@@ -19,7 +18,7 @@ import { RowActions } from '@/components/ui/swipeable-row'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useApiList } from '@/lib/hooks/useApiList'
 import { useRegisterRefresh } from '@/contexts/RefreshContext'
-import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useAddActionRedirect, useEditActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 import { useFormSheet } from '@/lib/hooks/useFormSheet'
 import { DocumentForm } from './_components/DocumentForm'
 
@@ -34,11 +33,10 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 const DocumentsPageContent = () => {
-  const router = useRouter()
   const { data: allDocuments, loading, reload } = useApiList('/api/documents')
   const [filterCategory, setFilterCategory] = useState('all')
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
-  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
+  const { open, setOpen, entityId, openSheet, closeSheet } = useFormSheet()
 
   const documents =
     filterCategory === 'all'
@@ -47,6 +45,7 @@ const DocumentsPageContent = () => {
 
   useRegisterRefresh(reload)
   useAddActionRedirect(openSheet)
+  useEditActionRedirect(openSheet)
 
   const handleDelete = (id: string) => {
     confirmDelete({
@@ -136,7 +135,7 @@ const DocumentsPageContent = () => {
                   )}
                 </div>
                 <RowActions>
-                  <EditButton onClick={() => router.push(`/dashboard/documents/${doc._id}`)} />
+                  <EditButton onClick={() => openSheet(doc._id)} />
                   <DeleteButton onClick={() => handleDelete(doc._id)} />
                 </RowActions>
               </div>
@@ -145,8 +144,14 @@ const DocumentsPageContent = () => {
         )}
       </div>
 
-      <FormSheet open={open} onOpenChange={setOpen} title="Add Document">
+      <FormSheet
+        open={open}
+        onOpenChange={setOpen}
+        title={entityId ? 'Edit Document' : 'Add Document'}
+      >
         <DocumentForm
+          key={entityId ?? 'new'}
+          documentId={entityId}
           variant="sheet"
           onSuccess={() => {
             closeSheet()

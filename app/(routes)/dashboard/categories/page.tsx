@@ -4,7 +4,6 @@ import { ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { useRouter } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
@@ -19,19 +18,18 @@ import { formatCurrency } from '@/lib/utils/format'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useCategories } from '@/lib/hooks/useReferenceData'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
-import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useAddActionRedirect, useEditActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 import { useFormSheet } from '@/lib/hooks/useFormSheet'
 import { CategoryForm } from './_components/CategoryForm'
 
 const CategoriesPageContent = () => {
-  const router = useRouter()
   const { user } = useAuth()
   const userId = user?.id
   const { categories: allCategories, loading, refetch: reload } = useCategories(userId)
   const [filterType, setFilterType] = useState('all')
   const [addType, setAddType] = useState<'expense' | 'income'>('expense')
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
-  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
+  const { open, setOpen, entityId, openSheet, closeSheet } = useFormSheet()
 
   const openAddSheet = useCallback(
     (type?: 'expense' | 'income') => {
@@ -42,6 +40,7 @@ const CategoriesPageContent = () => {
   )
 
   useAddActionRedirect(() => openAddSheet())
+  useEditActionRedirect(openSheet)
 
   const categories =
     filterType === 'all'
@@ -142,7 +141,7 @@ const CategoriesPageContent = () => {
                         </div>
                         <RowActions>
                           <EditButton
-                            onClick={() => router.push(`/dashboard/categories/${category._id}`)}
+                            onClick={() => openSheet(category._id)}
                           />
                           <DeleteButton onClick={() => handleDelete(category._id)} />
                         </RowActions>
@@ -200,7 +199,7 @@ const CategoriesPageContent = () => {
                         </div>
                         <RowActions>
                           <EditButton
-                            onClick={() => router.push(`/dashboard/categories/${category._id}`)}
+                            onClick={() => openSheet(category._id)}
                           />
                           <DeleteButton onClick={() => handleDelete(category._id)} />
                         </RowActions>
@@ -213,11 +212,16 @@ const CategoriesPageContent = () => {
         ) : null}
       </div>
 
-      <FormSheet open={open} onOpenChange={setOpen} title="Add Category">
+      <FormSheet
+        open={open}
+        onOpenChange={setOpen}
+        title={entityId ? 'Edit Category' : 'Add Category'}
+      >
         <CategoryForm
-          key={addType}
+          key={entityId ?? addType}
+          categoryId={entityId}
           variant="sheet"
-          defaultType={addType}
+          defaultType={entityId ? undefined : addType}
           onSuccess={() => {
             closeSheet()
             reload()

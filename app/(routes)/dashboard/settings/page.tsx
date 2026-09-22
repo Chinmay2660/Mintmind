@@ -1,12 +1,11 @@
 'use client'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useState, useEffect } from 'react'
-import { User, Mail, Save, LogOut, Trash2, Shield, Upload, Lock, Database } from 'lucide-react'
+import { User, Mail, Save, LogOut, Trash2, Database } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ProfilePicturePicker } from '@/components/ui/profile-picture-picker'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { motion } from 'framer-motion'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -14,6 +13,81 @@ import { useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useDemoDataModal } from '../_components/DemoDataModal'
+import { cn } from '@/lib/utils'
+
+function SettingsGroup({
+  children,
+  className,
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div
+      className={cn(
+        'divide-y divide-border/60 overflow-hidden rounded-xl border border-border/60 bg-card/40',
+        className
+      )}
+    >
+      {children}
+    </div>
+  )
+}
+
+function SettingsRow({
+  label,
+  value,
+  mono,
+}: {
+  label: string
+  value: string
+  mono?: boolean
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-5">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span
+        className={cn(
+          'text-sm text-foreground',
+          mono && 'max-w-[55%] truncate font-mono text-xs'
+        )}
+      >
+        {value}
+      </span>
+    </div>
+  )
+}
+
+function SettingsActionRow({
+  title,
+  description,
+  action,
+  destructive,
+}: {
+  title: string
+  description: string
+  action: React.ReactNode
+  destructive?: boolean
+}) {
+  return (
+    <div className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between md:px-5">
+      <div className="min-w-0 flex-1">
+        <p
+          className={cn(
+            'text-sm font-medium',
+            destructive ? 'text-destructive' : 'text-foreground'
+          )}
+        >
+          {title}
+        </p>
+        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+          {description}
+        </p>
+      </div>
+      <div className="shrink-0">{action}</div>
+    </div>
+  )
+}
 
 const SettingsPage = () => {
   const { user, refetch, signOut } = useAuth()
@@ -97,234 +171,170 @@ const SettingsPage = () => {
         subtitle="Manage your account settings and preferences"
       />
 
-      {/* Profile Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="surface-card p-6"
-      >
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center border-2 border-primary/20 overflow-hidden">
-            {formData.image ? (
-              <img
-                src={formData.image}
-                alt={user.name || 'User'}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <User className="w-8 h-8 text-primary" />
-            )}
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold text-foreground">
-              {user.name || user.email?.split('@')[0] || 'User'}
-            </h2>
-            <p className="text-sm text-muted-foreground">{user.email}</p>
-          </div>
-        </div>
+      <div className="mx-auto max-w-2xl space-y-8">
+        <section>
+          <h2 className="mm-section-title mb-3 px-0.5">Profile</h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <SettingsGroup>
+              <div className="space-y-4 px-4 py-4 md:px-5">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1.5 block text-[13px] font-medium text-foreground">
+                      First Name
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        value={formData.firstName}
+                        onChange={(e) =>
+                          setFormData({ ...formData, firstName: e.target.value })
+                        }
+                        placeholder="First Name"
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
 
-        <form onSubmit={handleSubmit} className="max-w-2xl space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="text-sm font-medium mb-2 block text-foreground">
-                First Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  type="text"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  placeholder="First Name"
-                  className="pl-10"
+                  <div>
+                    <label className="mb-1.5 block text-[13px] font-medium text-foreground">
+                      Last Name
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        value={formData.lastName}
+                        onChange={(e) =>
+                          setFormData({ ...formData, lastName: e.target.value })
+                        }
+                        placeholder="Last Name"
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-medium text-foreground">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      type="email"
+                      value={formData.email}
+                      disabled
+                      className="pl-9 surface-input"
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Linked to your Google account and cannot be changed here
+                  </p>
+                </div>
+
+                <ProfilePicturePicker
+                  value={formData.image}
+                  onChange={(image) => setFormData((prev) => ({ ...prev, image }))}
+                  name={user.name}
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block text-foreground">
-                Last Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  type="text"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  placeholder="Last Name"
-                  className="pl-10"
-                />
+              <div className="flex flex-col-reverse gap-2 px-4 py-3 sm:flex-row sm:justify-end md:px-5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setFormData({
+                      firstName: user.firstName || user.name?.split(' ')[0] || '',
+                      lastName:
+                        user.lastName || user.name?.split(' ').slice(1).join(' ') || '',
+                      email: user.email || '',
+                      image: user.image || '',
+                    })
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={loading} size="sm">
+                  <Save className="mr-1.5 h-3.5 w-3.5" />
+                  {loading ? 'Saving...' : 'Save Changes'}
+                </Button>
               </div>
-            </div>
-          </div>
+            </SettingsGroup>
+          </form>
+        </section>
 
-          <div>
-            <label className="text-sm font-medium mb-2 block text-foreground">
-              Email
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                type="email"
-                value={formData.email}
-                disabled
-                className="pl-10 surface-input"
+        <section>
+          <h2 className="mm-section-title mb-3 px-0.5">Account</h2>
+          <SettingsGroup>
+            <SettingsRow label="User ID" value={user.id} mono />
+            <SettingsRow label="Account Type" value="Google Account" />
+          </SettingsGroup>
+        </section>
+
+        {isDemoMode && (
+          <section>
+            <h2 className="mm-section-title mb-3 px-0.5">Developer</h2>
+            <SettingsGroup>
+              <SettingsActionRow
+                title="Demo Data"
+                description="Load sample data across transactions, investments, goals, loans, and more."
+                action={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openDemoModal({ force: true })}
+                  >
+                    <Database className="mr-1.5 h-3.5 w-3.5" />
+                    Load
+                  </Button>
+                }
               />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Email cannot be changed as it's linked to your Google account
-            </p>
-          </div>
+            </SettingsGroup>
+          </section>
+        )}
 
-          <ProfilePicturePicker
-            value={formData.image}
-            onChange={(image) => setFormData((prev) => ({ ...prev, image }))}
-            name={user.name}
-          />
-
-          <div className="flex justify-end gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setFormData({
-                  firstName: user.firstName || user.name?.split(' ')[0] || '',
-                  lastName: user.lastName || user.name?.split(' ').slice(1).join(' ') || '',
-                  email: user.email || '',
-                  image: user.image || '',
-                })
-              }}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading} className="bg-primary hover:bg-primary/90">
-              <Save className="w-4 h-4 mr-2" />
-              {loading ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </div>
-        </form>
-      </motion.div>
-
-      {/* Privacy */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="surface-card p-6"
-      >
-        <h2 className="text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
-          <Shield className="w-5 h-5" /> Privacy
-        </h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          MintMind stores your financial data on our secure servers so you can access it across devices.
-          We do not sell your data.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <Link href="/dashboard/import-export">
-            <Button type="button" variant="outline" size="sm">
-              <Upload className="w-4 h-4 mr-2" /> Import / Export
-            </Button>
-          </Link>
-          <Link href="/dashboard/passwords">
-            <Button type="button" variant="outline" size="sm">
-              <Lock className="w-4 h-4 mr-2" /> Password Manager
-            </Button>
-          </Link>
-        </div>
-      </motion.div>
-
-      {/* Account Info */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="surface-card p-6"
-      >
-        <h2 className="text-lg font-semibold text-foreground mb-4">Account Information</h2>
-        <div className="space-y-3">
-          <div className="flex justify-between items-center py-2 border-b border-border">
-            <span className="text-sm text-muted-foreground">User ID</span>
-            <span className="text-sm font-mono text-foreground">{user.id}</span>
-          </div>
-          <div className="flex justify-between items-center py-2 border-b border-border">
-            <span className="text-sm text-muted-foreground">Account Type</span>
-            <span className="text-sm text-foreground">Google Account</span>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Demo Data */}
-      {isDemoMode && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.28 }}
-          className="surface-card p-6"
-        >
-          <h2 className="text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
-            <Database className="w-5 h-5" /> Demo Data
-          </h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Load sample data across all tabs — transactions, investments, goals, loans,
-            subscriptions, reminders, family, and more.
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => openDemoModal({ force: true })}
-            className="w-full sm:w-auto"
-          >
-            <Database className="w-4 h-4 mr-2" />
-            Load Demo Data
-          </Button>
-        </motion.div>
-      )}
-
-      {/* Reset Data */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="surface-card p-6 border border-red-200 dark:border-red-900/50"
-      >
-        <h2 className="text-lg font-semibold text-foreground mb-2">Reset Data</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          Permanently delete your personal financial data. Family budgets, goals, and expenses are
-          not affected. Your account and profile will remain.
-        </p>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleResetData}
-          className="w-full sm:w-auto text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/20"
-        >
-          <Trash2 className="w-4 h-4 mr-2" />
-          Reset All Data
-        </Button>
-      </motion.div>
-
-      {/* Sign Out */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="surface-card p-6"
-      >
-        <h2 className="text-lg font-semibold text-foreground mb-2">Sign Out</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          Sign out of your account on this device.
-        </p>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={signOut}
-          className="w-full sm:w-auto text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/20"
-        >
-          <LogOut className="w-4 h-4 mr-2" />
-          Sign Out
-        </Button>
-      </motion.div>
+        <section>
+          <h2 className="mm-section-title mb-3 px-0.5">Data &amp; session</h2>
+          <SettingsGroup className="border-destructive/20">
+            <SettingsActionRow
+              destructive
+              title="Reset all data"
+              description="Permanently delete personal financial data. Family shared data is not affected."
+              action={
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetData}
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                  Reset
+                </Button>
+              }
+            />
+            <SettingsActionRow
+              title="Sign out"
+              description="Sign out of your account on this device."
+              action={
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={signOut}
+                >
+                  <LogOut className="mr-1.5 h-3.5 w-3.5" />
+                  Sign Out
+                </Button>
+              }
+            />
+          </SettingsGroup>
+        </section>
+      </div>
 
       <ConfirmDialog {...confirmDialogProps} />
     </div>

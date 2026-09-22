@@ -19,3 +19,17 @@ export function useAddActionRedirect(hrefOrOpen: string | (() => void)) {
     }
   }, [searchParams, router, pathname, hrefOrOpen])
 }
+
+/** Open edit sheet from `?edit=id` deep-links (legacy /[id] routes redirect here). */
+export function useEditActionRedirect(openSheet: (id: string) => void) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const editId = searchParams.get('edit')
+    if (!editId) return
+    openSheet(editId)
+    router.replace(pathname)
+  }, [searchParams, router, pathname, openSheet])
+}

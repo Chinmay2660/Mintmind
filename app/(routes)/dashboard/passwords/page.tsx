@@ -4,7 +4,6 @@ import React, { Suspense } from 'react'
 import { Lock } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -18,7 +17,7 @@ import { RowActions } from '@/components/ui/swipeable-row'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useApiList } from '@/lib/hooks/useApiList'
 import { useRegisterRefresh } from '@/contexts/RefreshContext'
-import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useAddActionRedirect, useEditActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 import { useFormSheet } from '@/lib/hooks/useFormSheet'
 import { PasswordForm } from './_components/PasswordForm'
 
@@ -69,13 +68,13 @@ function PasswordCard({
 }
 
 const PasswordsPageContent = () => {
-  const router = useRouter()
   const { data: passwords, loading, reload } = useApiList('/api/passwords')
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
-  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
+  const { open, setOpen, entityId, openSheet, closeSheet } = useFormSheet()
 
   useRegisterRefresh(reload)
   useAddActionRedirect(openSheet)
+  useEditActionRedirect(openSheet)
 
   const handleDelete = (id: string) => {
     confirmDelete({
@@ -122,15 +121,17 @@ const PasswordsPageContent = () => {
             <PasswordCard
               key={entry._id}
               entry={entry}
-              onEdit={() => router.push(`/dashboard/passwords/${entry._id}`)}
+              onEdit={() => openSheet(entry._id)}
               onDelete={() => handleDelete(entry._id)}
             />
           ))
         )}
       </div>
 
-      <FormSheet open={open} onOpenChange={setOpen} title="Add Password Entry">
+      <FormSheet open={open} onOpenChange={setOpen} title={entityId ? 'Edit Password Entry' : 'Add Password Entry'}>
         <PasswordForm
+          key={entityId ?? 'new'}
+          passwordId={entityId}
           variant="sheet"
           onSuccess={() => {
             closeSheet()

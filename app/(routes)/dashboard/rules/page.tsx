@@ -5,7 +5,6 @@ import { Zap } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { useRouter } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
@@ -18,7 +17,7 @@ import { RowActions } from '@/components/ui/swipeable-row'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useLocalList } from '@/lib/hooks/useLocalData'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
-import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useAddActionRedirect, useEditActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 import { useFormSheet } from '@/lib/hooks/useFormSheet'
 import { RuleForm } from './_components/RuleForm'
 
@@ -31,15 +30,15 @@ const OPERATOR_LABELS: Record<string, string> = {
 }
 
 const RulesPageContent = () => {
-  const router = useRouter()
   const { user } = useAuth()
   const userId = user?.id
   const { data: rules, loading, reload } = useLocalList('rules', userId)
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
-  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
+  const { open, setOpen, entityId, openSheet, closeSheet } = useFormSheet()
 
   useSyncedRefresh(reload)
   useAddActionRedirect(openSheet)
+  useEditActionRedirect(openSheet)
 
   const handleDelete = (id: string) => {
     confirmDelete({
@@ -138,7 +137,7 @@ const RulesPageContent = () => {
                       <span className="hidden sm:inline">Enabled</span>
                     </label>
                     <RowActions>
-                      <EditButton onClick={() => router.push(`/dashboard/rules/${rule._id}`)} />
+                      <EditButton onClick={() => openSheet(rule._id)} />
                       <DeleteButton onClick={() => handleDelete(rule._id)} />
                     </RowActions>
                   </div>
@@ -149,8 +148,10 @@ const RulesPageContent = () => {
         )}
       </div>
 
-      <FormSheet open={open} onOpenChange={setOpen} title="Add Rule">
+      <FormSheet open={open} onOpenChange={setOpen} title={entityId ? 'Edit Rule' : 'Add Rule'}>
         <RuleForm
+          key={entityId ?? 'new'}
+          ruleId={entityId}
           variant="sheet"
           onSuccess={() => {
             closeSheet()

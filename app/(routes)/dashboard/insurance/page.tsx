@@ -5,7 +5,6 @@ import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { format, differenceInDays, isPast } from 'date-fns'
-import { useRouter } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { FilterButtonGroup } from '@/components/ui/filter-button'
@@ -20,7 +19,7 @@ import { formatCurrency } from '@/lib/utils/format'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useLocalList } from '@/lib/hooks/useLocalData'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
-import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useAddActionRedirect, useEditActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 import { useFormSheet } from '@/lib/hooks/useFormSheet'
 import { InsuranceForm } from './_components/InsuranceForm'
 
@@ -31,13 +30,12 @@ const FREQUENCY_MULTIPLIER: Record<string, number> = {
 }
 
 const InsurancePageContent = () => {
-  const router = useRouter()
   const { user } = useAuth()
   const userId = user?.id
   const { data: allPolicies, loading, reload } = useLocalList('insurance', userId)
   const [filterType, setFilterType] = useState('all')
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
-  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
+  const { open, setOpen, entityId, openSheet, closeSheet } = useFormSheet()
 
   const policies =
     filterType === 'all'
@@ -46,6 +44,7 @@ const InsurancePageContent = () => {
 
   useSyncedRefresh(reload)
   useAddActionRedirect(openSheet)
+  useEditActionRedirect(openSheet)
 
   const handleDelete = (id: string) => {
     confirmDelete({
@@ -173,7 +172,7 @@ const InsurancePageContent = () => {
                       )}
                     </div>
                     <RowActions>
-                      <EditButton onClick={() => router.push(`/dashboard/insurance/${policy._id}`)} />
+                      <EditButton onClick={() => openSheet(policy._id)} />
                       <DeleteButton onClick={() => handleDelete(policy._id)} />
                     </RowActions>
                   </div>
@@ -222,8 +221,10 @@ const InsurancePageContent = () => {
         )}
       </div>
 
-      <FormSheet open={open} onOpenChange={setOpen} title="Add Policy">
+      <FormSheet open={open} onOpenChange={setOpen} title={entityId ? 'Edit Policy' : 'Add Policy'}>
         <InsuranceForm
+          key={entityId ?? 'new'}
+          insuranceId={entityId}
           variant="sheet"
           onSuccess={() => {
             closeSheet()

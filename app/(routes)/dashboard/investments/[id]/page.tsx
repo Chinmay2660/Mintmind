@@ -1,31 +1,5 @@
-'use client'
-
-import { Suspense } from 'react'
-import { useParams } from 'next/navigation'
-import { PageHeader } from '@/components/ui/PageHeader'
-import { InvestmentForm } from '../_components/InvestmentForm'
-
-function EditInvestmentContent() {
-  const params = useParams()
-  const id = params.id as string
-
-  return (
-    <div className="space-y-4">
-      <PageHeader
-        title="Edit Investment"
-        subtitle="Update investment details"
-        showBack
-        backHref="/dashboard/investments"
-      />
-      <InvestmentForm investmentId={id} />
-    </div>
-  )
-}
+import { EditRouteRedirect } from '@/components/EditRouteRedirect'
 
 export default function EditInvestmentPage() {
-  return (
-    <Suspense fallback={null}>
-      <EditInvestmentContent />
-    </Suspense>
-  )
+  return <EditRouteRedirect listPath="/dashboard/investments" />
 }

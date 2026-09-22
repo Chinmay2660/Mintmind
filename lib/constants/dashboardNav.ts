@@ -116,16 +116,6 @@ export const DASHBOARD_NAV_SECTIONS: DashboardNavSection[] = [
     ],
   },
   {
-    id: 'vault',
-    label: 'Secure Vault',
-    items: [
-      { id: 30, name: 'Vault', icon: Lock, path: '/dashboard/vault' },
-      { id: 31, name: 'Nominee', icon: UserCheck, path: '/dashboard/nominee' },
-      { id: 19, name: 'Passwords', icon: Lock, path: '/dashboard/passwords' },
-      { id: 28, name: 'Documents', icon: FileText, path: '/dashboard/documents' },
-    ],
-  },
-  {
     id: 'investments',
     label: 'Investments',
     items: [
@@ -143,6 +133,16 @@ export const DASHBOARD_NAV_SECTIONS: DashboardNavSection[] = [
       { id: 25, name: 'Savings Planner', icon: Calculator, path: '/dashboard/planners/savings' },
       { id: 26, name: 'Retirement Planner', icon: Calculator, path: '/dashboard/planners/retirement' },
       { id: 27, name: 'FIRE Planner', icon: Calculator, path: '/dashboard/planners/fire' },
+    ],
+  },
+  {
+    id: 'vault',
+    label: 'Secure Vault',
+    items: [
+      { id: 30, name: 'Vault', icon: Lock, path: '/dashboard/vault' },
+      { id: 31, name: 'Nominee', icon: UserCheck, path: '/dashboard/nominee' },
+      { id: 19, name: 'Passwords', icon: Lock, path: '/dashboard/passwords' },
+      { id: 28, name: 'Documents', icon: FileText, path: '/dashboard/documents' },
     ],
   },
   {

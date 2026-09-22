@@ -5,7 +5,6 @@ import { Target } from 'lucide-react'
 import { format } from 'date-fns'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
@@ -20,7 +19,7 @@ import { formatCurrency } from '@/lib/utils/format'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useApiList } from '@/lib/hooks/useApiList'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
-import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useAddActionRedirect, useEditActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 import { useFormSheet } from '@/lib/hooks/useFormSheet'
 import { GoalForm } from './_components/GoalForm'
 
@@ -53,13 +52,13 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 const GoalsPageContent = () => {
-  const router = useRouter()
   const { data: goals, loading, reload } = useApiList<Goal>('/api/goals')
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
-  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
+  const { open, setOpen, entityId, openSheet, closeSheet } = useFormSheet()
 
   useSyncedRefresh(reload)
   useAddActionRedirect(openSheet)
+  useEditActionRedirect(openSheet)
 
   const handleDelete = (id: string) => {
     confirmDelete({
@@ -125,7 +124,7 @@ const GoalsPageContent = () => {
                     )}
                   </div>
                   <RowActions>
-                    <EditButton onClick={() => router.push(`/dashboard/goals/${goal._id}`)} />
+                    <EditButton onClick={() => openSheet(goal._id)} />
                     <DeleteButton onClick={() => handleDelete(goal._id)} />
                   </RowActions>
                 </div>
@@ -159,8 +158,10 @@ const GoalsPageContent = () => {
         )}
       </div>
 
-      <FormSheet open={open} onOpenChange={setOpen} title="Add Goal">
+      <FormSheet open={open} onOpenChange={setOpen} title={entityId ? 'Edit Goal' : 'Add Goal'}>
         <GoalForm
+          key={entityId ?? 'new'}
+          goalId={entityId}
           variant="sheet"
           onSuccess={() => {
             closeSheet()
