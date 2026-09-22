@@ -29,6 +29,7 @@ import {
   Upload,
   Scale,
   PieChart,
+  UserCheck,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -49,35 +50,37 @@ export interface DashboardNavSection {
 
 export const DASHBOARD_NAV_MAIN: DashboardNavItem[] = [
   { id: 1, name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-  { id: 3, name: 'Transactions', icon: ReceiptText, path: '/dashboard/transactions' },
   { id: 2, name: 'Accounts', icon: Wallet, path: '/dashboard/accounts' },
+  { id: 3, name: 'Transactions', icon: ReceiptText, path: '/dashboard/transactions' },
+  { id: 6, name: 'Budgets', icon: PiggyBank, path: '/dashboard/budgets' },
 ]
 
 export const DASHBOARD_NAV_MORE: DashboardNavItem[] = [
   { id: 4, name: 'Portfolio', icon: TrendingUp, path: '/dashboard/investments' },
-  { id: 20, name: 'Mutual Funds', icon: PieChart, path: '/dashboard/investments/mutual-funds' },
-  { id: 21, name: 'Performance', icon: LineChart, path: '/dashboard/investments/performance' },
-  { id: 22, name: 'Rebalancing', icon: Scale, path: '/dashboard/investments/rebalancing' },
-  { id: 23, name: 'Emergency Fund', icon: ShieldCheck, path: '/dashboard/emergency-fund' },
-  { id: 14, name: 'Goals', icon: Target, path: '/dashboard/goals' },
   { id: 13, name: 'Credit Cards', icon: CreditCard, path: '/dashboard/credit-cards' },
   { id: 24, name: 'Loans', icon: Home, path: '/dashboard/loans' },
   { id: 12, name: 'Insurance', icon: Shield, path: '/dashboard/insurance' },
   { id: 5, name: 'Categories', icon: Tags, path: '/dashboard/categories' },
-  { id: 15, name: 'Tags', icon: Hash, path: '/dashboard/tags' },
-  { id: 16, name: 'Rules', icon: Zap, path: '/dashboard/rules' },
-  { id: 6, name: 'Budgets', icon: PiggyBank, path: '/dashboard/budgets' },
   { id: 7, name: 'Salary & Recurring', icon: IndianRupee, path: '/dashboard/salary-recurring' },
   { id: 17, name: 'Subscriptions', icon: Repeat, path: '/dashboard/subscriptions' },
+  { id: 30, name: 'Vault', icon: Lock, path: '/dashboard/vault' },
+  { id: 31, name: 'Nominee', icon: UserCheck, path: '/dashboard/nominee' },
+  { id: 19, name: 'Passwords', icon: Lock, path: '/dashboard/passwords' },
+  { id: 28, name: 'Documents', icon: FileText, path: '/dashboard/documents' },
+  { id: 20, name: 'Mutual Funds', icon: PieChart, path: '/dashboard/investments/mutual-funds' },
+  { id: 21, name: 'Performance', icon: LineChart, path: '/dashboard/investments/performance' },
+  { id: 22, name: 'Rebalancing', icon: Scale, path: '/dashboard/investments/rebalancing' },
+  { id: 23, name: 'Emergency Fund', icon: ShieldCheck, path: '/dashboard/emergency-fund' },
+  { id: 15, name: 'Tags', icon: Hash, path: '/dashboard/tags' },
+  { id: 16, name: 'Rules', icon: Zap, path: '/dashboard/rules' },
   { id: 18, name: 'Reminders', icon: Bell, path: '/dashboard/reminders' },
+  { id: 14, name: 'Goals', icon: Target, path: '/dashboard/goals' },
   { id: 25, name: 'Savings Planner', icon: Calculator, path: '/dashboard/planners/savings' },
   { id: 26, name: 'Retirement Planner', icon: Calculator, path: '/dashboard/planners/retirement' },
   { id: 27, name: 'FIRE Planner', icon: Calculator, path: '/dashboard/planners/fire' },
-  { id: 19, name: 'Passwords', icon: Lock, path: '/dashboard/passwords' },
-  { id: 28, name: 'Documents', icon: FileText, path: '/dashboard/documents' },
-  { id: 29, name: 'Import / Export', icon: Upload, path: '/dashboard/import-export' },
   { id: 10, name: 'Daily Stats', icon: LineChart, path: '/dashboard/stats' },
   { id: 11, name: 'Category Stats', icon: BarChart3, path: '/dashboard/stats/categories' },
+  { id: 29, name: 'Import / Export', icon: Upload, path: '/dashboard/import-export' },
   { id: 8, name: 'Family Circle', icon: Users, path: '/dashboard/family' },
   { id: 9, name: 'Settings', icon: Settings, path: '/dashboard/settings' },
 ]
@@ -86,20 +89,28 @@ export const DASHBOARD_NAV_ALL = [...DASHBOARD_NAV_MAIN, ...DASHBOARD_NAV_MORE]
 
 export const DASHBOARD_NAV_SECTIONS: DashboardNavSection[] = [
   {
-    id: 'overview',
-    label: 'Overview',
+    id: 'core',
+    label: 'Core',
     items: [{ id: 1, name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' }],
   },
   {
+    id: 'networth',
+    label: 'Net Worth',
+    items: [
+      { id: 2, name: 'Accounts', icon: Wallet, path: '/dashboard/accounts' },
+      { id: 4, name: 'Portfolio', icon: TrendingUp, path: '/dashboard/investments' },
+      { id: 13, name: 'Credit Cards', icon: CreditCard, path: '/dashboard/credit-cards' },
+      { id: 24, name: 'Loans', icon: Home, path: '/dashboard/loans' },
+      { id: 12, name: 'Insurance', icon: Shield, path: '/dashboard/insurance' },
+    ],
+  },
+  {
     id: 'money',
-    label: 'Money',
+    label: 'Expense Management',
     items: [
       { id: 3, name: 'Transactions', icon: ReceiptText, path: '/dashboard/transactions' },
-      { id: 2, name: 'Accounts', icon: Wallet, path: '/dashboard/accounts' },
-      { id: 5, name: 'Categories', icon: Tags, path: '/dashboard/categories' },
-      { id: 15, name: 'Tags', icon: Hash, path: '/dashboard/tags' },
-      { id: 16, name: 'Rules', icon: Zap, path: '/dashboard/rules' },
       { id: 6, name: 'Budgets', icon: PiggyBank, path: '/dashboard/budgets' },
+      { id: 5, name: 'Categories', icon: Tags, path: '/dashboard/categories' },
       { id: 7, name: 'Recurring', icon: IndianRupee, path: '/dashboard/salary-recurring' },
       { id: 17, name: 'Subscriptions', icon: Repeat, path: '/dashboard/subscriptions' },
     ],
@@ -108,28 +119,10 @@ export const DASHBOARD_NAV_SECTIONS: DashboardNavSection[] = [
     id: 'investments',
     label: 'Investments',
     items: [
-      { id: 4, name: 'Portfolio', icon: TrendingUp, path: '/dashboard/investments' },
       { id: 20, name: 'Mutual Funds', icon: PieChart, path: '/dashboard/investments/mutual-funds' },
       { id: 21, name: 'Performance', icon: LineChart, path: '/dashboard/investments/performance' },
       { id: 22, name: 'Rebalancing', icon: Scale, path: '/dashboard/investments/rebalancing' },
       { id: 23, name: 'Emergency Fund', icon: ShieldCheck, path: '/dashboard/emergency-fund' },
-    ],
-  },
-  {
-    id: 'credit',
-    label: 'Credit',
-    items: [
-      { id: 13, name: 'Credit Cards', icon: CreditCard, path: '/dashboard/credit-cards' },
-      { id: 24, name: 'Loans', icon: Home, path: '/dashboard/loans' },
-    ],
-  },
-  {
-    id: 'protection',
-    label: 'Protection',
-    items: [
-      { id: 12, name: 'Insurance', icon: Shield, path: '/dashboard/insurance' },
-      { id: 28, name: 'Documents', icon: FileText, path: '/dashboard/documents' },
-      { id: 19, name: 'Passwords', icon: Lock, path: '/dashboard/passwords' },
     ],
   },
   {
@@ -140,6 +133,16 @@ export const DASHBOARD_NAV_SECTIONS: DashboardNavSection[] = [
       { id: 25, name: 'Savings Planner', icon: Calculator, path: '/dashboard/planners/savings' },
       { id: 26, name: 'Retirement Planner', icon: Calculator, path: '/dashboard/planners/retirement' },
       { id: 27, name: 'FIRE Planner', icon: Calculator, path: '/dashboard/planners/fire' },
+    ],
+  },
+  {
+    id: 'vault',
+    label: 'Secure Vault',
+    items: [
+      { id: 30, name: 'Vault', icon: Lock, path: '/dashboard/vault' },
+      { id: 31, name: 'Nominee', icon: UserCheck, path: '/dashboard/nominee' },
+      { id: 19, name: 'Passwords', icon: Lock, path: '/dashboard/passwords' },
+      { id: 28, name: 'Documents', icon: FileText, path: '/dashboard/documents' },
     ],
   },
   {
@@ -154,6 +157,8 @@ export const DASHBOARD_NAV_SECTIONS: DashboardNavSection[] = [
     id: 'more',
     label: 'More',
     items: [
+      { id: 15, name: 'Tags', icon: Hash, path: '/dashboard/tags' },
+      { id: 16, name: 'Rules', icon: Zap, path: '/dashboard/rules' },
       { id: 18, name: 'Reminders', icon: Bell, path: '/dashboard/reminders' },
       { id: 8, name: 'Family Circle', icon: Users, path: '/dashboard/family' },
       { id: 29, name: 'Import / Export', icon: Upload, path: '/dashboard/import-export' },
@@ -218,6 +223,8 @@ const EXTRA_ROUTE_TITLES: Record<string, string> = {
   '/dashboard/planners/retirement': 'Retirement Planner',
   '/dashboard/planners/fire': 'FIRE Planner',
   '/dashboard/import-export': 'Import / Export',
+  '/dashboard/vault': 'Vault',
+  '/dashboard/nominee': 'Nominee',
 }
 
 const EXTRA_ROUTE_ICONS: Record<string, LucideIcon> = {
@@ -233,6 +240,8 @@ const EXTRA_ROUTE_ICONS: Record<string, LucideIcon> = {
   '/dashboard/planners/retirement': Calculator,
   '/dashboard/planners/fire': Calculator,
   '/dashboard/import-export': Upload,
+  '/dashboard/vault': Lock,
+  '/dashboard/nominee': UserCheck,
 }
 
 export const DASHBOARD_PAGE_TITLES: Record<string, string> = {

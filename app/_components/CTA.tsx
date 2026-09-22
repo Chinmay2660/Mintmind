@@ -1,8 +1,7 @@
 'use client'
 import React from 'react'
 import {
-  IndianRupee, Target, BarChart3, CreditCard, PiggyBank, TrendingUp,
-  Users, ArrowRight
+  TrendingUp, Lock, UserCheck, FileText, Shield, CreditCard, ArrowRight, ReceiptText, PiggyBank
 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -12,62 +11,62 @@ import { useGetStartedHref } from '@/lib/hooks/useGetStartedHref'
 
 const features = [
   {
-    icon: IndianRupee,
-    title: 'Track Expenses',
-    description: 'Categorize and monitor every transaction with smart insights.',
+    icon: TrendingUp,
+    title: 'Net Worth Dashboard',
+    description: 'See net worth in one place — accounts, investments, loans, and credit cards.',
     className: 'lg:col-span-2 lg:row-span-2',
     gradient: 'from-primary/15 via-blue-500/10 to-transparent',
     large: true,
   },
   {
-    icon: CreditCard,
-    title: 'Multiple Accounts',
-    description: 'Bank accounts & cash in one unified view.',
+    icon: ReceiptText,
+    title: 'Expense Tracking',
+    description: 'Log income and spending, categorize transactions, and see where your money goes.',
+    className: 'lg:col-span-1',
+    gradient: 'from-amber-500/15 to-transparent',
+  },
+  {
+    icon: PiggyBank,
+    title: 'Budgets & Recurring',
+    description: 'Set monthly budgets, track subscriptions, and manage salary and recurring bills.',
+    className: 'lg:col-span-1',
+    gradient: 'from-emerald-500/15 to-transparent',
+  },
+  {
+    icon: Lock,
+    title: 'Secure Vault',
+    description: 'Store bank passwords and encrypted credentials in one protected place.',
     className: 'lg:col-span-1',
     gradient: 'from-cyan-500/15 to-transparent',
   },
   {
-    icon: TrendingUp,
-    title: 'Investments',
-    description: 'Track FDs, Mutual Funds, and Stocks.',
+    icon: FileText,
+    title: 'Identity Documents',
+    description: 'Upload Aadhar, PAN, insurance policies, and loan documents.',
     className: 'lg:col-span-1',
     gradient: 'from-fuchsia-500/15 to-transparent',
   },
   {
-    icon: BarChart3,
-    title: 'Visual Analytics',
-    description: 'Beautiful charts to understand spending patterns.',
+    icon: UserCheck,
+    title: 'Nominee Access',
+    description: 'Designate someone who receives a controlled release of your vault.',
     className: 'lg:col-span-1',
     gradient: 'from-indigo-500/15 to-transparent',
   },
   {
-    icon: Target,
-    title: 'Budget Planning',
-    description: 'Set limits and track progress in real-time.',
+    icon: Shield,
+    title: 'Legacy Handoff',
+    description: 'Auto-release after inactivity or trigger manually when the time comes.',
     className: 'lg:col-span-1',
     gradient: 'from-primary/15 to-transparent',
-  },
-  {
-    icon: PiggyBank,
-    title: 'Import & Export',
-    description: 'Back up your data or move it in from spreadsheets anytime.',
-    className: 'lg:col-span-2',
-    gradient: 'from-cyan-500/15 via-primary/10 to-transparent',
     highlight: true,
   },
   {
-    icon: Users,
-    title: 'Family Sharing',
-    description: 'Manage household finances together.',
-    className: 'lg:col-span-1',
-    gradient: 'from-fuchsia-500/15 to-transparent',
-  },
-  {
-    icon: PiggyBank,
-    title: 'Save Smarter',
-    description: 'Spot trends and cut unnecessary costs.',
-    className: 'lg:col-span-1',
-    gradient: 'from-cyan-500/15 to-transparent',
+    icon: CreditCard,
+    title: 'Full Picture',
+    description: 'Liabilities included — loans and credit card dues subtract from net worth.',
+    className: 'lg:col-span-2',
+    gradient: 'from-cyan-500/15 via-primary/10 to-transparent',
   },
 ]
 
@@ -90,11 +89,11 @@ const CTA = () => {
             Features
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-gray-900 dark:text-white mb-5">
-            Everything you need to{' '}
-            <span className="liquid-gradient-text">master your money</span>
+            Net worth first.{' '}
+            <span className="liquid-gradient-text">Expenses under control.</span>
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-400">
-            Powerful tools wrapped in a beautiful interface. Built for how you actually manage finances in 2026.
+            Start with a living net worth dashboard and expense management. Add your vault and nominee when you are ready.
           </p>
         </motion.div>
 
@@ -127,8 +126,8 @@ const CTA = () => {
                   </p>
                   {feature.highlight && (
                     <div className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-cyan-600 dark:text-cyan-400 liquid-pill px-3 py-1 rounded-full">
-                      <PiggyBank className="w-3 h-3" />
-                      Your data, portable
+                      <Shield className="w-3 h-3" />
+                      Auditable release
                     </div>
                   )}
                 </div>
@@ -153,7 +152,7 @@ const CTA = () => {
                 viewport={{ once: true }}
                 className="text-2xl sm:text-4xl font-bold text-white mb-4"
               >
-                Ready to take control?
+                Your family should know where everything is.
               </motion.h2>
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
@@ -162,7 +161,7 @@ const CTA = () => {
                 transition={{ delay: 0.1 }}
                 className="text-white/80 mb-8 max-w-xl mx-auto text-lg"
               >
-                Join thousands who manage their finances smarter with Mintmind. Free forever, no strings attached.
+                Start with net worth and expense tracking. Add your vault and nominee when you need them. Free to start.
               </motion.p>
               <Link href={getStartedHref}>
                 <Button

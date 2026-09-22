@@ -21,7 +21,7 @@ import { formatCurrency } from '@/lib/utils/format'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useLocalList } from '@/lib/hooks/useLocalData'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
-import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useAddActionRedirect, useEditActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 import { useFormSheet } from '@/lib/hooks/useFormSheet'
 import { LoanForm } from './_components/LoanForm'
 
@@ -40,13 +40,14 @@ const LoansPageContent = () => {
   const { data: allLoans, loading, reload } = useLocalList('loans', userId)
   const [filterType, setFilterType] = useState('all')
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
-  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
+  const { open, setOpen, entityId, openSheet, closeSheet } = useFormSheet()
 
   const loans =
     filterType === 'all' ? allLoans : allLoans.filter((l) => l.type === filterType)
 
   useSyncedRefresh(reload)
   useAddActionRedirect(openSheet)
+  useEditActionRedirect(openSheet)
 
   const handleDelete = (id: string) => {
     confirmDelete({
@@ -118,24 +119,38 @@ const LoansPageContent = () => {
           loans.map((loan) => (
             <Card key={loan._id} delay={0.1} hover className="p-5">
               <div className="flex items-start justify-between mb-3">
-                <div className="flex-1 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => router.push(`/dashboard/loans/${loan._id}`)}
+                  className="flex-1 min-w-0 text-left"
+                >
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="font-semibold text-foreground truncate">{loan.name}</h3>
                     <Badge>{LOAN_TYPE_LABELS[loan.type] || loan.type}</Badge>
+                    {loan.ownership === 'joint' && <Badge variant="outline">Joint</Badge>}
                   </div>
                   {loan.lender && (
                     <p className="text-sm text-muted-foreground">{loan.lender}</p>
                   )}
-                </div>
+                </button>
                 <RowActions>
-                  <EditButton onClick={() => router.push(`/dashboard/loans/${loan._id}`)} />
+                  <EditButton onClick={() => openSheet(loan._id)} />
                   <DeleteButton onClick={() => handleDelete(loan._id)} />
                 </RowActions>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">EMI</p>
-                  <p className="text-lg font-bold text-foreground">{formatCurrency(loan.emi)}</p>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {loan.currentEmi && loan.currentEmi !== loan.emi ? 'Paying' : 'EMI'}
+                  </p>
+                  <p className="text-lg font-bold text-foreground">
+                    {formatCurrency(loan.currentEmi || loan.emi)}
+                  </p>
+                  {loan.currentEmi && loan.currentEmi !== loan.emi && (
+                    <p className="text-xs text-muted-foreground">
+                      Actual {formatCurrency(loan.emi)}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Outstanding</p>
@@ -153,8 +168,10 @@ const LoansPageContent = () => {
         )}
       </div>
 
-      <FormSheet open={open} onOpenChange={setOpen} title="Add Loan">
+      <FormSheet open={open} onOpenChange={setOpen} title={entityId ? 'Edit Loan' : 'Add Loan'}>
         <LoanForm
+          key={entityId ?? 'new'}
+          loanId={entityId}
           variant="sheet"
           onSuccess={() => {
             closeSheet()

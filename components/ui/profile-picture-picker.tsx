@@ -57,7 +57,7 @@ function ImageCropContent({
   const capturedPointerId = useRef<number | null>(null)
   const imageRef = useRef<HTMLImageElement>(null)
 
-  const endDrag = (target: HTMLElement, pointerId: number) => {
+  const endDrag = (target: Element, pointerId: number) => {
     setDragging(false)
     if (capturedPointerId.current !== pointerId) return
     if (target.hasPointerCapture(pointerId)) {

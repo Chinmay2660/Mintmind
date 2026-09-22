@@ -6,7 +6,6 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { useRouter } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -23,7 +22,7 @@ import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
 import { useBankAccounts } from '@/lib/hooks/useReferenceData'
 import { useLocalSingleton } from '@/lib/hooks/useLocalData'
-import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useAddActionRedirect, useEditActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 import { useFormSheet } from '@/lib/hooks/useFormSheet'
 import { useBalanceAdjustmentPrompt } from './_components/BalanceAdjustmentPrompt'
 import { AccountForm } from './_components/AccountForm'
@@ -59,7 +58,6 @@ function StatTile({
 }
 
 const AccountsPageContent = () => {
-  const router = useRouter()
   const { user } = useAuth()
   const userId = user?.id
   const { accounts, loading: accountsLoading, refetch: reloadAccounts } = useBankAccounts(userId)
@@ -71,13 +69,14 @@ const AccountsPageContent = () => {
   const loading = accountsLoading || cashLoading
   const [isCashDialogOpen, setIsCashDialogOpen] = useState(false)
   const [cashAmount, setCashAmount] = useState(0)
-  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
+  const { open, setOpen, entityId, openSheet, closeSheet } = useFormSheet()
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
   const { prompt: promptBalanceAdjustment, dialogs: balanceAdjustmentDialogs } =
     useBalanceAdjustmentPrompt()
   const { fmt } = usePrivacyAmount()
 
   useAddActionRedirect(openSheet)
+  useEditActionRedirect(openSheet)
 
   const reload = useCallback(async () => {
     await Promise.all([reloadAccounts(), reloadCash()])
@@ -149,8 +148,14 @@ const AccountsPageContent = () => {
         {cashForm}
       </FormSheet>
 
-      <FormSheet open={open} onOpenChange={setOpen} title="Add Account">
+      <FormSheet
+        open={open}
+        onOpenChange={setOpen}
+        title={entityId ? 'Edit Account' : 'Add Account'}
+      >
         <AccountForm
+          key={entityId ?? 'new'}
+          accountId={entityId}
           variant="sheet"
           onSuccess={() => {
             closeSheet()
@@ -231,7 +236,7 @@ const AccountsPageContent = () => {
                     )}
                   </div>
                   <RowActions>
-                    <EditButton onClick={() => router.push(`/dashboard/accounts/${account._id}`)} />
+                    <EditButton onClick={() => openSheet(account._id)} />
                     <DeleteButton onClick={() => handleDelete(account._id)} />
                   </RowActions>
                 </div>

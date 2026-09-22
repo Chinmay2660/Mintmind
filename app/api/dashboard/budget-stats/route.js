@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb'
 import Budget from '@/models/Budget'
 import Transaction from '@/models/Transaction'
 import { getAuthenticatedUser } from '@/lib/middleware/auth'
+import { getExpenseBudgetAmountInRange } from '@/lib/utils/budgetAllocation'
 
 export async function GET(request) {
   try {
@@ -45,30 +46,38 @@ export async function GET(request) {
       endDate: { $gte: startDate },
     }).populate('categoryId', 'name icon type')
 
-    // Get expenses for the period
+    // Include split expenses that allocate into this period even if paid earlier/later
     const expenses = await Transaction.find({
       userId: user._id,
       type: 'expense',
-      date: { $gte: startDate, $lte: now },
+      $or: [
+        { date: { $gte: startDate, $lte: now } },
+        { budgetSplitEnabled: true },
+      ],
     }).populate('categoryId', 'name icon type')
+
+    const budgetAmountFor = (expense) =>
+      getExpenseBudgetAmountInRange(expense, startDate, now)
+
+    const relevantExpenses = expenses.filter((expense) => budgetAmountFor(expense) > 0)
 
     // Calculate total budget and expenses
     const totalBudget = budgets.reduce((sum, budget) => sum + budget.amount, 0)
-    const totalExpenses = expenses.reduce(
-      (sum, expense) => sum + expense.amount,
+    const totalExpenses = relevantExpenses.reduce(
+      (sum, expense) => sum + budgetAmountFor(expense),
       0
     )
 
     // Calculate category-wise budget vs expenses
     const categoryStats = budgets.map((budget) => {
-      const categoryExpenses = expenses.filter(
+      const categoryExpenses = relevantExpenses.filter(
         (expense) =>
           expense.categoryId?._id?.toString() ===
           budget.categoryId?._id?.toString()
       )
 
       const categoryTotal = categoryExpenses.reduce(
-        (sum, expense) => sum + expense.amount,
+        (sum, expense) => sum + budgetAmountFor(expense),
         0
       )
 
@@ -108,7 +117,7 @@ export async function GET(request) {
       overall: overallStats,
       categories: categoryStats,
       budgets: budgets.length,
-      expenses: expenses.length,
+      expenses: relevantExpenses.length,
     })
   } catch (error) {
     console.error('Error fetching budget stats:', error)

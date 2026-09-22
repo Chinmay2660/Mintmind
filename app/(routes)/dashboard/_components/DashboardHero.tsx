@@ -9,7 +9,7 @@ import {
   ArrowUpCircle,
   ChevronRight,
   Landmark,
-  PiggyBank,
+  ReceiptText,
   TrendingUp,
   Wallet,
 } from 'lucide-react'
@@ -47,12 +47,14 @@ export function DashboardHero({
 
   const cashTotal = (stats.totalBankBalance ?? 0) + (stats.totalCash ?? 0)
   const investmentValue = stats.totalInvestmentValue ?? 0
-  const liabilities = stats.totalLiabilities ?? 0
+  const creditDue = stats.totalCreditDue ?? 0
+  const loanDue = stats.totalLoanOutstanding ?? 0
 
   const allocationSegments = [
     { label: 'Cash', value: cashTotal, color: 'hsl(var(--primary))' },
     { label: 'Investments', value: investmentValue, color: 'hsl(var(--success))' },
-    { label: 'Credit due', value: liabilities, color: 'hsl(var(--destructive))' },
+    { label: 'Credit cards', value: creditDue, color: 'hsl(var(--destructive))' },
+    { label: 'Loans', value: loanDue, color: 'hsl(var(--warning))' },
   ].filter((s) => s.value > 0)
 
   return (
@@ -205,24 +207,24 @@ export const DASHBOARD_METRIC_LINKS = [
     variant: 'success' as const,
   },
   {
-    title: 'Credit due',
+    title: 'Liabilities',
     valueKey: 'totalLiabilities' as const,
-    subtitleKey: 'creditCardCount' as const,
-    subtitleLabel: 'Cards',
+    subtitleKey: 'loanCount' as const,
+    subtitleLabel: 'Loans',
     icon: Landmark,
-    href: withFromHome('/dashboard/credit-cards'),
+    href: withFromHome('/dashboard/loans'),
     variant: 'danger' as const,
     isCount: true,
+    format: 'number' as const,
   },
   {
-    title: 'Saved',
-    valueKey: 'monthlySavings' as const,
-    subtitleKey: 'savingsRate' as const,
-    subtitleLabel: 'Rate',
-    icon: PiggyBank,
-    href: withFromHome('/dashboard/budgets'),
-    variant: 'primary' as const,
-    isPercent: true,
+    title: 'This month',
+    valueKey: 'monthlyExpenses' as const,
+    subtitleKey: 'monthlyIncome' as const,
+    subtitleLabel: 'Income',
+    icon: ReceiptText,
+    href: withFromHome('/dashboard/transactions'),
+    variant: 'warning' as const,
   },
 ]
 

@@ -1,12 +1,11 @@
 'use client'
-import React, { useState } from 'react'
+import React, { Suspense, useState } from 'react'
 import { Plus, IndianRupee, Repeat, Clock } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { useRouter } from 'next/navigation'
 import { format, addDays, isAfter, isBefore } from 'date-fns'
 import { motion } from 'framer-motion'
 import { AddButton } from '@/components/ui/AddButton'
@@ -27,11 +26,11 @@ import { useDocumentTitle } from '@/lib/hooks/useDocumentTitle'
 import { useLocalList } from '@/lib/hooks/useLocalData'
 import { useCategories, useBankAccounts } from '@/lib/hooks/useReferenceData'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
+import { useAddActionRedirect, useEditActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 import { useFormSheet } from '@/lib/hooks/useFormSheet'
 import { SalaryForm } from './_components/SalaryForm'
 
-const SalaryRecurringPage = () => {
-  const router = useRouter()
+const SalaryRecurringPageContent = () => {
   const { user } = useAuth()
   const userId = user?.id
   const [activeTab, setActiveTab] = useState('salary')
@@ -60,7 +59,16 @@ const SalaryRecurringPage = () => {
 
   useSyncedRefresh(reloadAll)
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false)
-  const { open: isSalarySheetOpen, setOpen: setIsSalarySheetOpen, openSheet: openSalarySheet, closeSheet: closeSalarySheet } = useFormSheet()
+  const {
+    open: isSalarySheetOpen,
+    setOpen: setIsSalarySheetOpen,
+    entityId,
+    openSheet: openSalarySheet,
+    closeSheet: closeSalarySheet,
+  } = useFormSheet()
+
+  useAddActionRedirect(openSalarySheet)
+  useEditActionRedirect(openSalarySheet)
   const [editingExpense, setEditingExpense] = useState(null)
   const [expenseFormData, setExpenseFormData] = useState({
     name: '',
@@ -207,9 +215,11 @@ const SalaryRecurringPage = () => {
       <FormSheet
         open={isSalarySheetOpen}
         onOpenChange={setIsSalarySheetOpen}
-        title="Add Salary"
+        title={entityId ? 'Edit Salary' : 'Add Salary'}
       >
         <SalaryForm
+          key={entityId ?? 'new'}
+          salaryId={entityId}
           variant="sheet"
           onSuccess={() => {
             closeSalarySheet()
@@ -474,7 +484,7 @@ const SalaryRecurringPage = () => {
                       </div>
                     </div>
                     <RowActions>
-                      <EditButton onClick={() => router.push(`/dashboard/salary-recurring/${salary._id}`)} />
+                      <EditButton onClick={() => openSalarySheet(salary._id)} />
                       <DeleteButton onClick={() => handleSalaryDelete(salary._id)} />
                     </RowActions>
                   </div>
@@ -602,5 +612,11 @@ const SalaryRecurringPage = () => {
   )
 }
 
-export default SalaryRecurringPage
+export default function SalaryRecurringPage() {
+  return (
+    <Suspense fallback={null}>
+      <SalaryRecurringPageContent />
+    </Suspense>
+  )
+}
 

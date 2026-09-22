@@ -2,24 +2,18 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, Check, Sparkles, TrendingUp, Wallet, PieChart, LayoutDashboard, Receipt, Target } from 'lucide-react'
+import { ArrowRight, Check, Sparkles, TrendingUp, Wallet, Lock, LayoutDashboard, Shield, FileText, ReceiptText } from 'lucide-react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import LiquidBackground from './LiquidBackground'
 import { useGetStartedHref } from '@/lib/hooks/useGetStartedHref'
 
 function DashboardMock() {
   const bars = [
-    { label: 'Food', h: '65%', color: 'from-blue-500 to-blue-400' },
-    { label: 'Travel', h: '45%', color: 'from-cyan-500 to-cyan-400' },
-    { label: 'Bills', h: '80%', color: 'from-fuchsia-500 to-fuchsia-400' },
-    { label: 'Shop', h: '35%', color: 'from-indigo-500 to-indigo-400' },
-    { label: 'Other', h: '55%', color: 'from-blue-400 to-indigo-400' },
-  ]
-
-  const budgets = [
-    { name: 'Groceries', spent: 72, color: 'from-emerald-500 to-cyan-500' },
-    { name: 'Entertainment', spent: 45, color: 'from-blue-500 to-indigo-500' },
-    { name: 'Transport', spent: 88, color: 'from-amber-500 to-fuchsia-500' },
+    { label: 'Cash', h: '55%', color: 'from-blue-500 to-blue-400' },
+    { label: 'MF', h: '75%', color: 'from-cyan-500 to-cyan-400' },
+    { label: 'FD', h: '40%', color: 'from-fuchsia-500 to-fuchsia-400' },
+    { label: 'Loans', h: '25%', color: 'from-amber-500 to-amber-400' },
+    { label: 'Cards', h: '18%', color: 'from-indigo-500 to-indigo-400' },
   ]
 
   const innerCard = 'rounded-xl bg-gray-100/90 dark:bg-gray-800/90 border border-gray-200/80 dark:border-gray-700/60'
@@ -28,7 +22,7 @@ function DashboardMock() {
     <div className="bg-gray-50 dark:bg-gray-900 p-4 sm:p-5 min-h-[320px] sm:min-h-[380px]">
       <div className="flex gap-3 h-full">
         <div className="hidden sm:flex flex-col gap-2 w-12 shrink-0">
-          {[LayoutDashboard, Receipt, Target, Wallet].map((Icon, i) => (
+          {[LayoutDashboard, Wallet, ReceiptText, Lock].map((Icon, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, scale: 0.8 }}
@@ -49,18 +43,18 @@ function DashboardMock() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Good morning</p>
-              <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">Your finances</p>
+              <p className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">Your financial life</p>
             </div>
             <span className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              On track
+              Net worth ↑
             </span>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
             {[
-              { label: 'Balance', value: '₹1.2L', icon: Wallet },
-              { label: 'Spent', value: '₹24K', icon: Receipt },
-              { label: 'Saved', value: '₹8.5K', icon: TrendingUp },
+              { label: 'Net worth', value: '₹42.5L', icon: TrendingUp },
+              { label: 'Expenses', value: '₹18.2K', icon: ReceiptText },
+              { label: 'Vault', value: '12 items', icon: Lock },
             ].map((card, i) => (
               <motion.div
                 key={card.label}
@@ -77,7 +71,7 @@ function DashboardMock() {
           </div>
 
           <div className={`${innerCard} p-3`}>
-            <p className="text-xs font-semibold text-gray-900 dark:text-white mb-3">Monthly spending</p>
+            <p className="text-xs font-semibold text-gray-900 dark:text-white mb-3">Asset allocation</p>
             <div className="flex items-end justify-between gap-1.5 h-24">
               {bars.map((bar, i) => (
                 <div key={bar.label} className="flex-1 flex flex-col items-center gap-1">
@@ -94,20 +88,15 @@ function DashboardMock() {
           </div>
 
           <div className={`${innerCard} p-3 space-y-2.5`}>
-            {budgets.map((b, i) => (
-              <div key={b.name}>
-                <div className="flex justify-between text-[10px] mb-1">
-                  <span className="text-gray-600 dark:text-gray-400">{b.name}</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{b.spent}%</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${b.spent}%` }}
-                    transition={{ delay: 1.2 + i * 0.15, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                    className={`h-full rounded-full bg-gradient-to-r ${b.color}`}
-                  />
-                </div>
+            {[
+              { name: 'Aadhar & PAN', icon: FileText },
+              { name: 'Bank passwords', icon: Lock },
+              { name: 'Insurance policies', icon: Shield },
+            ].map((b) => (
+              <div key={b.name} className="flex items-center gap-2 text-[10px]">
+                <b.icon className="w-3.5 h-3.5 text-primary shrink-0" />
+                <span className="text-gray-600 dark:text-gray-400">{b.name}</span>
+                <span className="ml-auto font-medium text-emerald-600 dark:text-emerald-400">Secured</span>
               </div>
             ))}
           </div>
@@ -118,9 +107,9 @@ function DashboardMock() {
 }
 
 const insightStats = [
-  { icon: TrendingUp, label: '+12.4%', sub: 'Portfolio growth' },
-  { icon: Wallet, label: '₹2.4L', sub: 'Monthly savings' },
-  { icon: PieChart, label: '8 categories', sub: 'Auto-tracked' },
+  { icon: TrendingUp, label: 'Net worth', sub: 'Live dashboard' },
+  { icon: ReceiptText, label: 'Expenses', sub: 'Budgets & tracking' },
+  { icon: Lock, label: 'Secure vault', sub: 'Passwords & docs' },
 ]
 
 function AnimatedCounter({ value, suffix = '' }: { value: string; suffix?: string }) {
@@ -158,7 +147,7 @@ function AnimatedCounter({ value, suffix = '' }: { value: string; suffix?: strin
   )
 }
 
-const headlineWords = ['Your', 'money,']
+const headlineWords = ['Your', 'complete']
 
 const Hero = () => {
   const getStartedHref = useGetStartedHref()
@@ -195,7 +184,7 @@ const Hero = () => {
                 >
                   <Sparkles className="w-4 h-4" />
                 </motion.div>
-                <span>Personal finance, reimagined for 2026</span>
+                <span>Net worth · Expenses · Secure vault</span>
               </motion.div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-6xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-[1.1] mb-6">
@@ -216,7 +205,7 @@ const Hero = () => {
                   transition={{ duration: 0.7, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
                   className="block mt-1 liquid-gradient-text"
                 >
-                  crystal clear.
+                  financial life.
                 </motion.span>
               </h1>
 
@@ -226,7 +215,7 @@ const Hero = () => {
                 transition={{ duration: 0.7, delay: 0.45 }}
                 className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 mb-8 leading-relaxed max-w-lg"
               >
-                Track expenses, manage accounts, monitor investments, and build wealth — all in one beautifully designed app.
+                See your net worth in one place. Track spending and budgets. Store passwords and documents in a secure vault — with nominee handoff when you need it.
               </motion.p>
 
               <motion.div
@@ -254,7 +243,7 @@ const Hero = () => {
                 transition={{ duration: 0.7, delay: 0.65 }}
                 className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500 dark:text-gray-400"
               >
-                {['Free forever', 'No credit card', 'Secure sync'].map((f, i) => (
+                {['Net worth first', 'Expense tracking', 'Free to start'].map((f, i) => (
                   <motion.div
                     key={f}
                     initial={{ opacity: 0, x: -10 }}

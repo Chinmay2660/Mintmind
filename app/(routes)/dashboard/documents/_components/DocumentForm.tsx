@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import request from '@/lib/api/request'
@@ -16,9 +16,10 @@ import type { EntityFormProps } from '@/lib/forms/types'
 
 const defaultFormData = () => ({
   name: '',
-  category: 'other',
-  fileName: '',
+  category: 'identity',
   notes: '',
+  fileName: '',
+  storageKey: '',
 })
 
 interface DocumentFormProps extends EntityFormProps {
@@ -32,20 +33,24 @@ export function DocumentForm({
   onCancel,
 }: DocumentFormProps) {
   const router = useRouter()
+  const fileRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(!!documentId)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState(defaultFormData)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
   useEffect(() => {
     if (!documentId) return
     setLoading(true)
     request
       .get(`/api/documents/${documentId}`)
-      .then((doc) => {
+      .then((res) => {
+        const doc = res.data
         setFormData({
           name: doc.name,
           category: doc.category || 'other',
           fileName: doc.fileName || '',
+          storageKey: doc.storageKey || '',
           notes: doc.notes || '',
         })
       })
@@ -61,11 +66,25 @@ export function DocumentForm({
     setSaving(true)
     try {
       if (documentId) {
-        await request.put(`/api/documents/${documentId}`, formData)
+        await request.put(`/api/documents/${documentId}`, {
+          name: formData.name,
+          category: formData.category,
+          notes: formData.notes,
+        })
         toast.success('Document updated')
       } else {
-        await request.post('/api/documents', formData)
-        toast.success('Document added')
+        if (!selectedFile) {
+          toast.error('Please select a file to upload')
+          setSaving(false)
+          return
+        }
+        const payload = new FormData()
+        payload.append('file', selectedFile)
+        payload.append('name', formData.name)
+        payload.append('category', formData.category)
+        if (formData.notes) payload.append('notes', formData.notes)
+        await request.post('/api/documents/upload', payload)
+        toast.success('Document uploaded')
       }
       if (onSuccess) onSuccess()
       else router.push('/dashboard/documents')
@@ -88,7 +107,7 @@ export function DocumentForm({
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required
-            placeholder="e.g., Health Insurance Policy"
+            placeholder="e.g., Aadhar Card, PAN, Health Policy"
           />
         </FormField>
         <FormField label="Category">
@@ -97,33 +116,44 @@ export function DocumentForm({
             onChange={(e) => setFormData({ ...formData, category: e.target.value })}
             className="form-select"
           >
+            <option value="identity">Identity (Aadhar, PAN)</option>
             <option value="insurance">Insurance</option>
             <option value="tax">Tax</option>
             <option value="investment">Investment</option>
             <option value="loan">Loan</option>
             <option value="receipt">Receipt</option>
-            <option value="identity">Identity</option>
             <option value="other">Other</option>
           </select>
         </FormField>
-        <FormField label="File Name (Metadata)">
-          <Input
-            value={formData.fileName}
-            onChange={(e) => setFormData({ ...formData, fileName: e.target.value })}
-            placeholder="e.g., policy-2024.pdf"
-          />
-        </FormField>
+        {!documentId ? (
+          <FormField label="File" required span="full">
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+              className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-lg file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:opacity-90"
+              onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+            />
+            <p className="mt-1.5 text-xs text-muted-foreground">PDF, JPEG, PNG, or Word — max 10MB</p>
+          </FormField>
+        ) : (
+          formData.fileName && (
+            <FormField label="Uploaded file">
+              <p className="text-sm text-muted-foreground">{formData.fileName}</p>
+            </FormField>
+          )
+        )}
         <FormField label="Notes (Optional)" span="full">
           <Input
             value={formData.notes}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            placeholder="Additional notes"
+            placeholder="Policy number, locker location, etc."
           />
         </FormField>
       </FormSection>
       <FormSubmitBar
         variant={variant}
-        submitLabel={documentId ? 'Update Document' : 'Add Document'}
+        submitLabel={documentId ? 'Update Document' : 'Upload Document'}
         onCancel={onCancel}
         isLoading={saving}
       />

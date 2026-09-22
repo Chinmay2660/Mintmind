@@ -11,23 +11,23 @@ const FAQ = () => {
   const faqs = [
     {
       question: 'What is Mintmind?',
-      answer: 'A personal finance app to track expenses, accounts, investments, and budgets in one place.',
+      answer: 'Mintmind is your complete financial life in one place — net worth tracking, expense management with budgets and transactions, plus a secure vault and legacy handoff for your nominee.',
     },
     {
-      question: 'Is it free?',
-      answer: 'Yes. Mintmind is free with no limits on expenses, accounts, or investments.',
+      question: 'How does nominee access work?',
+      answer: 'You designate a nominee and choose what they can see. The vault releases after a period of inactivity or when you trigger it manually. Your nominee gets a secure link by email.',
     },
     {
-      question: 'How secure is my data?',
-      answer: 'We use encryption and Google OAuth sign-in. Your financial data is never shared with third parties.',
+      question: 'How secure is my vault?',
+      answer: 'Passwords are encrypted at rest. Documents are stored privately. Nothing is shared until you enable legacy access and a release occurs.',
     },
     {
-      question: 'Can I use it on mobile?',
-      answer: 'Yes. Mintmind works in your browser and as a mobile-friendly web app on any device.',
+      question: 'What can I store in the vault?',
+      answer: 'Bank and investment logins, plus uploaded identity documents, insurance policies, tax files, and loan papers (PDF, images, Word — up to 10MB each).',
     },
     {
       question: 'How do I get started?',
-      answer: 'Click "Get Started", sign in with Google, and add your first account or transaction.',
+      answer: 'Sign in with Google, add your accounts to see net worth, log transactions and budgets, then upload documents to the vault and set up your nominee when you are ready.',
     },
   ]
 

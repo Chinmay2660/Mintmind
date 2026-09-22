@@ -6,7 +6,6 @@ import { format } from 'date-fns'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { useRouter } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { FilterButtonGroup } from '@/components/ui/filter-button'
@@ -22,7 +21,7 @@ import { formatCurrency } from '@/lib/utils/format'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useLocalList } from '@/lib/hooks/useLocalData'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
-import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useAddActionRedirect, useEditActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 import { useFormSheet } from '@/lib/hooks/useFormSheet'
 import { SubscriptionForm } from './_components/SubscriptionForm'
 
@@ -40,13 +39,12 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'muted'> = {
 }
 
 const SubscriptionsPageContent = () => {
-  const router = useRouter()
   const { user } = useAuth()
   const userId = user?.id
   const { data: allSubscriptions, loading, reload } = useLocalList('subscriptions', userId)
   const [filterStatus, setFilterStatus] = useState('all')
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
-  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
+  const { open, setOpen, entityId, openSheet, closeSheet } = useFormSheet()
 
   const subscriptions =
     filterStatus === 'all'
@@ -55,6 +53,7 @@ const SubscriptionsPageContent = () => {
 
   useSyncedRefresh(reload)
   useAddActionRedirect(openSheet)
+  useEditActionRedirect(openSheet)
 
   const handleDelete = (id: string) => {
     confirmDelete({
@@ -140,7 +139,7 @@ const SubscriptionsPageContent = () => {
                   </div>
                 </div>
                 <RowActions>
-                  <EditButton onClick={() => router.push(`/dashboard/subscriptions/${sub._id}`)} />
+                  <EditButton onClick={() => openSheet(sub._id)} />
                   <DeleteButton onClick={() => handleDelete(sub._id)} />
                 </RowActions>
               </div>
@@ -174,8 +173,10 @@ const SubscriptionsPageContent = () => {
         )}
       </div>
 
-      <FormSheet open={open} onOpenChange={setOpen} title="Add Subscription">
+      <FormSheet open={open} onOpenChange={setOpen} title={entityId ? 'Edit Subscription' : 'Add Subscription'}>
         <SubscriptionForm
+          key={entityId ?? 'new'}
+          subscriptionId={entityId}
           variant="sheet"
           onSuccess={() => {
             closeSheet()

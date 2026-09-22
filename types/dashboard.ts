@@ -15,4 +15,9 @@ export interface DashboardStats {
   accountCount?: number
   investmentCount?: number
   creditCardCount?: number
+  loanCount?: number
+  totalCreditDue?: number
+  totalLoanOutstanding?: number
+  passwordCount?: number
+  documentCount?: number
 }

@@ -1,10 +1,9 @@
 'use client'
 
 import React, { Suspense, useState } from 'react'
-import { FileText } from 'lucide-react'
+import { Download, FileText } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { FilterButtonGroup } from '@/components/ui/filter-button'
@@ -19,7 +18,7 @@ import { RowActions } from '@/components/ui/swipeable-row'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useApiList } from '@/lib/hooks/useApiList'
 import { useRegisterRefresh } from '@/contexts/RefreshContext'
-import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useAddActionRedirect, useEditActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 import { useFormSheet } from '@/lib/hooks/useFormSheet'
 import { DocumentForm } from './_components/DocumentForm'
 
@@ -34,11 +33,10 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 const DocumentsPageContent = () => {
-  const router = useRouter()
   const { data: allDocuments, loading, reload } = useApiList('/api/documents')
   const [filterCategory, setFilterCategory] = useState('all')
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
-  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
+  const { open, setOpen, entityId, openSheet, closeSheet } = useFormSheet()
 
   const documents =
     filterCategory === 'all'
@@ -47,6 +45,7 @@ const DocumentsPageContent = () => {
 
   useRegisterRefresh(reload)
   useAddActionRedirect(openSheet)
+  useEditActionRedirect(openSheet)
 
   const handleDelete = (id: string) => {
     confirmDelete({
@@ -62,7 +61,7 @@ const DocumentsPageContent = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Documents" subtitle="Organize important financial documents">
+      <PageHeader title="Documents" subtitle="Upload Aadhar, PAN, policies, and other important files">
         <div className="hidden md:block">
           <AddButton onClick={openSheet}>
             Add Document
@@ -100,7 +99,7 @@ const DocumentsPageContent = () => {
           <EmptyState
             icon={FileText}
             title="No documents yet"
-            description="Add document metadata to keep your files organized"
+            description="Upload identity documents and policies with file attachments"
             actionLabel="Add Your First Document"
             onAction={openSheet}
           />
@@ -116,14 +115,27 @@ const DocumentsPageContent = () => {
                     </Badge>
                   </div>
                   {doc.fileName && (
-                    <p className="text-sm text-muted-foreground truncate">{doc.fileName}</p>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span className="truncate">{doc.fileName}</span>
+                      {doc.storageKey && (
+                        <a
+                          href={`/api/documents/file/${doc.storageKey}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-primary hover:underline shrink-0"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          View
+                        </a>
+                      )}
+                    </div>
                   )}
                   {doc.notes && (
                     <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{doc.notes}</p>
                   )}
                 </div>
                 <RowActions>
-                  <EditButton onClick={() => router.push(`/dashboard/documents/${doc._id}`)} />
+                  <EditButton onClick={() => openSheet(doc._id)} />
                   <DeleteButton onClick={() => handleDelete(doc._id)} />
                 </RowActions>
               </div>
@@ -132,8 +144,14 @@ const DocumentsPageContent = () => {
         )}
       </div>
 
-      <FormSheet open={open} onOpenChange={setOpen} title="Add Document">
+      <FormSheet
+        open={open}
+        onOpenChange={setOpen}
+        title={entityId ? 'Edit Document' : 'Add Document'}
+      >
         <DocumentForm
+          key={entityId ?? 'new'}
+          documentId={entityId}
           variant="sheet"
           onSuccess={() => {
             closeSheet()

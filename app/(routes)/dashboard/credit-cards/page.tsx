@@ -4,7 +4,6 @@ import { CreditCard } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { useRouter } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -28,20 +27,20 @@ import { getUtilizationBarClass } from '@/lib/utils/utilization'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useLocalList } from '@/lib/hooks/useLocalData'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
-import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useAddActionRedirect, useEditActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 import { useFormSheet } from '@/lib/hooks/useFormSheet'
 import { CreditCardForm } from './_components/CreditCardForm'
 
 const CreditCardsPageContent = () => {
-  const router = useRouter()
   const { user } = useAuth()
   const userId = user?.id
   const { data: cards, loading, reload } = useLocalList('creditCards', userId)
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
-  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
+  const { open, setOpen, entityId, openSheet, closeSheet } = useFormSheet()
 
   useSyncedRefresh(reload)
   useAddActionRedirect(openSheet)
+  useEditActionRedirect(openSheet)
 
   const handleDelete = (id: string) => {
     confirmDelete({
@@ -169,7 +168,7 @@ const CreditCardsPageContent = () => {
                       )}
                     </div>
                     <RowActions>
-                      <EditButton onClick={() => router.push(`/dashboard/credit-cards/${card._id}`)} />
+                      <EditButton onClick={() => openSheet(card._id)} />
                       <DeleteButton onClick={() => handleDelete(card._id)} />
                     </RowActions>
                   </div>
@@ -207,8 +206,14 @@ const CreditCardsPageContent = () => {
         )}
       </div>
 
-      <FormSheet open={open} onOpenChange={setOpen} title="Add Credit Card">
+      <FormSheet
+        open={open}
+        onOpenChange={setOpen}
+        title={entityId ? 'Edit Credit Card' : 'Add Credit Card'}
+      >
         <CreditCardForm
+          key={entityId ?? 'new'}
+          creditCardId={entityId}
           variant="sheet"
           onSuccess={() => {
             closeSheet()

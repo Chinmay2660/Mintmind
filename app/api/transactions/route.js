@@ -15,6 +15,7 @@ import connectDB from '@/lib/mongodb';
 const TRANSACTION_FIELDS = [
   'type', 'amount', 'categoryId', 'subcategoryId', 'tagIds', 'accountId', 'isCash',
   'description', 'date', 'transferToAccountId', 'transferToIsCash', 'isRecurring',
+  'budgetSplitEnabled', 'budgetSplitMonths', 'budgetSplitStartMonth',
 ];
 
 function buildTransactionQuery(userId, searchParams) {
@@ -199,6 +200,11 @@ export async function POST(request) {
       accountId: data.isCash ? null : data.accountId,
       transferToAccountId: data.transferToIsCash ? null : data.transferToAccountId,
       date: data.date ? new Date(data.date) : new Date(),
+      budgetSplitEnabled: data.budgetSplitEnabled ?? false,
+      budgetSplitMonths: data.budgetSplitEnabled ? data.budgetSplitMonths : undefined,
+      budgetSplitStartMonth: data.budgetSplitEnabled && data.budgetSplitStartMonth
+        ? new Date(data.budgetSplitStartMonth)
+        : undefined,
     });
 
     if (!body.skipBalanceUpdate) {

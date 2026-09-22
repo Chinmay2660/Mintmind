@@ -5,7 +5,6 @@ import { Hash } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { useRouter } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
@@ -19,20 +18,20 @@ import { TagBadge } from '@/components/ui/tag-badge'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useLocalList } from '@/lib/hooks/useLocalData'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
-import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useAddActionRedirect, useEditActionRedirect } from '@/lib/hooks/useAddActionRedirect'
 import { useFormSheet } from '@/lib/hooks/useFormSheet'
 import { TagForm } from './_components/TagForm'
 
 const TagsPageContent = () => {
-  const router = useRouter()
   const { user } = useAuth()
   const userId = user?.id
   const { data: tags, loading, reload } = useLocalList('tags', userId)
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
-  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
+  const { open, setOpen, entityId, openSheet, closeSheet } = useFormSheet()
 
   useSyncedRefresh(reload)
   useAddActionRedirect(openSheet)
+  useEditActionRedirect(openSheet)
 
   const handleDelete = (id: string) => {
     confirmDelete({
@@ -79,7 +78,7 @@ const TagsPageContent = () => {
               <div className="flex items-center justify-between">
                 <TagBadge name={tag.name} color={tag.color} className="text-sm px-3 py-1" />
                 <RowActions>
-                  <EditButton onClick={() => router.push(`/dashboard/tags/${tag._id}`)} />
+                  <EditButton onClick={() => openSheet(tag._id)} />
                   <DeleteButton onClick={() => handleDelete(tag._id)} />
                 </RowActions>
               </div>
@@ -88,8 +87,10 @@ const TagsPageContent = () => {
         )}
       </div>
 
-      <FormSheet open={open} onOpenChange={setOpen} title="Add Tag">
+      <FormSheet open={open} onOpenChange={setOpen} title={entityId ? 'Edit Tag' : 'Add Tag'}>
         <TagForm
+          key={entityId ?? 'new'}
+          tagId={entityId}
           variant="sheet"
           onSuccess={() => {
             closeSheet()

@@ -177,7 +177,7 @@ function MobileBottomNav() {
               <SheetHeader className="mb-4 space-y-1 text-left">
                 <SheetTitle className="text-left text-lg font-semibold">Explore</SheetTitle>
                 <p className="text-sm text-muted-foreground">
-                  Investments, credit, reports & more
+                  Net worth, expenses, vault & more
                 </p>
               </SheetHeader>
               <div className="space-y-5">
