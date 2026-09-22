@@ -7,12 +7,14 @@ import {
 } from '@/lib/middleware/api';
 import { applyTransactionBalances } from '@/lib/api/transactionBalance';
 import Transaction from '@/models/Transaction';
+import Rule from '@/models/Rule';
+import { applyRules } from '@/lib/utils/rulesEngine';
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 
 const TRANSACTION_FIELDS = [
-  'type', 'amount', 'categoryId', 'accountId', 'isCash',
-  'description', 'date', 'transferToAccountId', 'transferToIsCash',
+  'type', 'amount', 'categoryId', 'subcategoryId', 'tagIds', 'accountId', 'isCash',
+  'description', 'date', 'transferToAccountId', 'transferToIsCash', 'isRecurring',
 ];
 
 function buildTransactionQuery(userId, searchParams) {
@@ -37,6 +39,15 @@ function buildTransactionQuery(userId, searchParams) {
 
   const categoryId = searchParams.get('categoryId');
   if (categoryId) query.categoryId = categoryId;
+
+  const subcategoryId = searchParams.get('subcategoryId');
+  if (subcategoryId) query.subcategoryId = subcategoryId;
+
+  const tagId = searchParams.get('tagId');
+  if (tagId) query.tagIds = tagId;
+
+  const isRecurring = searchParams.get('isRecurring');
+  if (isRecurring === 'true') query.isRecurring = true;
 
   const accountId = searchParams.get('accountId');
   const isCash = searchParams.get('isCash');
@@ -169,7 +180,13 @@ export async function POST(request) {
     if (response) return response;
 
     const body = await request.json();
-    const data = pick(body, TRANSACTION_FIELDS);
+    let data = pick(body, TRANSACTION_FIELDS);
+
+    if (!body.skipRules) {
+      const rules = await Rule.find({ userId: user._id, enabled: true });
+      const ruleUpdates = applyRules(rules, data);
+      if (ruleUpdates) data = { ...data, ...ruleUpdates };
+    }
 
     const validationError = await validateTransactionData(user, data);
     if (validationError) {

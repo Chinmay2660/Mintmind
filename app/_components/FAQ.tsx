@@ -11,7 +11,7 @@ const FAQ = () => {
   const faqs = [
     {
       question: 'What is Mintmind?',
-      answer: 'A personal finance app to track expenses, accounts, investments, and budgets — with offline support.',
+      answer: 'A personal finance app to track expenses, accounts, investments, and budgets in one place.',
     },
     {
       question: 'Is it free?',
@@ -22,8 +22,8 @@ const FAQ = () => {
       answer: 'We use encryption and Google OAuth sign-in. Your financial data is never shared with third parties.',
     },
     {
-      question: 'Does it work offline?',
-      answer: 'Yes. Log transactions and view dashboards offline; changes sync when you reconnect.',
+      question: 'Can I use it on mobile?',
+      answer: 'Yes. Mintmind works in your browser and as a mobile-friendly web app on any device.',
     },
     {
       question: 'How do I get started?',

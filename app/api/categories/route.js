@@ -3,7 +3,7 @@ import Category from '@/models/Category';
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 
-const CATEGORY_FIELDS = ['name', 'type', 'icon', 'color', 'budget'];
+const CATEGORY_FIELDS = ['name', 'type', 'icon', 'color', 'budget', 'parentId', 'order'];
 
 export async function GET(request) {
   try {

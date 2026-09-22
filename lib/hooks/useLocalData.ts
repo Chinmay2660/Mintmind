@@ -1,8 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useOffline } from '@/contexts/OfflineContext'
-import { listLocal, getLocal, getSingleton } from '@/lib/offline/repository'
+import { fetchEntityList, fetchEntityRecord } from '@/lib/api/entityApi'
 
 type LocalFilters = Record<string, string | number | boolean | undefined>
 
@@ -13,13 +12,12 @@ export function useLocalList<T = any>(
   options?: { enabled?: boolean }
 ) {
   const enabled = options?.enabled ?? true
-  const { syncing, lastSyncedAt } = useOffline()
   const [data, setData] = useState<T[]>([])
   const [loading, setLoading] = useState(true)
   const filterKey = JSON.stringify(filters ?? {})
 
   const reload = useCallback(async () => {
-    const rows = await listLocal(tableName, filters ?? {})
+    const rows = await fetchEntityList(tableName, filters ?? {})
     setData(rows as T[])
     return rows as T[]
   }, [tableName, filterKey])
@@ -30,7 +28,6 @@ export function useLocalList<T = any>(
       if (!userId) setData([])
       return
     }
-    if (syncing) return
 
     let cancelled = false
     setLoading(true)
@@ -41,13 +38,12 @@ export function useLocalList<T = any>(
     return () => {
       cancelled = true
     }
-  }, [userId, syncing, lastSyncedAt, reload, enabled])
+  }, [userId, reload, enabled])
 
   return { data, loading, reload }
 }
 
 export function useLocalRecord<T = any>(tableName: string, id?: string) {
-  const { syncing, lastSyncedAt } = useOffline()
   const [data, setData] = useState<T | null>(null)
   const [loading, setLoading] = useState(Boolean(id))
 
@@ -56,7 +52,7 @@ export function useLocalRecord<T = any>(tableName: string, id?: string) {
       setData(null)
       return null
     }
-    const row = await getLocal(tableName, id)
+    const row = await fetchEntityRecord(tableName, id)
     setData(row as T)
     return row as T
   }, [tableName, id])
@@ -67,7 +63,6 @@ export function useLocalRecord<T = any>(tableName: string, id?: string) {
       setLoading(false)
       return
     }
-    if (syncing) return
 
     let cancelled = false
     setLoading(true)
@@ -78,7 +73,7 @@ export function useLocalRecord<T = any>(tableName: string, id?: string) {
     return () => {
       cancelled = true
     }
-  }, [id, syncing, lastSyncedAt, reload])
+  }, [id, reload])
 
   return { data, loading, reload }
 }
@@ -88,12 +83,11 @@ export function useLocalSingleton<T = any>(
   singletonId: string,
   userId?: string
 ) {
-  const { syncing, lastSyncedAt } = useOffline()
   const [data, setData] = useState<T | null>(null)
   const [loading, setLoading] = useState(true)
 
   const reload = useCallback(async () => {
-    const row = await getSingleton(tableName, singletonId)
+    const row = await fetchEntityRecord(tableName, singletonId)
     setData(row as T)
     return row as T
   }, [tableName, singletonId])
@@ -104,7 +98,6 @@ export function useLocalSingleton<T = any>(
       setLoading(false)
       return
     }
-    if (syncing) return
 
     let cancelled = false
     setLoading(true)
@@ -115,7 +108,7 @@ export function useLocalSingleton<T = any>(
     return () => {
       cancelled = true
     }
-  }, [userId, syncing, lastSyncedAt, reload])
+  }, [userId, reload])
 
   return { data, loading, reload }
 }

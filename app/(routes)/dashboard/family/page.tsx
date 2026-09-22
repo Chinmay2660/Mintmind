@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { motion } from 'framer-motion'
 import { FormButtonGroup } from '@/components/ui/form-buttons'
+import { FormField, FormLayout, FormSection } from '@/components/ui/form-layout'
 import { TabButtonGroup } from '@/components/ui/tab-button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { PageSkeleton } from '@/components/ui/loading-skeleton'
@@ -33,8 +34,7 @@ import type {
   FamilyStats,
 } from '@/types/family'
 import { getActiveMembers, getMemberCount, isFamilyHead, normalizeId } from '@/lib/utils/family'
-import { computeFamilyStats } from '@/lib/offline/computed'
-import { getSingleton, listLocal } from '@/lib/offline/repository'
+import { fetchFamilyStats } from '@/lib/api/stats'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
 
 const defaultSettings: FamilySettings = {
@@ -97,7 +97,8 @@ const FamilyPage = () => {
 
   const fetchFamily = async () => {
     try {
-      const fetched = (await getSingleton('family', 'family')) as Family | null
+      const response = await request.get('/api/family')
+      const fetched = response.data.family as Family | null
       setFamily(fetched)
       if (fetched) {
         setFamilyName(fetched.name)
@@ -112,14 +113,15 @@ const FamilyPage = () => {
 
   const fetchStats = async () => {
     try {
-      const computed = await computeFamilyStats()
+      const computed = await fetchFamilyStats()
       setStats(computed as FamilyStats)
     } catch {
       // not in a family
     }
   }
 
-  const generatePairCode = async () => {
+  const generatePairCode = async (e?: React.FormEvent) => {
+    e?.preventDefault()
     if (!user?.email) {
       toast.error('User email not found')
       return
@@ -249,8 +251,8 @@ const FamilyPage = () => {
   const fetchGoals = async () => {
     setGoalsLoading(true)
     try {
-      const rows = await listLocal('familyGoals')
-      setGoals(rows as FamilyGoal[])
+      const response = await request.get('/api/family/goals')
+      setGoals(Array.isArray(response.data) ? response.data : [])
     } catch {
       toast.error('Failed to load goals')
     } finally {
@@ -261,8 +263,8 @@ const FamilyPage = () => {
   const fetchBudgets = async () => {
     setBudgetsLoading(true)
     try {
-      const rows = await listLocal('familyBudgets')
-      setBudgets(rows as FamilyBudget[])
+      const response = await request.get('/api/family/budgets')
+      setBudgets(Array.isArray(response.data) ? response.data : [])
     } catch {
       toast.error('Failed to load budgets')
     } finally {
@@ -273,8 +275,8 @@ const FamilyPage = () => {
   const fetchExpenses = async () => {
     setExpensesLoading(true)
     try {
-      const rows = await listLocal('familyExpenses')
-      setExpenses(rows as FamilyExpense[])
+      const response = await request.get('/api/family/expenses')
+      setExpenses(Array.isArray(response.data) ? response.data : [])
     } catch {
       toast.error('Failed to load expenses')
     } finally {
@@ -299,7 +301,7 @@ const FamilyPage = () => {
 
   if (!family) {
     return (
-      <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-6 overflow-x-hidden">
+      <div className="space-y-6 overflow-x-hidden">
         <PageHeader
           title="Family Circle"
           subtitle="Create or join a circle to share finances with loved ones"
@@ -337,25 +339,25 @@ const FamilyPage = () => {
             <Button className="w-full" variant="outline" onClick={() => setIsJoinDialogOpen(true)}>
               Join with Invite Code
             </Button>
-            <FormSheet open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen} title="Join Family Circle">
-              <form onSubmit={verifyPairCode} className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Invite Code</label>
-                  <Input
-                    placeholder="Enter 6-digit code"
-                    value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    maxLength={6}
-                    required
-                    className="text-center text-2xl tracking-widest font-mono"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">Codes expire in 60 seconds</p>
-                </div>
+            <FormSheet open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen} title="Join Family Circle" size="md">
+              <FormLayout variant="sheet" onSubmit={verifyPairCode}>
+                <FormSection>
+                  <FormField label="Invite Code" required hint="Codes expire in 60 seconds">
+                    <Input
+                      placeholder="Enter 6-digit code"
+                      value={joinCode}
+                      onChange={(e) => setJoinCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      maxLength={6}
+                      required
+                      className="text-center text-2xl tracking-widest font-mono"
+                    />
+                  </FormField>
+                </FormSection>
                 <FormButtonGroup
                   submitLabel="Join Circle"
                   onCancel={() => { setIsJoinDialogOpen(false); setJoinCode('') }}
                 />
-              </form>
+              </FormLayout>
             </FormSheet>
           </Card>
         </div>
@@ -367,7 +369,7 @@ const FamilyPage = () => {
   const activeMembers = getActiveMembers(family)
 
   return (
-    <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-6 overflow-x-hidden">
+    <div className="space-y-6 overflow-x-hidden">
       <PageHeader
         title={family.name}
         subtitle={`${memberCount} member${memberCount !== 1 ? 's' : ''} in your circle`}
@@ -399,30 +401,31 @@ const FamilyPage = () => {
       </PageHeader>
 
       <FormSheet open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen} title="Circle Settings">
-        <form onSubmit={updateFamilySettings} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-1 block">Circle Name</label>
-            <Input value={familyName} onChange={(e) => setFamilyName(e.target.value)} />
-          </div>
-          <div className="space-y-3">
-            <p className="text-sm font-medium">Data Sharing</p>
+        <FormLayout variant="sheet" onSubmit={updateFamilySettings}>
+          <FormSection>
+            <FormField label="Circle Name">
+              <Input value={familyName} onChange={(e) => setFamilyName(e.target.value)} />
+            </FormField>
+          </FormSection>
+          <FormSection title="Data Sharing">
             {([
               { key: 'shareExpenses', label: 'Share expenses' },
               { key: 'shareBudgets', label: 'Share budgets' },
               { key: 'shareInvestments', label: 'Share investments' },
               { key: 'shareSalary', label: 'Share salary info' },
             ] as const).map(({ key, label }) => (
-              <label key={key} className="flex items-center justify-between gap-3 py-2">
-                <span className="text-sm text-muted-foreground">{label}</span>
-                <input
-                  type="checkbox"
-                  checked={familySettings[key]}
-                  onChange={(e) => setFamilySettings({ ...familySettings, [key]: e.target.checked })}
-                  className="h-4 w-4 rounded border-border accent-primary"
-                />
-              </label>
+              <FormField key={key} label={label} span="full">
+                <label className="flex items-center justify-end">
+                  <input
+                    type="checkbox"
+                    checked={familySettings[key]}
+                    onChange={(e) => setFamilySettings({ ...familySettings, [key]: e.target.checked })}
+                    className="h-4 w-4 rounded border-border accent-primary"
+                  />
+                </label>
+              </FormField>
             ))}
-          </div>
+          </FormSection>
           <FormButtonGroup
             submitLabel="Save Settings"
             onCancel={() => {
@@ -431,37 +434,39 @@ const FamilyPage = () => {
               setFamilySettings(family.settings ?? defaultSettings)
             }}
           />
-        </form>
+        </FormLayout>
       </FormSheet>
 
       <FormSheet open={isTransferDialogOpen} onOpenChange={setIsTransferDialogOpen} title="Transfer Headship">
-        <form onSubmit={transferHeadship} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-1 block">Select New Head</label>
-            <select
-              value={selectedNewHead}
-              onChange={(e) => setSelectedNewHead(e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+        <FormLayout variant="sheet" onSubmit={transferHeadship}>
+          <FormSection>
+            <FormField
+              label="Select New Head"
               required
+              hint="You will become a regular member after transferring"
             >
-              <option value="">Select a member</option>
-              {activeMembers
-                .filter((m) => normalizeId(m.user) !== user?.id)
-                .map((member) => (
-                  <option key={normalizeId(member.user)} value={normalizeId(member.user)}>
-                    {member.user.name || member.user.email}
-                  </option>
-                ))}
-            </select>
-            <p className="text-xs text-muted-foreground mt-1">
-              You will become a regular member after transferring
-            </p>
-          </div>
+              <select
+                value={selectedNewHead}
+                onChange={(e) => setSelectedNewHead(e.target.value)}
+                className="form-select"
+                required
+              >
+                <option value="">Select a member</option>
+                {activeMembers
+                  .filter((m) => normalizeId(m.user) !== user?.id)
+                  .map((member) => (
+                    <option key={normalizeId(member.user)} value={normalizeId(member.user)}>
+                      {member.user.name || member.user.email}
+                    </option>
+                  ))}
+              </select>
+            </FormField>
+          </FormSection>
           <FormButtonGroup
             submitLabel="Transfer Headship"
             onCancel={() => { setIsTransferDialogOpen(false); setSelectedNewHead('') }}
           />
-        </form>
+        </FormLayout>
       </FormSheet>
 
       <TabButtonGroup
@@ -530,20 +535,19 @@ const FamilyPage = () => {
                 <Button className="w-full md:w-auto" onClick={() => setIsGenerateDialogOpen(true)}>
                   <UserPlus className="w-4 h-4 mr-2" />Generate Invite Code
                 </Button>
-                <FormSheet open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen} title="Generate Invite Code">
-                  <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      A 6-digit code will be generated that expires in 60 seconds. Share it with the person you want to invite.
-                    </p>
-                    <div className="flex gap-2">
-                      <Button onClick={generatePairCode} className="flex-1" disabled={pairCodeLoading}>
-                        {pairCodeLoading ? 'Generating...' : 'Generate Code'}
-                      </Button>
-                      <Button variant="outline" onClick={() => setIsGenerateDialogOpen(false)} disabled={pairCodeLoading}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
+                <FormSheet open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen} title="Generate Invite Code" size="md">
+                  <FormLayout variant="sheet" onSubmit={generatePairCode}>
+                    <FormSection>
+                      <p className="text-sm text-muted-foreground form-field-full">
+                        A 6-digit code will be generated that expires in 60 seconds. Share it with the person you want to invite.
+                      </p>
+                    </FormSection>
+                    <FormButtonGroup
+                      submitLabel="Generate Code"
+                      onCancel={() => setIsGenerateDialogOpen(false)}
+                      isLoading={pairCodeLoading}
+                    />
+                  </FormLayout>
                 </FormSheet>
               </>
             )}

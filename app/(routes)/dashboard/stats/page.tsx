@@ -6,7 +6,6 @@ import { ChevronLeft, ChevronRight, ReceiptText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { useOffline } from '@/contexts/OfflineContext'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/button'
 import { PageSkeleton } from '@/components/ui/loading-skeleton'
@@ -22,7 +21,7 @@ import { TransactionSummaryBar } from '../transactions/_components/TransactionSu
 import { TransactionGroupedList } from '../transactions/_components/TransactionGroupedList'
 import { useBankAccounts } from '@/lib/hooks/useReferenceData'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
-import { computeTransactionStats } from '@/lib/offline/computed'
+import { fetchTransactionStats } from '@/lib/api/stats'
 import {
   filterByDateRange,
   groupByDay,
@@ -47,7 +46,6 @@ interface StatsData {
 const DailyStatsPage = () => {
   const { user } = useAuth()
   const userId = user?.id
-  const { syncing, lastSyncedAt } = useOffline()
   const { accounts } = useBankAccounts(userId)
   const [stats, setStats] = useState<StatsData | null>(null)
   const [anchorDate, setAnchorDate] = useState(new Date())
@@ -64,7 +62,7 @@ const DailyStatsPage = () => {
 
   const loadStats = useCallback(async () => {
     const types = buildTypesParam(filters)
-    const result = await computeTransactionStats({
+    const result = await fetchTransactionStats({
       startDate: dayRange.start.toISOString(),
       endDate: dayRange.end.toISOString(),
       types,
@@ -77,8 +75,6 @@ const DailyStatsPage = () => {
       setLoading(false)
       return
     }
-    if (syncing) return
-
     let cancelled = false
     setLoading(true)
     loadStats()
@@ -92,7 +88,7 @@ const DailyStatsPage = () => {
     return () => {
       cancelled = true
     }
-  }, [userId, syncing, lastSyncedAt, loadStats])
+  }, [userId, loadStats])
 
   useSyncedRefresh(loadStats)
 
@@ -111,7 +107,7 @@ const DailyStatsPage = () => {
   if (isInitialLoad) return <PageSkeleton className="pb-24 md:pb-6" />
 
   return (
-    <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-4">
+    <div className="space-y-5">
       <PageHeader title="Daily Stats" subtitle={formatDayMonthYearLong(anchorDate)}>
         <TransactionFilterSheet
           filters={filters}
@@ -126,7 +122,6 @@ const DailyStatsPage = () => {
           variant="outline"
           size="icon"
           onClick={() => setAnchorDate((d) => subDays(d, 1))}
-          aria-label="Previous day"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -135,7 +130,6 @@ const DailyStatsPage = () => {
           variant="outline"
           size="icon"
           onClick={() => setAnchorDate((d) => addDays(d, 1))}
-          aria-label="Next day"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>

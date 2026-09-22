@@ -6,44 +6,56 @@ import { format } from 'date-fns'
 import { toast } from 'sonner'
 import request from '@/lib/api/request'
 import { Input } from '@/components/ui/input'
-import { SubmitButton } from '@/components/ui/form-buttons'
+import { FormSubmitBar } from '@/components/ui/form-buttons'
+import {
+  FormField,
+  FormLayout,
+  FormSection,
+  FormSkeleton,
+} from '@/components/ui/form-layout'
 import { ToggleButtonGroup } from '@/components/ui/toggle-button'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { useOffline } from '@/contexts/OfflineContext'
 import { useCategories, useBankAccounts } from '@/lib/hooks/useReferenceData'
-import { getLocal } from '@/lib/offline/repository'
+import { fetchEntityRecord } from '@/lib/api/entityApi'
+import { useLocalList } from '@/lib/hooks/useLocalData'
+import type { EntityFormProps } from '@/lib/forms/types'
 
 interface FormData {
   type: 'expense' | 'income' | 'transfer'
   amount: number
   categoryId: string
+  subcategoryId: string
+  tagIds: string[]
   accountId: string
   isCash: boolean
   transferToAccountId: string
   transferToIsCash: boolean
   description: string
   date: string
+  isRecurring: boolean
 }
 
 const emptyForm = (type: FormData['type'] = 'expense'): FormData => ({
   type,
   amount: 0,
   categoryId: '',
+  subcategoryId: '',
+  tagIds: [],
   accountId: '',
   isCash: false,
   transferToAccountId: '',
   transferToIsCash: false,
   description: '',
   date: new Date().toISOString().split('T')[0],
+  isRecurring: false,
 })
 
-interface TransactionFormProps {
+interface TransactionFormProps extends EntityFormProps {
   transactionId?: string
   defaultValues?: Partial<FormData>
   skipBalanceUpdate?: boolean
   lockType?: boolean
   lockPaymentMethod?: boolean
-  onSuccess?: () => void
 }
 
 export function TransactionForm({
@@ -52,14 +64,16 @@ export function TransactionForm({
   skipBalanceUpdate,
   lockType,
   lockPaymentMethod,
+  variant = 'page',
   onSuccess,
+  onCancel,
 }: TransactionFormProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user } = useAuth()
-  const { online } = useOffline()
   const { categories } = useCategories(user?.id)
   const { accounts } = useBankAccounts(user?.id)
+  const { data: tags } = useLocalList('tags', user?.id)
   const [loading, setLoading] = useState(!!transactionId)
   const [saving, setSaving] = useState(false)
 
@@ -76,13 +90,15 @@ export function TransactionForm({
   useEffect(() => {
     if (!transactionId || !user) return
     setLoading(true)
-    getLocal('transactions', transactionId)
+    fetchEntityRecord('transactions', transactionId)
       .then((tx) => {
         if (!tx) throw new Error('Not found')
         setFormData({
           type: tx.type,
           amount: tx.amount,
-          categoryId: tx.categoryId?._id || '',
+          categoryId: tx.categoryId?._id || tx.categoryId || '',
+          subcategoryId: tx.subcategoryId?._id || tx.subcategoryId || '',
+          tagIds: (tx.tagIds || []).map((t: { _id?: string } | string) => (typeof t === 'object' ? t._id : t) || ''),
           accountId: typeof tx.accountId === 'object' ? tx.accountId?._id || '' : '',
           isCash: tx.isCash ?? false,
           transferToAccountId:
@@ -90,6 +106,7 @@ export function TransactionForm({
           transferToIsCash: tx.transferToIsCash ?? false,
           description: tx.description || '',
           date: format(new Date(tx.date), 'yyyy-MM-dd'),
+          isRecurring: tx.isRecurring ?? false,
         })
       })
       .catch(() => {
@@ -99,9 +116,14 @@ export function TransactionForm({
       .finally(() => setLoading(false))
   }, [transactionId, user, router])
 
-  const filteredCategories = categories.filter((cat) =>
-    formData.type === 'transfer' ? true : cat.type === formData.type
+  const topCategories = categories.filter((cat) =>
+    !cat.parentId && (formData.type === 'transfer' ? true : cat.type === formData.type)
   )
+  const subcategories = categories.filter((cat) => {
+    if (!cat.parentId) return false
+    const pid = typeof cat.parentId === 'object' ? cat.parentId._id : cat.parentId
+    return pid === formData.categoryId
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -139,10 +161,10 @@ export function TransactionForm({
 
       if (transactionId) {
         await request.put(`/api/transactions/${transactionId}`, payload)
-        toast.success(online ? 'Transaction updated' : 'Updated offline — will sync when connected')
+        toast.success('Transaction updated')
       } else {
         await request.post('/api/transactions', payload)
-        toast.success(online ? 'Transaction added' : 'Saved offline — will sync when connected')
+        toast.success('Transaction added')
       }
       if (onSuccess) onSuccess()
       else router.push('/dashboard/transactions')
@@ -155,163 +177,230 @@ export function TransactionForm({
   }
 
   if (loading) {
-    return <div className="w-full animate-pulse h-64 rounded-xl bg-muted/40" />
+    return <FormSkeleton />
   }
 
   return (
-    <form onSubmit={handleSubmit} className="form-panel">
+    <FormLayout variant={variant} onSubmit={handleSubmit}>
       {!lockType && (
-        <div className="form-field-full">
-          <label className="text-sm font-medium mb-1 block">Type</label>
-          <ToggleButtonGroup
-            value={formData.type}
-            onValueChange={(value) =>
-              setFormData({
-                ...formData,
-                type: value as FormData['type'],
-                categoryId: '',
-              })
-            }
-            options={[
-              { value: 'expense', label: 'Expense' },
-              { value: 'income', label: 'Income' },
-              { value: 'transfer', label: 'Transfer' },
-            ]}
-          />
-        </div>
-      )}
-      <div>
-        <label className="text-sm font-medium mb-1 block">Amount</label>
-        <Input
-          type="number"
-          value={formData.amount || ''}
-          onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-          placeholder="0"
-          required
-          step="0.01"
-          min="0"
-        />
-      </div>
-      {formData.type !== 'transfer' && (
-        <div>
-          <label className="text-sm font-medium mb-1 block">Category</label>
-          <select
-            value={formData.categoryId}
-            onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            required
-          >
-            <option value="">Select category</option>
-            {filteredCategories.map((cat) => (
-              <option key={cat._id} value={cat._id}>
-                {cat.icon} {cat.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-      {!lockPaymentMethod && (
-        <div>
-          <label className="text-sm font-medium mb-1 block">
-            {formData.type === 'transfer' ? 'From' : 'Payment Method'}
-          </label>
-          <ToggleButtonGroup
-            value={formData.isCash ? 'cash' : 'account'}
-            onValueChange={(value) =>
-              setFormData({
-                ...formData,
-                isCash: value === 'cash',
-                accountId: value === 'cash' ? '' : formData.accountId,
-              })
-            }
-            options={[
-              { value: 'cash', label: 'Cash' },
-              { value: 'account', label: 'Bank Account' },
-            ]}
-          />
-        </div>
-      )}
-      {!formData.isCash && !lockPaymentMethod && (
-        <div>
-          <label className="text-sm font-medium mb-1 block">
-            {formData.type === 'transfer' ? 'From Account' : 'Account'}
-          </label>
-          <select
-            value={formData.accountId}
-            onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            required={!formData.isCash}
-          >
-            <option value="">Select account</option>
-            {accounts.map((acc) => (
-              <option key={acc._id} value={acc._id}>
-                {acc.icon} {acc.accountName}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-      {formData.type === 'transfer' && (
-        <>
-          <div>
-            <label className="text-sm font-medium mb-1 block">To</label>
+        <FormSection title="Type" description="What kind of transaction is this?">
+          <FormField label="Transaction type" span="full">
             <ToggleButtonGroup
-              value={formData.transferToIsCash ? 'cash' : 'account'}
+              value={formData.type}
               onValueChange={(value) =>
                 setFormData({
                   ...formData,
-                  transferToIsCash: value === 'cash',
-                  transferToAccountId: value === 'cash' ? '' : formData.transferToAccountId,
+                  type: value as FormData['type'],
+                  categoryId: '',
+                })
+              }
+              options={[
+                { value: 'expense', label: 'Expense' },
+                { value: 'income', label: 'Income' },
+                { value: 'transfer', label: 'Transfer' },
+              ]}
+            />
+          </FormField>
+        </FormSection>
+      )}
+
+      <FormSection
+        title="Amount & category"
+        description={
+          formData.type === 'transfer'
+            ? 'How much are you moving?'
+            : 'Enter the amount and classify the transaction.'
+        }
+      >
+        <FormField label="Amount" required>
+          <Input
+            type="number"
+            value={formData.amount || ''}
+            onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+            placeholder="0.00"
+            required
+            step="0.01"
+            min="0"
+          />
+        </FormField>
+
+        {formData.type !== 'transfer' && (
+          <FormField label="Category" required>
+            <select
+              value={formData.categoryId}
+              onChange={(e) => setFormData({ ...formData, categoryId: e.target.value, subcategoryId: '' })}
+              className="form-select"
+              required
+            >
+              <option value="">Select category</option>
+              {topCategories.map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {cat.icon} {cat.name}
+                </option>
+              ))}
+            </select>
+          </FormField>
+        )}
+
+        {formData.type !== 'transfer' && subcategories.length > 0 && (
+          <FormField label="Subcategory">
+            <select
+              value={formData.subcategoryId}
+              onChange={(e) => setFormData({ ...formData, subcategoryId: e.target.value })}
+              className="form-select"
+            >
+              <option value="">None</option>
+              {subcategories.map((cat) => (
+                <option key={cat._id} value={cat._id}>{cat.icon} {cat.name}</option>
+              ))}
+            </select>
+          </FormField>
+        )}
+
+        {formData.type !== 'transfer' && tags.length > 0 && (
+          <FormField label="Tags" span="full">
+            <div className="flex flex-wrap gap-2">
+              {tags.map((tag) => {
+                const selected = formData.tagIds.includes(tag._id)
+                return (
+                  <button
+                    key={tag._id}
+                    type="button"
+                    onClick={() => setFormData({
+                      ...formData,
+                      tagIds: selected
+                        ? formData.tagIds.filter((id) => id !== tag._id)
+                        : [...formData.tagIds, tag._id],
+                    })}
+                    className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${selected ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/30'}`}
+                  >
+                    #{tag.name}
+                  </button>
+                )
+              })}
+            </div>
+          </FormField>
+        )}
+      </FormSection>
+
+      <FormSection
+        title={formData.type === 'transfer' ? 'Transfer accounts' : 'Payment'}
+        description={
+          formData.type === 'transfer'
+            ? 'Choose where money is coming from and going to.'
+            : 'How was this transaction paid?'
+        }
+      >
+        {!lockPaymentMethod && (
+          <FormField
+            label={formData.type === 'transfer' ? 'From' : 'Payment method'}
+            span={formData.isCash ? 'full' : 'default'}
+          >
+            <ToggleButtonGroup
+              value={formData.isCash ? 'cash' : 'account'}
+              onValueChange={(value) =>
+                setFormData({
+                  ...formData,
+                  isCash: value === 'cash',
+                  accountId: value === 'cash' ? '' : formData.accountId,
                 })
               }
               options={[
                 { value: 'cash', label: 'Cash' },
-                { value: 'account', label: 'Bank Account' },
+                { value: 'account', label: 'Bank account' },
               ]}
             />
-          </div>
-          {!formData.transferToIsCash && (
-            <div>
-              <label className="text-sm font-medium mb-1 block">To Account</label>
-              <select
-                value={formData.transferToAccountId}
-                onChange={(e) => setFormData({ ...formData, transferToAccountId: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                required={!formData.transferToIsCash}
-              >
-                <option value="">Select account</option>
-                {accounts.map((acc) => (
-                  <option key={acc._id} value={acc._id}>
-                    {acc.icon} {acc.accountName}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </>
-      )}
-      <div className="form-field-full">
-        <label className="text-sm font-medium mb-1 block">Description</label>
-        <Input
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Optional description"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Date</label>
-        <Input
-          type="date"
-          value={formData.date}
-          onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-          required
-        />
-      </div>
-      <div className="form-field-full">
-        <SubmitButton isLoading={saving} className="w-full sm:w-auto min-w-[10rem]">
-        {transactionId ? 'Update Transaction' : 'Add Transaction'}
-        </SubmitButton>
-      </div>
-    </form>
+          </FormField>
+        )}
+
+        {!formData.isCash && !lockPaymentMethod && (
+          <FormField
+            label={formData.type === 'transfer' ? 'From account' : 'Account'}
+            required
+          >
+            <select
+              value={formData.accountId}
+              onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
+              className="form-select"
+              required={!formData.isCash}
+            >
+              <option value="">Select account</option>
+              {accounts.map((acc) => (
+                <option key={acc._id} value={acc._id}>
+                  {acc.icon} {acc.accountName}
+                </option>
+              ))}
+            </select>
+          </FormField>
+        )}
+
+        {formData.type === 'transfer' && (
+          <>
+            <FormField
+              label="To"
+              span={formData.transferToIsCash ? 'full' : 'default'}
+            >
+              <ToggleButtonGroup
+                value={formData.transferToIsCash ? 'cash' : 'account'}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    transferToIsCash: value === 'cash',
+                    transferToAccountId: value === 'cash' ? '' : formData.transferToAccountId,
+                  })
+                }
+                options={[
+                  { value: 'cash', label: 'Cash' },
+                  { value: 'account', label: 'Bank account' },
+                ]}
+              />
+            </FormField>
+
+            {!formData.transferToIsCash && (
+              <FormField label="To account" required>
+                <select
+                  value={formData.transferToAccountId}
+                  onChange={(e) => setFormData({ ...formData, transferToAccountId: e.target.value })}
+                  className="form-select"
+                  required={!formData.transferToIsCash}
+                >
+                  <option value="">Select account</option>
+                  {accounts.map((acc) => (
+                    <option key={acc._id} value={acc._id}>
+                      {acc.icon} {acc.accountName}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+            )}
+          </>
+        )}
+      </FormSection>
+
+      <FormSection title="Details" description="Optional notes and when this happened.">
+        <FormField label="Description" span="full">
+          <Input
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Optional description"
+          />
+        </FormField>
+        <FormField label="Date" required>
+          <Input
+            type="date"
+            value={formData.date}
+            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            required
+          />
+        </FormField>
+      </FormSection>
+
+      <FormSubmitBar
+        variant={variant}
+        submitLabel={transactionId ? 'Update transaction' : 'Add transaction'}
+        onCancel={onCancel}
+        isLoading={saving}
+      />
+    </FormLayout>
   )
 }

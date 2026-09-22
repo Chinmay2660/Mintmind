@@ -6,7 +6,14 @@ import { format } from 'date-fns'
 import { toast } from 'sonner'
 import request from '@/lib/api/request'
 import { Input } from '@/components/ui/input'
-import { SubmitButton } from '@/components/ui/form-buttons'
+import { FormSubmitBar } from '@/components/ui/form-buttons'
+import {
+  FormField,
+  FormLayout,
+  FormRow,
+  FormSection,
+  FormSkeleton,
+} from '@/components/ui/form-layout'
 import { useAuth } from '@/lib/hooks/useAuth'
 
 const defaultFormData = () => ({
@@ -20,16 +27,27 @@ const defaultFormData = () => ({
   interestRate: '',
   accountId: '',
   notes: '',
+  schemeCode: '',
+  units: '',
+  purchaseNav: '',
+  sipAmount: '',
+  assetClass: 'other',
 })
 
-interface InvestmentFormProps {
+interface InvestmentFormProps extends EntityFormProps {
   investmentId?: string
 }
 
 import { useBankAccounts } from '@/lib/hooks/useReferenceData'
-import { getLocal } from '@/lib/offline/repository'
+import { fetchEntityRecord } from '@/lib/api/entityApi'
+import type { EntityFormProps } from '@/lib/forms/types'
 
-export function InvestmentForm({ investmentId }: InvestmentFormProps) {
+export function InvestmentForm({
+  investmentId,
+  variant = 'page',
+  onSuccess,
+  onCancel,
+}: InvestmentFormProps) {
   const router = useRouter()
   const { user } = useAuth()
   const { accounts } = useBankAccounts(user?.id)
@@ -40,7 +58,7 @@ export function InvestmentForm({ investmentId }: InvestmentFormProps) {
   useEffect(() => {
     if (!investmentId || !user) return
     setLoading(true)
-    getLocal('investments', investmentId)
+    fetchEntityRecord('investments', investmentId)
       .then((inv) => {
         if (!inv) throw new Error('Not found')
         setFormData({
@@ -54,6 +72,11 @@ export function InvestmentForm({ investmentId }: InvestmentFormProps) {
           interestRate: inv.interestRate || '',
           accountId: inv.accountId?._id || '',
           notes: inv.notes || '',
+          schemeCode: inv.schemeCode || '',
+          units: inv.units || '',
+          purchaseNav: inv.purchaseNav || '',
+          sipAmount: inv.sipAmount || '',
+          assetClass: inv.assetClass || 'other',
         })
       })
       .catch(() => {
@@ -71,7 +94,11 @@ export function InvestmentForm({ investmentId }: InvestmentFormProps) {
         ...formData,
         currentValue: formData.currentValue ? parseFloat(formData.currentValue) : null,
         interestRate: formData.interestRate ? parseFloat(formData.interestRate) : null,
+        units: formData.units ? parseFloat(formData.units) : null,
+        purchaseNav: formData.purchaseNav ? parseFloat(formData.purchaseNav) : null,
+        sipAmount: formData.sipAmount ? parseFloat(formData.sipAmount) : null,
         accountId: formData.accountId || null,
+        schemeCode: formData.schemeCode || null,
       }
       if (investmentId) {
         await request.put(`/api/investments/${investmentId}`, payload)
@@ -80,7 +107,8 @@ export function InvestmentForm({ investmentId }: InvestmentFormProps) {
         await request.post('/api/investments', payload)
         toast.success('Investment added successfully')
       }
-      router.push('/dashboard/investments')
+      if (onSuccess) onSuccess()
+      else router.push('/dashboard/investments')
     } catch {
       toast.error('Failed to save investment')
     } finally {
@@ -89,134 +117,149 @@ export function InvestmentForm({ investmentId }: InvestmentFormProps) {
   }
 
   if (loading) {
-    return <div className="w-full animate-pulse h-64 rounded-xl bg-muted/40" />
+    return <FormSkeleton />
   }
 
   return (
-    <form onSubmit={handleSubmit} className="form-panel">
-      <div>
-        <label className="text-sm font-medium mb-1 block">Investment Type</label>
-        <select
-          value={formData.type}
-          onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-          className="w-full h-12 px-3 rounded-lg surface-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="FD">Fixed Deposit</option>
-          <option value="Mutual Fund">Mutual Fund</option>
-          <option value="Stock">Stock</option>
-          <option value="Gold">Gold</option>
-          <option value="Gold ETF">Gold ETF</option>
-          <option value="EPF">EPF</option>
-          <option value="EPS">EPS</option>
-          <option value="Other">Other</option>
-        </select>
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Name</label>
-        <Input
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          required
-          placeholder="e.g., HDFC FD, SBI Mutual Fund"
-          className="h-12"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Amount Invested</label>
-        <Input
-          type="number"
-          value={formData.amount || ''}
-          onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-          placeholder="0"
-          required
-          step="0.01"
-          min="0"
-          className="h-12"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Invested Date</label>
-        <Input
-          type="date"
-          value={formData.investedDate}
-          onChange={(e) => setFormData({ ...formData, investedDate: e.target.value })}
-          required
-          className="h-12"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Maturity Date (Optional)</label>
-        <Input
-          type="date"
-          value={formData.maturityDate}
-          onChange={(e) => setFormData({ ...formData, maturityDate: e.target.value })}
-          className="h-12"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Maturity Type</label>
-        <select
-          value={formData.maturityType}
-          onChange={(e) => setFormData({ ...formData, maturityType: e.target.value })}
-          className="w-full h-12 px-3 rounded-lg surface-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="Ongoing">Ongoing</option>
-          <option value="Payout">Payout</option>
-          <option value="Reinvestment">Reinvestment</option>
-          <option value="Maturity">Maturity</option>
-        </select>
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Current Value (Optional)</label>
-        <Input
-          type="number"
-          value={formData.currentValue}
-          onChange={(e) => setFormData({ ...formData, currentValue: e.target.value })}
-          step="0.01"
-          placeholder="Current market value"
-          className="h-12"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Interest Rate % (Optional)</label>
-        <Input
-          type="number"
-          value={formData.interestRate}
-          onChange={(e) => setFormData({ ...formData, interestRate: e.target.value })}
-          step="0.01"
-          placeholder="Annual interest rate"
-          className="h-12"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Source Account (Optional)</label>
-        <select
-          value={formData.accountId}
-          onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
-          className="w-full h-12 px-3 rounded-lg surface-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="">Select account</option>
-          {accounts.map((acc) => (
-            <option key={acc._id} value={acc._id}>
-              {acc.icon} {acc.accountName}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="form-field-full">
-        <label className="text-sm font-medium mb-1 block">Notes (Optional)</label>
-        <Input
-          value={formData.notes}
-          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-          placeholder="Additional notes"
-          className="h-12"
-        />
-      </div>
-      <div className="form-field-full">
-        <SubmitButton isLoading={saving} className="w-full sm:w-auto min-w-[10rem] h-12">
-          {investmentId ? 'Update Investment' : 'Add Investment'}
-        </SubmitButton>
-      </div>
-    </form>
+    <FormLayout variant={variant} onSubmit={handleSubmit}>
+      <FormSection title="Investment details">
+        <FormField label="Investment Type">
+          <select
+            value={formData.type}
+            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+            className="form-select"
+          >
+            <option value="FD">Fixed Deposit</option>
+            <option value="Mutual Fund">Mutual Fund</option>
+            <option value="Stock">Stock</option>
+            <option value="Gold">Gold</option>
+            <option value="Gold ETF">Gold ETF</option>
+            <option value="EPF">EPF</option>
+            <option value="EPS">EPS</option>
+            <option value="Other">Other</option>
+          </select>
+        </FormField>
+        <FormField label="Name" required>
+          <Input
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            required
+            placeholder="e.g., HDFC FD, SBI Mutual Fund"
+          />
+        </FormField>
+        <FormField label="Amount Invested" required>
+          <Input
+            type="number"
+            value={formData.amount || ''}
+            onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+            placeholder="0"
+            required
+            step="0.01"
+            min="0"
+          />
+        </FormField>
+        <FormField label="Invested Date" required>
+          <Input
+            type="date"
+            value={formData.investedDate}
+            onChange={(e) => setFormData({ ...formData, investedDate: e.target.value })}
+            required
+          />
+        </FormField>
+        <FormField label="Maturity Date (Optional)">
+          <Input
+            type="date"
+            value={formData.maturityDate}
+            onChange={(e) => setFormData({ ...formData, maturityDate: e.target.value })}
+          />
+        </FormField>
+        <FormField label="Maturity Type">
+          <select
+            value={formData.maturityType}
+            onChange={(e) => setFormData({ ...formData, maturityType: e.target.value })}
+            className="form-select"
+          >
+            <option value="Ongoing">Ongoing</option>
+            <option value="Payout">Payout</option>
+            <option value="Reinvestment">Reinvestment</option>
+            <option value="Maturity">Maturity</option>
+          </select>
+        </FormField>
+      </FormSection>
+      {formData.type === 'Mutual Fund' && (
+        <FormSection title="Mutual fund details">
+          <FormField label="Scheme Code (mfapi.in)">
+            <Input value={formData.schemeCode} onChange={(e) => setFormData({ ...formData, schemeCode: e.target.value })} placeholder="e.g., 120503" />
+          </FormField>
+          <FormRow>
+            <FormField label="Units">
+              <Input type="number" value={formData.units} onChange={(e) => setFormData({ ...formData, units: e.target.value })} step="0.0001" />
+            </FormField>
+            <FormField label="Purchase NAV">
+              <Input type="number" value={formData.purchaseNav} onChange={(e) => setFormData({ ...formData, purchaseNav: e.target.value })} step="0.0001" />
+            </FormField>
+          </FormRow>
+          <FormField label="SIP Amount (monthly)">
+            <Input type="number" value={formData.sipAmount} onChange={(e) => setFormData({ ...formData, sipAmount: e.target.value })} step="0.01" />
+          </FormField>
+          <FormField label="Asset Class">
+            <select value={formData.assetClass} onChange={(e) => setFormData({ ...formData, assetClass: e.target.value })} className="form-select">
+              <option value="equity">Equity</option>
+              <option value="debt">Debt</option>
+              <option value="gold">Gold</option>
+              <option value="cash">Cash</option>
+              <option value="other">Other</option>
+            </select>
+          </FormField>
+        </FormSection>
+      )}
+      <FormSection title="Additional details">
+        <FormField label="Current Value (Optional)">
+          <Input
+            type="number"
+            value={formData.currentValue}
+            onChange={(e) => setFormData({ ...formData, currentValue: e.target.value })}
+            step="0.01"
+            placeholder="Current market value"
+          />
+        </FormField>
+        <FormField label="Interest Rate % (Optional)">
+          <Input
+            type="number"
+            value={formData.interestRate}
+            onChange={(e) => setFormData({ ...formData, interestRate: e.target.value })}
+            step="0.01"
+            placeholder="Annual interest rate"
+          />
+        </FormField>
+        <FormField label="Source Account (Optional)">
+          <select
+            value={formData.accountId}
+            onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
+            className="form-select"
+          >
+            <option value="">Select account</option>
+            {accounts.map((acc) => (
+              <option key={acc._id} value={acc._id}>
+                {acc.icon} {acc.accountName}
+              </option>
+            ))}
+          </select>
+        </FormField>
+        <FormField label="Notes (Optional)" span="full">
+          <Input
+            value={formData.notes}
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            placeholder="Additional notes"
+          />
+        </FormField>
+      </FormSection>
+      <FormSubmitBar
+        variant={variant}
+        submitLabel={investmentId ? 'Update Investment' : 'Add Investment'}
+        onCancel={onCancel}
+        isLoading={saving}
+      />
+    </FormLayout>
   )
 }

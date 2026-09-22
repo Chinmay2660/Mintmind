@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { FormButtonGroup } from '@/components/ui/form-buttons'
+import { FormField, FormLayout, FormSection } from '@/components/ui/form-layout'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 import { RowActions } from '@/components/ui/swipeable-row'
@@ -200,62 +201,56 @@ export function FamilyGoalsSection({
         onOpenChange={setIsDialogOpen}
         title={editingGoal ? 'Edit Goal' : 'Create Family Goal'}
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-1 block">Title</label>
-            <Input
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Description</label>
-            <Input
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Target Amount</label>
-            <Input
-              type="number"
-              value={formData.targetAmount || ''}
-              onChange={(e) => setFormData({ ...formData, targetAmount: parseFloat(e.target.value) || 0 })}
-              placeholder="0"
-              required
-              min="0"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Target Date</label>
-            <Input
-              type="date"
-              value={formData.targetDate}
-              onChange={(e) => setFormData({ ...formData, targetDate: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Category</label>
-            <select
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value as FamilyGoal['category'] })}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-            >
-              <option value="savings">Savings</option>
-              <option value="investment">Investment</option>
-              <option value="expense">Expense</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
+        <FormLayout variant="sheet" onSubmit={handleSubmit}>
+          <FormSection>
+            <FormField label="Title" required>
+              <Input
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+              />
+            </FormField>
+            <FormField label="Description">
+              <Input
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Target Amount" required>
+              <Input
+                type="number"
+                value={formData.targetAmount || ''}
+                onChange={(e) => setFormData({ ...formData, targetAmount: parseFloat(e.target.value) || 0 })}
+                placeholder="0"
+                required
+                min="0"
+              />
+            </FormField>
+            <FormField label="Target Date">
+              <Input
+                type="date"
+                value={formData.targetDate}
+                onChange={(e) => setFormData({ ...formData, targetDate: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Category">
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value as FamilyGoal['category'] })}
+                className="form-select"
+              >
+                <option value="savings">Savings</option>
+                <option value="investment">Investment</option>
+                <option value="expense">Expense</option>
+                <option value="other">Other</option>
+              </select>
+            </FormField>
+          </FormSection>
 
-          <div className="space-y-3 pt-2 border-t border-border">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Member Split</label>
-              <span className={`text-xs ${Math.abs(splitTotal - 100) <= 0.01 ? 'text-muted-foreground' : 'text-red-500'}`}>
-                Total: {splitTotal.toFixed(1)}%
-              </span>
-            </div>
+          <FormSection
+            title="Member Split"
+            description={`Total: ${splitTotal.toFixed(1)}%`}
+          >
             {activeMembers.map((member) => {
               const memberId = normalizeId(member.user)
               if (!memberId) return null
@@ -264,11 +259,8 @@ export function FamilyGoalsSection({
                 ? Math.round((formData.targetAmount * pct) / 100)
                 : 0
               return (
-                <div key={memberId} className="flex items-center gap-3">
-                  <span className="text-sm flex-1 min-w-0 truncate">
-                    {member.user.name || member.user.email}
-                  </span>
-                  <div className="flex items-center gap-2 shrink-0">
+                <FormField key={memberId} label={member.user.name || member.user.email} span="full">
+                  <div className="flex items-center gap-2">
                     <Input
                       type="number"
                       value={pct || ''}
@@ -284,13 +276,13 @@ export function FamilyGoalsSection({
                       {formatCurrency(shareAmount)}
                     </span>
                   </div>
-                </div>
+                </FormField>
               )
             })}
-            <p className="text-xs text-muted-foreground">
+            <p className="form-hint form-field-full">
               e.g. Car ₹10L — you 70% (₹7L), spouse 30% (₹3L). Each member gets a personal goal for their share.
             </p>
-          </div>
+          </FormSection>
 
           <FormButtonGroup
             submitLabel={editingGoal ? 'Update Goal' : 'Create Goal'}
@@ -300,36 +292,37 @@ export function FamilyGoalsSection({
               resetForm()
             }}
           />
-        </form>
+        </FormLayout>
       </FormSheet>
 
-      <FormSheet open={isContributeOpen} onOpenChange={setIsContributeOpen} title="Contribute to Goal">
-        <form onSubmit={handleContribute} className="space-y-4">
-          {contributingGoal && currentUserId && (() => {
-            const mySplit = getMemberSplit(contributingGoal, currentUserId)
-            return (
-              <p className="text-sm text-muted-foreground">
-                Contributing to <span className="font-medium text-foreground">{contributingGoal.title}</span>
-                {mySplit && (
-                  <>
-                    {' '}— your share: {formatCurrency(mySplit.currentAmount)} / {formatCurrency(mySplit.targetAmount)}
-                  </>
-                )}
-              </p>
-            )
-          })()}
-          <div>
-            <label className="text-sm font-medium mb-1 block">Amount</label>
-            <Input
-              type="number"
-              value={contributeAmount}
-              onChange={(e) => setContributeAmount(e.target.value)}
-              required
-              min="0.01"
-              step="0.01"
-              placeholder="0.00"
-            />
-          </div>
+      <FormSheet open={isContributeOpen} onOpenChange={setIsContributeOpen} title="Contribute to Goal" size="md">
+        <FormLayout variant="sheet" onSubmit={handleContribute}>
+          <FormSection>
+            {contributingGoal && currentUserId && (() => {
+              const mySplit = getMemberSplit(contributingGoal, currentUserId)
+              return (
+                <p className="text-sm text-muted-foreground form-field-full">
+                  Contributing to <span className="font-medium text-foreground">{contributingGoal.title}</span>
+                  {mySplit && (
+                    <>
+                      {' '}— your share: {formatCurrency(mySplit.currentAmount)} / {formatCurrency(mySplit.targetAmount)}
+                    </>
+                  )}
+                </p>
+              )
+            })()}
+            <FormField label="Amount" required>
+              <Input
+                type="number"
+                value={contributeAmount}
+                onChange={(e) => setContributeAmount(e.target.value)}
+                required
+                min="0.01"
+                step="0.01"
+                placeholder="0.00"
+              />
+            </FormField>
+          </FormSection>
           <FormButtonGroup
             submitLabel="Add Contribution"
             onCancel={() => {
@@ -338,7 +331,7 @@ export function FamilyGoalsSection({
               setContributeAmount('')
             }}
           />
-        </form>
+        </FormLayout>
       </FormSheet>
 
       {isFamilyHead && (

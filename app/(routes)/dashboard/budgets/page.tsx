@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { FormSheet } from '@/components/ui/form-sheet'
 import { FAB } from '@/components/ui/fab'
 import { RowActions } from '@/components/ui/swipeable-row'
 import { formatCurrency } from '@/lib/utils/format'
@@ -20,8 +21,9 @@ import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useLocalList } from '@/lib/hooks/useLocalData'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
 import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
-import { useOffline } from '@/contexts/OfflineContext'
-import { computeBudgetStats } from '@/lib/offline/computed'
+import { useFormSheet } from '@/lib/hooks/useFormSheet'
+import { BudgetForm } from './_components/BudgetForm'
+import { fetchBudgetStats } from '@/lib/api/stats'
 import { getUtilizationBarClass } from '@/lib/utils/utilization'
 import { DEFAULT_CATEGORY_COLOR } from '@/lib/constants/colors'
 
@@ -38,16 +40,16 @@ const BudgetsPageContent = () => {
   const router = useRouter()
   const { user } = useAuth()
   const userId = user?.id
-  const { syncing, lastSyncedAt } = useOffline()
   const [selectedPeriod, setSelectedPeriod] = useState('1M')
   const { data: budgets, loading, reload } = useLocalList('budgets', userId, {
     period: selectedPeriod,
   })
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
   const [budgetStatsById, setBudgetStatsById] = useState<Record<string, BudgetStat>>({})
+  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
 
   const loadBudgetStats = useCallback(async () => {
-    const stats = await computeBudgetStats({ period: selectedPeriod })
+    const stats = await fetchBudgetStats({ period: selectedPeriod })
     setBudgetStatsById(
       Object.fromEntries(
         stats.categories.map((item) => [
@@ -71,11 +73,11 @@ const BudgetsPageContent = () => {
   })
 
   useEffect(() => {
-    if (!userId || syncing) return
+    if (!userId) return
     loadBudgetStats()
-  }, [userId, syncing, lastSyncedAt, loadBudgetStats])
+  }, [userId, loadBudgetStats])
 
-  useAddActionRedirect('/dashboard/budgets/new')
+  useAddActionRedirect(openSheet)
 
   const handleDelete = (id) => {
     confirmDelete({
@@ -100,14 +102,14 @@ const BudgetsPageContent = () => {
   const isRefreshing = loading && budgets.length > 0
 
   return (
-    <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-4">
+    <div className="space-y-5">
       <PageHeader title="Budgets" subtitle="Manage your spending limits">
         <div className="hidden md:block">
-          <AddButton onClick={() => router.push('/dashboard/budgets/new')}>Add Budget</AddButton>
+          <AddButton onClick={openSheet}>Add Budget</AddButton>
         </div>
       </PageHeader>
 
-      <FAB onClick={() => router.push('/dashboard/budgets/new')} label="Add budget" />
+      <FAB onClick={openSheet} label="Add budget" />
 
       <div className="flex items-center gap-3 min-w-0">
         <TabButtonGroup
@@ -139,7 +141,7 @@ const BudgetsPageContent = () => {
             title="No budgets yet"
             description="Create your first budget to track spending"
             actionLabel="Create Your First Budget"
-            onAction={() => router.push('/dashboard/budgets/new')}
+            onAction={openSheet}
           />
         ) : (
           budgets.map((budget, index) => {
@@ -209,6 +211,18 @@ const BudgetsPageContent = () => {
           })
         )}
       </div>
+
+      <FormSheet open={open} onOpenChange={setOpen} title="Add Budget">
+        <BudgetForm
+          variant="sheet"
+          onSuccess={async () => {
+            closeSheet()
+            await reload()
+            await loadBudgetStats()
+          }}
+          onCancel={closeSheet}
+        />
+      </FormSheet>
 
       <ConfirmDialog {...confirmDialogProps} />
     </div>

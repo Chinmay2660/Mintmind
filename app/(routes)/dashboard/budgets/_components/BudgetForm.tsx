@@ -5,10 +5,17 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import request from '@/lib/api/request'
 import { Input } from '@/components/ui/input'
-import { SubmitButton } from '@/components/ui/form-buttons'
+import { FormSubmitBar } from '@/components/ui/form-buttons'
+import {
+  FormField,
+  FormLayout,
+  FormSection,
+  FormSkeleton,
+} from '@/components/ui/form-layout'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useCategories } from '@/lib/hooks/useReferenceData'
-import { getLocal } from '@/lib/offline/repository'
+import { fetchEntityRecord } from '@/lib/api/entityApi'
+import type { EntityFormProps } from '@/lib/forms/types'
 
 const calculateEndDate = (startDate: string, period: string) => {
   if (!startDate) return ''
@@ -40,11 +47,11 @@ const defaultFormData = () => ({
   description: '',
 })
 
-interface BudgetFormProps {
+interface BudgetFormProps extends EntityFormProps {
   budgetId?: string
 }
 
-export function BudgetForm({ budgetId }: BudgetFormProps) {
+export function BudgetForm({ budgetId, variant = 'page', onSuccess, onCancel }: BudgetFormProps) {
   const router = useRouter()
   const { user } = useAuth()
   const { categories: allCategories } = useCategories(user?.id)
@@ -56,7 +63,7 @@ export function BudgetForm({ budgetId }: BudgetFormProps) {
   useEffect(() => {
     if (!budgetId || !user) return
     setLoading(true)
-    getLocal('budgets', budgetId)
+    fetchEntityRecord('budgets', budgetId)
       .then((budget) => {
         if (!budget) throw new Error('Not found')
         setFormData({
@@ -87,7 +94,8 @@ export function BudgetForm({ budgetId }: BudgetFormProps) {
         await request.post('/api/budgets', formData)
         toast.success('Budget created successfully')
       }
-      router.push('/dashboard/budgets')
+      if (onSuccess) onSuccess()
+      else router.push('/dashboard/budgets')
     } catch {
       toast.error('Failed to save budget')
     } finally {
@@ -96,112 +104,103 @@ export function BudgetForm({ budgetId }: BudgetFormProps) {
   }
 
   if (loading) {
-    return <div className="w-full animate-pulse h-64 rounded-xl bg-muted/40" />
+    return <FormSkeleton />
   }
 
   return (
-    <form onSubmit={handleSubmit} className="form-panel">
-      <div>
-        <label className="text-sm font-medium mb-2 block text-foreground">Budget Name</label>
-        <Input
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="e.g., Car Maintenance"
-          className="h-12"
-          required
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-2 block text-foreground">Category</label>
-        <select
-          value={formData.categoryId}
-          onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-          className="w-full h-12 px-3 rounded-lg surface-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          required
-        >
-          <option value="">Select category</option>
-          {categories.map((cat) => (
-            <option key={cat._id} value={cat._id}>
-              {cat.icon} {cat.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-2 block text-foreground">Amount</label>
-        <Input
-          type="number"
-          value={formData.amount}
-          onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-          placeholder="200000"
-          className="h-12"
-          required
-          min="0"
-          step="0.01"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-2 block text-foreground">Period</label>
-        <select
-          value={formData.period}
-          onChange={(e) => {
-            const newPeriod = e.target.value
-            setFormData({
-              ...formData,
-              period: newPeriod,
-              endDate: formData.startDate ? calculateEndDate(formData.startDate, newPeriod) : '',
-            })
-          }}
-          className="w-full h-12 px-3 rounded-lg surface-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          required
-        >
-          <option value="monthly">Monthly</option>
-          <option value="quarterly">Quarterly (3 Months)</option>
-          <option value="half-yearly">Half-Yearly (6 Months)</option>
-          <option value="yearly">Yearly</option>
-        </select>
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-2 block text-foreground">Start Date</label>
-        <Input
-          type="date"
-          value={formData.startDate}
-          onChange={(e) => {
-            const newStartDate = e.target.value
-            setFormData({
-              ...formData,
-              startDate: newStartDate,
-              endDate: calculateEndDate(newStartDate, formData.period),
-            })
-          }}
-          className="h-12"
-          required
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-2 block text-foreground">End Date</label>
-        <Input
-          type="date"
-          value={formData.endDate}
-          onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-          className="h-12"
-          required
-        />
-      </div>
-      <div className="form-field-full">
-        <label className="text-sm font-medium mb-2 block text-foreground">Description (Optional)</label>
-        <Input
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Additional notes..."
-          className="h-12"
-        />
-      </div>
-      <div className="form-field-full">
-        <SubmitButton isLoading={saving} className="w-full sm:w-auto min-w-[10rem] h-12">
-          {budgetId ? 'Update Budget' : 'Create Budget'}
-        </SubmitButton>
-      </div>
-    </form>
+    <FormLayout variant={variant} onSubmit={handleSubmit}>
+      <FormSection>
+        <FormField label="Budget Name" required>
+          <Input
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="e.g., Car Maintenance"
+            required
+          />
+        </FormField>
+        <FormField label="Category" required>
+          <select
+            value={formData.categoryId}
+            onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+            className="form-select"
+            required
+          >
+            <option value="">Select category</option>
+            {categories.map((cat) => (
+              <option key={cat._id} value={cat._id}>
+                {cat.icon} {cat.name}
+              </option>
+            ))}
+          </select>
+        </FormField>
+        <FormField label="Amount" required>
+          <Input
+            type="number"
+            value={formData.amount}
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+            placeholder="200000"
+            required
+            min="0"
+            step="0.01"
+          />
+        </FormField>
+        <FormField label="Period" required>
+          <select
+            value={formData.period}
+            onChange={(e) => {
+              const newPeriod = e.target.value
+              setFormData({
+                ...formData,
+                period: newPeriod,
+                endDate: formData.startDate ? calculateEndDate(formData.startDate, newPeriod) : '',
+              })
+            }}
+            className="form-select"
+            required
+          >
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly (3 Months)</option>
+            <option value="half-yearly">Half-Yearly (6 Months)</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </FormField>
+        <FormField label="Start Date" required>
+          <Input
+            type="date"
+            value={formData.startDate}
+            onChange={(e) => {
+              const newStartDate = e.target.value
+              setFormData({
+                ...formData,
+                startDate: newStartDate,
+                endDate: calculateEndDate(newStartDate, formData.period),
+              })
+            }}
+            required
+          />
+        </FormField>
+        <FormField label="End Date" required>
+          <Input
+            type="date"
+            value={formData.endDate}
+            onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+            required
+          />
+        </FormField>
+        <FormField label="Description (Optional)" span="full">
+          <Input
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Additional notes..."
+          />
+        </FormField>
+      </FormSection>
+      <FormSubmitBar
+        variant={variant}
+        submitLabel={budgetId ? 'Update Budget' : 'Create Budget'}
+        onCancel={onCancel}
+        isLoading={saving}
+      />
+    </FormLayout>
   )
 }

@@ -6,10 +6,18 @@ import { toast } from 'sonner'
 import request from '@/lib/api/request'
 import { Input } from '@/components/ui/input'
 import { IconPicker } from '@/components/ui/icon-picker'
-import { SubmitButton } from '@/components/ui/form-buttons'
+import { FormSubmitBar } from '@/components/ui/form-buttons'
+import {
+  FormField,
+  FormLayout,
+  FormSection,
+  FormSkeleton,
+} from '@/components/ui/form-layout'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { getLocal } from '@/lib/offline/repository'
+import { fetchEntityRecord } from '@/lib/api/entityApi'
 import { DEFAULT_CATEGORY_COLOR } from '@/lib/constants/colors'
+import { useCategories } from '@/lib/hooks/useReferenceData'
+import type { EntityFormProps } from '@/lib/forms/types'
 
 const defaultFormData = (type = 'expense') => ({
   name: '',
@@ -17,25 +25,36 @@ const defaultFormData = (type = 'expense') => ({
   icon: '📁',
   color: DEFAULT_CATEGORY_COLOR,
   budget: 0,
+  parentId: '',
 })
 
-interface CategoryFormProps {
+interface CategoryFormProps extends EntityFormProps {
   categoryId?: string
+  defaultType?: 'expense' | 'income'
 }
 
-export function CategoryForm({ categoryId }: CategoryFormProps) {
+export function CategoryForm({
+  categoryId,
+  defaultType,
+  variant = 'page',
+  onSuccess,
+  onCancel,
+}: CategoryFormProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user } = useAuth()
+  const { categories } = useCategories(user?.id)
+  const parentOptions = categories.filter((c) => !c.parentId && c._id !== categoryId)
   const [loading, setLoading] = useState(!!categoryId)
   const [saving, setSaving] = useState(false)
-  const initialType = searchParams.get('type') === 'income' ? 'income' : 'expense'
+  const initialType =
+    defaultType ?? (searchParams.get('type') === 'income' ? 'income' : 'expense')
   const [formData, setFormData] = useState(defaultFormData(initialType))
 
   useEffect(() => {
     if (!categoryId || !user) return
     setLoading(true)
-    getLocal('categories', categoryId)
+    fetchEntityRecord('categories', categoryId)
       .then((cat) => {
         if (!cat) throw new Error('Not found')
         setFormData({
@@ -44,6 +63,7 @@ export function CategoryForm({ categoryId }: CategoryFormProps) {
           icon: cat.icon,
           color: cat.color,
           budget: cat.budget || 0,
+          parentId: cat.parentId?._id || cat.parentId || '',
         })
       })
       .catch(() => {
@@ -57,14 +77,16 @@ export function CategoryForm({ categoryId }: CategoryFormProps) {
     e.preventDefault()
     setSaving(true)
     try {
+      const payload = { ...formData, parentId: formData.parentId || null }
       if (categoryId) {
-        await request.put(`/api/categories/${categoryId}`, formData)
+        await request.put(`/api/categories/${categoryId}`, payload)
         toast.success('Category updated successfully')
       } else {
-        await request.post('/api/categories', formData)
+        await request.post('/api/categories', payload)
         toast.success('Category added successfully')
       }
-      router.push('/dashboard/categories')
+      if (onSuccess) onSuccess()
+      else router.push('/dashboard/categories')
     } catch {
       toast.error('Failed to save category')
     } finally {
@@ -73,68 +95,79 @@ export function CategoryForm({ categoryId }: CategoryFormProps) {
   }
 
   if (loading) {
-    return <div className="w-full animate-pulse h-48 rounded-xl bg-muted/40" />
+    return <FormSkeleton />
   }
 
   return (
-    <form onSubmit={handleSubmit} className="form-panel">
-      <div>
-        <label className="text-sm font-medium mb-1 block">Type</label>
-        <select
-          value={formData.type}
-          onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-          className="w-full h-12 px-3 rounded-lg surface-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="expense">Expense</option>
-          <option value="income">Income</option>
-        </select>
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Category Name</label>
-        <Input
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          required
-          placeholder="e.g., Groceries, Salary"
-          className="h-12"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Icon</label>
-        <IconPicker
-          value={formData.icon}
-          onChange={(icon) => setFormData({ ...formData, icon })}
-          className="h-12"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Color</label>
-        <Input
-          type="color"
-          value={formData.color}
-          onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-          className="h-12 w-full"
-        />
-      </div>
-      {formData.type === 'expense' && (
-        <div>
-          <label className="text-sm font-medium mb-1 block">Budget (Optional)</label>
+    <FormLayout variant={variant} onSubmit={handleSubmit}>
+      <FormSection title="Category details">
+        <FormField label="Type" span="compact">
+          <select
+            value={formData.type}
+            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+            className="form-select"
+          >
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+          </select>
+        </FormField>
+        {parentOptions.length > 0 && (
+          <FormField label="Parent Category (optional — for subcategories)" span="compact">
+            <select
+              value={formData.parentId}
+              onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
+              className="form-select"
+            >
+              <option value="">None (top-level)</option>
+              {parentOptions.filter((c) => c.type === formData.type).map((c) => (
+                <option key={c._id} value={c._id}>{c.icon} {c.name}</option>
+              ))}
+            </select>
+          </FormField>
+        )}
+        <FormField label={formData.parentId ? 'Subcategory Name' : 'Category Name'} required>
           <Input
-            type="number"
-            value={formData.budget || ''}
-            onChange={(e) => setFormData({ ...formData, budget: parseFloat(e.target.value) || 0 })}
-            step="0.01"
-            min="0"
-            placeholder="0"
-            className="h-12"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            required
+            placeholder="e.g., Groceries, Salary"
           />
-        </div>
-      )}
-      <div className="form-field-full">
-        <SubmitButton isLoading={saving} className="w-full sm:w-auto min-w-[10rem] h-12">
-          {categoryId ? 'Update Category' : 'Add Category'}
-        </SubmitButton>
-      </div>
-    </form>
+        </FormField>
+        {formData.type === 'expense' && (
+          <FormField label="Budget (Optional)" span="compact">
+            <Input
+              type="number"
+              value={formData.budget || ''}
+              onChange={(e) => setFormData({ ...formData, budget: parseFloat(e.target.value) || 0 })}
+              step="0.01"
+              min="0"
+              placeholder="0"
+            />
+          </FormField>
+        )}
+      </FormSection>
+      <FormSection title="Appearance">
+        <FormField label="Icon" span="icon">
+          <IconPicker
+            value={formData.icon}
+            onChange={(icon) => setFormData({ ...formData, icon })}
+          />
+        </FormField>
+        <FormField label="Color" span="color">
+          <Input
+            type="color"
+            value={formData.color}
+            onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+            className="h-10 w-full cursor-pointer p-1"
+          />
+        </FormField>
+      </FormSection>
+      <FormSubmitBar
+        variant={variant}
+        submitLabel={categoryId ? 'Update Category' : 'Add Category'}
+        onCancel={onCancel}
+        isLoading={saving}
+      />
+    </FormLayout>
   )
 }

@@ -3,15 +3,31 @@
 import { PullToRefresh } from '@/components/ui/pull-to-refresh'
 import { RefreshProvider, useRefreshHandler } from '@/contexts/RefreshContext'
 
-function PullToRefreshMain({ children }: { children: React.ReactNode }) {
+function PullToRefreshMain({
+  children,
+  className,
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
   const onRefresh = useRefreshHandler()
-  return <PullToRefresh onRefresh={onRefresh}>{children}</PullToRefresh>
+  return (
+    <PullToRefresh onRefresh={onRefresh} className={className}>
+      {children}
+    </PullToRefresh>
+  )
 }
 
-export function DashboardRefreshShell({ children }: { children: React.ReactNode }) {
+export function DashboardRefreshShell({
+  children,
+  className,
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
   return (
     <RefreshProvider>
-      <PullToRefreshMain>{children}</PullToRefreshMain>
+      <PullToRefreshMain className={className}>{children}</PullToRefreshMain>
     </RefreshProvider>
   )
 }

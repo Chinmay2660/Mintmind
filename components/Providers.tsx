@@ -4,10 +4,9 @@ import { ThemeProvider } from 'next-themes'
 import type { ReactNode } from 'react'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { AuthProvider } from '@/contexts/AuthContext'
-import { OfflineProvider } from '@/contexts/OfflineContext'
 import { SidebarProvider } from '@/contexts/SidebarContext'
-import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
-import '@/lib/offline/selfCheck'
+import { PrivacyProvider } from '@/contexts/PrivacyContext'
+import { IdleTimeoutProvider } from '@/contexts/IdleTimeoutContext'
 
 interface ProvidersProps {
   children: ReactNode
@@ -28,14 +27,13 @@ export default function Providers({ children }: ProvidersProps) {
       scriptProps={themeScriptProps}
     >
       <AuthProvider>
-        <OfflineProvider>
-          <SidebarProvider>
-            <ErrorBoundary>
-              <ServiceWorkerRegistration />
-              {children}
-            </ErrorBoundary>
-          </SidebarProvider>
-        </OfflineProvider>
+        <SidebarProvider>
+          <PrivacyProvider>
+            <IdleTimeoutProvider>
+              <ErrorBoundary>{children}</ErrorBoundary>
+            </IdleTimeoutProvider>
+          </PrivacyProvider>
+        </SidebarProvider>
       </AuthProvider>
     </ThemeProvider>
   )

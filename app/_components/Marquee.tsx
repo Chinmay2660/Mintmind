@@ -6,7 +6,7 @@ const items = [
   'Expense Tracking',
   'Budget Planning',
   'Investment Portfolio',
-  'Offline Mode',
+  'Real-time Sync',
   'Multi-Account',
   'Visual Analytics',
   'Category Management',

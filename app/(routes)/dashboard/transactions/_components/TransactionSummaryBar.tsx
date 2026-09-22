@@ -11,24 +11,29 @@ interface TransactionSummaryBarProps {
 
 export function TransactionSummaryBar({ summary, loading = false }: TransactionSummaryBarProps) {
   return (
-    <div className={cn('surface-card overflow-hidden transition-opacity', loading && 'opacity-60')}>
+    <div
+      className={cn(
+        'inline-flex w-full max-w-md overflow-hidden rounded-lg border border-border/70 bg-muted/30 transition-opacity sm:w-auto',
+        loading && 'opacity-60'
+      )}
+    >
       <div className="grid grid-cols-3 divide-x divide-border/50">
-        <div className="p-4 text-center">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Income</p>
-          <p className="text-sm md:text-base font-bold text-green-600 dark:text-green-400">
+        <div className="px-3 py-2 text-center">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Income</p>
+          <p className="text-sm font-semibold text-green-600 dark:text-green-400">
             {loading ? '—' : formatCurrency(summary.income)}
           </p>
         </div>
-        <div className="p-4 text-center">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Expenses</p>
-          <p className="text-sm md:text-base font-bold text-red-600 dark:text-red-400">
+        <div className="px-3 py-2 text-center">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Expenses</p>
+          <p className="text-sm font-semibold text-red-600 dark:text-red-400">
             {loading ? '—' : formatCurrency(summary.expense)}
           </p>
         </div>
-        <div className="p-4 text-center">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Total</p>
+        <div className="px-3 py-2 text-center">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Total</p>
           <p
-            className={`text-sm md:text-base font-bold ${
+            className={`text-sm font-semibold ${
               summary.net >= 0
                 ? 'text-foreground'
                 : 'text-red-600 dark:text-red-400'

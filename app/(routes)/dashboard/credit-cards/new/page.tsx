@@ -6,7 +6,7 @@ import { CreditCardForm } from '../_components/CreditCardForm'
 
 function NewCreditCardContent() {
   return (
-    <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Add Credit Card"
         subtitle="Track a new credit card"

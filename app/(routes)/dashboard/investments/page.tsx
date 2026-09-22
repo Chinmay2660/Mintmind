@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Card } from '@/components/ui/card'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { FormSheet } from '@/components/ui/form-sheet'
 import { FAB } from '@/components/ui/fab'
 import { RowActions } from '@/components/ui/swipeable-row'
 import { formatCurrency } from '@/lib/utils/format'
@@ -20,6 +21,8 @@ import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useLocalList } from '@/lib/hooks/useLocalData'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
 import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useFormSheet } from '@/lib/hooks/useFormSheet'
+import { InvestmentForm } from './_components/InvestmentForm'
 
 const InvestmentsPageContent = () => {
   const router = useRouter()
@@ -28,6 +31,7 @@ const InvestmentsPageContent = () => {
   const { data: allInvestments, loading, reload } = useLocalList('investments', userId)
   const [filterType, setFilterType] = useState('all')
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
+  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
 
   const investments =
     filterType === 'all'
@@ -35,7 +39,7 @@ const InvestmentsPageContent = () => {
       : allInvestments.filter((inv) => inv.type === filterType)
 
   useSyncedRefresh(reload)
-  useAddActionRedirect('/dashboard/investments/new')
+  useAddActionRedirect(openSheet)
 
   const handleDelete = (id) => {
     confirmDelete({
@@ -57,19 +61,19 @@ const InvestmentsPageContent = () => {
   const totalGain = totalCurrentValue - totalInvested
 
   return (
-    <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title="Investments"
         subtitle="Track your investment portfolio"
       >
         <div className="hidden md:block">
-          <AddButton onClick={() => router.push('/dashboard/investments/new')}>
+          <AddButton onClick={openSheet}>
             Add Investment
           </AddButton>
         </div>
       </PageHeader>
 
-      <FAB onClick={() => router.push('/dashboard/investments/new')} label="Add investment" />
+      <FAB onClick={openSheet} label="Add investment" />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 text-white shadow-lg">
@@ -131,7 +135,7 @@ const InvestmentsPageContent = () => {
             title="No investments yet"
             description="Add your first investment to get started"
             actionLabel="Add Your First Investment"
-            onAction={() => router.push('/dashboard/investments/new')}
+            onAction={openSheet}
           />
         ) : (
           investments.map((investment) => {
@@ -213,6 +217,17 @@ const InvestmentsPageContent = () => {
           })
         )}
       </div>
+
+      <FormSheet open={open} onOpenChange={setOpen} title="Add Investment">
+        <InvestmentForm
+          variant="sheet"
+          onSuccess={() => {
+            closeSheet()
+            reload()
+          }}
+          onCancel={closeSheet}
+        />
+      </FormSheet>
 
       <ConfirmDialog {...confirmDialogProps} />
     </div>

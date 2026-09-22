@@ -9,6 +9,8 @@ type Category = {
   icon?: string
   color?: string
   budget?: number
+  parentId?: string | { _id?: string }
+  order?: number
 }
 type BankAccount = {
   _id?: string

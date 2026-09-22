@@ -1,6 +1,7 @@
 'use client'
 
 import { startOfDay } from 'date-fns'
+import { usePrivacyAmount } from '@/lib/hooks/usePrivacyAmount'
 
 interface Transaction {
   type?: string
@@ -16,6 +17,7 @@ function getDayIndex(dateStr: string) {
 }
 
 export function ActivityChart({ transactions }: { transactions: Transaction[] }) {
+  const { fmt } = usePrivacyAmount()
   const today = startOfDay(new Date())
   const totals = Array(7).fill(0)
 
@@ -33,26 +35,31 @@ export function ActivityChart({ transactions }: { transactions: Transaction[] })
 
   if (!hasData) {
     return (
-      <div className="flex items-center justify-center h-36 md:h-44 lg:h-48 rounded-2xl border border-dashed border-border/60 text-sm text-muted-foreground">
+      <div className="flex h-44 items-center justify-center rounded-2xl border border-dashed border-border/70 text-sm text-muted-foreground">
         No expenses recorded this week
       </div>
     )
   }
 
   return (
-    <div className="flex items-end justify-between gap-2 md:gap-3 h-36 md:h-44 lg:h-48">
+    <div className="flex h-44 items-end justify-between gap-1.5 sm:gap-2">
       {DAY_LABELS.map((label, i) => {
         const pct = (totals[i] / max) * 100
-        const barHeight = totals[i] > 0 ? Math.max(pct, 12) : 4
+        const barHeight = totals[i] > 0 ? Math.max(pct, 10) : 3
+        const amountLabel = fmt(totals[i], { compact: true })
+
         return (
-          <div key={label} className="flex flex-col items-center gap-2 flex-1 min-w-0">
-            <div className="relative w-full max-w-[28px] sm:max-w-[36px] md:max-w-[48px] lg:max-w-[64px] h-full min-h-[100px] md:min-h-[120px] lg:min-h-[140px] rounded-xl bg-primary/10 border border-primary/20 overflow-hidden mx-auto">
+          <div key={label} className="group flex min-w-0 flex-1 flex-col items-center gap-2">
+            <span className="text-[10px] font-medium tabular-nums text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
+              {totals[i] > 0 ? amountLabel : ''}
+            </span>
+            <div className="relative mx-auto h-32 w-full max-w-[3rem] overflow-hidden rounded-xl bg-muted/35">
               <div
-                className="absolute bottom-0 left-0 right-0 bg-primary rounded-t-lg transition-all duration-500"
+                className="absolute bottom-0 left-0 right-0 rounded-t-lg bg-primary/80 transition-all duration-500 group-hover:bg-primary"
                 style={{ height: `${barHeight}%` }}
               />
             </div>
-            <span className="text-[11px] md:text-xs text-muted-foreground font-medium">{label}</span>
+            <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
           </div>
         )
       })}

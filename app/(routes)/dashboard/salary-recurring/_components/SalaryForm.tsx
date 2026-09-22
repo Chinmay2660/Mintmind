@@ -6,10 +6,17 @@ import { format } from 'date-fns'
 import { toast } from 'sonner'
 import request from '@/lib/api/request'
 import { Input } from '@/components/ui/input'
-import { SubmitButton } from '@/components/ui/form-buttons'
+import { FormSubmitBar } from '@/components/ui/form-buttons'
+import {
+  FormField,
+  FormLayout,
+  FormSection,
+  FormSkeleton,
+} from '@/components/ui/form-layout'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useCategories, useBankAccounts } from '@/lib/hooks/useReferenceData'
-import { getLocal } from '@/lib/offline/repository'
+import { fetchEntityRecord } from '@/lib/api/entityApi'
+import type { EntityFormProps } from '@/lib/forms/types'
 
 const defaultFormData = () => ({
   amount: '',
@@ -22,11 +29,11 @@ const defaultFormData = () => ({
   categoryId: '',
 })
 
-interface SalaryFormProps {
+interface SalaryFormProps extends EntityFormProps {
   salaryId?: string
 }
 
-export function SalaryForm({ salaryId }: SalaryFormProps) {
+export function SalaryForm({ salaryId, variant = 'page', onSuccess, onCancel }: SalaryFormProps) {
   const router = useRouter()
   const { user } = useAuth()
   const { categories } = useCategories(user?.id)
@@ -40,7 +47,7 @@ export function SalaryForm({ salaryId }: SalaryFormProps) {
   useEffect(() => {
     if (!salaryId || !user) return
     setLoading(true)
-    getLocal('salary', salaryId)
+    fetchEntityRecord('salary', salaryId)
       .then((salary) => {
         if (!salary) throw new Error('Not found')
         setFormData({
@@ -72,7 +79,8 @@ export function SalaryForm({ salaryId }: SalaryFormProps) {
         await request.post('/api/salary', formData)
         toast.success('Salary added successfully')
       }
-      router.push('/dashboard/salary-recurring')
+      if (onSuccess) onSuccess()
+      else router.push('/dashboard/salary-recurring')
     } catch {
       toast.error('Failed to save salary')
     } finally {
@@ -81,100 +89,92 @@ export function SalaryForm({ salaryId }: SalaryFormProps) {
   }
 
   if (loading) {
-    return <div className="w-full animate-pulse h-64 rounded-xl bg-muted/40" />
+    return <FormSkeleton />
   }
 
   return (
-    <form onSubmit={handleSubmit} className="form-panel">
-      <div>
-        <label className="text-sm font-medium mb-1 block">Amount</label>
-        <Input
-          type="number"
-          value={formData.amount}
-          onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-          placeholder="0"
-          required
-          step="0.01"
-          min="0"
-          className="h-12"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Frequency</label>
-        <select
-          value={formData.frequency}
-          onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
-          className="w-full h-12 px-3 rounded-lg surface-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="monthly">Monthly</option>
-          <option value="bi-weekly">Bi-weekly</option>
-          <option value="weekly">Weekly</option>
-          <option value="yearly">Yearly</option>
-        </select>
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Start Date</label>
-        <Input
-          type="date"
-          value={formData.startDate}
-          onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-          required
-          className="h-12"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">End Date (Optional)</label>
-        <Input
-          type="date"
-          value={formData.endDate}
-          onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-          className="h-12"
-        />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Category (Optional)</label>
-        <select
-          value={formData.categoryId}
-          onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-          className="w-full h-12 px-3 rounded-lg surface-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="">Select category</option>
-          {incomeCategories.map((cat) => (
-            <option key={cat._id} value={cat._id}>
-              {cat.icon} {cat.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Account (Optional)</label>
-        <select
-          value={formData.accountId}
-          onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
-          className="w-full h-12 px-3 rounded-lg surface-input text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="">Select account</option>
-          {accounts.map((acc) => (
-            <option key={acc._id} value={acc._id}>
-              {acc.icon} {acc.accountName}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="form-field-full">
-        <label className="text-sm font-medium mb-1 block">Description (Optional)</label>
-        <Input
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="e.g., Software Engineer Salary"
-          className="h-12"
-        />
-      </div>
-      <div className="form-field-full">
-        <SubmitButton isLoading={saving} className="w-full sm:w-auto min-w-[10rem] h-12">
-          {salaryId ? 'Update Salary' : 'Add Salary'}
-        </SubmitButton>
-      </div>
-    </form>
+    <FormLayout variant={variant} onSubmit={handleSubmit}>
+      <FormSection>
+        <FormField label="Amount" required>
+          <Input
+            type="number"
+            value={formData.amount}
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+            placeholder="0"
+            required
+            step="0.01"
+            min="0"
+          />
+        </FormField>
+        <FormField label="Frequency">
+          <select
+            value={formData.frequency}
+            onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
+            className="form-select"
+          >
+            <option value="monthly">Monthly</option>
+            <option value="bi-weekly">Bi-weekly</option>
+            <option value="weekly">Weekly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </FormField>
+        <FormField label="Start Date" required>
+          <Input
+            type="date"
+            value={formData.startDate}
+            onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+            required
+          />
+        </FormField>
+        <FormField label="End Date (Optional)">
+          <Input
+            type="date"
+            value={formData.endDate}
+            onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+          />
+        </FormField>
+        <FormField label="Category (Optional)">
+          <select
+            value={formData.categoryId}
+            onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+            className="form-select"
+          >
+            <option value="">Select category</option>
+            {incomeCategories.map((cat) => (
+              <option key={cat._id} value={cat._id}>
+                {cat.icon} {cat.name}
+              </option>
+            ))}
+          </select>
+        </FormField>
+        <FormField label="Account (Optional)">
+          <select
+            value={formData.accountId}
+            onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
+            className="form-select"
+          >
+            <option value="">Select account</option>
+            {accounts.map((acc) => (
+              <option key={acc._id} value={acc._id}>
+                {acc.icon} {acc.accountName}
+              </option>
+            ))}
+          </select>
+        </FormField>
+        <FormField label="Description (Optional)" span="full">
+          <Input
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="e.g., Software Engineer Salary"
+          />
+        </FormField>
+      </FormSection>
+      <FormSubmitBar
+        variant={variant}
+        submitLabel={salaryId ? 'Update Salary' : 'Add Salary'}
+        onCancel={onCancel}
+        isLoading={saving}
+      />
+    </FormLayout>
   )
 }

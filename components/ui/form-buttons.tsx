@@ -19,7 +19,7 @@ export function SubmitButton({
   return (
     <Button
       type={type}
-      className={cn('flex-1 bg-primary hover:bg-primary/90', className)}
+      className={cn('min-w-[9rem] bg-primary hover:bg-primary/90', className)}
       disabled={isLoading}
       {...props}
     >
@@ -55,6 +55,42 @@ interface FormButtonGroupProps extends React.HTMLAttributes<HTMLDivElement> {
   cancelClassName?: string
 }
 
+export type FormVariant = 'page' | 'sheet'
+
+interface FormSubmitBarProps {
+  variant?: FormVariant
+  submitLabel: string
+  cancelLabel?: string
+  onCancel?: () => void
+  isLoading?: boolean
+}
+
+/** Page forms use FormActions; sheet/modal forms use FormButtonGroup. */
+export function FormSubmitBar({
+  variant = 'page',
+  submitLabel,
+  cancelLabel,
+  onCancel,
+  isLoading = false,
+}: FormSubmitBarProps) {
+  if (variant === 'sheet') {
+    return (
+      <FormButtonGroup
+        submitLabel={submitLabel}
+        cancelLabel={cancelLabel}
+        onCancel={onCancel}
+        isLoading={isLoading}
+      />
+    )
+  }
+
+  return (
+    <div className="form-actions-bar">
+      <SubmitButton isLoading={isLoading}>{submitLabel}</SubmitButton>
+    </div>
+  )
+}
+
 export function FormButtonGroup({
   submitLabel,
   cancelLabel = 'Cancel',
@@ -62,10 +98,11 @@ export function FormButtonGroup({
   isLoading = false,
   submitClassName = '',
   cancelClassName = '',
+  className,
   ...props
 }: FormButtonGroupProps) {
   return (
-    <div className="flex gap-2" {...props}>
+    <div className={cn('form-actions', className)} {...props}>
       <SubmitButton isLoading={isLoading} className={submitClassName}>
         {submitLabel}
       </SubmitButton>

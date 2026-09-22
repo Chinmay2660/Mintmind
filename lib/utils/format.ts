@@ -15,6 +15,13 @@ export function formatCurrency(
   }).format(value)
 }
 
+/** Mask currency for privacy mode — preserves symbol, hides digits */
+export function maskCurrency(amount?: number | string | null): string {
+  const value = Math.abs(Number(amount) || 0)
+  const digits = value > 0 ? String(Math.round(value)).length : 4
+  return `₹${'•'.repeat(Math.min(Math.max(digits, 4), 8))}`
+}
+
 export function formatDate(date: string | Date | null | undefined, pattern = 'MMM dd, yyyy'): string {
   if (!date) return ''
   return formatDateFns(new Date(date), pattern)

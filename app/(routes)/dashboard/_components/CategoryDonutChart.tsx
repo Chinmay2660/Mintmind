@@ -1,9 +1,9 @@
 'use client'
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
-import { formatCurrency } from '@/lib/utils/format'
+import { usePrivacyAmount } from '@/lib/hooks/usePrivacyAmount'
 
-const FALLBACK_COLORS = ['#2563eb', '#3b82f6', '#60a5fa', '#ec4899', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444']
+const FALLBACK_COLORS = ['#2563eb', '#3b82f6', '#60a5fa', '#ec4899', '#f59e0b', '#6366f1', '#8b5cf6', '#ef4444']
 
 interface CategoryItem {
   categoryName: string
@@ -18,6 +18,7 @@ interface CategoryDonutChartProps {
 }
 
 export function CategoryDonutChart({ data, total }: CategoryDonutChartProps) {
+  const { fmt } = usePrivacyAmount()
   if (!data.length || total <= 0) {
     return (
       <div className="flex items-center justify-center h-52 text-sm text-muted-foreground">
@@ -51,7 +52,7 @@ export function CategoryDonutChart({ data, total }: CategoryDonutChartProps) {
             ))}
           </Pie>
           <Tooltip
-            formatter={(value) => formatCurrency(Number(value))}
+            formatter={(value) => fmt(Number(value))}
             contentStyle={{
               backgroundColor: 'hsl(var(--card))',
               border: '1px solid hsl(var(--border))',
@@ -63,7 +64,7 @@ export function CategoryDonutChart({ data, total }: CategoryDonutChartProps) {
       </ResponsiveContainer>
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
         <p className="text-xs text-muted-foreground">Total</p>
-        <p className="text-lg font-bold text-foreground">{formatCurrency(total)}</p>
+        <p className="text-lg font-bold text-foreground">{fmt(total)}</p>
       </div>
     </div>
   )

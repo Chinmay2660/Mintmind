@@ -2,11 +2,11 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { ChevronLeft } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { getDashboardPageIcon } from '@/lib/constants/dashboardNav'
 import { isFromHome } from '@/lib/utils/navigation'
+import { Tooltip } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 interface PageHeaderProps {
@@ -19,7 +19,15 @@ interface PageHeaderProps {
   backHref?: string
 }
 
-export function PageHeader({ title, subtitle, icon, children, className = '', showBack, backHref }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  subtitle,
+  icon,
+  children,
+  className = '',
+  showBack,
+  backHref,
+}: PageHeaderProps) {
   const router = useRouter()
   const pathname = usePathname()
   const PageIcon = icon ?? getDashboardPageIcon(pathname)
@@ -38,43 +46,44 @@ export function PageHeader({ title, subtitle, icon, children, className = '', sh
     else router.back()
   }
 
+  const showBackButton = showBack || fromHome
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
+    <div
       className={cn(
-        'mb-6',
-        children && 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between',
+        'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between',
         className
       )}
     >
-      <div className="flex items-center gap-2 min-w-0 flex-1">
-        {(showBack || fromHome) && (
-          <button
-            type="button"
-            onClick={handleBack}
-            className="flex-shrink-0 flex items-center gap-0.5 p-2 -ml-2 rounded-xl hover:bg-muted transition-colors"
-            aria-label="Go back"
-          >
-            <ChevronLeft className="w-6 h-6 text-muted-foreground" />
-            <span className="text-sm font-medium text-muted-foreground hidden sm:inline">Back</span>
-          </button>
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        {showBackButton && (
+          <Tooltip content="Back" side="bottom">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="-ml-1 flex shrink-0 rounded-xl p-2 transition-colors hover:bg-muted/50"
+            >
+              <ChevronLeft className="h-5 w-5 text-muted-foreground" strokeWidth={1.75} />
+            </button>
+          </Tooltip>
         )}
         {PageIcon && (
-          <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-            <PageIcon className="w-5 h-5 text-primary" aria-hidden="true" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/10">
+            <PageIcon className="h-[18px] w-[18px]" strokeWidth={1.75} />
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground truncate">{title}</h1>
+          <h1 className="text-lg font-semibold tracking-tight text-foreground md:text-xl">
+            {title}
+          </h1>
           {subtitle && (
-            <p className="text-sm md:text-base text-muted-foreground mt-0.5 truncate">{subtitle}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>
           )}
         </div>
       </div>
       {children && (
-        <div className="flex items-center gap-2 shrink-0 justify-end sm:ml-3">{children}</div>
+        <div className="flex shrink-0 items-center justify-end gap-2">{children}</div>
       )}
-    </motion.div>
+    </div>
   )
 }

@@ -1,7 +1,7 @@
 'use client'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useState, useEffect } from 'react'
-import { User, Mail, Save, LogOut, Trash2, RefreshCw } from 'lucide-react'
+import { User, Mail, Save, LogOut, Trash2, Shield, Upload, Lock, Database } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ProfilePicturePicker } from '@/components/ui/profile-picture-picker'
@@ -9,40 +9,27 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { motion } from 'framer-motion'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
-import { format } from 'date-fns'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
-import { clearOfflineData } from '@/lib/offline/db'
-import { useOffline } from '@/contexts/OfflineContext'
+import { useDemoDataModal } from '../_components/DemoDataModal'
 
 const SettingsPage = () => {
   const { user, refetch, signOut } = useAuth()
   const router = useRouter()
-  const { syncNow, lastSyncedAt, syncing } = useOffline()
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
+  const { openDemoModal } = useDemoDataModal()
   const [loading, setLoading] = useState(false)
+  const isDemoMode =
+    process.env.NODE_ENV === 'development' ||
+    process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     image: '',
   })
-
-  const [syncLoading, setSyncLoading] = useState(false)
-
-  const handleSyncData = async () => {
-    try {
-      setSyncLoading(true)
-      await syncNow({ force: true })
-      toast.success('Data synced from server')
-    } catch {
-      toast.error('Sync failed — check your connection')
-    } finally {
-      setSyncLoading(false)
-    }
-  }
 
   useEffect(() => {
     if (user) {
@@ -64,8 +51,6 @@ const SettingsPage = () => {
       confirmLabel: 'Reset All Data',
       onConfirm: async () => {
         await request.delete('/api/user/data')
-        await clearOfflineData()
-        await syncNow({ force: true })
         toast.success('Your personal data has been reset')
         router.push('/dashboard')
       },
@@ -94,7 +79,7 @@ const SettingsPage = () => {
 
   if (!user) {
     return (
-      <div className="p-4 md:p-8 flex items-center justify-center min-h-screen">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground">Please sign in to access settings</p>
           <Link href="/auth/signin">
@@ -106,7 +91,7 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title="Settings"
         subtitle="Manage your account settings and preferences"
@@ -139,8 +124,8 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="max-w-2xl space-y-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="text-sm font-medium mb-2 block text-foreground">
                 First Name
@@ -152,7 +137,7 @@ const SettingsPage = () => {
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                   placeholder="First Name"
-                  className="pl-10 h-12"
+                  className="pl-10"
                 />
               </div>
             </div>
@@ -168,7 +153,7 @@ const SettingsPage = () => {
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                   placeholder="Last Name"
-                  className="pl-10 h-12"
+                  className="pl-10"
                 />
               </div>
             </div>
@@ -184,7 +169,7 @@ const SettingsPage = () => {
                 type="email"
                 value={formData.email}
                 disabled
-                className="pl-10 h-12 surface-input"
+                className="pl-10 surface-input"
               />
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -221,6 +206,34 @@ const SettingsPage = () => {
         </form>
       </motion.div>
 
+      {/* Privacy */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="surface-card p-6"
+      >
+        <h2 className="text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
+          <Shield className="w-5 h-5" /> Privacy
+        </h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          MintMind stores your financial data on our secure servers so you can access it across devices.
+          We do not sell your data.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/dashboard/import-export">
+            <Button type="button" variant="outline" size="sm">
+              <Upload className="w-4 h-4 mr-2" /> Import / Export
+            </Button>
+          </Link>
+          <Link href="/dashboard/passwords">
+            <Button type="button" variant="outline" size="sm">
+              <Lock className="w-4 h-4 mr-2" /> Password Manager
+            </Button>
+          </Link>
+        </div>
+      </motion.div>
+
       {/* Account Info */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -241,31 +254,32 @@ const SettingsPage = () => {
         </div>
       </motion.div>
 
-      {/* Sync data */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
-        className="surface-card p-6"
-      >
-        <h2 className="text-lg font-semibold text-foreground mb-2">Sync data</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          MintMind keeps data on your device. Pull fresh data from the server when you need it.
-          {lastSyncedAt
-            ? ` Last synced ${format(new Date(lastSyncedAt), 'MMM d, yyyy h:mm a')}.`
-            : ' Not synced yet.'}
-        </p>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleSyncData}
-          disabled={syncLoading || syncing}
-          className="w-full sm:w-auto"
+      {/* Demo Data */}
+      {isDemoMode && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.28 }}
+          className="surface-card p-6"
         >
-          <RefreshCw className={`w-4 h-4 mr-2 ${syncLoading || syncing ? 'animate-spin' : ''}`} />
-          {syncLoading || syncing ? 'Syncing…' : 'Sync now'}
-        </Button>
-      </motion.div>
+          <h2 className="text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
+            <Database className="w-5 h-5" /> Demo Data
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Load sample data across all tabs — transactions, investments, goals, loans,
+            subscriptions, reminders, family, and more.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => openDemoModal({ force: true })}
+            className="w-full sm:w-auto"
+          >
+            <Database className="w-4 h-4 mr-2" />
+            Load Demo Data
+          </Button>
+        </motion.div>
+      )}
 
       {/* Reset Data */}
       <motion.div
@@ -318,4 +332,3 @@ const SettingsPage = () => {
 }
 
 export default SettingsPage
-

@@ -11,8 +11,8 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 
 const TRANSACTION_FIELDS = [
-  'type', 'amount', 'categoryId', 'accountId', 'isCash',
-  'description', 'date', 'transferToAccountId', 'transferToIsCash',
+  'type', 'amount', 'categoryId', 'subcategoryId', 'tagIds', 'accountId', 'isCash',
+  'description', 'date', 'transferToAccountId', 'transferToIsCash', 'isRecurring',
 ];
 
 async function validateTransactionData(user, data, oldTransaction = null) {

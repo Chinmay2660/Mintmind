@@ -4,25 +4,32 @@ import MobileBottomNav from './_components/MobileNavbar'
 import DashboardHeader from './_components/DashboardHeader'
 import NativeLayout from './_components/NativeLayout'
 import PageTitle from './_components/PageTitle'
-import OfflineIndicator from '@/components/OfflineIndicator'
 import AppSearch from '@/components/AppSearch'
 import { AppSearchProvider } from '@/contexts/AppSearchContext'
 import { isNativePlatform } from '@/lib/platform'
 import { DashboardRefreshShell } from './_components/DashboardRefreshShell'
 import { DashboardShell } from './_components/DashboardShell'
+import { DashboardPage } from '@/components/ui/dashboard-page'
+import { DemoDataModalProvider } from './_components/DemoDataModal'
 
-const shellClass = 'finance-shell aurora-bg'
+const shellClass = 'finance-shell aurora-bg fixed inset-0 flex h-svh flex-col overflow-hidden'
 
 function DashboardPageContent({ children }: { children: React.ReactNode }) {
     return (
-        <>
+        <div className="grid h-full min-h-0 grid-rows-[auto_1fr] overflow-hidden">
             <PageTitle />
-            <OfflineIndicator />
-            <DashboardHeader />
-            <DashboardRefreshShell>
-                <main className="flex-1 mobile-content-pb md:pb-0">{children}</main>
+            <div className="row-start-1">
+                <DashboardHeader />
+            </div>
+            <DashboardRefreshShell className="row-start-2 min-h-0 overflow-hidden">
+                <main
+                    id="dashboard-main-scroll"
+                    className="h-full min-h-0 overflow-y-auto overscroll-y-contain mobile-content-pb md:pb-0"
+                >
+                    <DashboardPage>{children}</DashboardPage>
+                </main>
             </DashboardRefreshShell>
-        </>
+        </div>
     )
 }
 
@@ -37,18 +44,23 @@ const DashboardLayout = ({ children }) => {
 
     return (
         <AppSearchProvider>
+            <DemoDataModalProvider>
             {!ready ? (
-                <div className={shellClass} aria-hidden />
+                <div className={shellClass} />
             ) : isNative ? (
                 <NativeLayout>
                     <div className={shellClass}>
-                        <div className="relative z-10">
+                        <div className="relative z-10 grid h-full min-h-0 grid-rows-[auto_1fr] overflow-hidden">
                             <PageTitle />
-                            <OfflineIndicator />
-                            <DashboardHeader />
-                            <DashboardRefreshShell>
-                                <main className="min-h-screen mobile-content-pb">
-                                    {children}
+                            <div className="row-start-1">
+                                <DashboardHeader />
+                            </div>
+                            <DashboardRefreshShell className="row-start-2 min-h-0 overflow-hidden">
+                                <main
+                                    id="dashboard-main-scroll"
+                                    className="h-full min-h-0 overflow-y-auto overscroll-y-contain mobile-content-pb"
+                                >
+                                    <DashboardPage>{children}</DashboardPage>
                                 </main>
                             </DashboardRefreshShell>
                             <MobileBottomNav />
@@ -63,6 +75,7 @@ const DashboardLayout = ({ children }) => {
                 </div>
             )}
             <AppSearch />
+            </DemoDataModalProvider>
         </AppSearchProvider>
     )
 }

@@ -31,7 +31,11 @@ export function PullToRefresh({ onRefresh, children, className }: PullToRefreshP
     const el = containerRef.current
     if (!el) return
 
-    const atTop = () => window.scrollY <= 0
+    const atTop = () => {
+      const main = document.getElementById('dashboard-main-scroll')
+      if (main) return main.scrollTop <= 0
+      return window.scrollY <= 0
+    }
 
     const onTouchStart = (e: TouchEvent) => {
       if (refreshing) return
@@ -90,18 +94,25 @@ export function PullToRefresh({ onRefresh, children, className }: PullToRefreshP
   }, [isMobile, refreshing])
 
   if (!isMobile) {
-    return <div className={className}>{children}</div>
+    return (
+      <div className={cn('h-full min-h-0 overflow-hidden', className)}>{children}</div>
+    )
   }
 
   const progress = Math.min(pull / THRESHOLD, 1)
   const indicatorHeight = pull > 0 || refreshing ? Math.max(pull, refreshing ? THRESHOLD : 0) : 0
 
   return (
-    <div ref={containerRef} className={cn('relative touch-pan-y overscroll-y-contain', className)}>
+    <div
+      ref={containerRef}
+      className={cn(
+        'relative h-full min-h-0 overflow-hidden touch-pan-y overscroll-y-contain',
+        className
+      )}
+    >
       <div
         className="pointer-events-none absolute left-0 right-0 z-20 flex justify-center"
         style={{ height: indicatorHeight, opacity: indicatorHeight > 0 ? 1 : 0 }}
-        aria-hidden
       >
         <Loader2
           className={cn(
@@ -112,7 +123,7 @@ export function PullToRefresh({ onRefresh, children, className }: PullToRefreshP
         />
       </div>
       <div
-        className="transition-transform duration-200 ease-out"
+        className="h-full min-h-0 overflow-hidden transition-transform duration-200 ease-out"
         style={{ transform: pull > 0 ? `translateY(${pull}px)` : undefined }}
       >
         {children}

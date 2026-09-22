@@ -44,6 +44,15 @@ const InvestmentSchema = new mongoose.Schema({
   notes: {
     type: String,
   },
+  schemeCode: { type: String },
+  amc: { type: String },
+  units: { type: Number, min: 0 },
+  purchaseNav: { type: Number, min: 0 },
+  currentNav: { type: Number, min: 0 },
+  navDate: { type: Date },
+  sipAmount: { type: Number, min: 0 },
+  assetClass: { type: String, enum: ['equity', 'debt', 'gold', 'cash', 'other'], default: 'other' },
+  goalId: { type: mongoose.Schema.Types.ObjectId, ref: 'Goal' },
 }, {
   timestamps: true,
 });

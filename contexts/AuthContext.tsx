@@ -3,8 +3,7 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
-import { isOnline } from '@/lib/offline/network'
-import { clearOfflineSession, getCachedUser, setCachedUser } from '@/lib/offline/session'
+import { clearCachedUser, getCachedUser, setCachedUser } from '@/lib/offline/session'
 import type { AuthContextValue, AuthProviderProps } from '@/types/auth'
 import type { User } from '@/types/user'
 
@@ -33,11 +32,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const cachedUser = normalizeUser(getCachedUser())
 
     try {
-      if (!isOnline()) {
-        if (mountedRef.current) setUser(cachedUser)
-        return
-      }
-
       const response = await axios.get('/api/auth/session', {
         maxRedirects: 0,
         validateStatus: (status) => status < 500,
@@ -47,7 +41,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (!mountedRef.current) return
 
       if (response.status === 401 || !response.data.user) {
-        await clearOfflineSession()
+        clearCachedUser()
         setUser(null)
         return
       }
@@ -80,14 +74,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signOut = async () => {
     try {
-      if (isOnline()) {
-        await axios.post('/api/auth/logout')
-      }
+      await axios.post('/api/auth/logout')
     } catch {
-      // local sign-out still works offline
+      // still clear local session below
     }
 
-    await clearOfflineSession()
+    clearCachedUser()
 
     if (mountedRef.current) {
       setUser(null)

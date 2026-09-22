@@ -6,13 +6,13 @@ import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { useOffline } from '@/contexts/OfflineContext'
 import { startOfDay, endOfDay } from 'date-fns'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { FormSheet } from '@/components/ui/form-sheet'
 import { ListItemSkeleton } from '@/components/ui/loading-skeleton'
 import { cn } from '@/lib/utils'
 import { FAB } from '@/components/ui/fab'
@@ -39,7 +39,9 @@ import {
   type TransactionFilters,
 } from './_components/TransactionFilterSheet'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
-import { listLocal, getSingleton } from '@/lib/offline/repository'
+import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useFormSheet } from '@/lib/hooks/useFormSheet'
+import { TransactionForm } from './_components/TransactionForm'
 
 let processDueRan = false
 
@@ -47,7 +49,6 @@ const TransactionsPageContent = () => {
   const router = useRouter()
   const { user } = useAuth()
   const userId = user?.id
-  const { online, syncing, lastSyncedAt } = useOffline()
   const searchParams = useSearchParams()
   const [transactions, setTransactions] = useState<TransactionLike[]>([])
   const { accounts } = useBankAccounts(userId)
@@ -59,24 +60,28 @@ const TransactionsPageContent = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [filters, setFilters] = useState<TransactionFilters>(DEFAULT_TRANSACTION_FILTERS)
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
+  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
+  const [sheetType, setSheetType] = useState<'expense' | 'income' | 'transfer' | undefined>()
 
-  useEffect(() => {
-    if (searchParams.get('action') === 'add') {
-      const type = searchParams.get('type')
-      const url = type
-        ? `/dashboard/transactions/new?type=${type}`
-        : '/dashboard/transactions/new'
-      router.replace(url)
+  const openAddSheet = useCallback(() => {
+    const type = searchParams.get('type')
+    if (type === 'income' || type === 'expense' || type === 'transfer') {
+      setSheetType(type)
+    } else {
+      setSheetType(undefined)
     }
-  }, [searchParams, router])
+    openSheet()
+  }, [searchParams, openSheet])
 
-  const loadFromCache = useCallback(async () => {
-    const [txData, cashDoc] = await Promise.all([
-      listLocal('transactions'),
-      getSingleton('cash', 'cash'),
+  useAddActionRedirect(openAddSheet)
+
+  const loadData = useCallback(async () => {
+    const [txRes, cashRes] = await Promise.all([
+      request.get('/api/transactions'),
+      request.get('/api/cash'),
     ])
-    setTransactions(txData ?? [])
-    setCashBalance(cashDoc?.amount ?? 0)
+    setTransactions(Array.isArray(txRes.data) ? txRes.data : [])
+    setCashBalance(cashRes.data?.amount ?? 0)
   }, [])
 
   useEffect(() => {
@@ -84,17 +89,11 @@ const TransactionsPageContent = () => {
       setLoading(false)
       return
     }
-    if (syncing) return
-
     let cancelled = false
     setLoading(true)
-    loadFromCache()
+    loadData()
       .catch(() => {
-        if (!cancelled && !online) {
-          toast.message('Showing saved transactions — connect to refresh from server')
-        } else if (!cancelled) {
-          toast.error('Failed to load transactions')
-        }
+        if (!cancelled) toast.error('Failed to load transactions')
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -103,9 +102,9 @@ const TransactionsPageContent = () => {
     return () => {
       cancelled = true
     }
-  }, [userId, syncing, lastSyncedAt, loadFromCache, online])
+  }, [userId, loadData])
 
-  useSyncedRefresh(loadFromCache)
+  useSyncedRefresh(loadData)
 
   useEffect(() => {
     if (!userId || processDueRan) return
@@ -179,8 +178,8 @@ const TransactionsPageContent = () => {
       description: 'Are you sure you want to delete this transaction?',
       onConfirm: async () => {
         await request.delete(`/api/transactions/${id}`)
-        toast.success(online ? 'Transaction deleted' : 'Deleted offline — will sync when connected')
-        await loadFromCache()
+        toast.success('Transaction deleted')
+        await loadData()
       },
     })
   }
@@ -189,7 +188,7 @@ const TransactionsPageContent = () => {
   const isRefreshing = loading && transactions.length > 0
 
   return (
-    <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-4">
+    <div className="space-y-5">
       <PageHeader title="Transactions" subtitle="Track income, expenses & transfers">
         <div className="hidden md:flex gap-2">
           <TransactionFilterSheet
@@ -198,7 +197,7 @@ const TransactionsPageContent = () => {
             accounts={accounts as { _id: string; accountName: string; icon?: string; balance?: number }[]}
             cashBalance={cashBalance}
           />
-          <AddButton onClick={() => router.push('/dashboard/transactions/new')}>
+          <AddButton onClick={openAddSheet}>
             Add Transaction
           </AddButton>
         </div>
@@ -234,13 +233,9 @@ const TransactionsPageContent = () => {
         onAnchorDateChange={setAnchorDate}
       />
 
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="flex-1 min-w-0">
-          <TransactionSummaryBar summary={summary} loading={isRefreshing} />
-        </div>
-      </div>
+      <TransactionSummaryBar summary={summary} loading={isRefreshing} />
 
-      <FAB onClick={() => router.push('/dashboard/transactions/new')} label="Add transaction" />
+      <FAB onClick={openAddSheet} label="Add transaction" />
 
       {timeView === 'calendar' && (
         <TransactionCalendarView
@@ -264,7 +259,7 @@ const TransactionsPageContent = () => {
               : 'Add your first transaction to get started'
           }
           actionLabel="Add Transaction"
-          onAction={() => router.push('/dashboard/transactions/new')}
+          onAction={openAddSheet}
         />
       ) : (
         <div className={cn('transition-opacity', isRefreshing && 'opacity-60 pointer-events-none')}>
@@ -275,6 +270,19 @@ const TransactionsPageContent = () => {
           />
         </div>
       )}
+
+      <FormSheet open={open} onOpenChange={setOpen} title="Add Transaction">
+        <TransactionForm
+          key={sheetType ?? 'default'}
+          variant="sheet"
+          defaultValues={sheetType ? { type: sheetType } : undefined}
+          onSuccess={() => {
+            closeSheet()
+            loadData()
+          }}
+          onCancel={closeSheet}
+        />
+      </FormSheet>
 
       <ConfirmDialog {...confirmDialogProps} />
     </div>
