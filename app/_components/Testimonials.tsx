@@ -9,7 +9,7 @@ const testimonials = [
     name: 'Priya Sharma',
     role: 'Software Engineer',
     avatar: 'PS',
-    content: 'Mintmind completely changed how I track my expenses. Clean dashboards and fast transaction entry make it easy to stay on top of spending.',
+    content: 'I finally have one place for net worth, bank passwords, and my Aadhar copy. My spouse is set as nominee — huge peace of mind.',
     rating: 5,
   },
   {

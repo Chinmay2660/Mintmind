@@ -122,6 +122,7 @@ const LoansPageContent = () => {
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="font-semibold text-foreground truncate">{loan.name}</h3>
                     <Badge>{LOAN_TYPE_LABELS[loan.type] || loan.type}</Badge>
+                    {loan.ownership === 'joint' && <Badge variant="outline">Joint</Badge>}
                   </div>
                   {loan.lender && (
                     <p className="text-sm text-muted-foreground">{loan.lender}</p>
@@ -134,8 +135,17 @@ const LoansPageContent = () => {
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">EMI</p>
-                  <p className="text-lg font-bold text-foreground">{formatCurrency(loan.emi)}</p>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {loan.currentEmi && loan.currentEmi !== loan.emi ? 'Paying' : 'EMI'}
+                  </p>
+                  <p className="text-lg font-bold text-foreground">
+                    {formatCurrency(loan.currentEmi || loan.emi)}
+                  </p>
+                  {loan.currentEmi && loan.currentEmi !== loan.emi && (
+                    <p className="text-xs text-muted-foreground">
+                      Actual {formatCurrency(loan.emi)}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Outstanding</p>

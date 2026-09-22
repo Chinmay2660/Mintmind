@@ -13,9 +13,9 @@ const plusJakarta = Plus_Jakarta_Sans({
 export const metadata = {
   title: {
     template: "%s | Mintmind",
-    default: "Mintmind - Personal Finance Tracker",
+    default: "Mintmind — Net Worth, Vault & Legacy Handoff",
   },
-  description: "Track your expenses, income, investments, and manage your finances",
+  description: "Track net worth, store passwords and identity documents, and give your nominee a secure handoff when it matters.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

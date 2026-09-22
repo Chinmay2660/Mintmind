@@ -14,6 +14,9 @@ if [ ! -f .env.local ]; then
 GOOGLE_CLIENT_ID=your-client-id
 MONGODB_URI=your-mongodb-uri
 JWT_SECRET=your-secret-here-replace-with-actual-secret
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+RESEND_API_KEY=
+RESEND_FROM=Mintmind <onboarding@resend.dev>
 EOF
     echo "✅ Created .env.local"
     echo "⚠️  Please update .env.local with your actual credentials!"

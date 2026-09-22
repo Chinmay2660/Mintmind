@@ -19,6 +19,8 @@ import { useCategories, useBankAccounts } from '@/lib/hooks/useReferenceData'
 import { fetchEntityRecord } from '@/lib/api/entityApi'
 import { useLocalList } from '@/lib/hooks/useLocalData'
 import type { EntityFormProps } from '@/lib/forms/types'
+import { formatCurrency } from '@/lib/utils/format'
+import { getBudgetAllocations } from '@/lib/utils/budgetAllocation'
 
 interface FormData {
   type: 'expense' | 'income' | 'transfer'
@@ -33,6 +35,9 @@ interface FormData {
   description: string
   date: string
   isRecurring: boolean
+  budgetSplitEnabled: boolean
+  budgetSplitMonths: number
+  budgetSplitStartMonth: string
 }
 
 const emptyForm = (type: FormData['type'] = 'expense'): FormData => ({
@@ -48,6 +53,9 @@ const emptyForm = (type: FormData['type'] = 'expense'): FormData => ({
   description: '',
   date: new Date().toISOString().split('T')[0],
   isRecurring: false,
+  budgetSplitEnabled: false,
+  budgetSplitMonths: 2,
+  budgetSplitStartMonth: new Date().toISOString().slice(0, 7),
 })
 
 interface TransactionFormProps extends EntityFormProps {
@@ -107,6 +115,11 @@ export function TransactionForm({
           description: tx.description || '',
           date: format(new Date(tx.date), 'yyyy-MM-dd'),
           isRecurring: tx.isRecurring ?? false,
+          budgetSplitEnabled: tx.budgetSplitEnabled ?? false,
+          budgetSplitMonths: tx.budgetSplitMonths ?? 2,
+          budgetSplitStartMonth: tx.budgetSplitStartMonth
+            ? format(new Date(tx.budgetSplitStartMonth), 'yyyy-MM')
+            : format(new Date(tx.date), 'yyyy-MM'),
         })
       })
       .catch(() => {
@@ -156,6 +169,15 @@ export function TransactionForm({
         accountId: formData.isCash ? null : formData.accountId,
         transferToAccountId: formData.transferToIsCash ? null : formData.transferToAccountId,
         categoryId: formData.type === 'transfer' ? undefined : formData.categoryId,
+        budgetSplitEnabled: formData.type === 'expense' && formData.budgetSplitEnabled,
+        budgetSplitMonths:
+          formData.type === 'expense' && formData.budgetSplitEnabled
+            ? formData.budgetSplitMonths
+            : undefined,
+        budgetSplitStartMonth:
+          formData.type === 'expense' && formData.budgetSplitEnabled
+            ? `${formData.budgetSplitStartMonth}-01`
+            : undefined,
         ...(skipBalanceUpdate && { skipBalanceUpdate: true }),
       }
 
@@ -376,6 +398,78 @@ export function TransactionForm({
           </>
         )}
       </FormSection>
+
+      {formData.type === 'expense' && (
+        <FormSection
+          title="Budget split"
+          description="Spread this expense across months for budget tracking. Cash is still recorded on the payment date."
+        >
+          <FormField label="Split for budget" span="full">
+            <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.budgetSplitEnabled}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    budgetSplitEnabled: e.target.checked,
+                    budgetSplitStartMonth: formData.budgetSplitStartMonth || formData.date.slice(0, 7),
+                  })
+                }
+                className="rounded border-border"
+              />
+              Split amount across multiple months for budget
+            </label>
+          </FormField>
+          {formData.budgetSplitEnabled && (
+            <>
+              <FormField label="Number of months" required>
+                <Input
+                  type="number"
+                  min={2}
+                  max={24}
+                  value={formData.budgetSplitMonths || ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      budgetSplitMonths: Math.max(2, parseInt(e.target.value, 10) || 2),
+                    })
+                  }
+                  required
+                />
+              </FormField>
+              <FormField label="First budget month" required>
+                <Input
+                  type="month"
+                  value={formData.budgetSplitStartMonth}
+                  onChange={(e) =>
+                    setFormData({ ...formData, budgetSplitStartMonth: e.target.value })
+                  }
+                  required
+                />
+              </FormField>
+              {formData.amount > 0 && (
+                <div className="md:col-span-2 rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+                  <p className="font-medium text-foreground mb-1">Budget allocation preview</p>
+                  <ul className="space-y-1">
+                    {getBudgetAllocations({
+                      amount: formData.amount,
+                      date: `${formData.budgetSplitStartMonth}-01`,
+                      budgetSplitEnabled: true,
+                      budgetSplitMonths: formData.budgetSplitMonths,
+                      budgetSplitStartMonth: `${formData.budgetSplitStartMonth}-01`,
+                    }).map((slice) => (
+                      <li key={slice.monthStart.toISOString()}>
+                        {format(new Date(slice.monthStart), 'MMM yyyy')}: {formatCurrency(slice.amount)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          )}
+        </FormSection>
+      )}
 
       <FormSection title="Details" description="Optional notes and when this happened.">
         <FormField label="Description" span="full">

@@ -3,16 +3,16 @@ import React from 'react'
 import { motion } from 'framer-motion'
 
 const items = [
-  'Expense Tracking',
-  'Budget Planning',
+  'Net Worth Tracking',
+  'Expense Management',
+  'Budgets & Categories',
   'Investment Portfolio',
-  'Real-time Sync',
-  'Multi-Account',
-  'Visual Analytics',
-  'Category Management',
-  'Family Sharing',
-  'Recurring Bills',
-  'PWA Ready',
+  'Loans & Credit Cards',
+  'Insurance Policies',
+  'Secure Vault',
+  'Nominee Access',
+  'Legacy Handoff',
+  'Encrypted at Rest',
 ]
 
 const Marquee = () => {

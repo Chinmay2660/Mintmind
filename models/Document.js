@@ -6,6 +6,7 @@ const DocumentSchema = new mongoose.Schema({
   category: { type: String, enum: ['insurance', 'tax', 'investment', 'loan', 'receipt', 'identity', 'other'], default: 'other' },
   tagIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Tag' }],
   fileUrl: { type: String },
+  storageKey: { type: String },
   fileName: { type: String },
   fileSize: { type: Number },
   mimeType: { type: String },

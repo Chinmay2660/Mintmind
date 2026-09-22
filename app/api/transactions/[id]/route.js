@@ -13,6 +13,7 @@ import connectDB from '@/lib/mongodb';
 const TRANSACTION_FIELDS = [
   'type', 'amount', 'categoryId', 'subcategoryId', 'tagIds', 'accountId', 'isCash',
   'description', 'date', 'transferToAccountId', 'transferToIsCash', 'isRecurring',
+  'budgetSplitEnabled', 'budgetSplitMonths', 'budgetSplitStartMonth',
 ];
 
 async function validateTransactionData(user, data, oldTransaction = null) {
@@ -111,6 +112,7 @@ export async function PUT(request, { params }) {
     const isCash = data.isCash ?? oldTransaction.isCash;
     const transferToIsCash = data.transferToIsCash ?? oldTransaction.transferToIsCash;
 
+    const budgetSplitEnabled = data.budgetSplitEnabled ?? oldTransaction.budgetSplitEnabled;
     const updateData = {
       ...data,
       amount: data.amount ?? oldTransaction.amount,
@@ -122,6 +124,13 @@ export async function PUT(request, { params }) {
         : (data.transferToAccountId || oldTransaction.transferToAccountId),
       transferToIsCash,
       date: data.date ? new Date(data.date) : oldTransaction.date,
+      budgetSplitEnabled,
+      budgetSplitMonths: budgetSplitEnabled
+        ? (data.budgetSplitMonths ?? oldTransaction.budgetSplitMonths)
+        : undefined,
+      budgetSplitStartMonth: budgetSplitEnabled
+        ? new Date(data.budgetSplitStartMonth ?? oldTransaction.budgetSplitStartMonth ?? oldTransaction.date)
+        : undefined,
     };
 
     const transaction = await Transaction.findOneAndUpdate(

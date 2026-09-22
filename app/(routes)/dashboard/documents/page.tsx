@@ -1,7 +1,7 @@
 'use client'
 
 import React, { Suspense, useState } from 'react'
-import { FileText } from 'lucide-react'
+import { Download, FileText } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -62,7 +62,7 @@ const DocumentsPageContent = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Documents" subtitle="Organize important financial documents">
+      <PageHeader title="Documents" subtitle="Upload Aadhar, PAN, policies, and other important files">
         <div className="hidden md:block">
           <AddButton onClick={openSheet}>
             Add Document
@@ -100,7 +100,7 @@ const DocumentsPageContent = () => {
           <EmptyState
             icon={FileText}
             title="No documents yet"
-            description="Add document metadata to keep your files organized"
+            description="Upload identity documents and policies with file attachments"
             actionLabel="Add Your First Document"
             onAction={openSheet}
           />
@@ -116,7 +116,20 @@ const DocumentsPageContent = () => {
                     </Badge>
                   </div>
                   {doc.fileName && (
-                    <p className="text-sm text-muted-foreground truncate">{doc.fileName}</p>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span className="truncate">{doc.fileName}</span>
+                      {doc.storageKey && (
+                        <a
+                          href={`/api/documents/file/${doc.storageKey}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-primary hover:underline shrink-0"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          View
+                        </a>
+                      )}
+                    </div>
                   )}
                   {doc.notes && (
                     <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{doc.notes}</p>

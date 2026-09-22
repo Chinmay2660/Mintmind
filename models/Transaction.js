@@ -55,6 +55,18 @@ const TransactionSchema = new mongoose.Schema({
     default: Date.now,
     required: true,
   },
+  budgetSplitEnabled: {
+    type: Boolean,
+    default: false,
+  },
+  budgetSplitMonths: {
+    type: Number,
+    min: 1,
+    max: 24,
+  },
+  budgetSplitStartMonth: {
+    type: Date,
+  },
 }, {
   timestamps: true,
 });

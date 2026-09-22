@@ -22,6 +22,7 @@ import {
   MetricSubtitle,
   ViewAllLink,
 } from './_components/DashboardHero'
+import { DashboardProductLayers } from './_components/DashboardProductLayers'
 import { withFromHome } from '@/lib/utils/navigation'
 import type { DashboardStats } from '@/types/dashboard'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
@@ -115,7 +116,7 @@ const Dashboard = () => {
       <DashboardQuickActions className="md:hidden" />
 
       <section>
-        <SectionHeader title="Overview" subtitle="Tap a card for details" />
+        <SectionHeader title="Net worth" subtitle="Tap a card for details" />
         <div className="mm-grid-metrics">
           {DASHBOARD_METRIC_LINKS.map((metric) => {
             let value = stats[metric.valueKey] ?? 0
@@ -133,20 +134,23 @@ const Dashboard = () => {
                   loading,
                   subtitleKey: metric.subtitleKey,
                   subtitleLabel: metric.subtitleLabel,
-                  isCount: metric.isCount,
-                  isPercent: metric.isPercent,
+                  isCount: (metric as { isCount?: boolean }).isCount,
+                  isPercent: (metric as { isPercent?: boolean }).isPercent,
                 })}
                 icon={metric.icon}
                 href={metric.href}
                 loading={loading}
                 variant={metric.variant}
+                format={metric.format}
               />
             )
           })}
         </div>
       </section>
 
-      <div className="mm-grid-dashboard">
+      <section>
+        <SectionHeader title="Expense management" subtitle="This month at a glance" />
+        <div className="mm-grid-dashboard">
         <ChartCard
           title="Weekly spending"
           subtitle="Last 7 days"
@@ -182,7 +186,8 @@ const Dashboard = () => {
             Manage budgets →
           </Link>
         </div>
-      </div>
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
         <CategoryBreakdownCard
@@ -259,6 +264,8 @@ const Dashboard = () => {
           )}
         </div>
       </section>
+
+      <DashboardProductLayers stats={stats} loading={loading} />
     </>
   )
 }

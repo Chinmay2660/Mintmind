@@ -76,13 +76,13 @@ function DemoDataModal({ open, onOpenChange, force = false, onSuccess }: DemoDat
         onOpenChange(false)
         return
       }
-      await maybeSeedDemoData(user.id).catch(() => {})
+      await maybeSeedDemoData(user.id, { force: force || Boolean(res.data?.seeded) }).catch(() => {})
       toast.success('Demo data loaded')
       onOpenChange(false)
       onSuccess?.()
       router.refresh()
     } catch {
-      const offline = await maybeSeedDemoData(user.id).catch(() => false)
+      const offline = await maybeSeedDemoData(user.id, { force }).catch(() => false)
       if (offline) {
         toast.success('Demo data loaded offline')
         onOpenChange(false)
