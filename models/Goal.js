@@ -33,9 +33,12 @@ const GoalSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['savings', 'investment', 'expense', 'other'],
+    enum: ['savings', 'investment', 'expense', 'other', 'marriage', 'emergency', 'car', 'house', 'vacation', 'education', 'retirement'],
     default: 'savings',
   },
+  monthlyContribution: { type: Number, default: 0, min: 0 },
+  expectedReturn: { type: Number, default: 8, min: 0 },
+  investmentIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Investment' }],
   status: {
     type: String,
     enum: ['active', 'completed', 'cancelled'],

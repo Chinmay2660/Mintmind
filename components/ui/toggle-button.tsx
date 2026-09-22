@@ -55,17 +55,32 @@ export function ToggleButtonGroup({
   ...props
 }: ToggleButtonGroupProps) {
   return (
-    <div className={cn('flex gap-2', className)} {...props}>
-      {options.map((option) => (
-        <ToggleButton
-          key={option.value}
-          value={option.value}
-          activeValue={value}
-          onClick={onValueChange}
-        >
-          {option.label}
-        </ToggleButton>
-      ))}
+    <div
+      className={cn(
+        'inline-flex w-full rounded-[var(--radius-lg)] border border-border/70 bg-muted/25 p-1',
+        className
+      )}
+      role="group"
+      {...props}
+    >
+      {options.map((option) => {
+        const isActive = value === option.value
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onValueChange(option.value)}
+            className={cn(
+              'flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all',
+              isActive
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
+            )}
+          >
+            {option.label}
+          </button>
+        )
+      })}
     </div>
   )
 }

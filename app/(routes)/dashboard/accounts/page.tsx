@@ -6,24 +6,57 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { AddButton } from '@/components/ui/AddButton'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { SubmitButton, CancelButton } from '@/components/ui/form-buttons'
+import { SectionHeader } from '@/components/ui/section-header'
+import { FormButtonGroup } from '@/components/ui/form-buttons'
+import { FormField, FormLayout, FormSection } from '@/components/ui/form-layout'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { FormSheet } from '@/components/ui/form-sheet'
 import { FAB } from '@/components/ui/fab'
 import { RowActions } from '@/components/ui/swipeable-row'
 import { ListItemSkeleton } from '@/components/ui/loading-skeleton'
-import { formatCurrency } from '@/lib/utils/format'
+import { usePrivacyAmount } from '@/lib/hooks/usePrivacyAmount'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
 import { useBankAccounts } from '@/lib/hooks/useReferenceData'
 import { useLocalSingleton } from '@/lib/hooks/useLocalData'
 import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useFormSheet } from '@/lib/hooks/useFormSheet'
 import { useBalanceAdjustmentPrompt } from './_components/BalanceAdjustmentPrompt'
+import { AccountForm } from './_components/AccountForm'
+import { cn } from '@/lib/utils'
+
+function StatTile({
+  label,
+  value,
+  icon: Icon,
+  loading,
+  action,
+  className,
+}: {
+  label: string
+  value: string
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
+  loading?: boolean
+  action?: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div className={cn('surface-card flex items-center gap-3 p-4', className)}>
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="mm-stat-label">{label}</p>
+        <p className="mt-1 text-lg font-semibold tabular-nums">{loading ? '—' : value}</p>
+      </div>
+      {action}
+    </div>
+  )
+}
 
 const AccountsPageContent = () => {
   const router = useRouter()
@@ -38,11 +71,13 @@ const AccountsPageContent = () => {
   const loading = accountsLoading || cashLoading
   const [isCashDialogOpen, setIsCashDialogOpen] = useState(false)
   const [cashAmount, setCashAmount] = useState(0)
+  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
   const { prompt: promptBalanceAdjustment, dialogs: balanceAdjustmentDialogs } =
     useBalanceAdjustmentPrompt()
+  const { fmt } = usePrivacyAmount()
 
-  useAddActionRedirect('/dashboard/accounts/new')
+  useAddActionRedirect(openSheet)
 
   const reload = useCallback(async () => {
     await Promise.all([reloadAccounts(), reloadCash()])
@@ -62,7 +97,8 @@ const AccountsPageContent = () => {
     })
   }
 
-  const handleCashUpdate = async () => {
+  const handleCashUpdate = async (e?: React.FormEvent) => {
+    e?.preventDefault()
     const previousBalance = cash?.amount || 0
     try {
       await request.put('/api/cash', { amount: cashAmount })
@@ -82,191 +118,135 @@ const AccountsPageContent = () => {
   const totalBalance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0) + (cash?.amount || 0)
 
   const cashForm = (
-    <div className="space-y-4">
-      <div>
-        <label className="text-sm font-medium mb-2 block text-foreground">Amount</label>
-        <Input
-          type="number"
-          value={cashAmount || ''}
-          onChange={(e) => setCashAmount(parseFloat(e.target.value) || 0)}
-          placeholder="0"
-          step="0.01"
-          className="h-12"
-        />
-      </div>
-      <div className="flex gap-3">
-        <SubmitButton onClick={handleCashUpdate} type="button" className="h-12">
-          Update
-        </SubmitButton>
-        <CancelButton onClick={() => setIsCashDialogOpen(false)} className="h-12">
-          Cancel
-        </CancelButton>
-      </div>
-    </div>
+    <FormLayout variant="sheet" onSubmit={handleCashUpdate}>
+      <FormSection>
+        <FormField label="Amount" span="compact">
+          <Input
+            type="number"
+            value={cashAmount || ''}
+            onChange={(e) => setCashAmount(parseFloat(e.target.value) || 0)}
+            placeholder="0"
+            step="0.01"
+          />
+        </FormField>
+      </FormSection>
+      <FormButtonGroup
+        submitLabel="Update"
+        onCancel={() => setIsCashDialogOpen(false)}
+      />
+    </FormLayout>
   )
 
   return (
-    <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-4">
-      <PageHeader title="Accounts" subtitle="Manage your bank accounts and cash">
+    <>
+      <PageHeader title="Accounts" subtitle="Bank accounts & cash">
         <div className="hidden md:block">
-          <AddButton onClick={() => router.push('/dashboard/accounts/new')}>Add Account</AddButton>
+          <AddButton onClick={openSheet}>Add Account</AddButton>
         </div>
       </PageHeader>
 
-      <FormSheet open={isCashDialogOpen} onOpenChange={setIsCashDialogOpen} title="Update Cash">
+      <FormSheet open={isCashDialogOpen} onOpenChange={setIsCashDialogOpen} title="Update Cash" size="md">
         {cashForm}
       </FormSheet>
 
-      <FAB onClick={() => router.push('/dashboard/accounts/new')} label="Add account" />
+      <FormSheet open={open} onOpenChange={setOpen} title="Add Account">
+        <AccountForm
+          variant="sheet"
+          onSuccess={() => {
+            closeSheet()
+            reload()
+          }}
+          onCancel={closeSheet}
+        />
+      </FormSheet>
 
-      {loading ? (
-        <div className="relative overflow-hidden bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-6 text-white shadow-lg animate-pulse">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-          <div className="relative">
-            <div className="h-4 bg-white/20 rounded-md w-32 mb-3"></div>
-            <div className="h-10 bg-white/20 rounded-md w-40 mb-4"></div>
-            <div className="h-4 bg-white/20 rounded-md w-40"></div>
-          </div>
-        </div>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="relative overflow-hidden bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-6 text-white shadow-lg"
-        >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-          <div className="relative">
-            <p className="text-white/80 text-sm mb-2 font-medium">Total Balance</p>
-            <p className="text-3xl md:text-4xl font-bold">{formatCurrency(totalBalance)}</p>
-            <div className="flex items-center gap-2 mt-4 text-sm text-white/80">
-              <Banknote className="w-4 h-4" />
-              <span>Across all accounts</span>
-            </div>
-          </div>
-        </motion.div>
-      )}
+      <FAB onClick={openSheet} label="Add account" />
 
-      {loading ? (
-        <div className="surface-card p-5 animate-pulse">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 flex-1">
-              <div className="skeleton-icon w-12 h-12"></div>
-              <div className="flex-1">
-                <div className="skeleton h-4 w-16 mb-2"></div>
-                <div className="skeleton h-8 w-32"></div>
-              </div>
-            </div>
-            <div className="skeleton w-10 h-10 rounded-full"></div>
-          </div>
-        </div>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="surface-card p-5 active:scale-[0.98] transition-transform"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 flex-1">
-              <div className="w-12 h-12 rounded-xl bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center">
-                <Banknote className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground mb-1">Cash</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {formatCurrency(cash?.amount || 0)}
-                </p>
-              </div>
-            </div>
-            {!loading && (
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <StatTile
+          label="Total balance"
+          value={fmt(totalBalance)}
+          icon={Wallet}
+          loading={loading}
+        />
+        <StatTile
+          label="Cash"
+          value={fmt(cash?.amount || 0)}
+          icon={Banknote}
+          loading={loading}
+          action={
+            !loading ? (
               <Button
-                variant="outline"
-                size="sm"
-                className="rounded-full"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0 rounded-lg"
                 onClick={() => {
                   setCashAmount(cash?.amount || 0)
                   setIsCashDialogOpen(true)
                 }}
               >
-                <Edit className="w-4 h-4" />
+                <Edit className="h-4 w-4" />
               </Button>
-            )}
-          </div>
-        </motion.div>
-      )}
+            ) : undefined
+          }
+        />
+      </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-lg font-semibold text-foreground">Bank Accounts</h2>
-          <span className="text-sm text-muted-foreground">{loading ? '...' : accounts.length}</span>
-        </div>
+      <section>
+        <SectionHeader
+          title="Bank accounts"
+          subtitle={loading ? undefined : `${accounts.length} account${accounts.length === 1 ? '' : 's'}`}
+        />
+
         {loading ? (
           <ListItemSkeleton count={3} />
         ) : accounts.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-16 surface-card"
-          >
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-              <Wallet className="w-8 h-8 text-muted-foreground" />
+          <div className="surface-card py-12 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <Wallet className="h-6 w-6 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground mb-2 font-medium">No accounts yet</p>
-            <p className="text-sm text-muted-foreground">Add your first account to get started</p>
-          </motion.div>
+            <p className="font-medium text-muted-foreground">No accounts yet</p>
+            <p className="mt-1 text-sm text-muted-foreground">Add your first account to get started</p>
+          </div>
         ) : (
-          <div className="space-y-2">
-            {accounts.map((account, index) => (
-                <motion.div
-                  key={account._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + index * 0.05 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="surface-card p-4 active:scale-[0.98] transition-transform"
-                >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
-                      style={{ backgroundColor: `${account.color}15`, color: account.color }}
-                    >
-                      {account.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-foreground text-base mb-1 truncate">
-                        {account.accountName}
-                      </h3>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {account.bankName} • {account.accountType}
-                      </p>
-                      {account.accountNumber && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          ****{account.accountNumber.slice(-4)}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-lg font-bold text-foreground">
-                        {formatCurrency(account.balance)}
-                      </p>
-                    </div>
-                    <RowActions>
-                      <EditButton
-                        onClick={() => router.push(`/dashboard/accounts/${account._id}`)}
-                      />
-                      <DeleteButton onClick={() => handleDelete(account._id)} />
-                    </RowActions>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {accounts.map((account) => (
+              <div key={account._id} className="surface-card p-4">
+                <div className="flex items-start gap-3">
+                  <div
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl"
+                    style={{ backgroundColor: `${account.color}15`, color: account.color }}
+                  >
+                    {account.icon}
                   </div>
-                </motion.div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate font-semibold text-foreground">{account.accountName}</h3>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {account.bankName} · {account.accountType}
+                    </p>
+                    {account.accountNumber && (
+                      <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                        {account.accountNumber}
+                      </p>
+                    )}
+                  </div>
+                  <RowActions>
+                    <EditButton onClick={() => router.push(`/dashboard/accounts/${account._id}`)} />
+                    <DeleteButton onClick={() => handleDelete(account._id)} />
+                  </RowActions>
+                </div>
+                <p className="mt-3 text-lg font-semibold tabular-nums">
+                  {fmt(account.balance)}
+                </p>
+              </div>
             ))}
           </div>
         )}
-      </div>
+      </section>
 
       <ConfirmDialog {...confirmDialogProps} />
       {balanceAdjustmentDialogs}
-    </div>
+    </>
   )
 }
 

@@ -1,12 +1,16 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { formatCurrency } from '@/lib/utils/format'
+import { usePrivacyAmount } from '@/lib/hooks/usePrivacyAmount'
 import { CategoryDonutChart } from '../../_components/CategoryDonutChart'
 
 const FALLBACK_COLORS = [
-  '#2563eb', '#3b82f6', '#60a5fa', '#ec4899', '#f59e0b',
-  '#ef4444', '#8b5cf6', '#10b981', '#f97316',
+  'hsl(var(--primary))',
+  'hsl(var(--success))',
+  'hsl(var(--warning))',
+  '#8b5cf6',
+  'hsl(var(--destructive))',
+  'hsl(var(--muted-foreground))',
 ]
 
 export interface CategoryStat {
@@ -27,20 +31,16 @@ interface CategoryBreakdownCardProps {
 
 function CategoryChartPlaceholder() {
   return (
-    <div className="relative h-52 flex items-center justify-center">
+    <div className="relative flex h-48 items-center justify-center">
       <div
-        className="w-44 h-44 rounded-full border-[18px] border-primary/15 dark:border-primary/25"
-        aria-hidden
+        className="h-40 w-40 rounded-full border-[14px] border-muted/50"
       />
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <p className="text-xs text-muted-foreground">Total</p>
-        <p className="text-lg font-bold text-muted-foreground/60">—</p>
-        <p className="text-xs text-muted-foreground mt-1">No data found</p>
+        <p className="text-xs text-muted-foreground">No data</p>
       </div>
     </div>
   )
 }
-
 
 export function CategoryBreakdownCard({
   title,
@@ -48,6 +48,7 @@ export function CategoryBreakdownCard({
   total,
   loading = false,
 }: CategoryBreakdownCardProps) {
+  const { fmt } = usePrivacyAmount()
   const isEmpty = !categories.length && !loading
 
   const chartData = categories.map((c, i) => ({
@@ -58,44 +59,56 @@ export function CategoryBreakdownCard({
   }))
 
   return (
-    <div className={cn('surface-card p-6 transition-opacity', loading && 'opacity-60')}>
-      <h2 className="text-lg font-semibold text-foreground mb-4">{title}</h2>
-      {isEmpty ? (
-        <CategoryChartPlaceholder />
-      ) : (
-        <CategoryDonutChart data={chartData} total={loading ? 0 : total} />
-      )}
-
-      {categories.length > 0 && (
-        <div className="mt-4 space-y-2">
-          {categories.map((category, index) => (
-            <div
-              key={category.categoryId}
-              className="flex items-center justify-between p-2 rounded-lg surface-inner"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className="w-3 h-3 rounded-sm shrink-0"
-                  style={{
-                    backgroundColor:
-                      category.color || FALLBACK_COLORS[index % FALLBACK_COLORS.length],
-                  }}
-                />
-                <span className="text-lg shrink-0">{category.categoryIcon}</span>
-                <span className="font-medium text-sm truncate">{category.categoryName}</span>
-              </div>
-              <div className="text-right shrink-0 ml-2">
-                <p className="font-bold text-sm">
-                  {loading ? '—' : formatCurrency(category.total)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {loading ? '—' : `${category.percentage.toFixed(1)}%`}
-                </p>
-              </div>
-            </div>
-          ))}
+    <div className={cn('surface-card overflow-hidden', loading && 'opacity-70')}>
+      <div className="border-b border-border/60 px-5 py-4 md:px-6">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold">{title}</h2>
+          {!loading && (
+            <span className="text-sm font-semibold tabular-nums text-muted-foreground">
+              {fmt(total)}
+            </span>
+          )}
         </div>
-      )}
+      </div>
+
+      <div className="px-5 py-4 md:px-6 md:py-5">
+        {isEmpty ? (
+          <CategoryChartPlaceholder />
+        ) : (
+          <CategoryDonutChart data={chartData} total={loading ? 0 : total} />
+        )}
+
+        {categories.length > 0 && (
+          <div className="mt-4 space-y-1.5">
+            {categories.slice(0, 5).map((category, index) => (
+              <div
+                key={category.categoryId}
+                className="flex items-center justify-between rounded-xl px-2 py-2 transition-colors hover:bg-muted/30"
+              >
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{
+                      backgroundColor:
+                        category.color || FALLBACK_COLORS[index % FALLBACK_COLORS.length],
+                    }}
+                  />
+                  <span className="shrink-0 text-base">{category.categoryIcon}</span>
+                  <span className="truncate text-sm">{category.categoryName}</span>
+                </div>
+                <div className="ml-2 shrink-0 text-right">
+                  <p className="text-sm font-medium tabular-nums">
+                    {loading ? '—' : fmt(category.total)}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {loading ? '—' : `${category.percentage.toFixed(0)}%`}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

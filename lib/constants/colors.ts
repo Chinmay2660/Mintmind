@@ -1,1 +1,1 @@
-export const DEFAULT_CATEGORY_COLOR = '#4845d2'
+export const DEFAULT_CATEGORY_COLOR = '#2563eb'

@@ -12,6 +12,8 @@ export function scrollPageToTop() {
     window.scrollTo({ top: 0, left: 0 })
     document.documentElement.scrollTop = 0
     document.body.scrollTop = 0
+    const main = document.getElementById('dashboard-main-scroll')
+    if (main) main.scrollTop = 0
   }
 
   reset()

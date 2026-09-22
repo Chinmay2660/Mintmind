@@ -54,12 +54,23 @@ function ImageCropContent({
   const [processing, setProcessing] = useState(false)
   const [naturalSize, setNaturalSize] = useState({ w: 0, h: 0 })
   const dragStart = useRef({ x: 0, y: 0, posX: 0, posY: 0 })
+  const capturedPointerId = useRef<number | null>(null)
   const imageRef = useRef<HTMLImageElement>(null)
+
+  const endDrag = (target: HTMLElement, pointerId: number) => {
+    setDragging(false)
+    if (capturedPointerId.current !== pointerId) return
+    if (target.hasPointerCapture(pointerId)) {
+      target.releasePointerCapture(pointerId)
+    }
+    capturedPointerId.current = null
+  }
 
   useEffect(() => {
     setZoom(1)
     setPosition({ x: 0, y: 0 })
     setNaturalSize({ w: 0, h: 0 })
+    capturedPointerId.current = null
   }, [imageSrc])
 
   const coverScale =
@@ -71,7 +82,13 @@ function ImageCropContent({
   const displayTop = CROP_VIEW_SIZE / 2 - displayH / 2 + position.y
 
   const onPointerDown = (e: React.PointerEvent) => {
-    e.currentTarget.setPointerCapture(e.pointerId)
+    if (e.button !== 0) return
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId)
+      capturedPointerId.current = e.pointerId
+    } catch {
+      capturedPointerId.current = null
+    }
     setDragging(true)
     dragStart.current = { x: e.clientX, y: e.clientY, posX: position.x, posY: position.y }
   }
@@ -85,8 +102,18 @@ function ImageCropContent({
   }
 
   const onPointerUp = (e: React.PointerEvent) => {
-    setDragging(false)
-    e.currentTarget.releasePointerCapture(e.pointerId)
+    endDrag(e.currentTarget, e.pointerId)
+  }
+
+  const onPointerCancel = (e: React.PointerEvent) => {
+    endDrag(e.currentTarget, e.pointerId)
+  }
+
+  const onLostPointerCapture = (e: React.PointerEvent) => {
+    if (capturedPointerId.current === e.pointerId) {
+      capturedPointerId.current = null
+      setDragging(false)
+    }
   }
 
   const handleApply = async () => {
@@ -117,7 +144,8 @@ function ImageCropContent({
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        onPointerCancel={onPointerCancel}
+        onLostPointerCapture={onLostPointerCapture}
       >
         <img
           ref={imageRef}

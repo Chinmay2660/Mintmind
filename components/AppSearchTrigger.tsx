@@ -4,6 +4,7 @@ import React from 'react'
 import { Search } from 'lucide-react'
 import { useAppSearch } from '@/contexts/AppSearchContext'
 import { Button } from '@/components/ui/button'
+import { Tooltip } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 interface AppSearchTriggerProps {
@@ -21,10 +22,9 @@ export default function AppSearchTrigger({ className }: AppSearchTriggerProps) {
         size="sm"
         onClick={open}
         className={cn(
-          'hidden h-9 w-full max-w-xs justify-start gap-2 rounded-full border-white/30 bg-white/40 px-3 text-muted-foreground dark:border-white/15 dark:bg-white/5 lg:inline-flex',
+          'hidden h-9 w-full max-w-xs justify-start gap-2 rounded-full border-border bg-muted/40 px-3 text-muted-foreground lg:inline-flex',
           className
         )}
-        aria-label="Search"
       >
         <Search className="h-4 w-4 shrink-0" />
         <span className="flex-1 truncate text-left text-sm">Search...</span>
@@ -33,16 +33,17 @@ export default function AppSearchTrigger({ className }: AppSearchTriggerProps) {
         </kbd>
       </Button>
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        onClick={open}
-        className="h-9 w-9 lg:hidden"
-        aria-label="Search"
-      >
-        <Search className="h-4 w-4" />
-      </Button>
+      <Tooltip content="Search (⌘K)" side="bottom">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={open}
+          className="h-9 w-9 rounded-xl lg:hidden"
+        >
+          <Search className="h-4 w-4" />
+        </Button>
+      </Tooltip>
     </>
   )
 }

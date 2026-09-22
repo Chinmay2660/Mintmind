@@ -6,7 +6,7 @@ import { InsuranceForm } from '../_components/InsuranceForm'
 
 function NewInsuranceContent() {
   return (
-    <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Add Insurance Policy"
         subtitle="Track a new insurance policy"

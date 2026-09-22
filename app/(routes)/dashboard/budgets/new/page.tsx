@@ -6,7 +6,7 @@ import { BudgetForm } from '../_components/BudgetForm'
 
 function NewBudgetContent() {
   return (
-    <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Create Budget"
         subtitle="Set a new spending limit"

@@ -199,7 +199,7 @@ export function TransactionFilterSheet({
     return (
       <Dialog>
         <DialogTrigger asChild>{trigger}</DialogTrigger>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Filter Transactions</DialogTitle>
           </DialogHeader>

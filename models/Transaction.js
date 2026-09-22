@@ -19,6 +19,18 @@ const TransactionSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
   },
+  subcategoryId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+  },
+  tagIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tag',
+  }],
+  isRecurring: {
+    type: Boolean,
+    default: false,
+  },
   transferToAccountId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'BankAccount',

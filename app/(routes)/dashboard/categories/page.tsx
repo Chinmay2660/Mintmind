@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react'
+import React, { Suspense, useCallback, useState } from 'react'
 import { ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
@@ -12,20 +12,36 @@ import { FilterButtonGroup } from '@/components/ui/filter-button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Card } from '@/components/ui/card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { FormSheet } from '@/components/ui/form-sheet'
 import { FAB } from '@/components/ui/fab'
 import { RowActions } from '@/components/ui/swipeable-row'
 import { formatCurrency } from '@/lib/utils/format'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useCategories } from '@/lib/hooks/useReferenceData'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
+import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useFormSheet } from '@/lib/hooks/useFormSheet'
+import { CategoryForm } from './_components/CategoryForm'
 
-const CategoriesPage = () => {
+const CategoriesPageContent = () => {
   const router = useRouter()
   const { user } = useAuth()
   const userId = user?.id
   const { categories: allCategories, loading, refetch: reload } = useCategories(userId)
   const [filterType, setFilterType] = useState('all')
+  const [addType, setAddType] = useState<'expense' | 'income'>('expense')
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
+  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
+
+  const openAddSheet = useCallback(
+    (type?: 'expense' | 'income') => {
+      setAddType(type ?? 'expense')
+      openSheet()
+    },
+    [openSheet]
+  )
+
+  useAddActionRedirect(() => openAddSheet())
 
   const categories =
     filterType === 'all'
@@ -50,19 +66,19 @@ const CategoriesPage = () => {
   const incomeCategories = categories.filter((cat) => cat.type === 'income')
 
   return (
-    <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title="Categories"
         subtitle="Manage your expense and income categories"
       >
         <div className="hidden md:block">
-          <AddButton onClick={() => router.push('/dashboard/categories/new')}>
+          <AddButton onClick={() => openAddSheet()}>
             Add Category
           </AddButton>
         </div>
       </PageHeader>
 
-      <FAB onClick={() => router.push('/dashboard/categories/new')} label="Add category" />
+      <FAB onClick={() => openAddSheet()} label="Add category" />
 
       <FilterButtonGroup
         value={filterType}
@@ -101,7 +117,7 @@ const CategoriesPage = () => {
                 title="No expense categories yet"
                 description="Add your first expense category to get started"
                 actionLabel="Add Expense Category"
-                onAction={() => router.push('/dashboard/categories/new?type=expense')}
+                onAction={() => openAddSheet('expense')}
               />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -164,7 +180,7 @@ const CategoriesPage = () => {
                 title="No income categories yet"
                 description="Add your first income category to get started"
                 actionLabel="Add Income Category"
-                onAction={() => router.push('/dashboard/categories/new?type=income')}
+                onAction={() => openAddSheet('income')}
               />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -197,9 +213,28 @@ const CategoriesPage = () => {
         ) : null}
       </div>
 
+      <FormSheet open={open} onOpenChange={setOpen} title="Add Category">
+        <CategoryForm
+          key={addType}
+          variant="sheet"
+          defaultType={addType}
+          onSuccess={() => {
+            closeSheet()
+            reload()
+          }}
+          onCancel={closeSheet}
+        />
+      </FormSheet>
+
       <ConfirmDialog {...confirmDialogProps} />
     </div>
   )
 }
 
-export default CategoriesPage
+export default function CategoriesPage() {
+  return (
+    <Suspense fallback={null}>
+      <CategoriesPageContent />
+    </Suspense>
+  )
+}

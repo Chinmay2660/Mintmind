@@ -9,6 +9,7 @@ import { FAB } from '@/components/ui/fab'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { FormButtonGroup } from '@/components/ui/form-buttons'
+import { FormField, FormLayout, FormSection } from '@/components/ui/form-layout'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 import { RowActions } from '@/components/ui/swipeable-row'
@@ -135,58 +136,58 @@ export function FamilyBudgetsSection({
         onOpenChange={setIsDialogOpen}
         title={editingBudget ? 'Edit Budget' : 'Create Family Budget'}
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-1 block">Category Name</label>
-            <Input
-              value={formData.categoryName}
-              onChange={(e) => setFormData({ ...formData, categoryName: e.target.value })}
+        <FormLayout variant="sheet" onSubmit={handleSubmit}>
+          <FormSection>
+            <FormField
+              label="Category Name"
               required
-              placeholder="e.g. Groceries, Utilities"
-            />
-            <p className="text-xs text-muted-foreground mt-1">Must match expense category names for tracking</p>
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Amount</label>
-            <Input
-              type="number"
-              value={formData.amount || ''}
-              onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-              placeholder="0"
-              required
-              min="0"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Period</label>
-            <select
-              value={formData.period}
-              onChange={(e) => setFormData({ ...formData, period: e.target.value as FamilyBudget['period'] })}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-              required
+              hint="Must match expense category names for tracking"
             >
-              <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
-              <option value="half-yearly">Half Yearly</option>
-              <option value="yearly">Yearly</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Start Date</label>
-            <Input
-              type="date"
-              value={formData.startDate}
-              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Description</label>
-            <Input
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            />
-          </div>
+              <Input
+                value={formData.categoryName}
+                onChange={(e) => setFormData({ ...formData, categoryName: e.target.value })}
+                required
+                placeholder="e.g. Groceries, Utilities"
+              />
+            </FormField>
+            <FormField label="Amount" required>
+              <Input
+                type="number"
+                value={formData.amount || ''}
+                onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+                placeholder="0"
+                required
+                min="0"
+              />
+            </FormField>
+            <FormField label="Period" required>
+              <select
+                value={formData.period}
+                onChange={(e) => setFormData({ ...formData, period: e.target.value as FamilyBudget['period'] })}
+                className="form-select"
+                required
+              >
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="half-yearly">Half Yearly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </FormField>
+            <FormField label="Start Date" required>
+              <Input
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                required
+              />
+            </FormField>
+            <FormField label="Description">
+              <Input
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              />
+            </FormField>
+          </FormSection>
           <FormButtonGroup
             submitLabel={editingBudget ? 'Update Budget' : 'Create Budget'}
             onCancel={() => {
@@ -195,7 +196,7 @@ export function FamilyBudgetsSection({
               resetForm()
             }}
           />
-        </form>
+        </FormLayout>
       </FormSheet>
 
       {isFamilyHead && (

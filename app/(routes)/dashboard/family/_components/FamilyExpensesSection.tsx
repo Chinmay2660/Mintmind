@@ -9,6 +9,7 @@ import { FAB } from '@/components/ui/fab'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { FormButtonGroup } from '@/components/ui/form-buttons'
+import { FormField, FormLayout, FormSection } from '@/components/ui/form-layout'
 import { EmptyState } from '@/components/ui/empty-state'
 import { RowActions } from '@/components/ui/swipeable-row'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
@@ -115,66 +116,62 @@ export function FamilyExpensesSection({ expenses, loading, onRefresh, family, us
         onOpenChange={setIsDialogOpen}
         title={editingExpense ? 'Edit Expense' : 'Add Family Expense'}
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-1 block">Title</label>
-            <Input
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Amount</label>
-            <Input
-              type="number"
-              value={formData.amount || ''}
-              onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-              placeholder="0"
-              required
-              min="0"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Category</label>
-            <Input
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              required
-              placeholder="e.g. Groceries, Dining"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Paid By</label>
-            <select
-              value={formData.paidBy}
-              onChange={(e) => setFormData({ ...formData, paidBy: e.target.value })}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-              required
-            >
-              {members.map((member) => (
-                <option key={normalizeId(member.user)} value={normalizeId(member.user)}>
-                  {member.user.name || member.user.email}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Date</label>
-            <Input
-              type="date"
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Description</label>
-            <Input
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            />
-          </div>
+        <FormLayout variant="sheet" onSubmit={handleSubmit}>
+          <FormSection>
+            <FormField label="Title" required>
+              <Input
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+              />
+            </FormField>
+            <FormField label="Amount" required>
+              <Input
+                type="number"
+                value={formData.amount || ''}
+                onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+                placeholder="0"
+                required
+                min="0"
+              />
+            </FormField>
+            <FormField label="Category" required>
+              <Input
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                required
+                placeholder="e.g. Groceries, Dining"
+              />
+            </FormField>
+            <FormField label="Paid By" required>
+              <select
+                value={formData.paidBy}
+                onChange={(e) => setFormData({ ...formData, paidBy: e.target.value })}
+                className="form-select"
+                required
+              >
+                {members.map((member) => (
+                  <option key={normalizeId(member.user)} value={normalizeId(member.user)}>
+                    {member.user.name || member.user.email}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+            <FormField label="Date" required>
+              <Input
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                required
+              />
+            </FormField>
+            <FormField label="Description">
+              <Input
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              />
+            </FormField>
+          </FormSection>
           <FormButtonGroup
             submitLabel={editingExpense ? 'Update Expense' : 'Add Expense'}
             onCancel={() => {
@@ -183,7 +180,7 @@ export function FamilyExpensesSection({ expenses, loading, onRefresh, family, us
               resetForm()
             }}
           />
-        </form>
+        </FormLayout>
       </FormSheet>
 
       <FAB onClick={() => { resetForm(); setIsDialogOpen(true) }} label="Add family expense" />

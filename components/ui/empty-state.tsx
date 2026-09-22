@@ -28,16 +28,16 @@ export function EmptyState({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className={cn(
-        'text-center py-16 surface-card',
+        'text-center py-14 px-6 surface-card',
         className
       )}
     >
-      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-        {Icon && <Icon className="w-8 h-8 text-primary" />}
+      <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-primary/10 border border-primary/10 flex items-center justify-center">
+        {Icon && <Icon className="w-7 h-7 text-primary" strokeWidth={1.75} />}
       </div>
-      <p className="text-muted-foreground mb-2 font-medium">{title}</p>
+      <p className="text-foreground mb-1.5 font-semibold">{title}</p>
       {description && (
-        <p className="text-sm text-muted-foreground/80 mb-4">{description}</p>
+        <p className="text-sm text-muted-foreground mb-5 max-w-sm mx-auto">{description}</p>
       )}
       {onAction && actionLabel && (
         <Button onClick={onAction}>

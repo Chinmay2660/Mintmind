@@ -1,16 +1,21 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
-/** Redirect `?action=add` deep-links to the entity create page. */
-export function useAddActionRedirect(href: string) {
+/** Open add sheet or redirect `?action=add` deep-links. */
+export function useAddActionRedirect(hrefOrOpen: string | (() => void)) {
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
 
   useEffect(() => {
-    if (searchParams.get('action') === 'add') {
-      router.replace(href)
+    if (searchParams.get('action') !== 'add') return
+    if (typeof hrefOrOpen === 'function') {
+      hrefOrOpen()
+      router.replace(pathname)
+    } else {
+      router.replace(hrefOrOpen)
     }
-  }, [searchParams, router, href])
+  }, [searchParams, router, pathname, hrefOrOpen])
 }

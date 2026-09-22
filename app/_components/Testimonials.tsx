@@ -9,7 +9,7 @@ const testimonials = [
     name: 'Priya Sharma',
     role: 'Software Engineer',
     avatar: 'PS',
-    content: 'Mintmind completely changed how I track my expenses. The offline mode is a game-changer — I can log transactions on my commute and they sync when I get home.',
+    content: 'Mintmind completely changed how I track my expenses. Clean dashboards and fast transaction entry make it easy to stay on top of spending.',
     rating: 5,
   },
   {

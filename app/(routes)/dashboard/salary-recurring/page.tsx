@@ -15,6 +15,7 @@ import { Tabs, Tab } from '@/components/ui/tabs'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { FormButtonGroup } from '@/components/ui/form-buttons'
+import { FormField, FormLayout, FormSection } from '@/components/ui/form-layout'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 import { RowActions } from '@/components/ui/swipeable-row'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -26,6 +27,8 @@ import { useDocumentTitle } from '@/lib/hooks/useDocumentTitle'
 import { useLocalList } from '@/lib/hooks/useLocalData'
 import { useCategories, useBankAccounts } from '@/lib/hooks/useReferenceData'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
+import { useFormSheet } from '@/lib/hooks/useFormSheet'
+import { SalaryForm } from './_components/SalaryForm'
 
 const SalaryRecurringPage = () => {
   const router = useRouter()
@@ -57,6 +60,7 @@ const SalaryRecurringPage = () => {
 
   useSyncedRefresh(reloadAll)
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false)
+  const { open: isSalarySheetOpen, setOpen: setIsSalarySheetOpen, openSheet: openSalarySheet, closeSheet: closeSalarySheet } = useFormSheet()
   const [editingExpense, setEditingExpense] = useState(null)
   const [expenseFormData, setExpenseFormData] = useState({
     name: '',
@@ -185,7 +189,7 @@ const SalaryRecurringPage = () => {
   const upcomingExpenses = getUpcomingExpenses()
 
   return (
-    <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title="Salary & Recurring Expenses"
         subtitle="Manage your salary and recurring expenses"
@@ -201,195 +205,200 @@ const SalaryRecurringPage = () => {
       </Tabs>
 
       <FormSheet
+        open={isSalarySheetOpen}
+        onOpenChange={setIsSalarySheetOpen}
+        title="Add Salary"
+      >
+        <SalaryForm
+          variant="sheet"
+          onSuccess={() => {
+            closeSalarySheet()
+            reloadSalaries()
+          }}
+          onCancel={closeSalarySheet}
+        />
+      </FormSheet>
+
+      <FormSheet
         open={isExpenseDialogOpen}
         onOpenChange={setIsExpenseDialogOpen}
         title={editingExpense ? 'Edit Recurring Expense' : 'Add Recurring Expense'}
       >
-        <form onSubmit={handleExpenseSubmit} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-1 block">Name</label>
-            <Input
-              value={expenseFormData.name}
-              onChange={(e) => setExpenseFormData({ ...expenseFormData, name: e.target.value })}
-              required
-              placeholder="e.g., Rent, Netflix Subscription"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Amount</label>
-            <Input
-              type="number"
-              value={expenseFormData.amount}
-              onChange={(e) => setExpenseFormData({ ...expenseFormData, amount: e.target.value })}
-              placeholder="0"
-              required
-              step="0.01"
-              min="0"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Frequency</label>
-            <select
-              value={expenseFormData.frequency}
-              onChange={(e) => setExpenseFormData({ ...expenseFormData, frequency: e.target.value, customDays: '', dayOfWeek: '', dayOfMonth: '' })}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              required
-            >
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
-              <option value="custom">Custom</option>
-            </select>
-          </div>
-          {expenseFormData.frequency === 'custom' && (
-            <div>
-              <label className="text-sm font-medium mb-1 block">Repeat Every (Days)</label>
+        <FormLayout variant="sheet" onSubmit={handleExpenseSubmit}>
+          <FormSection>
+            <FormField label="Name" required>
               <Input
-                type="number"
-                value={expenseFormData.customDays}
-                onChange={(e) => setExpenseFormData({ ...expenseFormData, customDays: e.target.value })}
+                value={expenseFormData.name}
+                onChange={(e) => setExpenseFormData({ ...expenseFormData, name: e.target.value })}
                 required
-                min="1"
-                placeholder="e.g., 15 for every 15 days"
+                placeholder="e.g., Rent, Netflix Subscription"
               />
-            </div>
-          )}
-          {expenseFormData.frequency === 'weekly' && (
-            <div>
-              <label className="text-sm font-medium mb-1 block">Day of Week</label>
-              <select
-                value={expenseFormData.dayOfWeek}
-                onChange={(e) => setExpenseFormData({ ...expenseFormData, dayOfWeek: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="">Any day</option>
-                <option value="0">Sunday</option>
-                <option value="1">Monday</option>
-                <option value="2">Tuesday</option>
-                <option value="3">Wednesday</option>
-                <option value="4">Thursday</option>
-                <option value="5">Friday</option>
-                <option value="6">Saturday</option>
-              </select>
-            </div>
-          )}
-          {['monthly', 'quarterly'].includes(expenseFormData.frequency) && (
-            <div>
-              <label className="text-sm font-medium mb-1 block">Day of Month</label>
+            </FormField>
+            <FormField label="Amount" required>
               <Input
                 type="number"
-                value={expenseFormData.dayOfMonth}
-                onChange={(e) => setExpenseFormData({ ...expenseFormData, dayOfMonth: e.target.value })}
-                min="1"
-                max="31"
-                placeholder="e.g., 1 for 1st of month"
+                value={expenseFormData.amount}
+                onChange={(e) => setExpenseFormData({ ...expenseFormData, amount: e.target.value })}
+                placeholder="0"
+                required
+                step="0.01"
+                min="0"
               />
-            </div>
-          )}
-          <div>
-            <label className="text-sm font-medium mb-1 block">Start Date</label>
-            <Input
-              type="date"
-              value={expenseFormData.startDate}
-              onChange={(e) => setExpenseFormData({ ...expenseFormData, startDate: e.target.value })}
-              required
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">End Date (Optional)</label>
-            <Input
-              type="date"
-              value={expenseFormData.endDate}
-              onChange={(e) => setExpenseFormData({ ...expenseFormData, endDate: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Category</label>
-            <select
-              value={expenseFormData.categoryId}
-              onChange={(e) => setExpenseFormData({ ...expenseFormData, categoryId: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              required
-            >
-              <option value="">Select category</option>
-              {categories.filter(cat => cat.type === 'expense').map((cat) => (
-                <option key={cat._id} value={cat._id}>
-                  {cat.icon} {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Payment Method</label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={expenseFormData.isCash ? 'default' : 'outline'}
-                onClick={() => setExpenseFormData({ ...expenseFormData, isCash: true, accountId: '' })}
-                className="flex-1"
-              >
-                Cash
-              </Button>
-              <Button
-                type="button"
-                variant={!expenseFormData.isCash ? 'default' : 'outline'}
-                onClick={() => setExpenseFormData({ ...expenseFormData, isCash: false })}
-                className="flex-1"
-              >
-                Bank Account
-              </Button>
-            </div>
-          </div>
-          {!expenseFormData.isCash && (
-            <div>
-              <label className="text-sm font-medium mb-1 block">Account</label>
+            </FormField>
+            <FormField label="Frequency" required>
               <select
-                value={expenseFormData.accountId}
-                onChange={(e) => setExpenseFormData({ ...expenseFormData, accountId: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                required={!expenseFormData.isCash}
+                value={expenseFormData.frequency}
+                onChange={(e) => setExpenseFormData({ ...expenseFormData, frequency: e.target.value, customDays: '', dayOfWeek: '', dayOfMonth: '' })}
+                className="form-select"
+                required
               >
-                <option value="">Select account</option>
-                {accounts.map((acc) => (
-                  <option key={acc._id} value={acc._id}>
-                    {acc.icon} {acc.accountName}
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="custom">Custom</option>
+              </select>
+            </FormField>
+            {expenseFormData.frequency === 'custom' && (
+              <FormField label="Repeat Every (Days)" required>
+                <Input
+                  type="number"
+                  value={expenseFormData.customDays}
+                  onChange={(e) => setExpenseFormData({ ...expenseFormData, customDays: e.target.value })}
+                  required
+                  min="1"
+                  placeholder="e.g., 15 for every 15 days"
+                />
+              </FormField>
+            )}
+            {expenseFormData.frequency === 'weekly' && (
+              <FormField label="Day of Week">
+                <select
+                  value={expenseFormData.dayOfWeek}
+                  onChange={(e) => setExpenseFormData({ ...expenseFormData, dayOfWeek: e.target.value })}
+                  className="form-select"
+                >
+                  <option value="">Any day</option>
+                  <option value="0">Sunday</option>
+                  <option value="1">Monday</option>
+                  <option value="2">Tuesday</option>
+                  <option value="3">Wednesday</option>
+                  <option value="4">Thursday</option>
+                  <option value="5">Friday</option>
+                  <option value="6">Saturday</option>
+                </select>
+              </FormField>
+            )}
+            {['monthly', 'quarterly'].includes(expenseFormData.frequency) && (
+              <FormField label="Day of Month">
+                <Input
+                  type="number"
+                  value={expenseFormData.dayOfMonth}
+                  onChange={(e) => setExpenseFormData({ ...expenseFormData, dayOfMonth: e.target.value })}
+                  min="1"
+                  max="31"
+                  placeholder="e.g., 1 for 1st of month"
+                />
+              </FormField>
+            )}
+            <FormField label="Start Date" required>
+              <Input
+                type="date"
+                value={expenseFormData.startDate}
+                onChange={(e) => setExpenseFormData({ ...expenseFormData, startDate: e.target.value })}
+                required
+              />
+            </FormField>
+            <FormField label="End Date (Optional)">
+              <Input
+                type="date"
+                value={expenseFormData.endDate}
+                onChange={(e) => setExpenseFormData({ ...expenseFormData, endDate: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Category" required>
+              <select
+                value={expenseFormData.categoryId}
+                onChange={(e) => setExpenseFormData({ ...expenseFormData, categoryId: e.target.value })}
+                className="form-select"
+                required
+              >
+                <option value="">Select category</option>
+                {categories.filter(cat => cat.type === 'expense').map((cat) => (
+                  <option key={cat._id} value={cat._id}>
+                    {cat.icon} {cat.name}
                   </option>
                 ))}
               </select>
-            </div>
-          )}
-          <div>
-            <label className="text-sm font-medium mb-1 block">Description (Optional)</label>
-            <Input
-              value={expenseFormData.description}
-              onChange={(e) => setExpenseFormData({ ...expenseFormData, description: e.target.value })}
-              placeholder="Additional notes"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="autoCreate"
-              checked={expenseFormData.autoCreateTransaction}
-              onChange={(e) => setExpenseFormData({ ...expenseFormData, autoCreateTransaction: e.target.checked })}
-              className="w-4 h-4"
-            />
-            <label htmlFor="autoCreate" className="text-sm text-foreground">
-              Automatically create transactions when due
-            </label>
-          </div>
+            </FormField>
+            <FormField label="Payment Method" span="full">
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={expenseFormData.isCash ? 'default' : 'outline'}
+                  onClick={() => setExpenseFormData({ ...expenseFormData, isCash: true, accountId: '' })}
+                  className="flex-1"
+                >
+                  Cash
+                </Button>
+                <Button
+                  type="button"
+                  variant={!expenseFormData.isCash ? 'default' : 'outline'}
+                  onClick={() => setExpenseFormData({ ...expenseFormData, isCash: false })}
+                  className="flex-1"
+                >
+                  Bank Account
+                </Button>
+              </div>
+            </FormField>
+            {!expenseFormData.isCash && (
+              <FormField label="Account" required>
+                <select
+                  value={expenseFormData.accountId}
+                  onChange={(e) => setExpenseFormData({ ...expenseFormData, accountId: e.target.value })}
+                  className="form-select"
+                  required={!expenseFormData.isCash}
+                >
+                  <option value="">Select account</option>
+                  {accounts.map((acc) => (
+                    <option key={acc._id} value={acc._id}>
+                      {acc.icon} {acc.accountName}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+            )}
+            <FormField label="Description (Optional)">
+              <Input
+                value={expenseFormData.description}
+                onChange={(e) => setExpenseFormData({ ...expenseFormData, description: e.target.value })}
+                placeholder="Additional notes"
+              />
+            </FormField>
+            <FormField label="Automatically create transactions when due" span="full">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="autoCreate"
+                  checked={expenseFormData.autoCreateTransaction}
+                  onChange={(e) => setExpenseFormData({ ...expenseFormData, autoCreateTransaction: e.target.checked })}
+                  className="h-4 w-4 rounded border-border accent-primary"
+                />
+                <span className="text-sm">Enable auto-create</span>
+              </label>
+            </FormField>
+          </FormSection>
           <FormButtonGroup
             submitLabel={editingExpense ? 'Update Recurring Expense' : 'Create Recurring Expense'}
             onCancel={() => setIsExpenseDialogOpen(false)}
           />
-        </form>
+        </FormLayout>
       </FormSheet>
 
       <FAB
         onClick={() => {
           if (activeTab === 'salary') {
-            router.push('/dashboard/salary-recurring/new')
+            openSalarySheet()
           } else {
             resetExpenseForm()
             setIsExpenseDialogOpen(true)
@@ -402,7 +411,7 @@ const SalaryRecurringPage = () => {
       {activeTab === 'salary' && (
         <div className="space-y-4">
           <div className="flex justify-end hidden md:flex">
-            <AddButton onClick={() => router.push('/dashboard/salary-recurring/new')}>
+            <AddButton onClick={openSalarySheet}>
               Add Salary
             </AddButton>
           </div>
@@ -433,7 +442,7 @@ const SalaryRecurringPage = () => {
               title="No salary records yet"
               description="Add your salary to get started"
               actionLabel="Add Your First Salary"
-              onAction={() => router.push('/dashboard/salary-recurring/new')}
+              onAction={openSalarySheet}
             />
           ) : (
             <div className="space-y-3">

@@ -73,6 +73,7 @@ export function useBalanceAdjustmentPrompt() {
           title="Record Balance Change"
         >
           <TransactionForm
+            variant="sheet"
             defaultValues={{
               type: delta > 0 ? 'income' : 'expense',
               amount: Math.abs(delta),
@@ -84,6 +85,7 @@ export function useBalanceAdjustmentPrompt() {
             lockType
             lockPaymentMethod
             onSuccess={finish}
+            onCancel={finish}
           />
         </FormSheet>
       )}

@@ -1,35 +1,34 @@
 'use client'
+
 import { useAuth } from '@/lib/hooks/useAuth'
 import React, { useCallback, useEffect, useState } from 'react'
-import {
-  TrendingUp,
-  ArrowDownCircle,
-  ArrowUpCircle,
-  ArrowLeftRight,
-  ChevronRight,
-  PiggyBank,
-  ReceiptText,
-  Users,
-  Shield,
-  CreditCard,
-} from 'lucide-react'
+import { ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
 import { endOfMonth, format, startOfMonth } from 'date-fns'
 import { toast } from 'sonner'
-import { motion } from 'framer-motion'
+import request from '@/lib/api/request'
 import Link from 'next/link'
 import { ActivityChart } from './_components/ActivityChart'
 import {
   CategoryBreakdownCard,
   type CategoryStat,
 } from './stats/_components/CategoryBreakdownCard'
-import { formatCurrency } from '@/lib/utils/format'
+import { ChartCard } from '@/components/ui/chart-card'
+import { FinanceStatCard } from '@/components/ui/finance-stat-card'
+import { SectionHeader } from '@/components/ui/section-header'
+import {
+  DashboardHero,
+  DashboardQuickActions,
+  DASHBOARD_METRIC_LINKS,
+  MetricSubtitle,
+  ViewAllLink,
+} from './_components/DashboardHero'
 import { withFromHome } from '@/lib/utils/navigation'
 import type { DashboardStats } from '@/types/dashboard'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
-import { useOffline } from '@/contexts/OfflineContext'
-import { computeDashboardStats, computeTransactionStats } from '@/lib/offline/computed'
-import { listLocal } from '@/lib/offline/repository'
+import { fetchDashboardStats, fetchTransactionStats } from '@/lib/api/stats'
+import { usePrivacyAmount } from '@/lib/hooks/usePrivacyAmount'
 import { DEFAULT_CATEGORY_COLOR } from '@/lib/constants/colors'
+import { cn } from '@/lib/utils'
 
 interface Transaction {
   _id?: string
@@ -38,38 +37,27 @@ interface Transaction {
   amount?: number
   description?: string
   date?: string
-  category?: { name?: string }
   categoryId?: { name?: string; icon?: string; color?: string }
 }
-
-const MORE_LINKS = [
-  { label: 'Investments', valueKey: 'totalInvestments' as const, icon: TrendingUp, href: withFromHome('/dashboard/investments') },
-  { label: 'Budgets', valueKey: null, icon: PiggyBank, href: withFromHome('/dashboard/budgets') },
-  { label: 'Insurance', valueKey: null, icon: Shield, href: withFromHome('/dashboard/insurance') },
-  { label: 'Credit Cards', valueKey: null, icon: CreditCard, href: withFromHome('/dashboard/credit-cards') },
-  { label: 'Family', valueKey: null, icon: Users, href: withFromHome('/dashboard/family') },
-  { label: 'All Transactions', valueKey: null, icon: ReceiptText, href: withFromHome('/dashboard/transactions') },
-]
 
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth()
   const userId = user?.id
-  const { syncing, lastSyncedAt } = useOffline()
   const [stats, setStats] = useState<DashboardStats>({})
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [incomeCategories, setIncomeCategories] = useState<CategoryStat[]>([])
   const [expenseCategories, setExpenseCategories] = useState<CategoryStat[]>([])
   const [loading, setLoading] = useState(true)
 
-  const loadFromCache = useCallback(async () => {
+  const loadData = useCallback(async () => {
     const now = new Date()
     const monthStart = startOfMonth(now)
     const monthEnd = endOfMonth(now)
 
-    const [statsData, txData, categoryStats] = await Promise.all([
-      computeDashboardStats(),
-      listLocal('transactions'),
-      computeTransactionStats({
+    const [statsData, txRes, categoryStats] = await Promise.all([
+      fetchDashboardStats(),
+      request.get('/api/transactions'),
+      fetchTransactionStats({
         startDate: monthStart.toISOString(),
         endDate: monthEnd.toISOString(),
         types: 'income,expense',
@@ -77,7 +65,7 @@ const Dashboard = () => {
     ])
 
     setStats(statsData || {})
-    setTransactions(txData ?? [])
+    setTransactions(Array.isArray(txRes.data) ? txRes.data : [])
     setIncomeCategories(categoryStats?.incomeCategoryWise ?? [])
     setExpenseCategories(categoryStats?.categoryWise ?? [])
   }, [])
@@ -87,11 +75,10 @@ const Dashboard = () => {
       setLoading(false)
       return
     }
-    if (syncing) return
 
     let cancelled = false
     setLoading(true)
-    loadFromCache()
+    loadData()
       .catch(() => {
         if (!cancelled) {
           toast.error('Failed to load dashboard data')
@@ -108,309 +95,124 @@ const Dashboard = () => {
     return () => {
       cancelled = true
     }
-  }, [userId, syncing, lastSyncedAt, loadFromCache])
+  }, [userId, loadData])
 
-  useSyncedRefresh(loadFromCache)
+  useSyncedRefresh(loadData)
 
-  const balance = (stats?.totalBankBalance || 0) + (stats?.totalCash || 0)
-  const savings = stats?.monthlySavings || 0
-  const savingsPct =
-    stats?.monthlyIncome
-      ? Math.min(100, Math.round((savings / stats.monthlyIncome) * 100))
-      : 0
-
-  const quickActions = [
-    {
-      label: 'Expense',
-      icon: ArrowDownCircle,
-      href: withFromHome('/dashboard/transactions/new?type=expense'),
-      iconClass: 'text-red-500',
-    },
-    {
-      label: 'Income',
-      icon: ArrowUpCircle,
-      href: withFromHome('/dashboard/transactions/new?type=income'),
-      iconClass: 'text-green-500',
-    },
-    {
-      label: 'Transfer',
-      icon: ArrowLeftRight,
-      href: withFromHome('/dashboard/transactions/new?type=transfer'),
-      iconClass: 'text-amber-500',
-    },
-  ]
-
-  const recentTransactions = transactions.slice(0, 5)
   const displayName = user?.name || user?.email?.split('@')[0] || 'Guest'
+  const recentTransactions = transactions.slice(0, 5)
+  const { fmt: fmtAmount } = usePrivacyAmount()
 
   return (
-    <div className="w-full p-4 md:p-6 lg:p-8 pb-24 md:pb-8 space-y-6">
-      {/* Header: greeting + quick actions on desktop */}
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="pt-2 shrink-0"
-        >
-          <p className="text-sm text-muted-foreground" suppressHydrationWarning>
-            {format(new Date(), 'EEEE, MMM d')}
-          </p>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground mt-1">
-            {authLoading ? 'Loading...' : `Hi, ${displayName}`}
-          </h1>
-        </motion.div>
+    <>
+      <DashboardHero
+        displayName={displayName}
+        authLoading={authLoading}
+        loading={loading}
+        stats={stats}
+      />
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="grid grid-cols-3 gap-2 md:gap-3 lg:max-w-md lg:flex-1"
-        >
-          {quickActions.map((action) => {
-            const Icon = action.icon
+      <DashboardQuickActions className="md:hidden" />
+
+      <section>
+        <SectionHeader title="Overview" subtitle="Tap a card for details" />
+        <div className="mm-grid-metrics">
+          {DASHBOARD_METRIC_LINKS.map((metric) => {
+            let value = stats[metric.valueKey] ?? 0
+            if (metric.combineCash) {
+              value = (stats.totalBankBalance ?? 0) + (stats.totalCash ?? 0)
+            }
+
             return (
-              <Link
-                key={action.label}
-                href={action.href}
-                className="finance-action-btn group"
-              >
-                <div className="finance-action-icon mx-auto md:group-hover:shadow-lg md:group-hover:shadow-primary/15">
-                  <Icon className={`w-5 h-5 md:w-6 md:h-6 ${action.iconClass}`} />
-                </div>
-                <span className="text-xs font-medium text-muted-foreground">{action.label}</span>
-              </Link>
+              <FinanceStatCard
+                key={metric.title}
+                title={metric.title}
+                value={Number(value) || 0}
+                subtitle={MetricSubtitle({
+                  stats,
+                  loading,
+                  subtitleKey: metric.subtitleKey,
+                  subtitleLabel: metric.subtitleLabel,
+                  isCount: metric.isCount,
+                  isPercent: metric.isPercent,
+                })}
+                icon={metric.icon}
+                href={metric.href}
+                loading={loading}
+                variant={metric.variant}
+              />
             )
           })}
-        </motion.div>
-      </div>
+        </div>
+      </section>
 
-      {/* Top row: balance + activity chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="lg:col-span-2 relative overflow-hidden rounded-3xl liquid-gradient-bg p-6 md:p-8 text-white shadow-xl shadow-primary/30 flex flex-col justify-between min-h-[200px]"
+      <div className="mm-grid-dashboard">
+        <ChartCard
+          title="Weekly spending"
+          subtitle="Last 7 days"
+          loading={loading}
+          className="lg:col-span-8"
+          contentClassName="min-h-[11rem]"
         >
-          <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/10" />
-          <div className="absolute -right-4 bottom-0 w-24 h-24 rounded-full bg-white/5" />
+          <ActivityChart transactions={transactions} />
+        </ChartCard>
+
+        <div className="surface-card flex flex-col justify-between p-5 md:p-6 lg:col-span-4">
           <div>
-            <p className="text-sm font-medium text-white/80">Your Balance</p>
-            <p className="text-4xl md:text-5xl font-bold tracking-tight mt-2">
-              {loading ? '—' : formatCurrency(balance)}
-            </p>
-          </div>
-          <div className="flex gap-8 mt-6 text-sm">
-            <div>
-              <p className="text-white/70">Income</p>
-              <p className="font-semibold text-base">
-                {loading ? '—' : formatCurrency(stats?.monthlyIncome || 0)}
-              </p>
-            </div>
-            <div>
-              <p className="text-white/70">Expenses</p>
-              <p className="font-semibold text-base">
-                {loading ? '—' : formatCurrency(stats?.monthlyExpenses || 0)}
-              </p>
+            <p className="mm-stat-label">This month</p>
+            <div className="mt-4 space-y-4">
+              <MonthRow
+                icon={ArrowUpCircle}
+                label="Income"
+                value={loading ? '—' : fmtAmount(stats.monthlyIncome ?? 0)}
+                tone="text-income"
+              />
+              <MonthRow
+                icon={ArrowDownCircle}
+                label="Expenses"
+                value={loading ? '—' : fmtAmount(stats.monthlyExpenses ?? 0)}
+                tone="text-expense"
+              />
             </div>
           </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="lg:col-span-3 surface-card p-5 md:p-6"
-        >
-          <h2 className="text-lg font-semibold mb-2">Activities</h2>
-          <p className="text-sm text-muted-foreground mb-4">Expenses this week</p>
-          {loading ? (
-            <div className="h-36 md:h-44 lg:h-48 rounded-xl skeleton" />
-          ) : (
-            <ActivityChart transactions={transactions} />
-          )}
-        </motion.div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12 }}
-        >
-          <CategoryBreakdownCard
-            title="Income this month"
-            categories={incomeCategories}
-            total={stats?.monthlyIncome ?? 0}
-            loading={loading}
-          />
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.14 }}
-        >
-          <CategoryBreakdownCard
-            title="Expenses this month"
-            categories={expenseCategories}
-            total={stats?.monthlyExpenses ?? 0}
-            loading={loading}
-          />
-        </motion.div>
-      </div>
-
-      {/* Middle row: savings, accounts, investments, budgets */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="surface-card p-5 md:p-6 h-full flex items-center"
-        >
-          <div className="flex items-center gap-6 w-full">
-            <div className="relative w-20 h-20 md:w-24 md:h-24 shrink-0">
-              <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                <circle cx="50" cy="50" r="42" fill="none" stroke="hsl(var(--muted))" strokeWidth="8" />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="42"
-                  fill="none"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                  strokeDasharray={`${savingsPct * 2.64} 264`}
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-lg font-bold">{loading ? '—' : `${savingsPct}%`}</span>
-              </div>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-muted-foreground">Saved this month</p>
-              <p className="text-xl md:text-2xl font-bold mt-1">
-                {loading ? '—' : formatCurrency(savings)}
-              </p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Net worth {loading ? '—' : formatCurrency(stats?.netWorth || 0)}
-              </p>
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="h-full"
-        >
-          <Link href={withFromHome('/dashboard/accounts')} className="block h-full">
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary/70 p-5 md:p-6 text-primary-foreground shadow-lg shadow-primary/20 h-full flex flex-col justify-center transition-transform active:scale-[0.98] md:hover:shadow-xl md:hover:shadow-primary/25">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-semibold text-primary-foreground/90">Your Accounts</p>
-                <ChevronRight className="w-5 h-5 text-primary-foreground/70" />
-              </div>
-              <p className="text-xs text-primary-foreground/70 uppercase tracking-wider">Total Balance</p>
-              <p className="text-2xl md:text-3xl font-bold mt-2">
-                {loading ? '—' : formatCurrency(balance)}
-              </p>
-              <p className="text-sm text-primary-foreground/80 mt-3">
-                {stats?.accountCount || 0} accounts · Manage
-              </p>
-            </div>
-          </Link>
-        </motion.div>
-
-        {MORE_LINKS.slice(0, 2).map((item, i) => {
-          const Icon = item.icon
-          const value = item.valueKey ? stats?.[item.valueKey] : null
-          return (
-            <motion.div
-              key={item.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 + i * 0.05 }}
-              className="h-full"
-            >
-              <Link
-                href={item.href}
-                className="surface-card p-5 h-full flex items-center gap-4 transition-all active:scale-[0.98] md:hover:shadow-lg md:hover:shadow-primary/5"
-              >
-                <div className="w-11 h-11 rounded-full bg-muted flex items-center justify-center shrink-0">
-                  <Icon className="w-5 h-5 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{item.label}</p>
-                  {value != null && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {loading ? '—' : formatCurrency(value || 0)}
-                    </p>
-                  )}
-                </div>
-              </Link>
-            </motion.div>
-          )
-        })}
-      </div>
-
-      {/* Quick links row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-stretch">
-        {MORE_LINKS.slice(2).map((item, i) => {
-          const Icon = item.icon
-          const value = item.valueKey ? stats?.[item.valueKey] : null
-          return (
-            <motion.div
-              key={item.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 + i * 0.05 }}
-              className="h-full"
-            >
-              <Link
-                href={item.href}
-                className="surface-card p-5 h-full flex items-center gap-4 transition-all active:scale-[0.98] md:hover:shadow-lg md:hover:shadow-primary/5"
-              >
-                <div className="w-11 h-11 rounded-full bg-muted flex items-center justify-center shrink-0">
-                  <Icon className="w-5 h-5 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{item.label}</p>
-                  {value != null && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {loading ? '—' : formatCurrency(value || 0)}
-                    </p>
-                  )}
-                </div>
-              </Link>
-            </motion.div>
-          )
-        })}
-      </div>
-
-      {/* Recent transactions — full width */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.35 }}
-      >
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold">Recent Transactions</h2>
           <Link
-            href={withFromHome('/dashboard/transactions')}
-            className="text-sm text-primary font-medium hover:underline flex items-center gap-1"
+            href={withFromHome('/dashboard/budgets')}
+            className="mt-6 inline-flex items-center text-sm font-medium text-primary hover:underline"
           >
-            View all
-            <ChevronRight className="w-4 h-4" />
+            Manage budgets →
           </Link>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
+        <CategoryBreakdownCard
+          title="Income"
+          categories={incomeCategories}
+          total={stats.monthlyIncome ?? 0}
+          loading={loading}
+        />
+        <CategoryBreakdownCard
+          title="Expenses"
+          categories={expenseCategories}
+          total={stats.monthlyExpenses ?? 0}
+          loading={loading}
+        />
+      </div>
+
+      <section>
+        <SectionHeader
+          title="Recent activity"
+          action={<ViewAllLink href={withFromHome('/dashboard/transactions')} label="All" />}
+        />
+
+        <div className="surface-card divide-y divide-border/60 overflow-hidden">
           {loading ? (
-            Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="surface-card h-16 animate-pulse" />
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="skeleton m-3 h-14 rounded-xl" />
             ))
           ) : recentTransactions.length === 0 ? (
-            <div className="surface-card p-6 text-center text-muted-foreground text-sm md:col-span-2 xl:col-span-3">
-              No transactions yet. Add an expense, income, or transfer to get started.
+            <div className="px-6 py-10 text-center text-sm text-muted-foreground">
+              No transactions yet. Log your first expense or income to get started.
             </div>
           ) : (
             recentTransactions.map((tx) => {
@@ -419,43 +221,66 @@ const Dashboard = () => {
               const catName = tx.categoryId?.name
               const isIncome = tx.type === 'income'
               const isTransfer = tx.type === 'transfer'
+
               return (
-              <Link
-                key={tx._id || tx.id}
-                href={withFromHome('/dashboard/transactions')}
-                className="flex items-center gap-3 p-3 rounded-2xl surface-card transition-all active:scale-[0.98] md:hover:shadow-md"
-              >
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-base"
-                  style={{ backgroundColor: `${isTransfer ? '#f59e0b' : catColor}22` }}
+                <Link
+                  key={tx._id || tx.id}
+                  href={withFromHome('/dashboard/transactions')}
+                  className="mm-list-row rounded-none border-0 px-4 py-3.5 md:px-5"
                 >
-                  {isTransfer ? '↔' : catIcon || (isIncome ? '💰' : '📁')}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">
-                    {tx.description || (isTransfer ? 'Transfer' : catName) || 'Transaction'}
+                  <div
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base"
+                    style={{
+                      backgroundColor: `${isTransfer ? 'hsl(var(--warning))' : catColor}18`,
+                    }}
+                  >
+                    {isTransfer ? '↔' : catIcon || (isIncome ? '💰' : '📁')}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {tx.description || (isTransfer ? 'Transfer' : catName) || 'Transaction'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {tx.date ? format(new Date(tx.date), 'MMM d, yyyy') : ''}
+                    </p>
+                  </div>
+                  <p
+                    className={cn(
+                      'shrink-0 text-sm font-semibold tabular-nums',
+                      isIncome ? 'text-income' : isTransfer ? 'text-warning' : 'text-foreground'
+                    )}
+                  >
+                    {isIncome ? '+' : isTransfer ? '↔' : '−'}
+                    {fmtAmount(tx.amount || 0)}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {tx.date ? format(new Date(tx.date), 'MMM d, yyyy') : ''}
-                  </p>
-                </div>
-                <p
-                  className={`text-sm font-semibold shrink-0 ${
-                    isIncome
-                      ? 'text-green-600 dark:text-green-400'
-                      : isTransfer
-                        ? 'text-amber-600 dark:text-amber-400'
-                        : 'text-foreground'
-                  }`}
-                >
-                  {isIncome ? '+' : isTransfer ? '↔' : '-'}
-                  {formatCurrency(tx.amount || 0)}
-                </p>
-              </Link>
-            )})
+                </Link>
+              )
+            })
           )}
         </div>
-      </motion.div>
+      </section>
+    </>
+  )
+}
+
+function MonthRow({
+  icon: Icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
+  label: string
+  value: string
+  tone: string
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2.5">
+        <Icon className={cn('h-4 w-4', tone)} strokeWidth={1.75} />
+        <span className="text-sm text-muted-foreground">{label}</span>
+      </div>
+      <span className="text-sm font-semibold tabular-nums">{value}</span>
     </div>
   )
 }

@@ -15,6 +15,20 @@ import {
   Plus,
   Shield,
   CreditCard,
+  LineChart,
+  Hash,
+  Zap,
+  Target,
+  Home,
+  Repeat,
+  Bell,
+  Lock,
+  FileText,
+  ShieldCheck,
+  Calculator,
+  Upload,
+  Scale,
+  PieChart,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -27,25 +41,126 @@ export interface DashboardNavItem {
   path: string
 }
 
+export interface DashboardNavSection {
+  id: string
+  label: string
+  items: DashboardNavItem[]
+}
+
 export const DASHBOARD_NAV_MAIN: DashboardNavItem[] = [
-  { id: 1, name: 'Home', icon: LayoutDashboard, path: '/dashboard' },
+  { id: 1, name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
   { id: 3, name: 'Transactions', icon: ReceiptText, path: '/dashboard/transactions' },
   { id: 2, name: 'Accounts', icon: Wallet, path: '/dashboard/accounts' },
 ]
 
 export const DASHBOARD_NAV_MORE: DashboardNavItem[] = [
-  { id: 4, name: 'Investments', icon: TrendingUp, path: '/dashboard/investments' },
+  { id: 4, name: 'Portfolio', icon: TrendingUp, path: '/dashboard/investments' },
+  { id: 20, name: 'Mutual Funds', icon: PieChart, path: '/dashboard/investments/mutual-funds' },
+  { id: 21, name: 'Performance', icon: LineChart, path: '/dashboard/investments/performance' },
+  { id: 22, name: 'Rebalancing', icon: Scale, path: '/dashboard/investments/rebalancing' },
+  { id: 23, name: 'Emergency Fund', icon: ShieldCheck, path: '/dashboard/emergency-fund' },
+  { id: 14, name: 'Goals', icon: Target, path: '/dashboard/goals' },
   { id: 13, name: 'Credit Cards', icon: CreditCard, path: '/dashboard/credit-cards' },
+  { id: 24, name: 'Loans', icon: Home, path: '/dashboard/loans' },
   { id: 12, name: 'Insurance', icon: Shield, path: '/dashboard/insurance' },
   { id: 5, name: 'Categories', icon: Tags, path: '/dashboard/categories' },
+  { id: 15, name: 'Tags', icon: Hash, path: '/dashboard/tags' },
+  { id: 16, name: 'Rules', icon: Zap, path: '/dashboard/rules' },
   { id: 6, name: 'Budgets', icon: PiggyBank, path: '/dashboard/budgets' },
-  { id: 7, name: 'Salary & Recurring Expenses', icon: IndianRupee, path: '/dashboard/salary-recurring' },
+  { id: 7, name: 'Salary & Recurring', icon: IndianRupee, path: '/dashboard/salary-recurring' },
+  { id: 17, name: 'Subscriptions', icon: Repeat, path: '/dashboard/subscriptions' },
+  { id: 18, name: 'Reminders', icon: Bell, path: '/dashboard/reminders' },
+  { id: 25, name: 'Savings Planner', icon: Calculator, path: '/dashboard/planners/savings' },
+  { id: 26, name: 'Retirement Planner', icon: Calculator, path: '/dashboard/planners/retirement' },
+  { id: 27, name: 'FIRE Planner', icon: Calculator, path: '/dashboard/planners/fire' },
+  { id: 19, name: 'Passwords', icon: Lock, path: '/dashboard/passwords' },
+  { id: 28, name: 'Documents', icon: FileText, path: '/dashboard/documents' },
+  { id: 29, name: 'Import / Export', icon: Upload, path: '/dashboard/import-export' },
+  { id: 10, name: 'Daily Stats', icon: LineChart, path: '/dashboard/stats' },
   { id: 11, name: 'Category Stats', icon: BarChart3, path: '/dashboard/stats/categories' },
   { id: 8, name: 'Family Circle', icon: Users, path: '/dashboard/family' },
   { id: 9, name: 'Settings', icon: Settings, path: '/dashboard/settings' },
 ]
 
 export const DASHBOARD_NAV_ALL = [...DASHBOARD_NAV_MAIN, ...DASHBOARD_NAV_MORE]
+
+export const DASHBOARD_NAV_SECTIONS: DashboardNavSection[] = [
+  {
+    id: 'overview',
+    label: 'Overview',
+    items: [{ id: 1, name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' }],
+  },
+  {
+    id: 'money',
+    label: 'Money',
+    items: [
+      { id: 3, name: 'Transactions', icon: ReceiptText, path: '/dashboard/transactions' },
+      { id: 2, name: 'Accounts', icon: Wallet, path: '/dashboard/accounts' },
+      { id: 5, name: 'Categories', icon: Tags, path: '/dashboard/categories' },
+      { id: 15, name: 'Tags', icon: Hash, path: '/dashboard/tags' },
+      { id: 16, name: 'Rules', icon: Zap, path: '/dashboard/rules' },
+      { id: 6, name: 'Budgets', icon: PiggyBank, path: '/dashboard/budgets' },
+      { id: 7, name: 'Recurring', icon: IndianRupee, path: '/dashboard/salary-recurring' },
+      { id: 17, name: 'Subscriptions', icon: Repeat, path: '/dashboard/subscriptions' },
+    ],
+  },
+  {
+    id: 'investments',
+    label: 'Investments',
+    items: [
+      { id: 4, name: 'Portfolio', icon: TrendingUp, path: '/dashboard/investments' },
+      { id: 20, name: 'Mutual Funds', icon: PieChart, path: '/dashboard/investments/mutual-funds' },
+      { id: 21, name: 'Performance', icon: LineChart, path: '/dashboard/investments/performance' },
+      { id: 22, name: 'Rebalancing', icon: Scale, path: '/dashboard/investments/rebalancing' },
+      { id: 23, name: 'Emergency Fund', icon: ShieldCheck, path: '/dashboard/emergency-fund' },
+    ],
+  },
+  {
+    id: 'credit',
+    label: 'Credit',
+    items: [
+      { id: 13, name: 'Credit Cards', icon: CreditCard, path: '/dashboard/credit-cards' },
+      { id: 24, name: 'Loans', icon: Home, path: '/dashboard/loans' },
+    ],
+  },
+  {
+    id: 'protection',
+    label: 'Protection',
+    items: [
+      { id: 12, name: 'Insurance', icon: Shield, path: '/dashboard/insurance' },
+      { id: 28, name: 'Documents', icon: FileText, path: '/dashboard/documents' },
+      { id: 19, name: 'Passwords', icon: Lock, path: '/dashboard/passwords' },
+    ],
+  },
+  {
+    id: 'planner',
+    label: 'Planner',
+    items: [
+      { id: 14, name: 'Goals', icon: Target, path: '/dashboard/goals' },
+      { id: 25, name: 'Savings Planner', icon: Calculator, path: '/dashboard/planners/savings' },
+      { id: 26, name: 'Retirement Planner', icon: Calculator, path: '/dashboard/planners/retirement' },
+      { id: 27, name: 'FIRE Planner', icon: Calculator, path: '/dashboard/planners/fire' },
+    ],
+  },
+  {
+    id: 'reports',
+    label: 'Reports',
+    items: [
+      { id: 10, name: 'Daily Stats', icon: LineChart, path: '/dashboard/stats' },
+      { id: 11, name: 'Category Stats', icon: BarChart3, path: '/dashboard/stats/categories' },
+    ],
+  },
+  {
+    id: 'more',
+    label: 'More',
+    items: [
+      { id: 18, name: 'Reminders', icon: Bell, path: '/dashboard/reminders' },
+      { id: 8, name: 'Family Circle', icon: Users, path: '/dashboard/family' },
+      { id: 29, name: 'Import / Export', icon: Upload, path: '/dashboard/import-export' },
+      { id: 9, name: 'Settings', icon: Settings, path: '/dashboard/settings' },
+    ],
+  },
+]
 
 export interface SearchItem {
   name: string
@@ -72,62 +187,16 @@ export const DASHBOARD_SEARCH_PAGES: SearchItem[] = [
 ]
 
 export const DASHBOARD_SEARCH_ACTIONS: SearchItem[] = [
-  {
-    name: 'Add income',
-    path: '/dashboard/transactions/new?type=income',
-    icon: ArrowUpCircle,
-    keywords: ['income', 'salary', 'credit', 'deposit'],
-    group: 'actions',
-  },
-  {
-    name: 'Add expense',
-    path: '/dashboard/transactions/new?type=expense',
-    icon: ArrowDownCircle,
-    keywords: ['expense', 'spend', 'debit', 'payment'],
-    group: 'actions',
-  },
-  {
-    name: 'Add transfer',
-    path: '/dashboard/transactions/new?type=transfer',
-    icon: ArrowLeftRight,
-    keywords: ['transfer', 'move', 'between accounts'],
-    group: 'actions',
-  },
-  {
-    name: 'Add investment',
-    path: '/dashboard/investments/new',
-    icon: Plus,
-    keywords: ['invest', 'stock', 'mutual fund'],
-    group: 'actions',
-  },
-  {
-    name: 'Add budget',
-    path: '/dashboard/budgets/new',
-    icon: Plus,
-    keywords: ['budget', 'limit'],
-    group: 'actions',
-  },
-  {
-    name: 'Add account',
-    path: '/dashboard/accounts/new',
-    icon: Plus,
-    keywords: ['bank', 'wallet', 'cash'],
-    group: 'actions',
-  },
-  {
-    name: 'Add insurance policy',
-    path: '/dashboard/insurance/new',
-    icon: Plus,
-    keywords: ['insurance', 'policy', 'premium', 'health', 'life'],
-    group: 'actions',
-  },
-  {
-    name: 'Add credit card',
-    path: '/dashboard/credit-cards/new',
-    icon: Plus,
-    keywords: ['credit card', 'limit', 'balance', 'due date'],
-    group: 'actions',
-  },
+  { name: 'Add income', path: '/dashboard/transactions/new?type=income', icon: ArrowUpCircle, keywords: ['income', 'salary'], group: 'actions' },
+  { name: 'Add expense', path: '/dashboard/transactions/new?type=expense', icon: ArrowDownCircle, keywords: ['expense', 'spend'], group: 'actions' },
+  { name: 'Add transfer', path: '/dashboard/transactions/new?type=transfer', icon: ArrowLeftRight, keywords: ['transfer'], group: 'actions' },
+  { name: 'Add investment', path: '/dashboard/investments/new', icon: Plus, keywords: ['invest'], group: 'actions' },
+  { name: 'Add goal', path: '/dashboard/goals/new', icon: Plus, keywords: ['goal'], group: 'actions' },
+  { name: 'Add budget', path: '/dashboard/budgets/new', icon: Plus, keywords: ['budget'], group: 'actions' },
+  { name: 'Add account', path: '/dashboard/accounts/new', icon: Plus, keywords: ['bank'], group: 'actions' },
+  { name: 'Add insurance', path: '/dashboard/insurance/new', icon: Plus, keywords: ['insurance'], group: 'actions' },
+  { name: 'Add credit card', path: '/dashboard/credit-cards/new', icon: Plus, keywords: ['credit card'], group: 'actions' },
+  { name: 'Add reminder', path: '/dashboard/reminders/new', icon: Plus, keywords: ['reminder'], group: 'actions' },
 ]
 
 export const DASHBOARD_SEARCH_ALL: SearchItem[] = [
@@ -141,12 +210,29 @@ const EXTRA_ROUTE_TITLES: Record<string, string> = {
   '/dashboard/budget-analysis': 'Statistics',
   '/dashboard/budget': 'Budget',
   '/dashboard/expenseList': 'Expenses',
+  '/dashboard/investments/mutual-funds': 'Mutual Funds',
+  '/dashboard/investments/performance': 'Performance',
+  '/dashboard/investments/rebalancing': 'Rebalancing',
+  '/dashboard/emergency-fund': 'Emergency Fund',
+  '/dashboard/planners/savings': 'Savings Planner',
+  '/dashboard/planners/retirement': 'Retirement Planner',
+  '/dashboard/planners/fire': 'FIRE Planner',
+  '/dashboard/import-export': 'Import / Export',
 }
 
 const EXTRA_ROUTE_ICONS: Record<string, LucideIcon> = {
+  '/dashboard/stats': LineChart,
   '/dashboard/stats/categories': BarChart3,
   '/dashboard/budget-analysis': BarChart3,
   '/dashboard/expenseList': ReceiptText,
+  '/dashboard/investments/mutual-funds': PieChart,
+  '/dashboard/investments/performance': LineChart,
+  '/dashboard/investments/rebalancing': Scale,
+  '/dashboard/emergency-fund': ShieldCheck,
+  '/dashboard/planners/savings': Calculator,
+  '/dashboard/planners/retirement': Calculator,
+  '/dashboard/planners/fire': Calculator,
+  '/dashboard/import-export': Upload,
 }
 
 export const DASHBOARD_PAGE_TITLES: Record<string, string> = {
@@ -161,7 +247,17 @@ const DASHBOARD_PAGE_ICONS: Record<string, LucideIcon> = {
 
 export function isDashboardNavActive(pathname: string, menuPath: string): boolean {
   if (menuPath === '/dashboard') return pathname === '/dashboard'
-  return pathname === menuPath || pathname.startsWith(`${menuPath}/`)
+  if (pathname === menuPath) return true
+  if (!pathname.startsWith(`${menuPath}/`)) return false
+
+  const hasMoreSpecificMatch = DASHBOARD_NAV_ALL.some(
+    (item) =>
+      item.path !== menuPath &&
+      item.path.startsWith(`${menuPath}/`) &&
+      (pathname === item.path || pathname.startsWith(`${item.path}/`))
+  )
+
+  return !hasMoreSpecificMatch
 }
 
 export function getDashboardPageTitle(pathname: string): string {
@@ -172,7 +268,7 @@ export function getDashboardPageTitle(pathname: string): string {
     .sort((a, b) => b.length - a.length)
     .find((path) => pathname.startsWith(`${path}/`))
 
-  return nested ? DASHBOARD_PAGE_TITLES[nested] : 'Home'
+  return nested ? DASHBOARD_PAGE_TITLES[nested] : 'Dashboard'
 }
 
 export function getDashboardPageIcon(pathname: string): LucideIcon | undefined {

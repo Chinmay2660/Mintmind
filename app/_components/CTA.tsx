@@ -2,7 +2,7 @@
 import React from 'react'
 import {
   IndianRupee, Target, BarChart3, CreditCard, PiggyBank, TrendingUp,
-  Wifi, Users, ArrowRight
+  Users, ArrowRight
 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -48,9 +48,9 @@ const features = [
     gradient: 'from-primary/15 to-transparent',
   },
   {
-    icon: Wifi,
-    title: 'Works Offline',
-    description: 'Track expenses, budgets, and investments offline. Syncs when you reconnect.',
+    icon: PiggyBank,
+    title: 'Import & Export',
+    description: 'Back up your data or move it in from spreadsheets anytime.',
     className: 'lg:col-span-2',
     gradient: 'from-cyan-500/15 via-primary/10 to-transparent',
     highlight: true,
@@ -127,8 +127,8 @@ const CTA = () => {
                   </p>
                   {feature.highlight && (
                     <div className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-cyan-600 dark:text-cyan-400 liquid-pill px-3 py-1 rounded-full">
-                      <Wifi className="w-3 h-3" />
-                      Offline-first architecture
+                      <PiggyBank className="w-3 h-3" />
+                      Your data, portable
                     </div>
                   )}
                 </div>

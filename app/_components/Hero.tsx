@@ -226,7 +226,7 @@ const Hero = () => {
                 transition={{ duration: 0.7, delay: 0.45 }}
                 className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 mb-8 leading-relaxed max-w-lg"
               >
-                Track expenses, manage accounts, monitor investments, and build wealth — all in one beautifully designed app that works offline.
+                Track expenses, manage accounts, monitor investments, and build wealth — all in one beautifully designed app.
               </motion.p>
 
               <motion.div
@@ -254,7 +254,7 @@ const Hero = () => {
                 transition={{ duration: 0.7, delay: 0.65 }}
                 className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500 dark:text-gray-400"
               >
-                {['Free forever', 'No credit card', 'Works offline'].map((f, i) => (
+                {['Free forever', 'No credit card', 'Secure sync'].map((f, i) => (
                   <motion.div
                     key={f}
                     initial={{ opacity: 0, x: -10 }}

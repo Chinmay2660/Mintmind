@@ -1,6 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { useIsMobile } from '@/lib/hooks/useIsMobile'
@@ -10,9 +11,17 @@ interface FormSheetProps {
   onOpenChange: (open: boolean) => void
   title: string
   children: ReactNode
+  /** Desktop dialog width. Default `lg` fits multi-column forms (e.g. transactions). */
+  size?: 'md' | 'lg' | 'xl'
 }
 
-export function FormSheet({ open, onOpenChange, title, children }: FormSheetProps) {
+const sizeClass: Record<NonNullable<FormSheetProps['size']>, string> = {
+  md: 'max-w-md',
+  lg: 'max-w-2xl',
+  xl: 'max-w-3xl',
+}
+
+export function FormSheet({ open, onOpenChange, title, children, size = 'lg' }: FormSheetProps) {
   const isMobile = useIsMobile()
 
   if (isMobile) {
@@ -34,7 +43,7 @@ export function FormSheet({ open, onOpenChange, title, children }: FormSheetProp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className={cn(sizeClass[size], 'max-h-[90vh] overflow-y-auto')}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>

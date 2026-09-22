@@ -6,6 +6,8 @@ import connectDB from '@/lib/mongodb';
 const INVESTMENT_FIELDS = [
   'name', 'type', 'amount', 'currentValue', 'accountId',
   'investedDate', 'maturityDate', 'maturityType', 'interestRate', 'notes',
+  'schemeCode', 'amc', 'units', 'purchaseNav', 'currentNav', 'navDate',
+  'sipAmount', 'assetClass', 'goalId',
 ];
 
 export async function GET(request) {

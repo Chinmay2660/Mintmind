@@ -99,63 +99,47 @@ export function TransactionTimeControls({
           ? startOfYear(anchorDate) >= startOfYear(new Date())
           : startOfMonth(anchorDate) >= startOfMonth(new Date())
 
-  const prevAriaLabel =
-    timeView === 'daily'
-      ? 'Previous day'
-      : timeView === 'weekly'
-        ? 'Previous week'
-        : timeView === 'yearly'
-          ? 'Previous year'
-          : 'Previous month'
-  const nextAriaLabel =
-    timeView === 'daily'
-      ? 'Next day'
-      : timeView === 'weekly'
-        ? 'Next week'
-        : timeView === 'yearly'
-          ? 'Next year'
-          : 'Next month'
-
   return (
-    <div className="space-y-3">
-      {showDateNav && (
-        <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between gap-3">
+      {showDateNav ? (
+        <div className="flex min-w-0 flex-1 items-center justify-between">
           {showArrows ? (
             <Button
               type="button"
               variant="ghost"
               size="icon"
               onClick={goToPrevious}
-              aria-label={prevAriaLabel}
             >
               <ChevronLeft className="w-5 h-5" />
             </Button>
           ) : (
-            <div className="w-10" />
+            <div className="w-10 shrink-0" />
           )}
-          <span className="text-base font-semibold text-foreground">{dateLabel}</span>
+          <span className="truncate px-2 text-sm font-semibold text-foreground sm:text-base">
+            {dateLabel}
+          </span>
           {showArrows ? (
             <Button
               type="button"
               variant="ghost"
               size="icon"
               onClick={goToNext}
-              aria-label={nextAriaLabel}
               disabled={isNextDisabled}
             >
               <ChevronRight className="w-5 h-5" />
             </Button>
           ) : (
-            <div className="w-10" />
+            <div className="w-10 shrink-0" />
           )}
         </div>
+      ) : (
+        <div className="flex-1" />
       )}
 
       <select
         value={timeView}
         onChange={(e) => onTimeViewChange(e.target.value as TimeView)}
-        className="w-full h-10 px-3 rounded-xl border surface-input text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-        aria-label="Time view"
+        className="h-9 w-auto shrink-0 rounded-lg border surface-input px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       >
         {TIME_VIEW_OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>

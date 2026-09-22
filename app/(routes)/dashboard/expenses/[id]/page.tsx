@@ -10,7 +10,7 @@ const ExpensesComponent = ({ params }) => {
   }, [router])
 
   return (
-    <div className="p-4 md:p-8">
+    <div>
       <p className="text-muted-foreground">Redirecting to transactions...</p>
     </div>
   )

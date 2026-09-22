@@ -32,7 +32,7 @@ const FEATURES = [
   { icon: Shield, label: 'Secure & private' },
 ] as const
 
-const TRUST_POINTS = ['Free forever', 'No credit card', 'Works offline'] as const
+const TRUST_POINTS = ['Free forever', 'No credit card', 'Secure sync'] as const
 
 function GoogleIcon({ className = 'w-5 h-5' }: { className?: string }) {
   return (
@@ -247,7 +247,7 @@ function SignInContent() {
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-md leading-relaxed">
                   Track expenses, manage investments, and hit your goals — all in a
-                  beautifully designed app that works offline.
+                  beautifully designed app for your money.
                 </p>
               </div>
 

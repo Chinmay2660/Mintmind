@@ -1,12 +1,13 @@
-import { Outfit } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner"
 import Providers from "@/components/Providers"
 
-const outfit = Outfit({ 
+const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  display: 'swap',
-  fallback: ['system-ui', 'arial'],
+  display: "swap",
+  variable: "--font-sans",
+  fallback: ["system-ui", "sans-serif"],
 });
 
 export const metadata = {
@@ -48,7 +49,7 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={outfit.className}>
+      <body className={`${plusJakarta.variable} font-sans antialiased`}>
         <Providers>
           <Toaster />
           {children}

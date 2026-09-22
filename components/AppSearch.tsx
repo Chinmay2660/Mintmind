@@ -8,7 +8,7 @@ import {
   type SearchItem,
 } from '@/lib/constants/dashboardNav'
 import { useAppSearch } from '@/contexts/AppSearchContext'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 
 function matchesQuery(item: SearchItem, query: string): boolean {
@@ -107,8 +107,6 @@ export default function AppSearch() {
       <DialogContent
         className="max-w-lg gap-0 overflow-hidden p-0 sm:rounded-2xl [&>button]:hidden"
       >
-        <DialogTitle className="sr-only">Search</DialogTitle>
-
         <div className="border-b border-border p-3">
           <div className="flex items-center gap-2.5 rounded-xl border border-border bg-muted/50 px-3 dark:bg-muted/30">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -120,7 +118,6 @@ export default function AppSearch() {
               onKeyDown={onKeyDown}
               placeholder="Search pages and actions..."
               className="h-11 w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-              aria-label="Search"
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
@@ -130,7 +127,6 @@ export default function AppSearch() {
                 type="button"
                 onClick={() => setQuery('')}
                 className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                aria-label="Clear search"
               >
                 <X className="h-4 w-4" />
               </button>

@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Card } from '@/components/ui/card'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { FormSheet } from '@/components/ui/form-sheet'
 import { FAB } from '@/components/ui/fab'
 import { RowActions } from '@/components/ui/swipeable-row'
 import {
@@ -21,13 +22,15 @@ import {
 } from '@/lib/utils/format'
 import {
   DEFAULT_CARD_COLOR,
-  maskCardNumber,
+  formatCardNumber,
 } from '@/lib/utils/creditCard'
 import { getUtilizationBarClass } from '@/lib/utils/utilization'
 import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useLocalList } from '@/lib/hooks/useLocalData'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
 import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useFormSheet } from '@/lib/hooks/useFormSheet'
+import { CreditCardForm } from './_components/CreditCardForm'
 
 const CreditCardsPageContent = () => {
   const router = useRouter()
@@ -35,9 +38,10 @@ const CreditCardsPageContent = () => {
   const userId = user?.id
   const { data: cards, loading, reload } = useLocalList('creditCards', userId)
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
+  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
 
   useSyncedRefresh(reload)
-  useAddActionRedirect('/dashboard/credit-cards/new')
+  useAddActionRedirect(openSheet)
 
   const handleDelete = (id: string) => {
     confirmDelete({
@@ -56,16 +60,16 @@ const CreditCardsPageContent = () => {
   const totalAvailable = totalLimit - totalBalance
 
   return (
-    <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6">
+    <div className="space-y-6">
       <PageHeader title="Credit Cards" subtitle="Track limits, balances, and due dates">
         <div className="hidden md:block">
-          <AddButton onClick={() => router.push('/dashboard/credit-cards/new')}>
+          <AddButton onClick={openSheet}>
             Add Card
           </AddButton>
         </div>
       </PageHeader>
 
-      <FAB onClick={() => router.push('/dashboard/credit-cards/new')} label="Add card" />
+      <FAB onClick={openSheet} label="Add card" />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl p-5 text-white shadow-lg">
@@ -97,7 +101,7 @@ const CreditCardsPageContent = () => {
             title="No credit cards yet"
             description="Add your cards to track limits, balances, and payment due dates"
             actionLabel="Add Your First Card"
-            onAction={() => router.push('/dashboard/credit-cards/new')}
+            onAction={openSheet}
           />
         ) : (
           cards.map((card) => {
@@ -134,8 +138,8 @@ const CreditCardsPageContent = () => {
                       {(card.cardNumber || card.lastFourDigits) && (
                         <p className="text-sm text-muted-foreground font-mono tracking-wide">
                           {card.cardNumber
-                            ? maskCardNumber(card.cardNumber)
-                            : `•••• ${card.lastFourDigits}`}
+                            ? formatCardNumber(card.cardNumber)
+                            : card.lastFourDigits}
                         </p>
                       )}
                       {card.issuer && (
@@ -202,6 +206,17 @@ const CreditCardsPageContent = () => {
           })
         )}
       </div>
+
+      <FormSheet open={open} onOpenChange={setOpen} title="Add Credit Card">
+        <CreditCardForm
+          variant="sheet"
+          onSuccess={() => {
+            closeSheet()
+            reload()
+          }}
+          onCancel={closeSheet}
+        />
+      </FormSheet>
 
       <ConfirmDialog {...confirmDialogProps} />
     </div>

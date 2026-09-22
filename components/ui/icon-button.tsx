@@ -3,6 +3,7 @@
 import type { LucideIcon } from 'lucide-react'
 import { Edit, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { Tooltip } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 type IconButtonVariant = 'default' | 'destructive' | 'primary'
@@ -13,13 +14,15 @@ interface IconButtonProps {
   variant?: IconButtonVariant
   className?: string
   disabled?: boolean
-  'aria-label'?: string
+  tooltip?: string
 }
 
 const variants: Record<IconButtonVariant, string> = {
-  default: 'p-2 rounded-xl hover:bg-white/40 dark:hover:bg-white/5 text-muted-foreground',
-  destructive: 'p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400',
-  primary: 'p-2 rounded-lg hover:bg-primary/10 text-primary',
+  default:
+    'rounded-xl p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+  destructive:
+    'rounded-xl p-2 text-destructive hover:bg-destructive/10',
+  primary: 'rounded-xl p-2 text-primary hover:bg-primary/10',
 }
 
 export function IconButton({
@@ -28,26 +31,63 @@ export function IconButton({
   variant = 'default',
   className = '',
   disabled,
-  'aria-label': ariaLabel,
+  tooltip,
 }: IconButtonProps) {
-  return (
+  const label = tooltip
+
+  const button = (
     <motion.button
       whileTap={{ scale: 0.9 }}
       onClick={onClick}
       className={cn(variants[variant], className)}
       disabled={disabled}
-      aria-label={ariaLabel}
       type="button"
     >
-      {Icon && <Icon className="w-4 h-4" />}
+      {Icon && <Icon className="h-4 w-4" strokeWidth={1.75} />}
     </motion.button>
+  )
+
+  if (!label) return button
+
+  return (
+    <Tooltip content={label} side="top">
+      {button}
+    </Tooltip>
   )
 }
 
-export function EditButton({ onClick, className = '' }: { onClick?: () => void; className?: string }) {
-  return <IconButton icon={Edit} onClick={onClick} variant="default" className={className} />
+export function EditButton({
+  onClick,
+  className = '',
+}: {
+  onClick?: () => void
+  className?: string
+}) {
+  return (
+    <IconButton
+      icon={Edit}
+      onClick={onClick}
+      variant="default"
+      className={className}
+      tooltip="Edit"
+    />
+  )
 }
 
-export function DeleteButton({ onClick, className = '' }: { onClick?: () => void; className?: string }) {
-  return <IconButton icon={Trash2} onClick={onClick} variant="destructive" className={className} />
+export function DeleteButton({
+  onClick,
+  className = '',
+}: {
+  onClick?: () => void
+  className?: string
+}) {
+  return (
+    <IconButton
+      icon={Trash2}
+      onClick={onClick}
+      variant="destructive"
+      className={className}
+      tooltip="Delete"
+    />
+  )
 }

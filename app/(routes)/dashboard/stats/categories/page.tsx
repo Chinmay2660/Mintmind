@@ -6,7 +6,6 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useAuth } from '@/lib/hooks/useAuth'
-import { useOffline } from '@/contexts/OfflineContext'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/button'
 import { PageSkeleton } from '@/components/ui/loading-skeleton'
@@ -19,7 +18,7 @@ import {
 import { CategoryBreakdownCard, type CategoryStat } from '../_components/CategoryBreakdownCard'
 import { useBankAccounts } from '@/lib/hooks/useReferenceData'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
-import { computeTransactionStats } from '@/lib/offline/computed'
+import { fetchTransactionStats } from '@/lib/api/stats'
 
 interface StatsData {
   summary: {
@@ -35,7 +34,6 @@ interface StatsData {
 const CategoryStatsPage = () => {
   const { user } = useAuth()
   const userId = user?.id
-  const { syncing, lastSyncedAt } = useOffline()
   const { accounts } = useBankAccounts(userId)
   const [stats, setStats] = useState<StatsData | null>(null)
   const [anchorDate, setAnchorDate] = useState(new Date())
@@ -52,7 +50,7 @@ const CategoryStatsPage = () => {
 
   const loadStats = useCallback(async () => {
     const types = buildTypesParam(filters)
-    const result = await computeTransactionStats({
+    const result = await fetchTransactionStats({
       startDate: monthRange.start.toISOString(),
       endDate: monthRange.end.toISOString(),
       types,
@@ -65,8 +63,6 @@ const CategoryStatsPage = () => {
       setLoading(false)
       return
     }
-    if (syncing) return
-
     let cancelled = false
     setLoading(true)
     loadStats()
@@ -80,7 +76,7 @@ const CategoryStatsPage = () => {
     return () => {
       cancelled = true
     }
-  }, [userId, syncing, lastSyncedAt, loadStats])
+  }, [userId, loadStats])
 
   useSyncedRefresh(loadStats)
 
@@ -93,7 +89,7 @@ const CategoryStatsPage = () => {
   if (isInitialLoad) return <PageSkeleton className="pb-24 md:pb-6" />
 
   return (
-    <div className="p-4 md:p-6 pb-24 md:pb-6 space-y-4 overflow-x-hidden">
+    <div className="space-y-5 overflow-x-hidden">
       <PageHeader title="Category Stats" subtitle={format(anchorDate, 'MMMM yyyy')}>
         <TransactionFilterSheet
           filters={filters}
@@ -108,7 +104,6 @@ const CategoryStatsPage = () => {
           variant="outline"
           size="icon"
           onClick={() => setAnchorDate((d) => subMonths(d, 1))}
-          aria-label="Previous month"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -117,7 +112,6 @@ const CategoryStatsPage = () => {
           variant="outline"
           size="icon"
           onClick={() => setAnchorDate((d) => addMonths(d, 1))}
-          aria-label="Next month"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>

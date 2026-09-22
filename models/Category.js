@@ -27,6 +27,15 @@ const CategorySchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  parentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    default: null,
+  },
+  order: {
+    type: Number,
+    default: 0,
+  },
 }, {
   timestamps: true,
 });

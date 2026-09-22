@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Card } from '@/components/ui/card'
 import { EditButton, DeleteButton } from '@/components/ui/icon-button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { FormSheet } from '@/components/ui/form-sheet'
 import { FAB } from '@/components/ui/fab'
 import { RowActions } from '@/components/ui/swipeable-row'
 import { formatCurrency } from '@/lib/utils/format'
@@ -20,6 +21,8 @@ import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
 import { useLocalList } from '@/lib/hooks/useLocalData'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
 import { useAddActionRedirect } from '@/lib/hooks/useAddActionRedirect'
+import { useFormSheet } from '@/lib/hooks/useFormSheet'
+import { InsuranceForm } from './_components/InsuranceForm'
 
 const FREQUENCY_MULTIPLIER: Record<string, number> = {
   Monthly: 12,
@@ -34,6 +37,7 @@ const InsurancePageContent = () => {
   const { data: allPolicies, loading, reload } = useLocalList('insurance', userId)
   const [filterType, setFilterType] = useState('all')
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
+  const { open, setOpen, openSheet, closeSheet } = useFormSheet()
 
   const policies =
     filterType === 'all'
@@ -41,7 +45,7 @@ const InsurancePageContent = () => {
       : allPolicies.filter((p) => p.type === filterType)
 
   useSyncedRefresh(reload)
-  useAddActionRedirect('/dashboard/insurance/new')
+  useAddActionRedirect(openSheet)
 
   const handleDelete = (id: string) => {
     confirmDelete({
@@ -68,16 +72,16 @@ const InsurancePageContent = () => {
   }).length
 
   return (
-    <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6">
+    <div className="space-y-6">
       <PageHeader title="Insurance" subtitle="Track your insurance policies">
         <div className="hidden md:block">
-          <AddButton onClick={() => router.push('/dashboard/insurance/new')}>
+          <AddButton onClick={openSheet}>
             Add Policy
           </AddButton>
         </div>
       </PageHeader>
 
-      <FAB onClick={() => router.push('/dashboard/insurance/new')} label="Add policy" />
+      <FAB onClick={openSheet} label="Add policy" />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-5 text-white shadow-lg">
@@ -129,7 +133,7 @@ const InsurancePageContent = () => {
             title="No insurance policies yet"
             description="Add your first policy to track premiums and renewals"
             actionLabel="Add Your First Policy"
-            onAction={() => router.push('/dashboard/insurance/new')}
+            onAction={openSheet}
           />
         ) : (
           policies.map((policy) => {
@@ -217,6 +221,17 @@ const InsurancePageContent = () => {
           })
         )}
       </div>
+
+      <FormSheet open={open} onOpenChange={setOpen} title="Add Policy">
+        <InsuranceForm
+          variant="sheet"
+          onSuccess={() => {
+            closeSheet()
+            reload()
+          }}
+          onCancel={closeSheet}
+        />
+      </FormSheet>
 
       <ConfirmDialog {...confirmDialogProps} />
     </div>

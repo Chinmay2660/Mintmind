@@ -3,13 +3,11 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useLayoutEffect, useRef } from 'react'
-import { Button } from '@/components/ui/button'
-import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { scrollActiveTabIntoView, scrollPageToTop } from '@/lib/utils/scroll'
 
 const tabScrollClassName =
-  'flex gap-2 overflow-x-auto overscroll-x-contain px-4 pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden'
+  'flex gap-2 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden'
 
 interface TabButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'> {
   value: string
@@ -18,7 +16,6 @@ interface TabButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonEleme
   children: ReactNode
   icon?: LucideIcon
   className?: string
-  size?: 'default' | 'sm' | 'lg' | 'icon'
 }
 
 export function TabButton({
@@ -28,23 +25,25 @@ export function TabButton({
   children,
   icon: Icon,
   className = '',
-  size = 'sm',
   ...props
 }: TabButtonProps) {
   const isActive = value === activeValue
 
   return (
-    <Button
-      variant={isActive ? 'default' : 'outline'}
+    <button
+      type="button"
       onClick={() => onClick(value)}
-      size={size}
       data-active={isActive}
-      className={cn('shrink-0 gap-1.5 rounded-full whitespace-nowrap', className)}
+      className={cn(
+        'mm-pill shrink-0 gap-1.5 whitespace-nowrap transition-colors',
+        isActive ? 'mm-pill-active' : 'hover:bg-muted/60 hover:text-foreground',
+        className
+      )}
       {...props}
     >
-      {Icon && <Icon className="block size-4 shrink-0 pointer-events-none" aria-hidden />}
+      {Icon && <Icon className="block size-3.5 shrink-0" strokeWidth={1.75} />}
       <span className="leading-none">{children}</span>
-    </Button>
+    </button>
   )
 }
 
@@ -81,14 +80,8 @@ export function TabButtonGroup({
   }, [value])
 
   return (
-    <div className={cn('min-w-0 flex-1 -mx-4 overflow-hidden', className)}>
-      <motion.div
-        ref={scrollRef}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className={tabScrollClassName}
-      >
+    <div className={cn('min-w-0 flex-1 overflow-hidden', className)}>
+      <div ref={scrollRef} className={tabScrollClassName}>
         {options.map((option) => (
           <TabButton
             key={option.value}
@@ -100,7 +93,7 @@ export function TabButtonGroup({
             {option.label}
           </TabButton>
         ))}
-      </motion.div>
+      </div>
     </div>
   )
 }

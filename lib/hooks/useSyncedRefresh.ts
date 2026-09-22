@@ -1,14 +1,10 @@
 'use client'
 
 import { useRegisterRefresh } from '@/contexts/RefreshContext'
-import { useOffline } from '@/contexts/OfflineContext'
 
-/** Pull-to-refresh: force server sync then reload local cache. */
+/** Pull-to-refresh: reload data from the server. */
 export function useSyncedRefresh(reload: () => Promise<unknown>) {
-  const { syncNow } = useOffline()
-
   useRegisterRefresh(async () => {
-    await syncNow({ force: true })
     await reload()
   })
 }
