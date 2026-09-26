@@ -13,7 +13,9 @@ export function useAddActionRedirect(hrefOrOpen: string | (() => void)) {
     if (searchParams.get('action') !== 'add') return
     if (typeof hrefOrOpen === 'function') {
       hrefOrOpen()
-      router.replace(pathname)
+      const rest = new URLSearchParams(searchParams.toString())
+      rest.delete('action')
+      router.replace(rest.size ? `${pathname}?${rest}` : pathname)
     } else {
       router.replace(hrefOrOpen)
     }

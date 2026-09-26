@@ -1,14 +1,8 @@
 import { requireAuth, pick, safeErrorResponse } from '@/lib/middleware/api';
 import { ensureCreditCardAccount } from '@/lib/api/creditCardAccount';
-import CreditCard from '@/models/CreditCard';
+import CreditCard, { CREDIT_CARD_FIELDS } from '@/models/CreditCard';
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-
-const CREDIT_CARD_FIELDS = [
-  'cardName', 'issuer', 'cardNumber', 'cardType', 'lastFourDigits', 'creditLimit',
-  'currentBalance', 'statementDay', 'dueDay', 'apr', 'rewardsProgram', 'accountId', 'notes',
-  'color',
-];
 
 export async function GET(request) {
   try {

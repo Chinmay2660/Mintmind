@@ -1,6 +1,7 @@
 'use client'
 import React, { Suspense, useCallback, useState } from 'react'
-import { Wallet, Banknote, Edit } from 'lucide-react'
+import { Wallet, Banknote, Edit, User, Users } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import request from '@/lib/api/request'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -57,10 +58,151 @@ function StatTile({
   )
 }
 
+type Account = ReturnType<typeof useBankAccounts>['accounts'][number]
+
+const maskAccountNumber = (value: string) => `•••• ${value.replace(/\s/g, '').slice(-4)}`
+
+const DEFAULT_ACCOUNT_COLOR = '#2563eb'
+const ON_LIGHT_TEXT = '#0f172a'
+const ON_DARK_TEXT = '#ffffff'
+
+/** WCAG relative luminance; light backgrounds get dark text. */
+function isLightColor(hex: string) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex)
+  if (!m) return false
+  const [r, g, b] = [0, 2, 4].map((i) => {
+    const c = parseInt(m[1].slice(i, i + 2), 16) / 255
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4
+}
+
+function AccountDetail({
+  label,
+  value,
+  mono,
+  className,
+}: {
+  label: string
+  value?: string
+  mono?: boolean
+  className?: string
+}) {
+  if (!value) return null
+  return (
+    <div className={cn('min-w-0', className)}>
+      <dt className="text-[11px] uppercase tracking-wide opacity-70">{label}</dt>
+      <dd className={cn('mt-0.5 truncate text-sm font-medium', mono && 'font-mono')} title={value}>
+        {value}
+      </dd>
+    </div>
+  )
+}
+
+function AccountCard({
+  account,
+  balance,
+  privacyMode,
+  onEdit,
+  onDelete,
+}: {
+  account: Account
+  balance: string
+  privacyMode: boolean
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  const isJoint = account.ownershipType === 'Joint'
+  const title = `${account.bankName} - ${account.accountType || 'Savings'}`
+  const OwnerIcon = isJoint ? Users : User
+  const hasDetails = Boolean(
+    account.accountNumber || account.ifscCode || account.nomineeName || (isJoint && account.jointHolders)
+  )
+
+  const color = account.color || DEFAULT_ACCOUNT_COLOR
+  const light = isLightColor(color)
+  const onCardAction = 'text-inherit opacity-80 hover:bg-black/10 hover:opacity-100'
+
+  return (
+    <article
+      className="relative flex flex-col overflow-hidden rounded-2xl shadow-sm ring-1 ring-black/5"
+      style={{
+        backgroundColor: color,
+        backgroundImage: 'linear-gradient(135deg, rgb(255 255 255 / 0.16), rgb(0 0 0 / 0.24))',
+        color: light ? ON_LIGHT_TEXT : ON_DARK_TEXT,
+      }}
+    >
+      <div className="flex items-start gap-3 p-4 pb-0 sm:p-5 sm:pb-0">
+        <div
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 text-xl"
+          aria-hidden="true"
+        >
+          🏦
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate font-semibold" title={title}>
+            {title}
+          </h3>
+          {account.branch && (
+            <p className="truncate text-xs opacity-75">{account.branch}</p>
+          )}
+        </div>
+        <RowActions>
+          <EditButton onClick={onEdit} className={onCardAction} />
+          <DeleteButton onClick={onDelete} className={onCardAction} />
+        </RowActions>
+      </div>
+
+      <div className="flex flex-wrap items-end justify-between gap-3 px-4 pt-4 sm:px-5">
+        <div className="min-w-0">
+          <p className="text-[11px] uppercase tracking-wide opacity-70">Balance</p>
+          <p className="mt-0.5 truncate text-2xl font-semibold tabular-nums">{balance}</p>
+        </div>
+        <Badge className="border-transparent bg-black/15 text-inherit">
+          <OwnerIcon className="h-3 w-3" aria-hidden="true" />
+          {isJoint ? 'Joint' : 'Individual'}
+        </Badge>
+      </div>
+
+      {hasDetails ? (
+        <dl
+          className={cn(
+            'mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t px-4 py-4 sm:px-5',
+            light ? 'border-black/10' : 'border-white/15'
+          )}
+        >
+          <AccountDetail
+            label="Account no."
+            value={
+              account.accountNumber && privacyMode
+                ? maskAccountNumber(account.accountNumber)
+                : account.accountNumber
+            }
+            mono
+          />
+          <AccountDetail label="IFSC" value={account.ifscCode} mono />
+          {isJoint && (
+            <AccountDetail
+              label={account.operationMode ? `Joint · ${account.operationMode}` : 'Joint holders'}
+              value={account.jointHolders}
+              className="col-span-2"
+            />
+          )}
+          <AccountDetail label="Nominee" value={account.nomineeName} className="col-span-2" />
+        </dl>
+      ) : (
+        <div className="pb-4 sm:pb-5" />
+      )}
+    </article>
+  )
+}
+
 const AccountsPageContent = () => {
   const { user } = useAuth()
   const userId = user?.id
-  const { accounts, loading: accountsLoading, refetch: reloadAccounts } = useBankAccounts(userId)
+  const { accounts: allAccounts, loading: accountsLoading, refetch: reloadAccounts } = useBankAccounts(userId)
+  // Credit-card accounts are mirrors owned by the Credit Cards page.
+  const accounts = allAccounts.filter((a) => a.accountType !== 'Credit Card')
   const { data: cash, loading: cashLoading, reload: reloadCash } = useLocalSingleton(
     'cash',
     'cash',
@@ -73,7 +215,7 @@ const AccountsPageContent = () => {
   const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
   const { prompt: promptBalanceAdjustment, dialogs: balanceAdjustmentDialogs } =
     useBalanceAdjustmentPrompt()
-  const { fmt } = usePrivacyAmount()
+  const { fmt, privacyMode } = usePrivacyAmount()
 
   useAddActionRedirect(openSheet)
   useEditActionRedirect(openSheet)
@@ -216,34 +358,14 @@ const AccountsPageContent = () => {
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {accounts.map((account) => (
-              <div key={account._id} className="surface-card p-4">
-                <div className="flex items-start gap-3">
-                  <div
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl"
-                    style={{ backgroundColor: `${account.color}15`, color: account.color }}
-                  >
-                    {account.icon}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="truncate font-semibold text-foreground">{account.accountName}</h3>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {account.bankName} · {account.accountType}
-                    </p>
-                    {account.accountNumber && (
-                      <p className="mt-0.5 font-mono text-xs text-muted-foreground">
-                        {account.accountNumber}
-                      </p>
-                    )}
-                  </div>
-                  <RowActions>
-                    <EditButton onClick={() => openSheet(account._id)} />
-                    <DeleteButton onClick={() => handleDelete(account._id)} />
-                  </RowActions>
-                </div>
-                <p className="mt-3 text-lg font-semibold tabular-nums">
-                  {fmt(account.balance)}
-                </p>
-              </div>
+              <AccountCard
+                key={account._id}
+                account={account}
+                balance={fmt(account.balance)}
+                privacyMode={privacyMode}
+                onEdit={() => openSheet(account._id)}
+                onDelete={() => handleDelete(account._id)}
+              />
             ))}
           </div>
         )}

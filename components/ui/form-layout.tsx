@@ -82,12 +82,13 @@ interface FormFieldProps {
   className?: string
 }
 
+// compact/icon/color used to cap width inside a half-width cell, which left ragged rows; they now fill the cell.
 const spanClass: Record<FormFieldSpan, string> = {
   default: '',
   full: 'form-field-full',
-  compact: 'form-field-compact',
-  icon: 'form-field-icon',
-  color: 'form-field-color',
+  compact: '',
+  icon: '',
+  color: '',
 }
 
 export function FormField({
@@ -131,11 +132,31 @@ export function FormActions({ children, className }: FormActionsProps) {
   return <div className={cn('form-actions-bar', className)}>{children}</div>
 }
 
-export function FormSkeleton({ className }: { className?: string }) {
+const SKELETON_FIELDS = 4
+
+/** Mirrors FormLayout's shell for the given variant, so sheets don't get a nested card. */
+export function FormSkeleton({
+  className,
+  variant = 'page',
+}: {
+  className?: string
+  variant?: FormLayoutProps['variant']
+}) {
   return (
-    <div className={cn('form-layout', className)}>
-      <div className="form-layout-card">
-        <div className="h-64 animate-pulse rounded-xl bg-muted/40" />
+    <div className={cn(layoutClass[variant], className)} role="status" aria-label="Loading form">
+      <div className={layoutBodyClass[variant]}>
+        <div className="form-section-grid">
+          {Array.from({ length: SKELETON_FIELDS }).map((_, i) => (
+            <div key={i} className={cn('form-field', i === 0 && 'form-field-full')}>
+              <div className="skeleton h-3 w-24" />
+              <div className="skeleton h-10 w-full rounded-[var(--radius-lg)]" />
+            </div>
+          ))}
+        </div>
+        <div className="form-actions-bar">
+          <div className="skeleton h-10 w-full rounded-[var(--radius-lg)] sm:w-24" />
+          <div className="skeleton h-10 w-full rounded-[var(--radius-lg)] sm:w-36" />
+        </div>
       </div>
     </div>
   )

@@ -111,7 +111,7 @@ export function GoalForm({ goalId, variant = 'page', onSuccess, onCancel }: Goal
   }
 
   if (loading) {
-    return <FormSkeleton />
+    return <FormSkeleton variant={variant} />
   }
 
   return (

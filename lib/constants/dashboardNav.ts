@@ -57,7 +57,7 @@ export const DASHBOARD_NAV_MAIN: DashboardNavItem[] = [
 
 export const DASHBOARD_NAV_MORE: DashboardNavItem[] = [
   { id: 4, name: 'Portfolio', icon: TrendingUp, path: '/dashboard/investments' },
-  { id: 13, name: 'Credit Cards', icon: CreditCard, path: '/dashboard/credit-cards' },
+  { id: 13, name: 'Cards', icon: CreditCard, path: '/dashboard/credit-cards' },
   { id: 24, name: 'Loans', icon: Home, path: '/dashboard/loans' },
   { id: 12, name: 'Insurance', icon: Shield, path: '/dashboard/insurance' },
   { id: 5, name: 'Categories', icon: Tags, path: '/dashboard/categories' },
@@ -94,19 +94,8 @@ export const DASHBOARD_NAV_SECTIONS: DashboardNavSection[] = [
     items: [{ id: 1, name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' }],
   },
   {
-    id: 'networth',
-    label: 'Net Worth',
-    items: [
-      { id: 2, name: 'Accounts', icon: Wallet, path: '/dashboard/accounts' },
-      { id: 4, name: 'Portfolio', icon: TrendingUp, path: '/dashboard/investments' },
-      { id: 13, name: 'Credit Cards', icon: CreditCard, path: '/dashboard/credit-cards' },
-      { id: 24, name: 'Loans', icon: Home, path: '/dashboard/loans' },
-      { id: 12, name: 'Insurance', icon: Shield, path: '/dashboard/insurance' },
-    ],
-  },
-  {
     id: 'money',
-    label: 'Expense Management',
+    label: 'Expenses',
     items: [
       { id: 3, name: 'Transactions', icon: ReceiptText, path: '/dashboard/transactions' },
       { id: 6, name: 'Budgets', icon: PiggyBank, path: '/dashboard/budgets' },
@@ -116,13 +105,23 @@ export const DASHBOARD_NAV_SECTIONS: DashboardNavSection[] = [
     ],
   },
   {
+    id: 'finances',
+    label: 'Finances',
+    items: [
+      { id: 2, name: 'Accounts', icon: Wallet, path: '/dashboard/accounts' },
+      { id: 13, name: 'Cards', icon: CreditCard, path: '/dashboard/credit-cards' },
+      { id: 24, name: 'Loans', icon: Home, path: '/dashboard/loans' },
+      { id: 12, name: 'Insurance', icon: Shield, path: '/dashboard/insurance' },
+    ],
+  },
+  {
     id: 'investments',
     label: 'Investments',
     items: [
+      { id: 4, name: 'Portfolio', icon: TrendingUp, path: '/dashboard/investments' },
       { id: 20, name: 'Mutual Funds', icon: PieChart, path: '/dashboard/investments/mutual-funds' },
       { id: 21, name: 'Performance', icon: LineChart, path: '/dashboard/investments/performance' },
       { id: 22, name: 'Rebalancing', icon: Scale, path: '/dashboard/investments/rebalancing' },
-      { id: 23, name: 'Emergency Fund', icon: ShieldCheck, path: '/dashboard/emergency-fund' },
     ],
   },
   {
@@ -130,19 +129,10 @@ export const DASHBOARD_NAV_SECTIONS: DashboardNavSection[] = [
     label: 'Planner',
     items: [
       { id: 14, name: 'Goals', icon: Target, path: '/dashboard/goals' },
+      { id: 23, name: 'Emergency Fund', icon: ShieldCheck, path: '/dashboard/emergency-fund' },
       { id: 25, name: 'Savings Planner', icon: Calculator, path: '/dashboard/planners/savings' },
       { id: 26, name: 'Retirement Planner', icon: Calculator, path: '/dashboard/planners/retirement' },
       { id: 27, name: 'FIRE Planner', icon: Calculator, path: '/dashboard/planners/fire' },
-    ],
-  },
-  {
-    id: 'vault',
-    label: 'Secure Vault',
-    items: [
-      { id: 30, name: 'Vault', icon: Lock, path: '/dashboard/vault' },
-      { id: 31, name: 'Nominee', icon: UserCheck, path: '/dashboard/nominee' },
-      { id: 19, name: 'Passwords', icon: Lock, path: '/dashboard/passwords' },
-      { id: 28, name: 'Documents', icon: FileText, path: '/dashboard/documents' },
     ],
   },
   {
@@ -151,6 +141,16 @@ export const DASHBOARD_NAV_SECTIONS: DashboardNavSection[] = [
     items: [
       { id: 10, name: 'Daily Stats', icon: LineChart, path: '/dashboard/stats' },
       { id: 11, name: 'Category Stats', icon: BarChart3, path: '/dashboard/stats/categories' },
+    ],
+  },
+  {
+    id: 'vault',
+    label: 'Vault',
+    items: [
+      { id: 30, name: 'Vault', icon: Lock, path: '/dashboard/vault' },
+      { id: 31, name: 'Nominee', icon: UserCheck, path: '/dashboard/nominee' },
+      { id: 19, name: 'Passwords', icon: Lock, path: '/dashboard/passwords' },
+      { id: 28, name: 'Documents', icon: FileText, path: '/dashboard/documents' },
     ],
   },
   {
@@ -201,6 +201,7 @@ export const DASHBOARD_SEARCH_ACTIONS: SearchItem[] = [
   { name: 'Add account', path: '/dashboard/accounts/new', icon: Plus, keywords: ['bank'], group: 'actions' },
   { name: 'Add insurance', path: '/dashboard/insurance/new', icon: Plus, keywords: ['insurance'], group: 'actions' },
   { name: 'Add credit card', path: '/dashboard/credit-cards/new', icon: Plus, keywords: ['credit card'], group: 'actions' },
+  { name: 'Add debit card', path: '/dashboard/credit-cards?tab=debit&action=add', icon: Plus, keywords: ['debit card', 'atm'], group: 'actions' },
   { name: 'Add reminder', path: '/dashboard/reminders/new', icon: Plus, keywords: ['reminder'], group: 'actions' },
 ]
 

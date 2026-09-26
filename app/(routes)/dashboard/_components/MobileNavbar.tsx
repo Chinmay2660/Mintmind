@@ -1,23 +1,15 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Menu, PanelLeft, PanelLeftClose, Plus } from 'lucide-react'
+import { Menu, Plus } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import UserProfile from '@/components/UserProfile'
 import {
   DASHBOARD_NAV_MAIN,
   DASHBOARD_NAV_MORE,
   DASHBOARD_NAV_SECTIONS,
   isDashboardNavActive,
 } from '@/lib/constants/dashboardNav'
-import {
-  SIDEBAR_WIDTH_COLLAPSED,
-  SIDEBAR_WIDTH_EXPANDED,
-} from '@/lib/constants/sidebar'
-import Logo from '@/components/Logo'
-import { useSidebar } from '@/contexts/SidebarContext'
-import { Button } from '@/components/ui/button'
 import { Tooltip } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import {
@@ -36,78 +28,29 @@ type NavMenu = {
   active: boolean
 }
 
-function NavLink({
-  menu,
-  onNavigate,
-  variant = 'sidebar',
-  collapsed = false,
-}: {
-  menu: NavMenu
-  onNavigate?: () => void
-  variant?: 'sidebar' | 'sheet'
-  collapsed?: boolean
-}) {
+function NavLink({ menu, onNavigate }: { menu: NavMenu; onNavigate?: () => void }) {
   const Icon = menu.icon
-
-  if (variant === 'sheet') {
-    return (
-      <Link
-        href={menu.path}
-        onClick={onNavigate}
-        className={cn(
-          'flex items-center gap-3 rounded-2xl px-3.5 py-3 transition-colors',
-          menu.active
-            ? 'bg-primary/10 text-primary'
-            : 'text-muted-foreground hover:bg-muted/40'
-        )}
-      >
-        <div
-          className={cn(
-            'flex h-9 w-9 items-center justify-center rounded-xl',
-            menu.active ? 'bg-primary/15 text-primary' : 'bg-muted/40'
-          )}
-        >
-          <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
-        </div>
-        <span className="flex-1 text-sm font-medium">{menu.name}</span>
-      </Link>
-    )
-  }
-
-  if (collapsed) {
-    const link = (
-      <Link
-        href={menu.path}
-        className={cn(
-          'flex h-10 w-10 items-center justify-center rounded-xl transition-colors',
-          menu.active
-            ? 'bg-primary/15 text-primary'
-            : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-        )}
-      >
-        <Icon className="h-[18px] w-[18px]" strokeWidth={menu.active ? 2 : 1.75} />
-      </Link>
-    )
-
-    return (
-      <Tooltip content={menu.name} side="right">
-        {link}
-      </Tooltip>
-    )
-  }
 
   return (
     <Link
       href={menu.path}
+      onClick={onNavigate}
       className={cn(
-        'flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] transition-colors',
+        'flex items-center gap-3 rounded-2xl px-3.5 py-3 transition-colors',
         menu.active
-          ? 'nav-item-active'
-          : 'text-muted-foreground hover:bg-muted/30'
+          ? 'bg-primary/10 text-primary'
+          : 'text-muted-foreground hover:bg-muted/40'
       )}
     >
-      <Icon className="h-[17px] w-[17px] shrink-0" strokeWidth={menu.active ? 2 : 1.75} />
-      <span className="truncate">{menu.name}</span>
+      <div
+        className={cn(
+          'flex h-9 w-9 items-center justify-center rounded-xl',
+          menu.active ? 'bg-primary/15 text-primary' : 'bg-muted/40'
+        )}
+      >
+        <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+      </div>
+      <span className="flex-1 text-sm font-medium">{menu.name}</span>
     </Link>
   )
 }
@@ -193,7 +136,6 @@ function MobileBottomNav() {
                             active: isDashboardNavActive(pathname, item.path),
                           }}
                           onNavigate={() => setMoreMenuOpen(false)}
-                          variant="sheet"
                         />
                       ))}
                     </div>
@@ -218,112 +160,5 @@ function MobileBottomNav() {
   )
 }
 
-function DesktopSidebar() {
-  const pathname = usePathname()
-  const { isOpen, toggle } = useSidebar()
-  const flatNav = DASHBOARD_NAV_SECTIONS.flatMap((section) => section.items)
-
-  return (
-    <aside
-      className="fixed inset-y-0 left-0 z-40 hidden h-svh shrink-0 flex-col overflow-hidden border-r border-border/60 bg-card/95 backdrop-blur-xl transition-[width] duration-300 ease-in-out md:flex"
-      style={{ width: isOpen ? SIDEBAR_WIDTH_EXPANDED : SIDEBAR_WIDTH_COLLAPSED }}
-    >
-      <div
-        className="flex h-full flex-col"
-        style={{ width: isOpen ? SIDEBAR_WIDTH_EXPANDED : SIDEBAR_WIDTH_COLLAPSED }}
-      >
-        <div
-          className={cn(
-            'flex h-14 shrink-0 items-center border-b border-border/60',
-            isOpen ? 'justify-between px-4' : 'justify-center px-2'
-          )}
-        >
-          {isOpen ? (
-            <>
-              <Link href="/dashboard" className="min-w-0">
-                <Logo />
-              </Link>
-              <Tooltip content="Collapse sidebar" side="right">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 shrink-0 rounded-xl"
-                  onClick={toggle}
-                >
-                  <PanelLeftClose className="h-[18px] w-[18px]" strokeWidth={1.75} />
-                </Button>
-              </Tooltip>
-            </>
-          ) : (
-            <Tooltip content="Mintmind" side="right">
-              <Link href="/dashboard">
-                <Logo compact />
-              </Link>
-            </Tooltip>
-          )}
-        </div>
-
-        <nav
-          className={cn(
-            'flex-1 overflow-y-auto py-3',
-            isOpen ? 'space-y-0.5 px-2.5' : 'flex flex-col items-center gap-1 px-2'
-          )}
-        >
-          {isOpen
-            ? DASHBOARD_NAV_SECTIONS.map((section) => (
-                <div key={section.id}>
-                  <p className="nav-section-label">{section.label}</p>
-                  <div className="space-y-0.5">
-                    {section.items.map((item) => (
-                      <NavLink
-                        key={item.id}
-                        menu={{
-                          ...item,
-                          active: isDashboardNavActive(pathname, item.path),
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))
-            : flatNav.map((item) => (
-                <NavLink
-                  key={item.id}
-                  menu={{
-                    ...item,
-                    active: isDashboardNavActive(pathname, item.path),
-                  }}
-                  collapsed
-                />
-              ))}
-        </nav>
-
-        <div
-          className={cn(
-            'shrink-0 border-t border-border/60 py-3',
-            isOpen ? 'px-3' : 'flex flex-col items-center gap-2 px-2'
-          )}
-        >
-          {!isOpen && (
-            <Tooltip content="Expand sidebar" side="right">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-xl"
-                onClick={toggle}
-              >
-                <PanelLeft className="h-[18px] w-[18px]" strokeWidth={1.75} />
-              </Button>
-            </Tooltip>
-          )}
-          <UserProfile showName={isOpen} compact={!isOpen} tooltip={!isOpen} />
-        </div>
-      </div>
-    </aside>
-  )
-}
-
-export { DesktopSidebar, MobileBottomNav }
+export { MobileBottomNav }
 export default MobileBottomNav

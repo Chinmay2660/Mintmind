@@ -1,5 +1,7 @@
 import { getAuthenticatedUser } from '@/lib/middleware/auth';
-import BankAccount from '@/models/BankAccount';
+import BankAccount, { BANK_ACCOUNT_FIELDS, normalizeBankAccountInput } from '@/models/BankAccount';
+import DebitCard from '@/models/DebitCard';
+import { pick } from '@/lib/middleware/api';
 import { NextResponse } from 'next/server';
 
 export async function GET(request, { params }) {
@@ -29,11 +31,13 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const { data, error } = normalizeBankAccountInput(pick(await request.json(), BANK_ACCOUNT_FIELDS));
+    if (error) return NextResponse.json({ error }, { status: 400 });
+
     const account = await BankAccount.findOneAndUpdate(
       { _id: id, userId: user._id },
-      body,
-      { new: true }
+      data,
+      { new: true, runValidators: true }
     );
 
     if (!account) {
@@ -58,6 +62,7 @@ export async function DELETE(request, { params }) {
     if (!account) {
       return NextResponse.json({ error: 'Account not found' }, { status: 404 });
     }
+    await DebitCard.deleteMany({ userId: user._id, accountId: account._id });
 
     return NextResponse.json({ message: 'Account deleted' });
   } catch (error) {

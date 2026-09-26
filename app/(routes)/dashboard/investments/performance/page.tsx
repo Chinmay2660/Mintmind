@@ -97,8 +97,6 @@ function PerformanceContent() {
       <PageHeader
         title="Portfolio Performance"
         subtitle="Track invested vs current value over time"
-        showBack
-        backHref="/dashboard/investments"
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -150,10 +148,11 @@ function PerformanceContent() {
                 <Tooltip
                   formatter={(value) => formatCurrency(Number(value))}
                   contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
+                    backgroundColor: 'hsl(var(--popover))',
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '12px',
                     fontSize: '13px',
+                    color: 'hsl(var(--popover-foreground))',
                   }}
                 />
                 <Legend />

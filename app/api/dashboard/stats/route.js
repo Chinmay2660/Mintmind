@@ -31,7 +31,10 @@ export async function GET() {
       Document.countDocuments({ userId: user._id }),
     ]);
 
-    const totalBankBalance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
+    // Credit-card mirror accounts are skipped here; their debt is counted once via totalCreditDue.
+    const totalBankBalance = accounts
+      .filter((acc) => acc.accountType !== 'Credit Card')
+      .reduce((sum, acc) => sum + (acc.balance || 0), 0);
     const totalCash = cash?.amount || 0;
     const totalInvested = investments.reduce((sum, inv) => sum + (inv.amount || 0), 0);
     const totalInvestmentValue = investments.reduce(

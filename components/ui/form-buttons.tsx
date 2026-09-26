@@ -102,13 +102,13 @@ export function FormButtonGroup({
   ...props
 }: FormButtonGroupProps) {
   return (
-    <div className={cn('form-actions', className)} {...props}>
-      <SubmitButton isLoading={isLoading} className={submitClassName}>
-        {submitLabel}
-      </SubmitButton>
+    <div className={cn('form-actions-bar', className)} {...props}>
       <CancelButton onClick={onCancel} className={cancelClassName}>
         {cancelLabel}
       </CancelButton>
+      <SubmitButton isLoading={isLoading} className={submitClassName}>
+        {submitLabel}
+      </SubmitButton>
     </div>
   )
 }

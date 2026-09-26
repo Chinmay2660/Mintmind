@@ -104,7 +104,7 @@ export function BudgetForm({ budgetId, variant = 'page', onSuccess, onCancel }: 
   }
 
   if (loading) {
-    return <FormSkeleton />
+    return <FormSkeleton variant={variant} />
   }
 
   return (

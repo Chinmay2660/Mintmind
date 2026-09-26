@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import request from '@/lib/api/request'
 import { Input } from '@/components/ui/input'
-import { IconPicker } from '@/components/ui/icon-picker'
+import { ToggleButtonGroup } from '@/components/ui/toggle-button'
 import { FormSubmitBar } from '@/components/ui/form-buttons'
 import {
   FormField,
@@ -18,14 +18,22 @@ import { fetchEntityRecord } from '@/lib/api/entityApi'
 import { useBalanceAdjustmentPrompt } from './BalanceAdjustmentPrompt'
 import type { EntityFormProps } from '@/lib/forms/types'
 
+const ACCOUNT_TYPES = ['Savings', 'Salary', 'Current', 'Other']
+const OPERATION_MODES = ['Either or Survivor', 'Former or Survivor', 'Jointly']
+
 const defaultFormData = () => ({
   accountName: '',
   bankName: '',
   accountNumber: '',
   accountType: 'Savings',
-  balance: 0,
+  ownershipType: 'Individual',
+  jointHolders: '',
+  operationMode: OPERATION_MODES[0],
+  ifscCode: '',
+  branch: '',
+  nomineeName: '',
+  balance: '',
   color: '#2563eb',
-  icon: '🏦',
 })
 
 interface AccountFormProps extends EntityFormProps {
@@ -47,20 +55,29 @@ export function AccountForm({
   const { prompt: promptBalanceAdjustment, dialogs: balanceAdjustmentDialogs } =
     useBalanceAdjustmentPrompt()
 
+  const set = (patch: Partial<ReturnType<typeof defaultFormData>>) =>
+    setFormData((prev) => ({ ...prev, ...patch }))
+
   useEffect(() => {
     if (!accountId || !user) return
     setLoading(true)
     fetchEntityRecord('bankAccounts', accountId)
       .then((account) => {
         if (!account) throw new Error('Not found')
+        const defaults = defaultFormData()
         setFormData({
           accountName: account.accountName,
           bankName: account.bankName,
           accountNumber: account.accountNumber || '',
-          accountType: account.accountType,
-          balance: account.balance,
-          color: account.color,
-          icon: account.icon,
+          accountType: account.accountType || defaults.accountType,
+          ownershipType: account.ownershipType || defaults.ownershipType,
+          jointHolders: account.jointHolders || '',
+          operationMode: account.operationMode || defaults.operationMode,
+          ifscCode: account.ifscCode || '',
+          branch: account.branch || '',
+          nomineeName: account.nomineeName || '',
+          balance: String(account.balance ?? 0),
+          color: account.color || defaults.color,
         })
         setOriginalBalance(account.balance)
       })
@@ -71,23 +88,34 @@ export function AccountForm({
       .finally(() => setLoading(false))
   }, [accountId, user, router])
 
+  const displayName = `${formData.bankName.trim()} - ${formData.accountType}`
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
+    const balance = Number(formData.balance) || 0
+    const payload = {
+      ...formData,
+      balance,
+      accountName: displayName,
+      icon: '🏦',
+      ifscCode: formData.ifscCode.trim().toUpperCase(),
+      ...(formData.ownershipType === 'Individual' && { jointHolders: '', operationMode: '' }),
+    }
     try {
       if (accountId) {
-        await request.put(`/api/bank-accounts/${accountId}`, formData)
+        await request.put(`/api/bank-accounts/${accountId}`, payload)
         toast.success('Account updated successfully')
         const balanceChanged =
-          originalBalance !== null && formData.balance !== originalBalance
+          originalBalance !== null && balance !== originalBalance
         if (balanceChanged) {
           promptBalanceAdjustment(
             {
               previousBalance: originalBalance,
-              newBalance: formData.balance,
+              newBalance: balance,
               isCash: false,
               accountId,
-              accountName: formData.accountName,
+              accountName: displayName,
             },
             () => {
               if (onSuccess) onSuccess()
@@ -97,7 +125,7 @@ export function AccountForm({
           return
         }
       } else {
-        await request.post('/api/bank-accounts', formData)
+        await request.post('/api/bank-accounts', payload)
         toast.success('Account added successfully')
       }
       if (onSuccess) onSuccess()
@@ -110,75 +138,125 @@ export function AccountForm({
   }
 
   if (loading) {
-    return <FormSkeleton />
+    return <FormSkeleton variant={variant} />
   }
+
+  const isJoint = formData.ownershipType === 'Joint'
 
   return (
     <>
     <FormLayout variant={variant} onSubmit={handleSubmit}>
-      <FormSection title="Account details">
-        <FormField label="Account Name" required>
-          <Input
-            value={formData.accountName}
-            onChange={(e) => setFormData({ ...formData, accountName: e.target.value })}
-            required
-            placeholder="e.g., HDFC Savings"
-          />
-        </FormField>
-        <FormField label="Bank Name" required>
+      <FormSection>
+        <FormField label="Bank name" required>
           <Input
             value={formData.bankName}
-            onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+            onChange={(e) => set({ bankName: e.target.value })}
             required
             placeholder="e.g., HDFC Bank"
           />
         </FormField>
-        <FormField label="Account Number (Optional)">
-          <Input
-            value={formData.accountNumber}
-            onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-            placeholder="Account number"
-          />
-        </FormField>
-        <FormField label="Account Type" span="compact">
+        <FormField label="Account type">
           <select
             value={formData.accountType}
-            onChange={(e) => setFormData({ ...formData, accountType: e.target.value })}
+            onChange={(e) => set({ accountType: e.target.value })}
             className="form-select"
           >
-            <option value="Savings">Savings</option>
-            <option value="Current">Current</option>
-            <option value="Credit Card">Credit Card</option>
-            <option value="Other">Other</option>
+            {ACCOUNT_TYPES.map((type) => (
+              <option key={type} value={type}>{type}</option>
+            ))}
           </select>
         </FormField>
-        <FormField label={accountId ? 'Balance' : 'Initial Balance'} span="compact" required>
+
+        <FormField label="Account number">
+          <Input
+            value={formData.accountNumber}
+            onChange={(e) => set({ accountNumber: e.target.value })}
+            placeholder="Account number"
+            inputMode="numeric"
+            autoComplete="off"
+          />
+        </FormField>
+        <FormField label={accountId ? 'Balance' : 'Opening balance'}>
           <Input
             type="number"
-            value={formData.balance || ''}
-            onChange={(e) => setFormData({ ...formData, balance: parseFloat(e.target.value) || 0 })}
+            inputMode="decimal"
+            value={formData.balance}
+            onChange={(e) => set({ balance: e.target.value })}
             placeholder="0"
-            required
             step="0.01"
           />
         </FormField>
-      </FormSection>
-      <FormSection title="Appearance">
-        <FormField label="Icon" span="icon">
-          <IconPicker
-            value={formData.icon}
-            onChange={(icon) => setFormData({ ...formData, icon })}
+
+        <FormField label="Branch">
+          <Input
+            value={formData.branch}
+            onChange={(e) => set({ branch: e.target.value })}
+            placeholder="e.g., Andheri West, Mumbai"
           />
         </FormField>
-        <FormField label="Color" span="color">
+        <FormField label="IFSC code">
+          <Input
+            value={formData.ifscCode}
+            onChange={(e) => set({ ifscCode: e.target.value.toUpperCase() })}
+            placeholder="e.g., HDFC0001234"
+            maxLength={11}
+            pattern="[A-Za-z]{4}0[A-Za-z0-9]{6}"
+            title="11 characters: 4 letters, a zero, then 6 letters or digits"
+            autoComplete="off"
+          />
+        </FormField>
+
+        <FormField label="Ownership">
+          <ToggleButtonGroup
+            value={formData.ownershipType}
+            onValueChange={(ownershipType) => set({ ownershipType })}
+            options={[
+              { value: 'Individual', label: 'Individual' },
+              { value: 'Joint', label: 'Joint' },
+            ]}
+          />
+        </FormField>
+        <FormField label="Nominee">
+          <Input
+            value={formData.nomineeName}
+            onChange={(e) => set({ nomineeName: e.target.value })}
+            placeholder="Nominee name"
+          />
+        </FormField>
+
+        {isJoint && (
+          <>
+            <FormField label="Joint holders" hint="Separate names with commas">
+              <Input
+                value={formData.jointHolders}
+                onChange={(e) => set({ jointHolders: e.target.value })}
+                placeholder="e.g., Priya Sharma"
+              />
+            </FormField>
+            <FormField label="Mode of operation">
+              <select
+                value={formData.operationMode}
+                onChange={(e) => set({ operationMode: e.target.value })}
+                className="form-select"
+              >
+                {OPERATION_MODES.map((mode) => (
+                  <option key={mode} value={mode}>{mode}</option>
+                ))}
+              </select>
+            </FormField>
+          </>
+        )}
+
+        <FormField label="Card color">
           <Input
             type="color"
             value={formData.color}
-            onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+            onChange={(e) => set({ color: e.target.value })}
             className="h-10 w-full cursor-pointer p-1"
           />
         </FormField>
       </FormSection>
+
       <FormSubmitBar
         variant={variant}
         submitLabel={accountId ? 'Update Account' : 'Add Account'}

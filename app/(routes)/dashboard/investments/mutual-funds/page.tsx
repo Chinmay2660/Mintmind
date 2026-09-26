@@ -75,8 +75,6 @@ function MutualFundsContent() {
       <PageHeader
         title="Mutual Funds"
         subtitle="Track your mutual fund holdings"
-        showBack
-        backHref="/dashboard/investments"
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

@@ -13,6 +13,7 @@ import Goal from '@/models/Goal'
 import PairCode from '@/models/PairCode'
 import Insurance from '@/models/Insurance'
 import CreditCard from '@/models/CreditCard'
+import DebitCard from '@/models/DebitCard'
 
 async function deleteUserData(userId) {
   await Promise.all([
@@ -28,6 +29,7 @@ async function deleteUserData(userId) {
     PairCode.deleteMany({ userId }),
     Insurance.deleteMany({ userId }),
     CreditCard.deleteMany({ userId }),
+    DebitCard.deleteMany({ userId }),
   ])
 }
 

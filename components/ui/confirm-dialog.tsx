@@ -44,8 +44,8 @@ export function ConfirmDialog({
 
   const confirmButtonClass =
     variant === 'destructive'
-      ? 'bg-red-600 hover:bg-red-700 text-white'
-      : 'bg-primary hover:bg-primary/90 text-white'
+      ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+      : 'bg-primary text-primary-foreground hover:bg-primary/90'
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -57,11 +57,11 @@ export function ConfirmDialog({
           {description && (
             <p className="text-sm text-muted-foreground">{description}</p>
           )}
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleCancel} className="flex-1" disabled={isLoading}>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
               {cancelLabel}
             </Button>
-            <Button onClick={handleConfirm} className={`flex-1 ${confirmButtonClass}`} disabled={isLoading}>
+            <Button onClick={handleConfirm} className={confirmButtonClass} disabled={isLoading}>
               {isLoading ? 'Processing...' : confirmLabel}
             </Button>
           </div>

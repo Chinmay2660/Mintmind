@@ -49,6 +49,9 @@ const GoalSchema = new mongoose.Schema({
 });
 
 GoalSchema.index({ userId: 1, status: 1 });
-GoalSchema.index({ familyGoalId: 1, userId: 1 }, { unique: true, sparse: true });
+GoalSchema.index(
+  { familyGoalId: 1, userId: 1 },
+  { unique: true, partialFilterExpression: { familyGoalId: { $type: 'objectId' } } }
+);
 
 export default mongoose.models.Goal || mongoose.model('Goal', GoalSchema);

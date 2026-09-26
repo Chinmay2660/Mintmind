@@ -2,6 +2,7 @@
 
 import { Eye, EyeOff } from 'lucide-react'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
+import { Button } from '@/components/ui/button'
 import { Tooltip } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
@@ -17,23 +18,18 @@ export function PrivacyToggle({ className, showLabel = false }: PrivacyTogglePro
 
   return (
     <Tooltip content={label} side="bottom">
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon"
         onClick={togglePrivacyMode}
-        className={cn(
-          'inline-flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground',
-          className
-        )}
+        className={cn('h-9 w-9 rounded-full', showLabel && 'w-auto px-3', className)}
         aria-label={label}
         aria-pressed={privacyMode}
       >
-        {privacyMode ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-        {showLabel && (
-          <span className="ml-2 hidden sm:inline">
-            {privacyMode ? 'Show amounts' : 'Hide amounts'}
-          </span>
-        )}
-      </button>
+        {privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        {showLabel && <span className="ml-2 hidden sm:inline">{label}</span>}
+      </Button>
     </Tooltip>
   )
 }
