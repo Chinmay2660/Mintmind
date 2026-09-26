@@ -1,11 +1,10 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { ChevronLeft } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { getDashboardPageIcon } from '@/lib/constants/dashboardNav'
-import { isFromHome } from '@/lib/utils/navigation'
 import { Tooltip } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
@@ -31,22 +30,11 @@ export function PageHeader({
   const router = useRouter()
   const pathname = usePathname()
   const PageIcon = icon ?? getDashboardPageIcon(pathname)
-  const [fromHome, setFromHome] = useState(false)
-
-  useEffect(() => {
-    setFromHome(isFromHome())
-  }, [pathname])
 
   const handleBack = () => {
-    if (fromHome) {
-      router.push('/dashboard')
-      return
-    }
     if (backHref) router.push(backHref)
     else router.back()
   }
-
-  const showBackButton = showBack || fromHome
 
   return (
     <div
@@ -56,10 +44,11 @@ export function PageHeader({
       )}
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        {showBackButton && (
+        {showBack && (
           <Tooltip content="Back" side="bottom">
             <button
               type="button"
+              aria-label="Back"
               onClick={handleBack}
               className="-ml-1 flex shrink-0 rounded-xl p-2 transition-colors hover:bg-muted/50"
             >

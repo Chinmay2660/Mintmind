@@ -74,7 +74,7 @@ export function TagForm({ tagId, variant = 'page', onSuccess, onCancel }: TagFor
   }
 
   if (loading) {
-    return <FormSkeleton />
+    return <FormSkeleton variant={variant} />
   }
 
   return (

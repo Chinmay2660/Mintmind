@@ -81,6 +81,19 @@ export function TransactionForm({
   const { user } = useAuth()
   const { categories } = useCategories(user?.id)
   const { accounts } = useBankAccounts(user?.id)
+  const accountGroups = [
+    { label: 'Bank accounts', items: accounts.filter((a) => a.accountType !== 'Credit Card') },
+    { label: 'Credit cards', items: accounts.filter((a) => a.accountType === 'Credit Card') },
+  ].filter((g) => g.items.length > 0)
+  const accountOptions = accountGroups.map((group) => (
+    <optgroup key={group.label} label={group.label}>
+      {group.items.map((acc) => (
+        <option key={acc._id} value={acc._id}>
+          {acc.icon} {acc.accountName}
+        </option>
+      ))}
+    </optgroup>
+  ))
   const { data: tags } = useLocalList('tags', user?.id)
   const [loading, setLoading] = useState(!!transactionId)
   const [saving, setSaving] = useState(false)
@@ -199,7 +212,7 @@ export function TransactionForm({
   }
 
   if (loading) {
-    return <FormSkeleton />
+    return <FormSkeleton variant={variant} />
   }
 
   return (
@@ -347,11 +360,7 @@ export function TransactionForm({
               required={!formData.isCash}
             >
               <option value="">Select account</option>
-              {accounts.map((acc) => (
-                <option key={acc._id} value={acc._id}>
-                  {acc.icon} {acc.accountName}
-                </option>
-              ))}
+              {accountOptions}
             </select>
           </FormField>
         )}
@@ -387,11 +396,7 @@ export function TransactionForm({
                   required={!formData.transferToIsCash}
                 >
                   <option value="">Select account</option>
-                  {accounts.map((acc) => (
-                    <option key={acc._id} value={acc._id}>
-                      {acc.icon} {acc.accountName}
-                    </option>
-                  ))}
+                  {accountOptions}
                 </select>
               </FormField>
             )}

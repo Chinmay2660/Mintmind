@@ -1,13 +1,15 @@
 'use client'
 
 import { useAuth } from '@/lib/hooks/useAuth'
-import React, { useCallback, useEffect, useState } from 'react'
-import { ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
-import { endOfMonth, format, startOfMonth } from 'date-fns'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { AlertOctagon, AlertTriangle, ArrowRight } from 'lucide-react'
+import { endOfMonth, startOfMonth } from 'date-fns'
 import { toast } from 'sonner'
 import request from '@/lib/api/request'
 import Link from 'next/link'
-import { ActivityChart } from './_components/ActivityChart'
+import { CashFlowChart } from './_components/CashFlowChart'
+import { SavingsGoalsCard, type DashboardGoal } from './_components/SavingsGoalsCard'
+import { RecentTransactions, type DashboardTransaction } from './_components/RecentTransactions'
 import {
   CategoryBreakdownCard,
   type CategoryStat,
@@ -22,46 +24,45 @@ import {
   MetricSubtitle,
   ViewAllLink,
 } from './_components/DashboardHero'
-import { DashboardProductLayers } from './_components/DashboardProductLayers'
 import { withFromHome } from '@/lib/utils/navigation'
 import type { DashboardStats } from '@/types/dashboard'
 import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
 import { fetchDashboardStats, fetchTransactionStats } from '@/lib/api/stats'
 import { usePrivacyAmount } from '@/lib/hooks/usePrivacyAmount'
-import { DEFAULT_CATEGORY_COLOR } from '@/lib/constants/colors'
+import { findSpendingAlerts } from '@/lib/utils/dashboardInsights'
 import { cn } from '@/lib/utils'
 
-interface Transaction {
-  _id?: string
-  id?: string
-  type?: string
-  amount?: number
-  description?: string
-  date?: string
-  categoryId?: { name?: string; icon?: string; color?: string }
-}
+const RECENT_TRANSACTION_COUNT = 6
+const MAX_SPENDING_ALERTS = 3
+// ponytail: cash flow + alerts are computed client-side from the latest 1000 transactions
+// (API max). Heavy users may see older months undercounted; move to a server aggregation if so.
+const TRANSACTIONS_URL = '/api/transactions?limit=1000'
 
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth()
   const userId = user?.id
   const [stats, setStats] = useState<DashboardStats>({})
-  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [transactions, setTransactions] = useState<DashboardTransaction[]>([])
+  const [goals, setGoals] = useState<DashboardGoal[] | null>([])
   const [incomeCategories, setIncomeCategories] = useState<CategoryStat[]>([])
   const [expenseCategories, setExpenseCategories] = useState<CategoryStat[]>([])
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {
     const now = new Date()
-    const monthStart = startOfMonth(now)
-    const monthEnd = endOfMonth(now)
 
-    const [statsData, txRes, categoryStats] = await Promise.all([
+    const [statsData, txRes, categoryStats, goalsRes] = await Promise.all([
       fetchDashboardStats(),
-      request.get('/api/transactions'),
+      request.get(TRANSACTIONS_URL),
       fetchTransactionStats({
-        startDate: monthStart.toISOString(),
-        endDate: monthEnd.toISOString(),
+        startDate: startOfMonth(now).toISOString(),
+        endDate: endOfMonth(now).toISOString(),
         types: 'income,expense',
+      }),
+      // Goals are secondary: a failure here shouldn't blank the whole dashboard.
+      request.get('/api/goals').catch((err) => {
+        console.error('Failed to load goals', err)
+        return null
       }),
     ])
 
@@ -69,6 +70,7 @@ const Dashboard = () => {
     setTransactions(Array.isArray(txRes.data) ? txRes.data : [])
     setIncomeCategories(categoryStats?.incomeCategoryWise ?? [])
     setExpenseCategories(categoryStats?.categoryWise ?? [])
+    setGoals(goalsRes ? (Array.isArray(goalsRes.data) ? goalsRes.data : []) : null)
   }, [])
 
   useEffect(() => {
@@ -85,6 +87,7 @@ const Dashboard = () => {
           toast.error('Failed to load dashboard data')
           setStats({})
           setTransactions([])
+          setGoals([])
           setIncomeCategories([])
           setExpenseCategories([])
         }
@@ -101,8 +104,10 @@ const Dashboard = () => {
   useSyncedRefresh(loadData)
 
   const displayName = user?.name || user?.email?.split('@')[0] || 'Guest'
-  const recentTransactions = transactions.slice(0, 5)
-  const { fmt: fmtAmount } = usePrivacyAmount()
+  const spendingAlerts = useMemo(
+    () => findSpendingAlerts(transactions).slice(0, MAX_SPENDING_ALERTS),
+    [transactions]
+  )
 
   return (
     <>
@@ -115,9 +120,17 @@ const Dashboard = () => {
 
       <DashboardQuickActions className="md:hidden" />
 
+      {!loading && spendingAlerts.length > 0 && (
+        <div className="space-y-2">
+          {spendingAlerts.map((alert) => (
+            <SpendingAlertBanner key={alert.category} alert={alert} />
+          ))}
+        </div>
+      )}
+
       <section>
-        <SectionHeader title="Net worth" subtitle="Tap a card for details" />
-        <div className="mm-grid-metrics">
+        <SectionHeader title="Overview" />
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:gap-4 lg:grid-cols-4">
           {DASHBOARD_METRIC_LINKS.map((metric) => {
             let value = stats[metric.valueKey] ?? 0
             if (metric.combineCash) {
@@ -135,59 +148,37 @@ const Dashboard = () => {
                   subtitleKey: metric.subtitleKey,
                   subtitleLabel: metric.subtitleLabel,
                   isCount: (metric as { isCount?: boolean }).isCount,
-                  isPercent: (metric as { isPercent?: boolean }).isPercent,
                 })}
                 icon={metric.icon}
                 href={metric.href}
                 loading={loading}
                 variant={metric.variant}
-                format={metric.format}
               />
             )
           })}
         </div>
       </section>
 
-      <section>
-        <SectionHeader title="Expense management" subtitle="This month at a glance" />
-        <div className="mm-grid-dashboard">
+      <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-12">
         <ChartCard
-          title="Weekly spending"
-          subtitle="Last 7 days"
+          title="Cash flow"
+          subtitle="Income vs expenses, last 6 months"
           loading={loading}
-          className="lg:col-span-8"
-          contentClassName="min-h-[11rem]"
+          className="min-w-0 lg:col-span-8"
+          action={<ViewAllLink href={withFromHome('/dashboard/stats')} label="Stats" />}
         >
-          <ActivityChart transactions={transactions} />
+          <CashFlowChart transactions={transactions} />
         </ChartCard>
 
-        <div className="surface-card flex flex-col justify-between p-5 md:p-6 lg:col-span-4">
-          <div>
-            <p className="mm-stat-label">This month</p>
-            <div className="mt-4 space-y-4">
-              <MonthRow
-                icon={ArrowUpCircle}
-                label="Income"
-                value={loading ? '—' : fmtAmount(stats.monthlyIncome ?? 0)}
-                tone="text-income"
-              />
-              <MonthRow
-                icon={ArrowDownCircle}
-                label="Expenses"
-                value={loading ? '—' : fmtAmount(stats.monthlyExpenses ?? 0)}
-                tone="text-expense"
-              />
-            </div>
-          </div>
-          <Link
-            href={withFromHome('/dashboard/budgets')}
-            className="mt-6 inline-flex items-center text-sm font-medium text-primary hover:underline"
-          >
-            Manage budgets →
-          </Link>
-        </div>
-        </div>
-      </section>
+        <SavingsGoalsCard
+          goals={goals}
+          loading={loading}
+          className="min-w-0 lg:col-span-4"
+          onGoalAdded={() => {
+            loadData().catch(() => toast.error('Goal saved, but the dashboard failed to refresh'))
+          }}
+        />
+      </div>
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
         <CategoryBreakdownCard
@@ -206,88 +197,75 @@ const Dashboard = () => {
 
       <section>
         <SectionHeader
-          title="Recent activity"
+          title="Recent transactions"
           action={<ViewAllLink href={withFromHome('/dashboard/transactions')} label="All" />}
         />
-
-        <div className="surface-card divide-y divide-border/60 overflow-hidden">
-          {loading ? (
-            Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="skeleton m-3 h-14 rounded-xl" />
-            ))
-          ) : recentTransactions.length === 0 ? (
-            <div className="px-6 py-10 text-center text-sm text-muted-foreground">
-              No transactions yet. Log your first expense or income to get started.
-            </div>
-          ) : (
-            recentTransactions.map((tx) => {
-              const catColor = tx.categoryId?.color || DEFAULT_CATEGORY_COLOR
-              const catIcon = tx.categoryId?.icon
-              const catName = tx.categoryId?.name
-              const isIncome = tx.type === 'income'
-              const isTransfer = tx.type === 'transfer'
-
-              return (
-                <Link
-                  key={tx._id || tx.id}
-                  href={withFromHome('/dashboard/transactions')}
-                  className="mm-list-row rounded-none border-0 px-4 py-3.5 md:px-5"
-                >
-                  <div
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base"
-                    style={{
-                      backgroundColor: `${isTransfer ? 'hsl(var(--warning))' : catColor}18`,
-                    }}
-                  >
-                    {isTransfer ? '↔' : catIcon || (isIncome ? '💰' : '📁')}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
-                      {tx.description || (isTransfer ? 'Transfer' : catName) || 'Transaction'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {tx.date ? format(new Date(tx.date), 'MMM d, yyyy') : ''}
-                    </p>
-                  </div>
-                  <p
-                    className={cn(
-                      'shrink-0 text-sm font-semibold tabular-nums',
-                      isIncome ? 'text-income' : isTransfer ? 'text-warning' : 'text-foreground'
-                    )}
-                  >
-                    {isIncome ? '+' : isTransfer ? '↔' : '−'}
-                    {fmtAmount(tx.amount || 0)}
-                  </p>
-                </Link>
-              )
-            })
-          )}
-        </div>
+        <RecentTransactions
+          transactions={transactions.slice(0, RECENT_TRANSACTION_COUNT)}
+          loading={loading}
+        />
       </section>
 
-      <DashboardProductLayers stats={stats} loading={loading} />
     </>
   )
 }
 
-function MonthRow({
-  icon: Icon,
-  label,
-  value,
-  tone,
-}: {
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
-  label: string
-  value: string
-  tone: string
-}) {
+type SpendingAlert = ReturnType<typeof findSpendingAlerts>[number]
+
+const ALERT_TONES = {
+  warning: {
+    icon: AlertTriangle,
+    box: 'border-warning/30 bg-warning/10',
+    badge: 'text-warning sm:bg-warning/15',
+    button: 'border-warning/30 hover:bg-warning/15',
+  },
+  critical: {
+    icon: AlertOctagon,
+    box: 'border-expense/30 bg-expense/10',
+    badge: 'text-expense sm:bg-expense/15',
+    button: 'border-expense/30 hover:bg-expense/15',
+  },
+} as const
+
+function SpendingAlertBanner({ alert }: { alert: SpendingAlert }) {
+  const { fmt } = usePrivacyAmount()
+  const tone = ALERT_TONES[alert.severity === 'critical' ? 'critical' : 'warning']
+  const Icon = tone.icon
   return (
-    <div className="flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2.5">
-        <Icon className={cn('h-4 w-4', tone)} strokeWidth={1.75} />
-        <span className="text-sm text-muted-foreground">{label}</span>
+    <div
+      role={alert.severity === 'critical' ? 'alert' : 'status'}
+      className={cn(
+        'flex flex-col gap-2 rounded-[var(--radius-lg)] border px-3.5 py-3 text-[13px] leading-snug sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-2.5 sm:pl-3 sm:pr-2.5 sm:text-sm',
+        tone.box
+      )}
+    >
+      <div className="flex min-w-0 items-start gap-2.5 sm:items-center sm:gap-3">
+        <span
+          className={cn(
+            'mt-0.5 flex shrink-0 sm:mt-0 sm:h-8 sm:w-8 sm:items-center sm:justify-center sm:rounded-full',
+            tone.badge
+          )}
+        >
+          <Icon className="h-4 w-4" strokeWidth={2} aria-hidden />
+        </span>
+        <p className="min-w-0">
+          <span className="font-medium">{alert.category}</span> is{' '}
+          {Math.round(alert.pctAbove * 100)}% above your 3-month average{' '}
+          <span className="whitespace-nowrap tabular-nums text-muted-foreground">
+            ({fmt(alert.spent)} vs {fmt(alert.average)})
+          </span>
+        </p>
       </div>
-      <span className="text-sm font-semibold tabular-nums">{value}</span>
+      <Link
+        href={withFromHome('/dashboard/budgets')}
+        className={cn(
+          'inline-flex shrink-0 items-center gap-1 self-end whitespace-nowrap rounded-full border bg-background/40 px-3.5 py-1.5 text-[13px] font-medium text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:self-auto',
+          tone.button
+        )}
+      >
+        Review budgets
+        <ArrowRight className="h-3.5 w-3.5" />
+      </Link>
     </div>
   )
 }

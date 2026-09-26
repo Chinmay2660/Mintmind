@@ -1,7 +1,8 @@
 import { getAuthenticatedUser } from '@/lib/middleware/auth';
 import { ensureCreditCardAccount } from '@/lib/api/creditCardAccount';
 import BankAccount from '@/models/BankAccount';
-import CreditCard from '@/models/CreditCard';
+import CreditCard, { CREDIT_CARD_FIELDS } from '@/models/CreditCard';
+import { pick } from '@/lib/middleware/api';
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 
@@ -34,11 +35,10 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
     const card = await CreditCard.findOneAndUpdate(
       { _id: id, userId: user._id },
-      body,
-      { new: true }
+      pick(await request.json(), CREDIT_CARD_FIELDS),
+      { new: true, runValidators: true }
     );
 
     if (!card) {

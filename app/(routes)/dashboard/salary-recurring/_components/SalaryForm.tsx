@@ -89,7 +89,7 @@ export function SalaryForm({ salaryId, variant = 'page', onSuccess, onCancel }: 
   }
 
   if (loading) {
-    return <FormSkeleton />
+    return <FormSkeleton variant={variant} />
   }
 
   return (

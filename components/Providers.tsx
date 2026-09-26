@@ -4,7 +4,6 @@ import { ThemeProvider } from 'next-themes'
 import type { ReactNode } from 'react'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { AuthProvider } from '@/contexts/AuthContext'
-import { SidebarProvider } from '@/contexts/SidebarContext'
 import { PrivacyProvider } from '@/contexts/PrivacyContext'
 import { IdleTimeoutProvider } from '@/contexts/IdleTimeoutContext'
 
@@ -27,13 +26,11 @@ export default function Providers({ children }: ProvidersProps) {
       scriptProps={themeScriptProps}
     >
       <AuthProvider>
-        <SidebarProvider>
-          <PrivacyProvider>
-            <IdleTimeoutProvider>
-              <ErrorBoundary>{children}</ErrorBoundary>
-            </IdleTimeoutProvider>
-          </PrivacyProvider>
-        </SidebarProvider>
+        <PrivacyProvider>
+          <IdleTimeoutProvider>
+            <ErrorBoundary>{children}</ErrorBoundary>
+          </IdleTimeoutProvider>
+        </PrivacyProvider>
       </AuthProvider>
     </ThemeProvider>
   )

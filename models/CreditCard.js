@@ -63,4 +63,10 @@ const CreditCardSchema = new mongoose.Schema({
   timestamps: true,
 });
 
+// accountId is server-managed (ensureCreditCardAccount); letting clients set it would let a card overwrite any account.
+export const CREDIT_CARD_FIELDS = [
+  'cardName', 'issuer', 'cardNumber', 'cardType', 'lastFourDigits', 'creditLimit',
+  'currentBalance', 'statementDay', 'dueDay', 'apr', 'rewardsProgram', 'notes', 'color',
+];
+
 export default mongoose.models.CreditCard || mongoose.model('CreditCard', CreditCardSchema);

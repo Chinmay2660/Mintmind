@@ -21,6 +21,12 @@ type BankAccount = {
   balance?: number
   color?: string
   icon?: string
+  ownershipType?: 'Individual' | 'Joint'
+  jointHolders?: string
+  operationMode?: string
+  ifscCode?: string
+  branch?: string
+  nomineeName?: string
 }
 
 export function useCategories(userId?: string) {

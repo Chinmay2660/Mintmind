@@ -91,7 +91,7 @@ export function SubscriptionForm({
   }
 
   if (loading) {
-    return <FormSkeleton />
+    return <FormSkeleton variant={variant} />
   }
 
   return (

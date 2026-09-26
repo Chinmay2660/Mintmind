@@ -104,7 +104,7 @@ export function InsuranceForm({
   }
 
   if (loading) {
-    return <FormSkeleton />
+    return <FormSkeleton variant={variant} />
   }
 
   return (

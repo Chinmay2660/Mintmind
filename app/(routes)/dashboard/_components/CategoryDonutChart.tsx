@@ -1,6 +1,7 @@
 'use client'
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
+import { useState } from 'react'
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { usePrivacyAmount } from '@/lib/hooks/usePrivacyAmount'
 
 const FALLBACK_COLORS = ['#2563eb', '#3b82f6', '#60a5fa', '#ec4899', '#f59e0b', '#6366f1', '#8b5cf6', '#ef4444']
@@ -19,6 +20,8 @@ interface CategoryDonutChartProps {
 
 export function CategoryDonutChart({ data, total }: CategoryDonutChartProps) {
   const { fmt } = usePrivacyAmount()
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
+
   if (!data.length || total <= 0) {
     return (
       <div className="flex items-center justify-center h-52 text-sm text-muted-foreground">
@@ -33,6 +36,9 @@ export function CategoryDonutChart({ data, total }: CategoryDonutChartProps) {
     color: item.categoryColor || FALLBACK_COLORS[i % FALLBACK_COLORS.length],
   }))
 
+  // Hovered slice replaces the centre total instead of a floating tooltip, which collided with it.
+  const active = activeIndex != null ? chartData[activeIndex] : null
+
   return (
     <div className="relative h-52">
       <ResponsiveContainer width="100%" height="100%">
@@ -46,25 +52,31 @@ export function CategoryDonutChart({ data, total }: CategoryDonutChartProps) {
             paddingAngle={2}
             dataKey="value"
             strokeWidth={0}
+            onMouseEnter={(_, i) => setActiveIndex(i)}
+            onMouseLeave={() => setActiveIndex(null)}
           >
             {chartData.map((entry, i) => (
-              <Cell key={i} fill={entry.color} />
+              <Cell
+                key={i}
+                fill={entry.color}
+                fillOpacity={activeIndex == null || activeIndex === i ? 1 : 0.35}
+                className="cursor-pointer transition-opacity"
+              />
             ))}
           </Pie>
-          <Tooltip
-            formatter={(value) => fmt(Number(value))}
-            contentStyle={{
-              backgroundColor: 'hsl(var(--card))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '12px',
-              fontSize: '13px',
-            }}
-          />
         </PieChart>
       </ResponsiveContainer>
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <p className="text-xs text-muted-foreground">Total</p>
-        <p className="text-lg font-bold text-foreground">{fmt(total)}</p>
+      <div
+        className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-[26%] text-center"
+        aria-live="polite"
+      >
+        <p className="w-full truncate text-xs text-muted-foreground">{active ? active.name : 'Total'}</p>
+        <p className="text-lg font-bold tabular-nums text-foreground">{fmt(active ? active.value : total)}</p>
+        {active && (
+          <p className="text-[11px] tabular-nums text-muted-foreground">
+            {Math.round((active.value / total) * 100)}%
+          </p>
+        )}
       </div>
     </div>
   )

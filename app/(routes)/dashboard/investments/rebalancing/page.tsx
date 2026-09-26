@@ -134,8 +134,6 @@ export default function RebalancingPage() {
       <PageHeader
         title="Rebalancing"
         subtitle="Align your portfolio with target allocation"
-        showBack
-        backHref="/dashboard/investments"
       />
 
       <FinanceStatCard

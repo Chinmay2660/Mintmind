@@ -84,7 +84,7 @@ export function ReminderForm({ reminderId, variant = 'page', onSuccess, onCancel
   }
 
   if (loading) {
-    return <FormSkeleton />
+    return <FormSkeleton variant={variant} />
   }
 
   return (

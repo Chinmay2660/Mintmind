@@ -90,7 +90,7 @@ export function PasswordForm({
   }
 
   if (loading) {
-    return <FormSkeleton />
+    return <FormSkeleton variant={variant} />
   }
 
   return (

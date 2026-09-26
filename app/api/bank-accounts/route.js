@@ -1,9 +1,7 @@
 import { requireAuth, pick, safeErrorResponse } from '@/lib/middleware/api';
-import BankAccount from '@/models/BankAccount';
+import BankAccount, { BANK_ACCOUNT_FIELDS, normalizeBankAccountInput } from '@/models/BankAccount';
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-
-const ACCOUNT_FIELDS = ['accountName', 'bankName', 'accountNumber', 'accountType', 'balance', 'color', 'icon'];
 
 export async function GET() {
   try {
@@ -25,7 +23,8 @@ export async function POST(request) {
 
     await connectDB();
     const body = await request.json();
-    const data = pick(body, ACCOUNT_FIELDS);
+    const { data, error } = normalizeBankAccountInput(pick(body, BANK_ACCOUNT_FIELDS));
+    if (error) return NextResponse.json({ error }, { status: 400 });
 
     if (!data.accountName || !data.bankName) {
       return NextResponse.json({ error: 'Account name and bank name are required' }, { status: 400 });

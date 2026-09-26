@@ -154,7 +154,7 @@ export function LoanForm({ loanId, variant = 'page', onSuccess, onCancel }: Loan
   }
 
   if (loading) {
-    return <FormSkeleton />
+    return <FormSkeleton variant={variant} />
   }
 
   return (
