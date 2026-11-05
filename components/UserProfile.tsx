@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuth } from '@/lib/hooks/useAuth'
-import { LogOut, User, Settings } from 'lucide-react'
+import { LogOut, User, Settings, Home } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +11,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import Image from 'next/image'
-import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Tooltip } from '@/components/ui/tooltip'
@@ -53,11 +52,10 @@ export default function UserProfile({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Tooltip content={fullName} side="right" disabled={!tooltip}>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <button
+            type="button"
             className={cn(
-              'flex items-center gap-2 rounded-xl px-2 py-1 transition-colors hover:bg-white/40 dark:hover:bg-white/5',
+              'flex items-center gap-2 rounded-lg px-2 py-1 outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring',
               tooltip && 'justify-center'
             )}
           >
@@ -92,7 +90,7 @@ export default function UserProfile({
           >
             {displayName}
           </span>
-          </motion.button>
+          </button>
         </Tooltip>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
@@ -105,10 +103,17 @@ export default function UserProfile({
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => router.push('/dashboard/settings')}
-          className="cursor-pointer focus:bg-white/40 dark:focus:bg-white/5"
+          className="cursor-pointer focus:bg-muted"
         >
           <Settings className="mr-2 h-4 w-4" />
           Settings
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => router.push('/?home=1')}
+          className="cursor-pointer"
+        >
+          <Home className="mr-2 h-4 w-4" />
+          Landing page
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={signOut}

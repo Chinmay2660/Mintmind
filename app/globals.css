@@ -10,6 +10,7 @@
 @layer base {
   /* Light — bg #F7F8FA, card #FFF, text #1E293B / #64748B, border #E5E7EB. Emerald accent. */
   :root {
+    --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     --background: 216 20% 98%;
     --foreground: 217 33% 17%;
     --card: 0 0% 100%;
@@ -679,4 +680,11 @@
 
 .animate-liquid-float {
   animation: liquid-float 6s ease-in-out infinite;
+}
+
+/* Print / Save as PDF: let the report flow across pages instead of the fixed app shell */
+@media print {
+  .app-shell { position: static !important; display: block !important; height: auto !important; }
+  .app-main { overflow: visible !important; height: auto !important; padding-bottom: 0 !important; }
+  body { background: #fff !important; }
 }

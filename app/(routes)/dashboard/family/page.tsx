@@ -1,687 +1,193 @@
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
-import {
-  Users, UserPlus, Copy, Clock, Crown, User, Settings, Trash2, LogOut,
-  ArrowRightLeft, Target, IndianRupee, ReceiptText,
-} from 'lucide-react'
-import request from '@/lib/api/request'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import axios from 'axios'
 import { toast } from 'sonner'
-import { useAuth } from '@/lib/hooks/useAuth'
-import { PageHeader } from '@/components/ui/PageHeader'
-import { Card } from '@/components/ui/card'
-import { StatCard } from '@/components/ui/card'
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Copy, Lock, Plus, Trash2, UserPlus } from 'lucide-react'
+import { useWealth } from '@/lib/wealth/WealthContext'
+import { uid } from '@/lib/wealth/db'
+import { growthVs, portfolioSummary } from '@/lib/wealth/calc'
+import { coverageTotals } from '@/lib/wealth/selectors'
+import { familyTotals, visibleSummary } from '@/lib/family/visibility'
+import { formatCompactINR, formatINR, formatPct } from '@/lib/wealth/format'
+import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { FormSheet } from '@/components/ui/form-sheet'
-import { motion } from 'framer-motion'
-import { FormButtonGroup } from '@/components/ui/form-buttons'
-import { FormField, FormLayout, FormSection } from '@/components/ui/form-layout'
-import { TabButtonGroup } from '@/components/ui/tab-button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { PageSkeleton } from '@/components/ui/loading-skeleton'
-import { formatCurrency } from '@/lib/utils/format'
-import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
-import { FamilyGoalsSection } from './_components/FamilyGoalsSection'
-import { FamilyBudgetsSection } from './_components/FamilyBudgetsSection'
-import { FamilyExpensesSection } from './_components/FamilyExpensesSection'
-import type {
-  Family,
-  FamilyBudget,
-  FamilyExpense,
-  FamilyGoal,
-  FamilySettings,
-  FamilyStats,
-} from '@/types/family'
-import { getActiveMembers, getMemberCount, isFamilyHead, normalizeId } from '@/lib/utils/family'
-import { fetchFamilyStats } from '@/lib/api/stats'
-import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
+import { CHART_PALETTE, Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Select, Stat, chartAxis, chartGrid, chartTooltipStyle } from '@/components/wealth/kit'
+import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
+import { usePrivacyMode } from '@/contexts/PrivacyContext'
 
-const defaultSettings: FamilySettings = {
-  shareInvestments: true,
-  shareExpenses: true,
-  shareBudgets: true,
-  shareSalary: true,
-}
+const ROLES = [{ v: 'admin', l: 'Admin' }, { v: 'member', l: 'Member' }, { v: 'emergency_contact', l: 'Emergency Contact' }]
+const PERMS: [string, string, string][] = [
+  ['netWorth', 'Total net worth', 'Assets, liabilities and growth'], ['overview', 'Overview', 'That I exist in the circle and my profile'], ['bank', 'Bank balances', 'Total savings balance'],
+  ['mutualFunds', 'Mutual funds', 'Current portfolio value'], ['insurance', 'Insurance', 'Total coverage'], ['documents', 'Documents', 'Document list (never file contents)'],
+  ['emergencyOnly', 'Emergency-only', 'Hide everything from the dashboard; share only through Digital Legacy'],
+]
+const roleLabel = (r: string) => ROLES.find((x) => x.v === r)?.l ?? r
 
-const FamilyPage = () => {
-  const { user } = useAuth()
-  const [family, setFamily] = useState<Family | null>(null)
-  const [stats, setStats] = useState<FamilyStats | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [pairCode, setPairCode] = useState<string | null>(null)
-  const [pairCodeLoading, setPairCodeLoading] = useState(false)
-  const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false)
-  const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false)
-  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false)
-  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false)
-  const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false)
-  const [isRemoveConfirmOpen, setIsRemoveConfirmOpen] = useState(false)
-  const [memberToRemove, setMemberToRemove] = useState<string | null>(null)
-  const [joinCode, setJoinCode] = useState('')
-  const [countdown, setCountdown] = useState(0)
-  const [familyName, setFamilyName] = useState('')
-  const [familySettings, setFamilySettings] = useState<FamilySettings>(defaultSettings)
-  const [selectedNewHead, setSelectedNewHead] = useState('')
-  const [activeTab, setActiveTab] = useState('overview')
-  const [goals, setGoals] = useState<FamilyGoal[]>([])
-  const [budgets, setBudgets] = useState<FamilyBudget[]>([])
-  const [expenses, setExpenses] = useState<FamilyExpense[]>([])
-  const [goalsLoading, setGoalsLoading] = useState(false)
-  const [budgetsLoading, setBudgetsLoading] = useState(false)
-  const [expensesLoading, setExpensesLoading] = useState(false)
-  const { confirmDelete, confirmDialogProps: transferConfirmProps } = useDeleteConfirm()
+interface VM { id: string; name: string; relation?: string; role: string; status: string; self: boolean; email?: string; permissions?: Record<string, boolean>; summary: any }
 
+export default function FamilyPage() {
+  const { ready, isDemo, db, data, netWorth } = useWealth()
+  const { privacyMode } = usePrivacyMode()
+  const [circle, setCircle] = useState<{ id: string; name: string; me: any; members: VM[] } | null | undefined>(undefined)
+  const [dlg, setDlg] = useState<null | 'invite' | { del: VM }>(null)
+  const [link, setLink] = useState<string | null>(null)
+
+  const lastSent = useRef({ body: '', at: 0 })
+  // my own shareable summary, computed locally from my data
+  const mine = useMemo(() => {
+    const today = new Date()
+    const g = growthVs(data.snapshots, netWorth.netWorth, 1, today)
+    const cover = coverageTotals(data.policies, today)
+    return {
+      assets: netWorth.assets, liabilities: netWorth.liabilities, netWorth: netWorth.netWorth, growthPct: g?.pct ?? null,
+      bank: data.bankAccounts.reduce((s: number, b: any) => s + b.currentBalance, 0),
+      mutualFunds: portfolioSummary(data.funds, data.fundTxns, data.sips, today).value, insuranceCover: cover.total,
+      joint: data.bankAccounts.filter((b: any) => b.type === 'joint').map((b: any) => ({ key: `acct:${b.accountNumber}`, value: b.currentBalance })),
+    }
+  }, [data, netWorth])
+
+  const load = useCallback(async () => {
+    if (isDemo) {
+      const rows = [...data.members]
+      setCircle({ id: 'demo', name: 'Mehta Family', me: rows.find((m: any) => m.self), members: rows.map((m: any) => ({ id: m.id, name: m.name, relation: m.relation, role: m.role, status: m.status, self: !!m.self, email: m.email, permissions: m.permissions, summary: m.self ? mine : m.status === 'active' ? visibleSummary(m.summary, m.permissions) : null })) })
+    } else {
+      try { const r = await axios.get('/api/family-circle'); setCircle(r.data.circle) } catch { setCircle(null) }
+    }
+  }, [isDemo, data.members, mine])
+  useEffect(() => { if (ready) load() }, [ready, load])
+
+  // real users: publish my summary (server enforces who can see which fields)
   useEffect(() => {
-    fetchFamily()
-    fetchStats()
-  }, [])
+    if (!ready || isDemo || !circle?.me) return
+    const body = JSON.stringify(mine)
+    if (body === lastSent.current.body) return
+    const wait = Math.max(800, 30_000 - (Date.now() - lastSent.current.at))
+    const t = setTimeout(() => {
+      lastSent.current = { body, at: Date.now() }
+      axios.post('/api/family-circle', { action: 'summary', summary: mine }).catch(() => {})
+    }, wait)
+    return () => clearTimeout(t)
+  }, [ready, isDemo, circle?.me, mine])
 
-  useEffect(() => {
-    if (!family) return
-    if (activeTab === 'goals') fetchGoals()
-    else if (activeTab === 'budgets') {
-      fetchBudgets()
-      fetchExpenses()
-    } else if (activeTab === 'expenses') fetchExpenses()
-  }, [family, activeTab])
-
-  useEffect(() => {
-    if (pairCode && countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
-      return () => clearTimeout(timer)
-    } else if (countdown === 0 && pairCode) {
-      setPairCode(null)
-    }
-  }, [countdown, pairCode])
-
-  const fetchFamily = async () => {
-    try {
-      const response = await request.get('/api/family')
-      const fetched = response.data.family as Family | null
-      setFamily(fetched)
-      if (fetched) {
-        setFamilyName(fetched.name)
-        setFamilySettings(fetched.settings ?? defaultSettings)
-      }
-    } catch {
-      setFamily(null)
-    } finally {
-      setLoading(false)
-    }
+  const api = async (body: object, ok?: string) => {
+    try { const r = await axios.post('/api/family-circle', body); if (r.data.circle !== undefined) setCircle(r.data.circle); else await load(); if (ok) toast.success(ok); return r.data } catch (e) { toast.error(axios.isAxiosError(e) && e.response?.data?.error ? String(e.response.data.error) : 'Request failed'); return null }
   }
 
-  const fetchStats = async () => {
-    try {
-      const computed = await fetchFamilyStats()
-      setStats(computed as FamilyStats)
-    } catch {
-      // not in a family
-    }
-  }
+  const rows = circle?.members.filter((m) => m.status === 'active') ?? []
+  const totals = useMemo(() => familyTotals(rows.map((m) => (m.summary && m.summary.netWorth !== undefined ? m.summary : null))), [rows])
+  const hidden = rows.filter((m) => !m.summary || m.summary.netWorth === undefined).length
+  const withGrowth = rows.filter((m) => m.summary?.growthPct != null && m.summary.netWorth)
+  const growth = withGrowth.length ? withGrowth.reduce((s, m) => s + m.summary.growthPct * m.summary.netWorth, 0) / withGrowth.reduce((s, m) => s + m.summary.netWorth, 0) : null
+  const chart = rows.filter((m) => m.summary?.netWorth !== undefined).map((m) => ({ name: m.name.split(' ')[0], netWorth: m.summary.netWorth }))
 
-  const generatePairCode = async (e?: React.FormEvent) => {
-    e?.preventDefault()
-    if (!user?.email) {
-      toast.error('User email not found')
-      return
-    }
-    setPairCodeLoading(true)
-    try {
-      const response = await request.post('/api/family/pair-code/generate', {})
-      setPairCode(response.data.code)
-      setCountdown(60)
-      setIsGenerateDialogOpen(false)
-      toast.success('Invite code generated')
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to generate invite code')
-    } finally {
-      setPairCodeLoading(false)
-    }
-  }
+  if (!ready || circle === undefined) return <LoadingBlock className="h-64" />
 
-  const verifyPairCode = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!joinCode || joinCode.length !== 6) {
-      toast.error('Please enter a valid 6-digit code')
-      return
-    }
-    try {
-      const response = await request.post('/api/family/pair-code/verify', { code: joinCode })
-      toast.success(response.data.message || 'Welcome to the family circle!')
-      setIsJoinDialogOpen(false)
-      setJoinCode('')
-      fetchFamily()
-      fetchStats()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to join family circle')
-    }
-  }
-
-  const createFamily = async () => {
-    if (!familyName.trim()) {
-      toast.error('Please enter a circle name')
-      return
-    }
-    try {
-      await request.post('/api/family', { name: familyName.trim() })
-      toast.success('Family circle created!')
-      fetchFamily()
-      fetchStats()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to create family circle')
-    }
-  }
-
-  const leaveFamily = async () => {
-    try {
-      const response = await request.post('/api/family/members/leave')
-      toast.success(response.data.message || 'Left family circle')
-      setIsLeaveConfirmOpen(false)
-      setFamily(null)
-      setStats(null)
-      setGoals([])
-      setBudgets([])
-      setExpenses([])
-      await fetchFamily()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to leave family circle')
-      await fetchFamily()
-    }
-  }
-
-  const handleRemoveMemberClick = (memberId: string) => {
-    setMemberToRemove(memberId)
-    setIsRemoveConfirmOpen(true)
-  }
-
-  const removeMember = async () => {
-    if (!memberToRemove) return
-    try {
-      await request.delete(`/api/family/members/${memberToRemove}`)
-      toast.success('Member removed')
-      setIsRemoveConfirmOpen(false)
-      setMemberToRemove(null)
-      fetchFamily()
-      fetchStats()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to remove member')
-    }
-  }
-
-  const updateFamilySettings = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
-    try {
-      await request.put('/api/family', { name: familyName, settings: familySettings })
-      toast.success('Circle settings updated')
-      setIsSettingsDialogOpen(false)
-      fetchFamily()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to update settings')
-    }
-  }
-
-  const transferHeadship = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedNewHead) {
-      toast.error('Please select a member to transfer headship to')
-      return
-    }
-    confirmDelete({
-      title: 'Transfer Headship',
-      description: 'Are you sure? You will become a regular member of the circle.',
-      confirmLabel: 'Transfer',
-      onConfirm: async () => {
-        await request.post('/api/family/transfer-headship', { newHeadId: selectedNewHead })
-        toast.success('Headship transferred')
-        setIsTransferDialogOpen(false)
-        setSelectedNewHead('')
-        fetchFamily()
-        fetchStats()
-      },
-    })
-  }
-
-  const copyPairCode = () => {
-    if (!pairCode) return
-    navigator.clipboard.writeText(pairCode)
-    toast.success('Invite code copied')
-  }
-
-  const fetchGoals = async () => {
-    setGoalsLoading(true)
-    try {
-      const response = await request.get('/api/family/goals')
-      setGoals(Array.isArray(response.data) ? response.data : [])
-    } catch {
-      toast.error('Failed to load goals')
-    } finally {
-      setGoalsLoading(false)
-    }
-  }
-
-  const fetchBudgets = async () => {
-    setBudgetsLoading(true)
-    try {
-      const response = await request.get('/api/family/budgets')
-      setBudgets(Array.isArray(response.data) ? response.data : [])
-    } catch {
-      toast.error('Failed to load budgets')
-    } finally {
-      setBudgetsLoading(false)
-    }
-  }
-
-  const fetchExpenses = async () => {
-    setExpensesLoading(true)
-    try {
-      const response = await request.get('/api/family/expenses')
-      setExpenses(Array.isArray(response.data) ? response.data : [])
-    } catch {
-      toast.error('Failed to load expenses')
-    } finally {
-      setExpensesLoading(false)
-    }
-  }
-
-  const reloadAll = useCallback(async () => {
-    await fetchFamily()
-    await fetchStats()
-    if (activeTab === 'goals') await fetchGoals()
-    else if (activeTab === 'budgets') {
-      await Promise.all([fetchBudgets(), fetchExpenses()])
-    } else if (activeTab === 'expenses') await fetchExpenses()
-  }, [activeTab])
-
-  useSyncedRefresh(reloadAll)
-
-  const head = isFamilyHead(family, user?.id)
-
-  if (loading) return <PageSkeleton />
-
-  if (!family) {
+  if (circle === null) {
     return (
-      <div className="space-y-6 overflow-x-hidden">
-        <PageHeader
-          title="Family Circle"
-          subtitle="Create or join a circle to share finances with loved ones"
-        />
-        <div className="grid md:grid-cols-2 gap-6">
-          <Card className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-primary/10 rounded-full">
-                <Users className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">Create a Circle</h3>
-                <p className="text-sm text-muted-foreground">Start a new family circle</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <Input
-                placeholder="Circle name (e.g. The Bhoirs)"
-                value={familyName}
-                onChange={(e) => setFamilyName(e.target.value)}
-              />
-              <Button onClick={createFamily} className="w-full">Create Circle</Button>
-            </div>
-          </Card>
-          <Card className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-green-500/10 rounded-full">
-                <UserPlus className="w-6 h-6 text-green-500" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">Join a Circle</h3>
-                <p className="text-sm text-muted-foreground">Enter an invite code from a member</p>
-              </div>
-            </div>
-            <Button className="w-full" variant="outline" onClick={() => setIsJoinDialogOpen(true)}>
-              Join with Invite Code
-            </Button>
-            <FormSheet open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen} title="Join Family Circle" size="md">
-              <FormLayout variant="sheet" onSubmit={verifyPairCode}>
-                <FormSection>
-                  <FormField label="Invite Code" required hint="Codes expire in 60 seconds">
-                    <Input
-                      placeholder="Enter 6-digit code"
-                      value={joinCode}
-                      onChange={(e) => setJoinCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      maxLength={6}
-                      required
-                      className="text-center text-2xl tracking-widest font-mono"
-                    />
-                  </FormField>
-                </FormSection>
-                <FormButtonGroup
-                  submitLabel="Join Circle"
-                  onCancel={() => { setIsJoinDialogOpen(false); setJoinCode('') }}
-                />
-              </FormLayout>
-            </FormSheet>
-          </Card>
-        </div>
-      </div>
+      <div className="mx-auto max-w-lg"><Panel title="Create your Family Circle" description="Invite family to see only what each person chooses to share. Admins cannot read anyone's data.">
+        <Button onClick={() => api({ action: 'create', name: 'My Family' }, 'Circle created')}><UserPlus className="mr-2 h-4 w-4" />Create circle</Button></Panel></div>
     )
   }
 
-  const memberCount = getMemberCount(family)
-  const activeMembers = getActiveMembers(family)
+  const admin = circle.me?.role === 'admin'
+  // Admins first, then members, then emergency contacts; you first within a role; pending invites last
+  const roleRank: Record<string, number> = { admin: 0, member: 1, emergency_contact: 2 }
+  const sortedMembers = [...circle.members].sort((a, b) => Number(a.status === 'invited' || a.status === 'pending') - Number(b.status === 'invited' || b.status === 'pending') || (roleRank[a.role] ?? 9) - (roleRank[b.role] ?? 9) || Number(b.self) - Number(a.self) || a.name.localeCompare(b.name))
+  const self = circle.members.find((m) => m.self)
+
+  const setSharing = async (key: string, value: boolean) => {
+    if (!self?.permissions) return
+    const permissions = { ...self.permissions, [key]: value }
+    if (isDemo) await db.members.update(self.id, { permissions })
+    else await api({ action: 'update-sharing', permissions })
+  }
+  const setRole = async (m: VM, role: string) => {
+    if (isDemo) await db.members.update(m.id, { role }); else await api({ action: 'update-member', memberId: m.id, role }, 'Role updated')
+  }
 
   return (
-    <div className="space-y-6 overflow-x-hidden">
-      <PageHeader
-        title={family.name}
-        subtitle={`${memberCount} member${memberCount !== 1 ? 's' : ''} in your circle`}
-      >
-        {head && (
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 w-9 p-0 sm:w-auto sm:px-3"
-              onClick={() => setIsSettingsDialogOpen(true)}
-              aria-label="Circle settings"
-            >
-              <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline ml-2">Settings</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 w-9 p-0 sm:w-auto sm:px-3"
-              onClick={() => setIsTransferDialogOpen(true)}
-              aria-label="Transfer headship"
-            >
-              <ArrowRightLeft className="w-4 h-4" />
-              <span className="hidden sm:inline ml-2">Transfer Headship</span>
-            </Button>
-          </>
-        )}
-      </PageHeader>
+    <div className="space-y-5">
+      <PageHeader title={circle.name} description="Each member controls what they share. Joint assets are counted once." actions={admin ? <Button onClick={() => setDlg('invite')}><Plus className="mr-1.5 h-4 w-4" />Invite member</Button> : undefined} />
 
-      <FormSheet open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen} title="Circle Settings">
-        <FormLayout variant="sheet" onSubmit={updateFamilySettings}>
-          <FormSection>
-            <FormField label="Circle Name">
-              <Input value={familyName} onChange={(e) => setFamilyName(e.target.value)} />
-            </FormField>
-          </FormSection>
-          <FormSection title="Data Sharing">
-            {([
-              { key: 'shareExpenses', label: 'Share expenses' },
-              { key: 'shareBudgets', label: 'Share budgets' },
-              { key: 'shareInvestments', label: 'Share investments' },
-              { key: 'shareSalary', label: 'Share salary info' },
-            ] as const).map(({ key, label }) => (
-              <FormField key={key} label={label} span="full">
-                <label className="flex items-center justify-end">
-                  <input
-                    type="checkbox"
-                    checked={familySettings[key]}
-                    onChange={(e) => setFamilySettings({ ...familySettings, [key]: e.target.checked })}
-                    className="h-4 w-4 rounded border-border accent-primary"
-                  />
-                </label>
-              </FormField>
-            ))}
-          </FormSection>
-          <FormButtonGroup
-            submitLabel="Save Settings"
-            onCancel={() => {
-              setIsSettingsDialogOpen(false)
-              setFamilyName(family.name)
-              setFamilySettings(family.settings ?? defaultSettings)
-            }}
-          />
-        </FormLayout>
-      </FormSheet>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat label="Family net worth" value={<Money value={totals.netWorth} />} hint={hidden ? `${hidden} member${hidden > 1 ? 's' : ''} not shared` : undefined} />
+        <Stat label="Total assets" value={<Money value={totals.assets} />} />
+        <Stat label="Total liabilities" value={<Money value={totals.liabilities} />} />
+        <Stat label="Growth this month" value={growth == null ? '—' : formatPct(growth, 1)} hint="Weighted by net worth" />
+      </div>
+      {totals.jointDeduplicated > 0 && <p className="text-xs text-muted-foreground">Includes {formatINR(totals.jointDeduplicated)} of jointly owned assets counted only once.</p>}
 
-      <FormSheet open={isTransferDialogOpen} onOpenChange={setIsTransferDialogOpen} title="Transfer Headship">
-        <FormLayout variant="sheet" onSubmit={transferHeadship}>
-          <FormSection>
-            <FormField
-              label="Select New Head"
-              required
-              hint="You will become a regular member after transferring"
-            >
-              <select
-                value={selectedNewHead}
-                onChange={(e) => setSelectedNewHead(e.target.value)}
-                className="form-select"
-                required
-              >
-                <option value="">Select a member</option>
-                {activeMembers
-                  .filter((m) => normalizeId(m.user) !== user?.id)
-                  .map((member) => (
-                    <option key={normalizeId(member.user)} value={normalizeId(member.user)}>
-                      {member.user.name || member.user.email}
-                    </option>
-                  ))}
-              </select>
-            </FormField>
-          </FormSection>
-          <FormButtonGroup
-            submitLabel="Transfer Headship"
-            onCancel={() => { setIsTransferDialogOpen(false); setSelectedNewHead('') }}
-          />
-        </FormLayout>
-      </FormSheet>
-
-      <TabButtonGroup
-        value={activeTab}
-        onValueChange={setActiveTab}
-        options={[
-          { value: 'overview', label: 'Overview', icon: Users },
-          { value: 'goals', label: 'Goals', icon: Target },
-          { value: 'budgets', label: 'Budgets', icon: IndianRupee },
-          { value: 'expenses', label: 'Expenses', icon: ReceiptText },
-        ]}
-      />
-
-      {activeTab === 'overview' && (
-        <>
-          {stats && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard
-                title="Total Balance"
-                value={stats.totalBalance}
-                formatValue={formatCurrency}
-              />
-              <StatCard
-                title="Investments"
-                value={stats.totalInvestments}
-                formatValue={formatCurrency}
-              />
-              <StatCard
-                title="Monthly Income"
-                value={stats.totalIncome}
-                formatValue={formatCurrency}
-              />
-              <StatCard
-                title="Monthly Expenses"
-                value={stats.totalExpenses}
-                formatValue={formatCurrency}
-              />
-            </div>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Panel title="Net worth by member" className="lg:col-span-1">
+          {chart.length === 0 ? <Empty title="Nothing shared yet" /> : (
+            <div className="h-56" role="img" aria-label="Net worth per member"><ResponsiveContainer width="100%" height="100%"><BarChart data={chart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid stroke={chartGrid} vertical={false} /><XAxis dataKey="name" {...chartAxis} /><YAxis {...chartAxis} width={44} tickFormatter={(v) => (privacyMode ? '••' : formatCompactINR(v).replace('₹', ''))} />
+              <Tooltip {...chartTooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => (privacyMode ? '••••' : formatINR(v))} />
+              <Bar dataKey="netWorth" name="Net worth" radius={[4, 4, 0, 0]}>{chart.map((_, i) => <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />)}</Bar></BarChart></ResponsiveContainer></div>
           )}
-
-          <Card className="p-6">
-            <div className="mb-4">
-              <h3 className="font-semibold text-lg mb-1">Invite to Circle</h3>
-              <p className="text-sm text-muted-foreground">
-                Generate a one-time code to invite someone to your family circle
-              </p>
-            </div>
-            {pairCode ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 p-4 bg-primary/10 rounded-lg">
-                  <div className="text-3xl font-bold tracking-wider text-primary font-mono">{pairCode}</div>
-                  <Button onClick={copyPairCode} size="sm" variant="outline">
-                    <Copy className="w-4 h-4 mr-2" />Copy
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="w-4 h-4" />
-                  <span>Expires in {countdown} seconds</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Share this code with the person you want to invite. They enter it on the Join screen.
-                </p>
-              </div>
-            ) : (
-              <>
-                <Button className="w-full md:w-auto" onClick={() => setIsGenerateDialogOpen(true)}>
-                  <UserPlus className="w-4 h-4 mr-2" />Generate Invite Code
-                </Button>
-                <FormSheet open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen} title="Generate Invite Code" size="md">
-                  <FormLayout variant="sheet" onSubmit={generatePairCode}>
-                    <FormSection>
-                      <p className="text-sm text-muted-foreground form-field-full">
-                        A 6-digit code will be generated that expires in 60 seconds. Share it with the person you want to invite.
-                      </p>
-                    </FormSection>
-                    <FormButtonGroup
-                      submitLabel="Generate Code"
-                      onCancel={() => setIsGenerateDialogOpen(false)}
-                      isLoading={pairCodeLoading}
-                    />
-                  </FormLayout>
-                </FormSheet>
-              </>
-            )}
-          </Card>
-
-          <Card className="p-6">
-            <h3 className="font-semibold text-lg mb-4">Circle Members</h3>
-            <div className="space-y-3">
-              {activeMembers.map((member) => {
-                const memberUserId = normalizeId(member.user)
-                const headId = normalizeId(family.familyHead)
-                const isHeadMember = member.role === 'head' || headId === memberUserId
-                const isCurrentUser = user?.id === memberUserId
-
-                return (
-                  <motion.div
-                    key={memberUserId}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center justify-between p-4 surface-inner rounded-xl"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        {member.user.image ? (
-                          <img
-                            src={member.user.image}
-                            alt={member.user.name ?? ''}
-                            className="w-10 h-10 rounded-full"
-                          />
-                        ) : (
-                          <User className="w-5 h-5 text-primary" />
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium truncate">
-                            {member.user.name || member.user.email}
-                          </span>
-                          {isHeadMember && (
-                            <Crown className="w-4 h-4 text-yellow-500 shrink-0" aria-label="Circle Head" />
-                          )}
-                          {isCurrentUser && (
-                            <span className="text-xs text-muted-foreground shrink-0">(You)</span>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground truncate">{member.user.email}</p>
-                      </div>
+        </Panel>
+        <Panel title="Members" className="lg:col-span-2">
+          <ul className="divide-y divide-border">
+            {sortedMembers.map((m) => {
+              const s = m.summary
+              return (
+                <li key={m.id} className="py-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0"><p className="font-medium">{m.name}{m.self ? ' (you)' : ''}</p><p className="text-xs text-muted-foreground">{m.relation}{m.email ? <> · <CopyValue value={m.email} label="Email" /></> : null}{m.status === 'invited' ? ' · Invite pending' : ''}</p></div>
+                    <div className="flex items-center gap-1.5">
+                      {admin && !m.self ? <Select aria-label={`Role for ${m.name}`} className="h-8 w-auto text-xs" value={m.role} onChange={(e) => setRole(m, e.target.value)}>{ROLES.map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}</Select> : <span className="rounded-md bg-muted px-2 py-1 text-xs">{roleLabel(m.role)}</span>}
+                      {m.status === 'invited' && isDemo && <Button size="sm" variant="outline" onClick={() => db.members.update(m.id, { status: 'active' })}>Simulate accept</Button>}
+                      {(admin && !m.self || (m.self && circle.members.length > 1)) && <Button size="icon" variant="ghost" className="h-8 w-8" aria-label={m.self ? 'Leave circle' : `Remove ${m.name}`} onClick={() => setDlg({ del: m })}><Trash2 className="h-3.5 w-3.5" /></Button>}
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                      {isHeadMember && (
-                        <span className="text-xs px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded">
-                          Head
-                        </span>
-                      )}
-                      {head && !isHeadMember && !isCurrentUser && memberUserId && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRemoveMemberClick(memberUserId)}
-                          className="text-red-600 hover:text-red-700 dark:text-red-400 border-red-300 dark:border-red-700"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />Remove
-                        </Button>
-                      )}
-                      {!isHeadMember && isCurrentUser && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setIsLeaveConfirmOpen(true)}
-                          className="text-orange-600 hover:text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-700"
-                        >
-                          <LogOut className="w-4 h-4 mr-2" />Leave
-                        </Button>
-                      )}
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </div>
-          </Card>
+                  </div>
+                  {m.status === 'active' && (s && s.netWorth !== undefined ? (
+                    <dl className="mt-2 grid grid-cols-2 gap-2 text-sm sm:grid-cols-5">
+                      <div><dt className="text-xs text-muted-foreground">Net worth</dt><dd className="font-medium"><Money value={s.netWorth} compact /></dd></div>
+                      {s.bank !== undefined && <div><dt className="text-xs text-muted-foreground">Bank</dt><dd><Money value={s.bank} compact /></dd></div>}
+                      {s.mutualFunds !== undefined && <div><dt className="text-xs text-muted-foreground">Mutual funds</dt><dd><Money value={s.mutualFunds} compact /></dd></div>}
+                      {s.insuranceCover !== undefined && <div><dt className="text-xs text-muted-foreground">Insurance cover</dt><dd><Money value={s.insuranceCover} compact /></dd></div>}
+                      {s.growthPct != null && <div><dt className="text-xs text-muted-foreground">Growth</dt><dd>{formatPct(s.growthPct, 1)}</dd></div>}
+                    </dl>
+                  ) : <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground"><Lock className="h-3.5 w-3.5" />Not shared with you</p>)}
+                </li>
+              )
+            })}
+          </ul>
+        </Panel>
+      </div>
 
-          <ConfirmDialog
-            open={isLeaveConfirmOpen}
-            onOpenChange={setIsLeaveConfirmOpen}
-            title="Leave Family Circle"
-            description="You will lose access to all circle data. You'll need a new invite to rejoin."
-            confirmLabel="Leave Circle"
-            onConfirm={leaveFamily}
-            variant="destructive"
-          />
-          <ConfirmDialog
-            open={isRemoveConfirmOpen}
-            onOpenChange={(open) => { setIsRemoveConfirmOpen(open); if (!open) setMemberToRemove(null) }}
-            title="Remove Member"
-            description="They will lose access to all circle data and need a new invite to rejoin."
-            confirmLabel="Remove Member"
-            onConfirm={removeMember}
-            variant="destructive"
-          />
-        </>
+      {self?.permissions && (
+        <Panel title="My sharing" description="You decide what the circle can see about you. Everything is off until you turn it on.">
+          <ul className="grid gap-3 sm:grid-cols-2">{PERMS.map(([k, l, d]) => (
+            <li key={k}><label className="flex items-start gap-2.5 text-sm"><input type="checkbox" className="mt-0.5 h-4 w-4 accent-[hsl(var(--primary))]" checked={!!self.permissions![k]} onChange={(e) => setSharing(k, e.target.checked)} /><span><span className="block font-medium">{l}</span><span className="text-xs text-muted-foreground">{d}</span></span></label></li>
+          ))}</ul>
+        </Panel>
       )}
 
-      {activeTab === 'goals' && family && (
-        <FamilyGoalsSection
-          goals={goals}
-          loading={goalsLoading}
-          onRefresh={fetchGoals}
-          isFamilyHead={head}
-          family={family}
-          currentUserId={user?.id}
-        />
-      )}
-      {activeTab === 'budgets' && (
-        <FamilyBudgetsSection
-          budgets={budgets}
-          expenses={expenses}
-          loading={budgetsLoading}
-          onRefresh={fetchBudgets}
-          isFamilyHead={head}
-        />
-      )}
-      {activeTab === 'expenses' && family && (
-        <FamilyExpensesSection
-          expenses={expenses}
-          loading={expensesLoading}
-          onRefresh={fetchExpenses}
-          family={family}
-          user={user}
-        />
-      )}
+      {link && <Panel title="Invitation link" description="Email isn't configured, so share this link with the invitee yourself. It expires in 7 days."><div className="flex gap-2"><Input readOnly value={link} aria-label="Invitation link" /><Button variant="outline" onClick={() => { navigator.clipboard.writeText(link); toast.success('Copied') }}><Copy className="h-4 w-4" /></Button></div></Panel>}
 
-      <ConfirmDialog {...transferConfirmProps} />
+      {dlg === 'invite' && <InviteForm onClose={() => setDlg(null)} onSave={async (v) => {
+        if (isDemo) { await db.members.put({ id: uid('fm'), ...v, status: 'pending', permissions: { netWorth: false, overview: false, bank: false, mutualFunds: false, insurance: false, documents: false, emergencyOnly: false }, summary: null }); toast.success('Invitation created (demo: no email is sent)') }
+        else { const r = await api({ action: 'invite', ...v }); if (r) { setLink(r.inviteLink || null); toast.success(r.emailed ? 'Invitation emailed' : 'Invitation created') } else throw new Error('Could not invite') }
+      }} />}
+      <ConfirmDialog open={typeof dlg === 'object' && dlg !== null} onOpenChange={(o) => !o && setDlg(null)} title={typeof dlg === 'object' && dlg?.del.self ? 'Leave this circle?' : `Remove ${typeof dlg === 'object' ? dlg?.del.name : ''}?`} description="They will no longer see or be seen in the circle." confirmLabel="Confirm" variant="destructive"
+        onConfirm={async () => { const m = (dlg as { del: VM }).del; if (isDemo) await db.members.delete(m.id); else await api({ action: m.self ? 'leave' : 'remove-member', memberId: m.id }, 'Done'); setDlg(null); if (!isDemo && m.self) setCircle(null) }} />
     </div>
   )
 }
 
-export default FamilyPage
+function InviteForm({ onClose, onSave }: { onClose: () => void; onSave: (v: { name: string; email: string; relation: string; role: string }) => Promise<void> }) {
+  const [f, setF] = useState({ name: '', email: '', relation: '', role: 'member' })
+  return (
+    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Invite a family member" description="They choose what to share after accepting." submitLabel="Send invitation" onSubmit={() => onSave(f)}>
+      <Field label="Name">{(id) => <Input id={id} required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
+      <Field label="Email">{(id) => <Input id={id} type="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />}</Field>
+      <Field label="Relationship">{(id) => <Input id={id} value={f.relation} onChange={(e) => setF({ ...f, relation: e.target.value })} placeholder="Spouse, Parent, Sibling…" />}</Field>
+      <Field label="Role">{(id) => <Select id={id} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })}>{ROLES.map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}</Select>}</Field>
+    </FormDialog>
+  )
+}

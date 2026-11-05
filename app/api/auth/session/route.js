@@ -8,6 +8,11 @@ export async function GET() {
     const token = cookieStore.get('auth-token')?.value
 
     if (!token) {
+      if (cookieStore.get('mm-demo')?.value === '1') {
+        return NextResponse.json({
+          user: { id: 'demo', demo: true, email: 'arjun.demo@example.com', name: 'Arjun Mehta (Demo)', firstName: 'Arjun', lastName: 'Mehta', image: null },
+        })
+      }
       return NextResponse.json({ user: null })
     }
 

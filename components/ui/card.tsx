@@ -17,7 +17,7 @@ export function Card({
   children,
   className = '',
   onClick,
-  animate = true,
+  animate = false,
   delay = 0,
   hover = false,
   elevated = false,

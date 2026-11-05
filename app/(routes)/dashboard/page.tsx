@@ -1,273 +1,272 @@
 'use client'
 
-import { useAuth } from '@/lib/hooks/useAuth'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { AlertOctagon, AlertTriangle, ArrowRight } from 'lucide-react'
-import { endOfMonth, startOfMonth } from 'date-fns'
-import { toast } from 'sonner'
-import request from '@/lib/api/request'
 import Link from 'next/link'
-import { CashFlowChart } from './_components/CashFlowChart'
-import { SavingsGoalsCard, type DashboardGoal } from './_components/SavingsGoalsCard'
-import { RecentTransactions, type DashboardTransaction } from './_components/RecentTransactions'
-import {
-  CategoryBreakdownCard,
-  type CategoryStat,
-} from './stats/_components/CategoryBreakdownCard'
-import { ChartCard } from '@/components/ui/chart-card'
-import { FinanceStatCard } from '@/components/ui/finance-stat-card'
-import { SectionHeader } from '@/components/ui/section-header'
-import {
-  DashboardHero,
-  DashboardQuickActions,
-  DASHBOARD_METRIC_LINKS,
-  MetricSubtitle,
-  ViewAllLink,
-} from './_components/DashboardHero'
-import { withFromHome } from '@/lib/utils/navigation'
-import type { DashboardStats } from '@/types/dashboard'
-import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
-import { fetchDashboardStats, fetchTransactionStats } from '@/lib/api/stats'
-import { usePrivacyAmount } from '@/lib/hooks/usePrivacyAmount'
-import { findSpendingAlerts } from '@/lib/utils/dashboardInsights'
-import { cn } from '@/lib/utils'
+import { ArrowRight } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { useWealth } from '@/lib/wealth/WealthContext'
+import { budgetPacing, growthVs, healthScore, portfolioSummary, rangeStart, cardUtilisation } from '@/lib/wealth/calc'
+import { ASSET_LABELS, LIABILITY_LABELS } from '@/lib/wealth/labels'
+import { coverageTotals, incomeVsExpenses, monthLabel } from '@/lib/wealth/selectors'
+import { upcomingCardDues, upcomingPremiums, upcomingSips } from '@/lib/wealth/reminders'
+import { formatCompactINR, formatDate, formatINR, formatPct } from '@/lib/wealth/format'
+import { Money } from '@/components/wealth/Money'
+import { CHART_PALETTE, Delta, Empty, LoadingBlock, Panel, Progress, RangeTabs, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForPct } from '@/components/wealth/kit'
+import { usePrivacyMode } from '@/contexts/PrivacyContext'
+import { WealthAiWidget } from '@/components/ai/WealthAiWidget'
+import { InsightsList } from '@/components/ai/InsightsList'
+import { useAi } from '@/components/ai/useAi'
 
-const RECENT_TRANSACTION_COUNT = 6
-const MAX_SPENDING_ALERTS = 3
-// ponytail: cash flow + alerts are computed client-side from the latest 1000 transactions
-// (API max). Heavy users may see older months undercounted; move to a server aggregation if so.
-const TRANSACTIONS_URL = '/api/transactions?limit=1000'
+const RANGES = ['1M', '3M', '6M', '1Y', 'ALL'] as const
+type Range = (typeof RANGES)[number]
 
-const Dashboard = () => {
-  const { user, loading: authLoading } = useAuth()
-  const userId = user?.id
-  const [stats, setStats] = useState<DashboardStats>({})
-  const [transactions, setTransactions] = useState<DashboardTransaction[]>([])
-  const [goals, setGoals] = useState<DashboardGoal[] | null>([])
-  const [incomeCategories, setIncomeCategories] = useState<CategoryStat[]>([])
-  const [expenseCategories, setExpenseCategories] = useState<CategoryStat[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const loadData = useCallback(async () => {
-    const now = new Date()
-
-    const [statsData, txRes, categoryStats, goalsRes] = await Promise.all([
-      fetchDashboardStats(),
-      request.get(TRANSACTIONS_URL),
-      fetchTransactionStats({
-        startDate: startOfMonth(now).toISOString(),
-        endDate: endOfMonth(now).toISOString(),
-        types: 'income,expense',
-      }),
-      // Goals are secondary: a failure here shouldn't blank the whole dashboard.
-      request.get('/api/goals').catch((err) => {
-        console.error('Failed to load goals', err)
-        return null
-      }),
-    ])
-
-    setStats(statsData || {})
-    setTransactions(Array.isArray(txRes.data) ? txRes.data : [])
-    setIncomeCategories(categoryStats?.incomeCategoryWise ?? [])
-    setExpenseCategories(categoryStats?.categoryWise ?? [])
-    setGoals(goalsRes ? (Array.isArray(goalsRes.data) ? goalsRes.data : []) : null)
-  }, [])
-
-  useEffect(() => {
-    if (!userId) {
-      setLoading(false)
-      return
-    }
-
-    let cancelled = false
-    setLoading(true)
-    loadData()
-      .catch(() => {
-        if (!cancelled) {
-          toast.error('Failed to load dashboard data')
-          setStats({})
-          setTransactions([])
-          setGoals([])
-          setIncomeCategories([])
-          setExpenseCategories([])
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [userId, loadData])
-
-  useSyncedRefresh(loadData)
-
-  const displayName = user?.name || user?.email?.split('@')[0] || 'Guest'
-  const spendingAlerts = useMemo(
-    () => findSpendingAlerts(transactions).slice(0, MAX_SPENDING_ALERTS),
-    [transactions]
-  )
-
+function Widget({ title, href, children }: { title: string; href: string; children: React.ReactNode }) {
   return (
-    <>
-      <DashboardHero
-        displayName={displayName}
-        authLoading={authLoading}
-        loading={loading}
-        stats={stats}
-      />
-
-      <DashboardQuickActions className="md:hidden" />
-
-      {!loading && spendingAlerts.length > 0 && (
-        <div className="space-y-2">
-          {spendingAlerts.map((alert) => (
-            <SpendingAlertBanner key={alert.category} alert={alert} />
-          ))}
-        </div>
-      )}
-
-      <section>
-        <SectionHeader title="Overview" />
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:gap-4 lg:grid-cols-4">
-          {DASHBOARD_METRIC_LINKS.map((metric) => {
-            let value = stats[metric.valueKey] ?? 0
-            if (metric.combineCash) {
-              value = (stats.totalBankBalance ?? 0) + (stats.totalCash ?? 0)
-            }
-
-            return (
-              <FinanceStatCard
-                key={metric.title}
-                title={metric.title}
-                value={Number(value) || 0}
-                subtitle={MetricSubtitle({
-                  stats,
-                  loading,
-                  subtitleKey: metric.subtitleKey,
-                  subtitleLabel: metric.subtitleLabel,
-                  isCount: (metric as { isCount?: boolean }).isCount,
-                })}
-                icon={metric.icon}
-                href={metric.href}
-                loading={loading}
-                variant={metric.variant}
-              />
-            )
-          })}
-        </div>
-      </section>
-
-      <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-12">
-        <ChartCard
-          title="Cash flow"
-          subtitle="Income vs expenses, last 6 months"
-          loading={loading}
-          className="min-w-0 lg:col-span-8"
-          action={<ViewAllLink href={withFromHome('/dashboard/stats')} label="Stats" />}
-        >
-          <CashFlowChart transactions={transactions} />
-        </ChartCard>
-
-        <SavingsGoalsCard
-          goals={goals}
-          loading={loading}
-          className="min-w-0 lg:col-span-4"
-          onGoalAdded={() => {
-            loadData().catch(() => toast.error('Goal saved, but the dashboard failed to refresh'))
-          }}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
-        <CategoryBreakdownCard
-          title="Income"
-          categories={incomeCategories}
-          total={stats.monthlyIncome ?? 0}
-          loading={loading}
-        />
-        <CategoryBreakdownCard
-          title="Expenses"
-          categories={expenseCategories}
-          total={stats.monthlyExpenses ?? 0}
-          loading={loading}
-        />
-      </div>
-
-      <section>
-        <SectionHeader
-          title="Recent transactions"
-          action={<ViewAllLink href={withFromHome('/dashboard/transactions')} label="All" />}
-        />
-        <RecentTransactions
-          transactions={transactions.slice(0, RECENT_TRANSACTION_COUNT)}
-          loading={loading}
-        />
-      </section>
-
-    </>
+    <Link href={href} className="surface-card block p-4 outline-none transition-colors hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring">
+      <p className="text-xs font-medium text-muted-foreground">{title}</p>
+      {children}
+    </Link>
   )
 }
 
-type SpendingAlert = ReturnType<typeof findSpendingAlerts>[number]
+export default function DashboardPage() {
+  const { ready, data, netWorth, isDemo } = useWealth()
+  const { privacyMode } = usePrivacyMode()
+  const ai = useAi()
+  const [range, setRange] = useState<Range>('1Y')
+  const today = useMemo(() => new Date(), [])
 
-const ALERT_TONES = {
-  warning: {
-    icon: AlertTriangle,
-    box: 'border-warning/30 bg-warning/10',
-    badge: 'text-warning sm:bg-warning/15',
-    button: 'border-warning/30 hover:bg-warning/15',
-  },
-  critical: {
-    icon: AlertOctagon,
-    box: 'border-expense/30 bg-expense/10',
-    badge: 'text-expense sm:bg-expense/15',
-    button: 'border-expense/30 hover:bg-expense/15',
-  },
-} as const
+  const m = useMemo(() => {
+    if (!ready) return null
+    const ym = today.toISOString().slice(0, 7)
+    const nwNow = netWorth.netWorth
+    const monthGrowth = growthVs(data.snapshots, nwNow, 1, today)
+    const yearGrowth = growthVs(data.snapshots, nwNow, 12, today)
+    const start = rangeStart(range, today)
+    const series = [...data.snapshots].filter((s) => s.date >= start).sort((a, b) => a.date.localeCompare(b.date)).map((s) => ({ date: s.date, label: monthLabel(s.date.slice(0, 7)), netWorth: s.netWorth }))
+    const budget = data.budgets.find((b) => b.id === ym)
+    const pacing = budget ? budgetPacing({ budget: budget.total, expenses: data.expenses, year: today.getFullYear(), month: today.getMonth() + 1, today }) : null
+    const portfolio = portfolioSummary(data.funds, data.fundTxns, data.sips, today)
+    const cover = coverageTotals(data.policies, today)
+    const limit = data.cards.reduce((s, c) => s + c.limit, 0)
+    const outstanding = data.cards.reduce((s, c) => s + c.outstanding, 0)
+    const util = cardUtilisation(limit, outstanding)
+    const bankTotal = data.bankAccounts.reduce((s, b) => s + b.currentBalance, 0)
+    const profile = data.meta.find((x) => x.key === 'profile')?.value
+    const monthly = pacing?.spent ?? 0
+    const health = healthScore({
+      assets: netWorth.assets, liabilities: netWorth.liabilities,
+      monthlyExpense: budget?.total || monthly, liquid: bankTotal, utilisation: util,
+      insuranceCover: cover.byType.term || 0, annualIncome: (profile?.monthlyIncome || 0) * 12,
+    })
+    const dues = [
+      ...upcomingCardDues(data.cards, today),
+      ...upcomingPremiums(data.policies, today),
+      ...upcomingSips(data.sips, data.funds, today),
+    ].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 6)
+    const assetPie = Object.entries(netWorth.assetBreakdown).filter(([, v]) => v > 0).map(([k, v]) => ({ key: k, name: ASSET_LABELS[k as keyof typeof ASSET_LABELS] ?? k, value: v }))
+    const liabPie = Object.entries(netWorth.liabilityBreakdown).filter(([, v]) => v > 0).map(([k, v]) => ({ key: k, name: LIABILITY_LABELS[k as keyof typeof LIABILITY_LABELS] ?? k, value: v }))
+    const recent = [
+      ...data.expenses.map((e) => ({ id: e.id, date: e.date, title: e.note || e.category, sub: e.category, amount: -e.amount })),
+      ...data.bankTxns.filter((t) => t.type === 'income').map((t) => ({ id: t.id, date: t.date, title: t.description, sub: 'Income', amount: t.amount })),
+    ].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6)
+    return { monthGrowth, yearGrowth, series, pacing, budget, portfolio, cover, limit, outstanding, util, bankTotal, health, dues, assetPie, liabPie, recent, cashflow: incomeVsExpenses(data.bankTxns, data.expenses, 6, today), prevMonthNW: monthGrowth?.base }
+  }, [ready, data.snapshots, data.budgets, data.expenses, data.funds, data.fundTxns, data.sips, data.policies, data.cards, data.bankAccounts, data.bankTxns, data.meta, netWorth, range, today])
 
-function SpendingAlertBanner({ alert }: { alert: SpendingAlert }) {
-  const { fmt } = usePrivacyAmount()
-  const tone = ALERT_TONES[alert.severity === 'critical' ? 'critical' : 'warning']
-  const Icon = tone.icon
-  return (
-    <div
-      role={alert.severity === 'critical' ? 'alert' : 'status'}
-      className={cn(
-        'flex flex-col gap-2 rounded-[var(--radius-lg)] border px-3.5 py-3 text-[13px] leading-snug sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-2.5 sm:pl-3 sm:pr-2.5 sm:text-sm',
-        tone.box
-      )}
-    >
-      <div className="flex min-w-0 items-start gap-2.5 sm:items-center sm:gap-3">
-        <span
-          className={cn(
-            'mt-0.5 flex shrink-0 sm:mt-0 sm:h-8 sm:w-8 sm:items-center sm:justify-center sm:rounded-full',
-            tone.badge
-          )}
-        >
-          <Icon className="h-4 w-4" strokeWidth={2} aria-hidden />
-        </span>
-        <p className="min-w-0">
-          <span className="font-medium">{alert.category}</span> is{' '}
-          {Math.round(alert.pctAbove * 100)}% above your 3-month average{' '}
-          <span className="whitespace-nowrap tabular-nums text-muted-foreground">
-            ({fmt(alert.spent)} vs {fmt(alert.average)})
-          </span>
-        </p>
+  if (!ready || !m) {
+    return (
+      <div className="space-y-4">
+        <LoadingBlock className="h-40" />
+        <div className="grid gap-4 md:grid-cols-2"><LoadingBlock className="h-72" /><LoadingBlock className="h-72" /></div>
       </div>
-      <Link
-        href={withFromHome('/dashboard/budgets')}
-        className={cn(
-          'inline-flex shrink-0 items-center gap-1 self-end whitespace-nowrap rounded-full border bg-background/40 px-3.5 py-1.5 text-[13px] font-medium text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:self-auto',
-          tone.button
-        )}
-      >
-        Review budgets
-        <ArrowRight className="h-3.5 w-3.5" />
-      </Link>
+    )
+  }
+
+  const hasData = netWorth.assets > 0 || netWorth.liabilities > 0
+
+  return (
+    <div className="space-y-5">
+      <section className="surface-card p-5 md:p-6" aria-label="Net worth summary">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Net worth</p>
+            <p className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl"><Money value={netWorth.netWorth} /></p>
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+              <span className="inline-flex items-center gap-1.5 text-muted-foreground">vs 1 month ago{m.monthGrowth ? ` (${formatDate(m.monthGrowth.baseDate)})` : ''} {m.monthGrowth ? <Delta amount={m.monthGrowth.diff} pct={m.monthGrowth.pct} /> : <span>—</span>}</span>
+              <span className="inline-flex items-center gap-1.5 text-muted-foreground">vs 1 year ago{m.yearGrowth ? ` (${formatDate(m.yearGrowth.baseDate)})` : ''} {m.yearGrowth ? <Delta amount={m.yearGrowth.diff} pct={m.yearGrowth.pct} /> : <span>—</span>}</span>
+            </div>
+          </div>
+          <dl className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
+            <div><dt className="text-xs text-muted-foreground">Assets</dt><dd className="font-semibold"><Money value={netWorth.assets} /></dd></div>
+            <div><dt className="text-xs text-muted-foreground">Liabilities</dt><dd className="font-semibold"><Money value={netWorth.liabilities} /></dd></div>
+            <div><dt className="text-xs text-muted-foreground">1 month ago</dt><dd className="font-medium">{m.monthGrowth ? <Money value={m.monthGrowth.base} compact /> : '—'}</dd></div>
+            <div><dt className="text-xs text-muted-foreground">1 year ago</dt><dd className="font-medium">{m.yearGrowth ? <Money value={m.yearGrowth.base} compact /> : '—'}</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      {!hasData && (
+        <Empty title="Nothing tracked yet" description="Add a bank account or mutual fund to start building your net worth." action={<Link className="text-sm font-medium text-primary underline" href="/dashboard/bank-accounts">Add a bank account</Link>} />
+      )}
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Widget title="Bank & cash" href="/dashboard/bank-accounts">
+          <p className="mt-1 text-lg font-semibold"><Money value={m.bankTotal} /></p>
+          <p className="text-xs text-muted-foreground">{data.bankAccounts.length} account{data.bankAccounts.length === 1 ? "" : "s"}</p>
+        </Widget>
+        <Widget title="Mutual funds" href="/dashboard/mutual-funds">
+          <p className="mt-1 text-lg font-semibold"><Money value={m.portfolio.value} /></p>
+          <p className="text-xs text-muted-foreground">{m.portfolio.invested ? <Delta pct={m.portfolio.absReturnPct} /> : 'No funds yet'}{m.portfolio.xirrPct != null && <> · XIRR {formatPct(m.portfolio.xirrPct, 1)}</>}</p>
+        </Widget>
+        <Widget title="Card outstanding" href="/dashboard/credit-cards">
+          <p className="mt-1 text-lg font-semibold"><Money value={m.outstanding} /></p>
+          <p className="text-xs text-muted-foreground">{m.limit ? `${m.util}% of ${formatCompactINR(m.limit)} limit` : 'No cards'}</p>
+        </Widget>
+        <Widget title="Insurance cover" href="/dashboard/insurance">
+          <p className="mt-1 text-lg font-semibold"><Money value={m.cover.total} compact /></p>
+          <p className="text-xs text-muted-foreground">{m.cover.activeCount} active polic{m.cover.activeCount === 1 ? 'y' : 'ies'}</p>
+        </Widget>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Panel className="lg:col-span-2" title="Net worth over time" action={<RangeTabs value={range} onChange={setRange} options={RANGES as readonly Range[]} />}>
+          {m.series.length < 2 ? (
+            <Empty title="Not enough history yet" description="Net worth snapshots build up automatically as your data changes." />
+          ) : (
+            <div className="h-64" role="img" aria-label="Net worth line chart">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={m.series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid stroke={chartGrid} vertical={false} />
+                  <XAxis dataKey="label" {...chartAxis} minTickGap={24} />
+                  <YAxis {...chartAxis} width={56} tickFormatter={(v) => (privacyMode ? '••' : formatCompactINR(v).replace('₹', ''))} />
+                  <Tooltip {...chartTooltipStyle} formatter={(v: number) => [privacyMode ? '••••' : formatINR(v), 'Net worth']} />
+                  <Line type="monotone" dataKey="netWorth" stroke={chartColor(1)} strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="Financial health" description="Transparent rules, not a credit score" action={<Link className="text-xs font-medium text-primary hover:underline" href="/dashboard/ai">How it works</Link>}>
+          {!ai.health ? <LoadingBlock className="h-24" /> : (
+            <>
+              <div className="flex items-baseline gap-2"><span className="text-4xl font-semibold">{ai.health.score ?? '—'}</span><span className="text-sm text-muted-foreground">/ 100 · {ai.health.label}</span></div>
+              <ul className="mt-3 space-y-2.5">{ai.health.params.filter((p) => p.score != null).slice(0, 5).map((p) => (
+                <li key={p.key}><div className="flex justify-between text-xs"><span>{p.name}</span><span className="text-muted-foreground">{p.value}</span></div><Progress value={p.score as number} tone={(p.score as number) < 40 ? 'danger' : (p.score as number) < 70 ? 'warning' : 'primary'} label={p.name} /></li>))}</ul>
+            </>
+          )}
+        </Panel>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Panel title="Asset allocation" action={<Link className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline" href="/dashboard/net-worth">View in Net Worth<ArrowRight className="h-3 w-3" aria-hidden /></Link>}>
+          <Donut data={m.assetPie} total={netWorth.assets} privacy={privacyMode} />
+        </Panel>
+        <Panel title="Liabilities" action={<Link className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline" href="/dashboard/net-worth">View in Net Worth<ArrowRight className="h-3 w-3" aria-hidden /></Link>}>
+          <Donut data={m.liabPie} total={netWorth.liabilities} privacy={privacyMode} offset={3} />
+        </Panel>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Panel title="Income vs expenses" description="Last 6 months · transfers and card repayments excluded">
+          <div className="h-60" role="img" aria-label="Income versus expenses bar chart">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={m.cashflow} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid stroke={chartGrid} vertical={false} />
+                <XAxis dataKey="month" {...chartAxis} />
+                <YAxis {...chartAxis} width={48} tickFormatter={(v) => (privacyMode ? '••' : formatCompactINR(v).replace('₹', ''))} />
+                <Tooltip {...chartTooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => (privacyMode ? '••••' : formatINR(v))} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="income" name="Income" fill={chartColor(1)} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expenses" name="Expenses" fill={chartColor(3)} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Panel>
+
+        <Panel title="This month's budget" action={<Link className="text-xs font-medium text-primary hover:underline" href="/dashboard/budget">Open</Link>}>
+          {!m.pacing ? (
+            <Empty title="No budget set" description="Set a monthly budget to see pacing." action={<Link className="text-sm font-medium text-primary underline" href="/dashboard/budget">Set budget</Link>} />
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <div className="mb-1.5 flex justify-between text-sm"><span>Spent <Money value={m.pacing.spent} /> of <Money value={m.budget.total} /></span><span className="font-medium">{m.pacing.utilisation}%</span></div>
+                <Progress value={m.pacing.utilisation} tone={toneForPct(m.pacing.utilisation)} label="Budget utilisation" />
+              </div>
+              <dl className="grid grid-cols-3 gap-3 text-sm">
+                <div><dt className="text-xs text-muted-foreground">Remaining</dt><dd className="font-semibold"><Money value={m.pacing.remaining} compact /></dd></div>
+                <div><dt className="text-xs text-muted-foreground">Expected by today</dt><dd className="font-semibold"><Money value={m.pacing.expectedTillToday} compact /></dd></div>
+                <div><dt className="text-xs text-muted-foreground">{m.pacing.variance > 0 ? 'Over pace' : 'Under pace'}</dt><dd className={m.pacing.variance > 0 ? 'font-semibold text-destructive' : 'font-semibold text-success'}><Money value={Math.abs(m.pacing.variance)} compact /></dd></div>
+              </dl>
+            </div>
+          )}
+        </Panel>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Panel title="Upcoming payments" description="Card dues, premiums and SIPs">
+          {m.dues.length === 0 ? <Empty title="Nothing due soon" /> : (
+            <ul className="divide-y divide-border">
+              {m.dues.map((d) => (
+                <li key={`${d.kind}-${d.id}`}>
+                  <Link href={d.href} className="flex items-center justify-between gap-3 py-2.5 text-sm hover:text-primary">
+                    <span className="min-w-0"><span className="block truncate font-medium">{d.title}</span><span className="text-xs text-muted-foreground">{d.kind === 'card' ? 'Card payment' : d.kind === 'premium' ? 'Premium' : 'SIP'} · {formatDate(d.date)}</span></span>
+                    <Money value={d.amount} className="shrink-0 font-medium" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+        <Panel title="Recent transactions">
+          {m.recent.length === 0 ? <Empty title="No transactions yet" /> : (
+            <ul className="divide-y divide-border">
+              {m.recent.map((t) => (
+                <li key={t.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                  <span className="min-w-0"><span className="block truncate font-medium">{t.title}</span><span className="text-xs text-muted-foreground">{t.sub} · {formatDate(t.date)}</span></span>
+                  <Money value={t.amount} signed className="shrink-0 font-medium" />
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <WealthAiWidget />
+        <Panel title="AI insights" description="From your data, with the period each one covers" action={<Link className="text-xs font-medium text-primary hover:underline" href="/dashboard/ai">See all</Link>}><InsightsList limit={4} showRestore={false} /></Panel>
+      </div>
+
+      {isDemo && <p className="text-center text-xs text-muted-foreground">You are viewing sample data. Changes stay in this browser only.</p>}
     </div>
   )
 }
 
-export default Dashboard
+function Donut({ data, total, privacy, offset = 0 }: { data: { key: string; name: string; value: number }[]; total: number; privacy: boolean; offset?: number }) {
+  if (!data.length) return <Empty title="Nothing to show" />
+  return (
+    <div className="flex flex-col items-center gap-4 sm:flex-row">
+      <div className="relative h-48 w-48 shrink-0" role="img" aria-label="Donut chart">
+        <div className="relative z-10 h-full w-full"><ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={data} dataKey="value" nameKey="name" innerRadius={58} outerRadius={84} paddingAngle={2} stroke="hsl(var(--card))" strokeWidth={2}>
+              {data.map((d, i) => <Cell key={d.key} fill={CHART_PALETTE[(i + offset) % CHART_PALETTE.length]} />)}
+            </Pie>
+            <Tooltip {...chartTooltipStyle} formatter={(v: number) => (privacy ? '••••' : formatINR(v))} />
+          </PieChart>
+        </ResponsiveContainer></div>
+        <div className="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center">
+          <span className="text-xs text-muted-foreground">Total</span>
+          <span className="text-sm font-semibold"><Money value={total} compact /></span>
+        </div>
+      </div>
+      <ul className="w-full min-w-0 flex-1 space-y-1.5 text-sm">
+        {data.map((d, i) => (
+          <li key={d.key} className="flex items-center justify-between gap-2">
+            <span className="flex min-w-0 items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: CHART_PALETTE[(i + offset) % CHART_PALETTE.length] }} /><span className="truncate">{d.name}</span></span>
+            <span className="shrink-0 text-muted-foreground">{total ? Math.round((d.value / total) * 1000) / 10 : 0}%</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}

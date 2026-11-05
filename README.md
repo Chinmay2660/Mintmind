@@ -1,57 +1,22 @@
-# Mintmind 💸
+# Mintmind – Personal & Family Wealth
 
-Mintmind is an expense tracker application built with Next.js and Tailwind CSS. It helps users manage their finances by tracking income, expenses, and providing visual insights into their spending habits.
+Track net worth, bank accounts, mutual funds (XIRR), credit cards, insurance and budgets; share selectively with
+family; keep passwords in a zero-knowledge vault, documents in your own Google Drive, and set up a Digital Legacy plan.
 
-## 🚀 Demo
-Check out the live demo: [Mintmind](https://github.com/Chinmay2660/Mintmind)
+Modules: Dashboard · Net Worth · Bank Accounts · Mutual Funds · Credit Cards · Insurance · Budget & Expenses ·
+Family Circle · My Vault · Documents · Digital Legacy · Settings. Light / Dark / System themes.
 
-## ✨ Features
-- Add Expenses: Track your daily expenses with ease.
-- Spending Categories: Organize expenses into categories for better insights.
-- Visual Analytics: View charts and summaries of your spending trends.
-- Responsive Design: Optimized for both mobile and desktop views.
+## Run
 
-## 📦 Installation
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/Chinmay2660/Mintmind.git
-    ```
-2. Navigate to the project directory:
-    ```bash
-    cd Mintmind
-    ```
-3. Install dependencies:
-    ```bash
-    npm install
-    ```
-4. Start the development server:
-    ```bash
-    npm run dev
-    ```
+```bash
+npm install
+npm run dev      # http://localhost:3000
+npm test         # calculation, crypto, TOTP, family-visibility and legacy-workflow tests
+```
 
-## 🛠️ Built With
-- Next.js: A React framework for production-level applications.
-- Tailwind CSS: A utility-first CSS framework for rapid UI development.
-- Radix UI: A library of accessible components for building high-quality design systems.
-- Recharts: For creating visual charts of financial data.
-- Drizzle ORM: For managing database interactions.
-- Neon: For PostgreSQL database management.
-- Clerk: For authentication and user management.
+Open the app and choose **Explore Demo Account** – no sign-up, sample data stored only in your browser.
 
-## 🤝 Contributing
-Contributions, issues, and feature requests are welcome! Feel free to check out the issues page.
+Configuration, Google Drive / SMS / push / Kite setup and architecture notes: [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
+Audit and phased plan: [docs/REVAMP_PLAN.md](docs/REVAMP_PLAN.md).
 
-1. Fork the repository.
-2. Create your feature branch:
-    ```bash
-    git checkout -b feature/AmazingFeature
-    ```
-3. Commit your changes:
-    ```bash
-    git commit -m 'Add some AmazingFeature'
-    ```
-4. Push to the branch:
-    ```bash
-    git push origin feature/AmazingFeature
-    ```
-5. Open a pull request.
+Stack: Next.js (App Router), Tailwind, Recharts, Dexie (IndexedDB), MongoDB/Mongoose, WebCrypto.

@@ -1,81 +1,38 @@
 'use client'
-import React, { useEffect, useState } from 'react'
-import MobileBottomNav from './_components/MobileNavbar'
-import DashboardHeader from './_components/DashboardHeader'
-import NativeLayout from './_components/NativeLayout'
-import PageTitle from './_components/PageTitle'
+import React from 'react'
 import AppSearch from '@/components/AppSearch'
 import { AppSearchProvider } from '@/contexts/AppSearchContext'
-import { isNativePlatform } from '@/lib/platform'
-import { DashboardRefreshShell } from './_components/DashboardRefreshShell'
-import { DashboardShell } from './_components/DashboardShell'
-import { DashboardPage } from '@/components/ui/dashboard-page'
-import { DemoDataModalProvider } from './_components/DemoDataModal'
+import { WealthProvider } from '@/lib/wealth/WealthContext'
+import { Sidebar } from '@/components/shell/Sidebar'
+import { TopBar } from '@/components/shell/TopBar'
+import { MobileNav } from '@/components/shell/MobileNav'
+import PageTitle from './_components/PageTitle'
+import { AssistantProvider } from '@/components/ai/AssistantProvider'
+import { AutomationRunner } from '@/components/ai/AutomationRunner'
 
-const shellClass = 'finance-shell aurora-bg fixed inset-0 flex h-svh flex-col overflow-hidden'
-
-function DashboardPageContent({ children }: { children: React.ReactNode }) {
-    return (
-        <div className="grid h-full min-h-0 grid-rows-[auto_1fr] overflow-hidden">
-            <PageTitle />
-            <div className="row-start-1">
-                <DashboardHeader />
-            </div>
-            <DashboardRefreshShell className="row-start-2 min-h-0 overflow-hidden">
-                <main
-                    id="dashboard-main-scroll"
-                    className="h-full min-h-0 overflow-y-auto overscroll-y-contain mobile-content-pb md:pb-0"
-                >
-                    <DashboardPage>{children}</DashboardPage>
-                </main>
-            </DashboardRefreshShell>
-        </div>
-    )
-}
-
-const DashboardLayout = ({ children }) => {
-    const [isNative, setIsNative] = useState(false)
-    const [ready, setReady] = useState(false)
-
-    useEffect(() => {
-        setIsNative(isNativePlatform())
-        setReady(true)
-    }, [])
-
+const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     return (
         <AppSearchProvider>
-            <DemoDataModalProvider>
-            {!ready ? (
-                <div className={shellClass} />
-            ) : isNative ? (
-                <NativeLayout>
-                    <div className={shellClass}>
-                        <div className="relative z-10 grid h-full min-h-0 grid-rows-[auto_1fr] overflow-hidden">
-                            <PageTitle />
-                            <div className="row-start-1">
-                                <DashboardHeader />
-                            </div>
-                            <DashboardRefreshShell className="row-start-2 min-h-0 overflow-hidden">
-                                <main
-                                    id="dashboard-main-scroll"
-                                    className="h-full min-h-0 overflow-y-auto overscroll-y-contain mobile-content-pb"
-                                >
-                                    <DashboardPage>{children}</DashboardPage>
-                                </main>
-                            </DashboardRefreshShell>
-                            <MobileBottomNav />
-                        </div>
+            <WealthProvider>
+                <AssistantProvider>
+                <AutomationRunner />
+                <div className="app-shell fixed inset-0 flex bg-background text-foreground">
+                    <Sidebar />
+                    <div className="flex min-w-0 flex-1 flex-col">
+                        <PageTitle />
+                        <TopBar />
+                        <main
+                            id="dashboard-main-scroll"
+                            className="app-main min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain mobile-content-pb md:pb-0"
+                        >
+                            <div className="mx-auto w-full max-w-[88rem] space-y-5 px-4 py-5 md:px-6 lg:px-8">{children}</div>
+                        </main>
                     </div>
-                </NativeLayout>
-            ) : (
-                <div className={shellClass}>
-                    <DashboardShell>
-                        <DashboardPageContent>{children}</DashboardPageContent>
-                    </DashboardShell>
+                    <MobileNav />
                 </div>
-            )}
-            <AppSearch />
-            </DemoDataModalProvider>
+                </AssistantProvider>
+                <AppSearch />
+            </WealthProvider>
         </AppSearchProvider>
     )
 }

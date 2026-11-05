@@ -1,248 +1,124 @@
 'use client'
-import React, { Suspense, useState } from 'react'
-import { Shield, AlertTriangle } from 'lucide-react'
-import request from '@/lib/api/request'
+
+import { useMemo, useState } from 'react'
+import { Paperclip, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { useAuth } from '@/lib/hooks/useAuth'
-import { format, differenceInDays, isPast } from 'date-fns'
-import { AddButton } from '@/components/ui/AddButton'
-import { PageHeader } from '@/components/ui/PageHeader'
-import { FilterButtonGroup } from '@/components/ui/filter-button'
-import { EmptyState } from '@/components/ui/empty-state'
-import { Card } from '@/components/ui/card'
-import { EditButton, DeleteButton } from '@/components/ui/icon-button'
+import { useWealth } from '@/lib/wealth/WealthContext'
+import { deletePolicy, recordPremiumPaid, save } from '@/lib/wealth/actions'
+import { toISO } from '@/lib/wealth/calc'
+import { POLICY_TYPES, PREMIUM_FREQUENCIES } from '@/lib/wealth/labels'
+import { annualPremium, coverageTotals, daysUntil } from '@/lib/wealth/selectors'
+import { formatDate } from '@/lib/wealth/format'
+import { Money } from '@/components/wealth/Money'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { FormSheet } from '@/components/ui/form-sheet'
-import { FAB } from '@/components/ui/fab'
-import { RowActions } from '@/components/ui/swipeable-row'
-import { formatCurrency } from '@/lib/utils/format'
-import { useDeleteConfirm } from '@/lib/hooks/useDeleteConfirm'
-import { useLocalList } from '@/lib/hooks/useLocalData'
-import { useSyncedRefresh } from '@/lib/hooks/useSyncedRefresh'
-import { useAddActionRedirect, useEditActionRedirect } from '@/lib/hooks/useAddActionRedirect'
-import { useFormSheet } from '@/lib/hooks/useFormSheet'
-import { InsuranceForm } from './_components/InsuranceForm'
+import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Select, Stat } from '@/components/wealth/kit'
+import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
+import { cn } from '@/lib/utils'
 
-const FREQUENCY_MULTIPLIER: Record<string, number> = {
-  Monthly: 12,
-  Quarterly: 4,
-  Yearly: 1,
-}
+const typeLabel = (v: string) => POLICY_TYPES.find((t) => t.value === v)?.label ?? v
 
-const InsurancePageContent = () => {
-  const { user } = useAuth()
-  const userId = user?.id
-  const { data: allPolicies, loading, reload } = useLocalList('insurance', userId)
-  const [filterType, setFilterType] = useState('all')
-  const { confirmDelete, confirmDialogProps } = useDeleteConfirm()
-  const { open, setOpen, entityId, openSheet, closeSheet } = useFormSheet()
+export default function InsurancePage() {
+  const { ready, data, db } = useWealth()
+  const [filter, setFilter] = useState('all')
+  const [dlg, setDlg] = useState<null | { kind: 'edit' | 'del'; row?: any }>(null)
+  const today = useMemo(() => new Date(), [])
+  const cover = useMemo(() => coverageTotals(data.policies, today), [data.policies, today])
+  if (!ready) return <LoadingBlock className="h-64" />
 
-  const policies =
-    filterType === 'all'
-      ? allPolicies
-      : allPolicies.filter((p) => p.type === filterType)
-
-  useSyncedRefresh(reload)
-  useAddActionRedirect(openSheet)
-  useEditActionRedirect(openSheet)
-
-  const handleDelete = (id: string) => {
-    confirmDelete({
-      title: 'Delete Policy',
-      description: 'Are you sure you want to delete this insurance policy?',
-      onConfirm: async () => {
-        await request.delete(`/api/insurance/${id}`)
-        toast.success('Policy deleted')
-        await reload()
-      },
-    })
-  }
-
-  const activePolicies = policies.filter((p) => p.isActive !== false)
-  const annualPremium = activePolicies.reduce((sum, p) => {
-    const mult = FREQUENCY_MULTIPLIER[p.premiumFrequency] || 1
-    return sum + (p.premium || 0) * mult
-  }, 0)
-  const totalCoverage = activePolicies.reduce((sum, p) => sum + (p.coverageAmount || 0), 0)
-  const renewingSoon = activePolicies.filter((p) => {
-    if (!p.renewalDate) return false
-    const days = differenceInDays(new Date(p.renewalDate), new Date())
-    return days >= 0 && days <= 30
-  }).length
+  const annual = data.policies.reduce((s, p) => s + annualPremium(p), 0)
+  const list = data.policies.filter((p) => filter === 'all' || p.type === filter)
+  const hist = [...data.premiums].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12)
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Insurance" subtitle="Track your insurance policies">
-        <div className="hidden md:block">
-          <AddButton onClick={openSheet}>
-            Add Policy
-          </AddButton>
-        </div>
-      </PageHeader>
-
-      <FAB onClick={openSheet} label="Add policy" />
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-5 text-white shadow-lg">
-          <p className="text-white/80 text-sm mb-1">Active Policies</p>
-          <p className="text-2xl font-bold">{activePolicies.length}</p>
-        </div>
-        <div className="bg-gradient-to-br from-violet-500 to-violet-600 rounded-xl p-5 text-white shadow-lg">
-          <p className="text-white/80 text-sm mb-1">Annual Premium</p>
-          <p className="text-2xl font-bold">{formatCurrency(annualPremium)}</p>
-        </div>
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-5 text-white shadow-lg">
-          <p className="text-white/80 text-sm mb-1">Total Coverage</p>
-          <p className="text-2xl font-bold">{formatCurrency(totalCoverage)}</p>
-        </div>
+    <div className="space-y-5">
+      <PageHeader description="Coverage is protection, not wealth. It is never counted in your net worth." actions={<Button onClick={() => setDlg({ kind: 'edit' })}><Plus className="mr-1.5 h-4 w-4" />Add policy</Button>} />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat label="Total coverage" value={<Money value={cover.total} compact />} hint={`${cover.activeCount} active`} />
+        <Stat label="Annual premium" value={<Money value={annual} />} />
+        {Object.entries(cover.byType).slice(0, 2).map(([k, v]) => <Stat key={k} label={`${typeLabel(k)} cover`} value={<Money value={v} compact />} />)}
       </div>
 
-      {renewingSoon > 0 && (
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 text-sm">
-          <AlertTriangle className="w-4 h-4 shrink-0" />
-          {renewingSoon} {renewingSoon === 1 ? 'policy renews' : 'policies renew'} within 30 days
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by type">
+        {[{ value: 'all', label: 'All' }, ...POLICY_TYPES].map((t) => (
+          <button key={t.value} type="button" aria-pressed={filter === t.value} onClick={() => setFilter(t.value)} className={cn('rounded-full border px-3 py-1 text-xs font-medium', filter === t.value ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{t.label}</button>
+        ))}
+      </div>
+
+      {list.length === 0 ? <Empty title="No policies" action={<Button onClick={() => setDlg({ kind: 'edit' })}>Add policy</Button>} /> : (
+        <div className="grid gap-3 lg:grid-cols-2">
+          {list.map((p) => {
+            const d = p.nextPremium ? daysUntil(p.nextPremium, today) : null
+            const expired = p.endDate && p.endDate < toISO(today)
+            const doc = data.documents.find((x) => x.id === p.documentId)
+            return (
+              <div key={p.id} className="surface-card flex h-full flex-col p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0"><p className="truncate font-medium">{p.policyName}</p><p className="text-xs text-muted-foreground">{p.company} · {typeLabel(p.type)}{expired ? ' · Expired' : ''}</p></div>
+                  <div className="flex shrink-0"><Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Edit ${p.policyName}`} onClick={() => setDlg({ kind: 'edit', row: p })}><Pencil className="h-3.5 w-3.5" /></Button><Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Delete ${p.policyName}`} onClick={() => setDlg({ kind: 'del', row: p })}><Trash2 className="h-3.5 w-3.5" /></Button></div>
+                </div>
+                <dl className="mb-3 mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <div><dt className="text-xs text-muted-foreground">Sum assured</dt><dd className="font-semibold"><Money value={p.sumAssured} /></dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Premium</dt><dd className="font-semibold"><Money value={p.premium} /> <span className="text-xs font-normal text-muted-foreground">{PREMIUM_FREQUENCIES.find((f) => f.value === p.frequency)?.label}</span></dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Policy number</dt><dd className="text-xs"><CopyValue value={p.policyNumber} label="Policy number" mono /></dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Policy holder</dt><dd><CopyValue value={p.holder} label="Policy holder" /></dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Nominee</dt><dd><CopyValue value={p.nominee} label="Nominee" /></dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Period</dt><dd>{formatDate(p.startDate)} - {formatDate(p.endDate)}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Next premium</dt><dd className={d != null && d <= 7 ? 'font-medium text-destructive' : d != null && d <= 30 ? 'font-medium text-warning' : ''}>{p.nextPremium ? `${formatDate(p.nextPremium)} (${d! < 0 ? `${-d!}d overdue` : `${d}d`})` : '—'}</dd></div>
+                  <div className="col-span-2"><dt className="text-xs text-muted-foreground">Covers</dt><dd className="text-sm">{p.members?.length ? p.members.join(', ') : '—'}</dd></div>
+                </dl>
+
+                <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Paperclip className="h-3.5 w-3.5" />{doc ? doc.name : 'No document attached'}</span>
+                  {p.frequency !== 'single' && <Button size="sm" variant="outline" onClick={async () => { await recordPremiumPaid(db, p.id); toast.success('Premium recorded; next due date moved forward') }}>Mark premium paid</Button>}
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
 
-      <FilterButtonGroup
-        value={filterType}
-        onValueChange={setFilterType}
-        options={[
-          { value: 'all', label: 'All' },
-          { value: 'Life', label: 'Life' },
-          { value: 'Term Insurance', label: 'Term' },
-          { value: 'Health', label: 'Health' },
-          { value: 'Motor', label: 'Motor' },
-          { value: 'Home', label: 'Home' },
-        ]}
-        className="flex-wrap"
-      />
+      <Panel title="Premium payment history">
+        {hist.length === 0 ? <Empty title="No premiums recorded" /> : <ul className="divide-y divide-border">{hist.map((h) => <li key={h.id} className="flex justify-between py-2.5 text-sm"><span>{data.policies.find((p) => p.id === h.policyId)?.policyName ?? 'Policy'}<span className="block text-xs text-muted-foreground">{formatDate(h.date)}</span></span><Money value={h.amount} className="font-medium" /></li>)}</ul>}
+      </Panel>
 
-      <div className="space-y-3">
-        {loading ? (
-          [1, 2, 3].map((i) => (
-            <div key={i} className="surface-card p-5 animate-pulse">
-              <div className="skeleton h-5 w-32 mb-2" />
-              <div className="skeleton h-4 w-24" />
-            </div>
-          ))
-        ) : policies.length === 0 ? (
-          <EmptyState
-            icon={Shield}
-            title="No insurance policies yet"
-            description="Add your first policy to track premiums and renewals"
-            actionLabel="Add Your First Policy"
-            onAction={openSheet}
-          />
-        ) : (
-          policies.map((policy) => {
-            const renewalSoon =
-              policy.renewalDate &&
-              differenceInDays(new Date(policy.renewalDate), new Date()) <= 30 &&
-              differenceInDays(new Date(policy.renewalDate), new Date()) >= 0
-            const renewalPast = policy.renewalDate && isPast(new Date(policy.renewalDate))
-
-            return (
-                <Card key={policy._id} delay={0.1} hover className="p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3 className="font-semibold text-foreground truncate">{policy.name}</h3>
-                        <span className="px-2 py-1 text-xs font-medium bg-primary/10 text-primary rounded">
-                          {policy.type}
-                        </span>
-                        {policy.isActive === false && (
-                          <span className="px-2 py-1 text-xs font-medium bg-muted text-muted-foreground rounded">
-                            Inactive
-                          </span>
-                        )}
-                        {renewalSoon && (
-                          <span className="px-2 py-1 text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded">
-                            Renewing soon
-                          </span>
-                        )}
-                        {renewalPast && policy.isActive !== false && (
-                          <span className="px-2 py-1 text-xs font-medium bg-red-500/10 text-red-600 dark:text-red-400 rounded">
-                            Renewal overdue
-                          </span>
-                        )}
-                      </div>
-                      {policy.policyNumber && (
-                        <p className="text-sm text-muted-foreground">#{policy.policyNumber}</p>
-                      )}
-                    </div>
-                    <RowActions>
-                      <EditButton onClick={() => openSheet(policy._id)} />
-                      <DeleteButton onClick={() => handleDelete(policy._id)} />
-                    </RowActions>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3 mt-3">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Start Date</p>
-                      <p className="text-sm font-medium text-foreground">
-                        {format(new Date(policy.startDate), 'MMM dd, yyyy')}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">End Date</p>
-                      <p className="text-sm font-medium text-foreground">
-                        {policy.endDate ? format(new Date(policy.endDate), 'MMM dd, yyyy') : '—'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Renewal Date</p>
-                      <p className="text-sm font-medium text-foreground">
-                        {policy.renewalDate ? format(new Date(policy.renewalDate), 'MMM dd, yyyy') : '—'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Premium</p>
-                      <p className="text-lg font-bold text-foreground">
-                        {formatCurrency(policy.premium)}
-                        <span className="text-xs font-normal text-muted-foreground ml-1">
-                          / {policy.premiumFrequency?.toLowerCase()}
-                        </span>
-                      </p>
-                    </div>
-                    {policy.coverageAmount > 0 && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Coverage</p>
-                        <p className="text-lg font-bold text-foreground">
-                          {formatCurrency(policy.coverageAmount)}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </Card>
-            )
-          })
-        )}
-      </div>
-
-      <FormSheet open={open} onOpenChange={setOpen} title={entityId ? 'Edit Policy' : 'Add Policy'}>
-        <InsuranceForm
-          key={entityId ?? 'new'}
-          insuranceId={entityId}
-          variant="sheet"
-          onSuccess={() => {
-            closeSheet()
-            reload()
-          }}
-          onCancel={closeSheet}
-        />
-      </FormSheet>
-
-      <ConfirmDialog {...confirmDialogProps} />
+      {dlg?.kind === 'edit' && <PolicyForm row={dlg.row} members={data.members} documents={data.documents} accounts={data.bankAccounts.filter((a: any) => a.type !== 'cash')} onClose={() => setDlg(null)} onSave={async (r) => { await save(db, 'policies', r); toast.success('Policy saved') }} />}
+      <ConfirmDialog open={dlg?.kind === 'del'} onOpenChange={(o) => !o && setDlg(null)} title="Delete this policy?" description="Its premium history is removed too." confirmLabel="Delete" variant="destructive" onConfirm={async () => { await deletePolicy(db, dlg!.row.id); setDlg(null); toast.success('Policy deleted') }} />
     </div>
   )
 }
 
-export default function InsurancePage() {
+function PolicyForm({ row, members, documents, accounts, onClose, onSave }: { row?: any; members: any[]; documents: any[]; accounts: any[]; onClose: () => void; onSave: (r: any) => Promise<void> }) {
+  const [f, setF] = useState({ accountId: row?.accountId || '', type: row?.type || 'health', company: row?.company || '', policyName: row?.policyName || '', policyNumber: row?.policyNumber || '', holder: row?.holder || '', nominee: row?.nominee || '', sumAssured: String(row?.sumAssured ?? ''), premium: String(row?.premium ?? ''), frequency: row?.frequency || 'yearly', startDate: row?.startDate || toISO(new Date()), endDate: row?.endDate || '', nextPremium: row?.nextPremium || '', documentId: row?.documentId || '', notes: row?.notes || '' })
+  const [covered, setCovered] = useState<string[]>(row?.members || [])
+  const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
   return (
-    <Suspense fallback={null}>
-      <InsurancePageContent />
-    </Suspense>
+    <FormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit policy' : 'Add policy'} wide
+      onSubmit={async () => {
+        if (!(Number(f.sumAssured) > 0)) throw new Error('Sum assured must be positive')
+        if (!(Number(f.premium) >= 0)) throw new Error('Enter a valid premium')
+        if (f.endDate && f.endDate < f.startDate) throw new Error('End date is before start date')
+        await onSave({ ...row, ...f, sumAssured: Number(f.sumAssured), premium: Number(f.premium), nextPremium: f.nextPremium || null, endDate: f.endDate || null, documentId: f.documentId || null, accountId: f.accountId || null, members: covered })
+      }}>
+      <Field label="Type">{(id) => <Select id={id} value={f.type} onChange={set('type')}>{POLICY_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</Select>}</Field>
+      <Field label="Insurance company">{(id) => <Input id={id} required value={f.company} onChange={set('company')} />}</Field>
+      <Field label="Policy name">{(id) => <Input id={id} required value={f.policyName} onChange={set('policyName')} />}</Field>
+      <Field label="Policy number">{(id) => <Input id={id} required value={f.policyNumber} onChange={set('policyNumber')} />}</Field>
+      <Field label="Policy holder">{(id) => <Input id={id} required value={f.holder} onChange={set('holder')} />}</Field>
+      <Field label="Nominee">{(id) => <Input id={id} value={f.nominee} onChange={set('nominee')} />}</Field>
+      <Field label="Sum assured (₹)">{(id) => <Input id={id} type="number" min="1" step="any" required value={f.sumAssured} onChange={set('sumAssured')} />}</Field>
+      <Field label="Premium (₹)">{(id) => <Input id={id} type="number" min="0" step="any" required value={f.premium} onChange={set('premium')} />}</Field>
+      <Field label="Premium frequency">{(id) => <Select id={id} value={f.frequency} onChange={set('frequency')}>{PREMIUM_FREQUENCIES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</Select>}</Field>
+      <Field label="Next premium date">{(id) => <Input id={id} type="date" value={f.nextPremium} onChange={set('nextPremium')} />}</Field>
+      <Field label="Start date">{(id) => <Input id={id} type="date" required value={f.startDate} onChange={set('startDate')} />}</Field>
+      <Field label="End / expiry date">{(id) => <Input id={id} type="date" value={f.endDate} onChange={set('endDate')} />}</Field>
+      <Field label="Pay premium from" hint="Marking a premium paid debits this account." className="full">{(id) => <Select id={id} value={f.accountId} onChange={set('accountId')}><option value="">Do not link</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.nickname || a.bankName}</option>)}</Select>}</Field>
+      <Field label="Attached document" className="full">{(id) => <Select id={id} value={f.documentId} onChange={set('documentId')}><option value="">None (upload under Documents first)</option>{documents.filter((d) => d.category === 'Insurance').concat(documents.filter((d) => d.category !== 'Insurance')).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</Select>}</Field>
+      <fieldset className="full space-y-2"><legend className="text-sm font-medium">Covered family members</legend>
+        <div className="flex flex-wrap gap-3">{members.length === 0 && <span className="text-xs text-muted-foreground">Add members in Family Circle to map them here.</span>}{members.map((m) => (
+          <label key={m.id} className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={covered.includes(m.name)} onChange={(e) => setCovered((c) => (e.target.checked ? [...c, m.name] : c.filter((x) => x !== m.name)))} />{m.name}</label>
+        ))}</div></fieldset>
+    </FormDialog>
   )
 }

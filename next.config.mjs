@@ -5,6 +5,12 @@ const nextConfig = {
       process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '',
   },
   reactStrictMode: true,
+  poweredByHeader: false,
+  compress: true,
+  experimental: {
+    // import only the icons / chart parts that are used instead of whole packages
+    optimizePackageImports: ['lucide-react', 'recharts', 'date-fns'],
+  },
   images: {
     unoptimized: false,
     remotePatterns: [
