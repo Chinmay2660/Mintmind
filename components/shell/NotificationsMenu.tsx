@@ -10,6 +10,9 @@ import { buildNotifications } from '@/lib/wealth/reminders'
 import { formatDate } from '@/lib/wealth/format'
 import { Money } from '@/components/wealth/Money'
 import { cn } from '@/lib/utils'
+import { useFeatures } from '@/lib/features/FeaturesContext'
+
+const KIND_FEATURE: Record<string, string> = { card: 'credit_cards', statement: 'credit_cards', util: 'credit_cards', premium: 'insurance', expiry: 'insurance', sip: 'mutual_funds', sipend: 'mutual_funds', nav: 'mutual_funds', budget: 'budget_expenses', nobudget: 'budget_expenses', lowbal: 'bank_accounts', stale: 'dashboard', legacy: 'digital_legacy', family: 'family_circle' }
 
 const dot = { high: 'bg-destructive', medium: 'bg-warning', low: 'bg-muted-foreground' } as const
 // notification kind -> preference key (Settings → Preferences → Notifications)
@@ -19,6 +22,7 @@ type NState = { read: Record<string, number>; dismissed: Record<string, number> 
 
 export function NotificationsMenu() {
   const { data, ready, db } = useWealth()
+  const { isEnabled } = useFeatures()
   const [tab, setTab] = useState<'all' | 'unread'>('all')
 
   const state: NState = { read: {}, dismissed: {}, ...(data.meta.find((m: any) => m.key === 'notifState')?.value ?? {}) }
@@ -30,10 +34,10 @@ export function NotificationsMenu() {
     () =>
       ready
         ? buildNotifications({ cards: data.cards, policies: data.policies, sips: data.sips, funds: data.funds, expenses: data.expenses, budgets: data.budgets, bankAccounts: data.bankAccounts, assets: data.assets, members: data.members, legacy: data.legacy })
-            .filter((n: any) => prefs?.[PREF_KEY[n.kind]] !== false)
+            .filter((n: any) => prefs?.[PREF_KEY[n.kind]] !== false && isEnabled(KIND_FEATURE[n.kind] || 'dashboard'))
             .map((n: any) => ({ ...n, key: `${n.kind}:${n.id}:${n.date ?? new Date().toISOString().slice(0, 7)}` }))
         : [],
-    [ready, data.cards, data.policies, data.sips, data.funds, data.expenses, data.budgets, data.bankAccounts, data.assets, data.members, data.legacy, prefs]
+    [ready, data.cards, data.policies, data.sips, data.funds, data.expenses, data.budgets, data.bankAccounts, data.assets, data.members, data.legacy, prefs, isEnabled]
   )
 
   const visible = all.filter((n: any) => !state.dismissed[n.key])

@@ -38,10 +38,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Capacitor
-ios/
-android/
-.capacitor/
 
 # uploaded documents
 /storage/uploads/

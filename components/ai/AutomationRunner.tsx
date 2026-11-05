@@ -5,6 +5,7 @@ import axios from 'axios'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { newRule, runDueRules } from '@/lib/ai/automation'
 import { useAi } from './useAi'
+import { useFeatures } from '@/lib/features/FeaturesContext'
 
 const SAMPLE = ['card-due', 'budget-pace', 'ins-premium']
 
@@ -12,12 +13,14 @@ const SAMPLE = ['card-due', 'budget-pace', 'ins-premium']
 export function AutomationRunner() {
   const { ready, isDemo, db, data } = useWealth()
   const { facts } = useAi()
+  const { isEnabled } = useFeatures()
+  const on = isEnabled('automation')
   const latest = useRef({ facts, data, isDemo })
   latest.current = { facts, data, isDemo }
   const started = useRef(false)
 
   useEffect(() => {
-    if (!ready || !facts || !db || started.current) return
+    if (!on || !ready || !facts || !db || started.current) return
     started.current = true
     const run = async () => {
       const { facts: f, data: d, isDemo: demo } = latest.current
@@ -48,7 +51,7 @@ export function AutomationRunner() {
     run()
     const t = setInterval(run, 30 * 60_000)
     return () => { clearInterval(t); started.current = false }
-  }, [ready, !!facts, db])
+  }, [ready, !!facts, db, on])
 
   return null
 }

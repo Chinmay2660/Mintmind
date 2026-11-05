@@ -42,7 +42,7 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.next())
   }
 
-  if (pathname.startsWith('/dashboard')) {
+  if (pathname.startsWith('/dashboard') || pathname === '/onboarding') {
     const authToken = request.cookies.get('auth-token') || request.cookies.get('mm-demo')
 
     if (!authToken) {
@@ -56,5 +56,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/dashboard/:path*', '/api/:path*'],
+  matcher: ['/', '/dashboard/:path*', '/onboarding', '/api/:path*'],
 }

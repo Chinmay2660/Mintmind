@@ -6,11 +6,13 @@ import { PanelLeftClose, PanelLeftOpen, Wallet } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { DASHBOARD_NAV_ALL, APP_NAME, isDashboardNavActive } from '@/lib/constants/dashboardNav'
 import { cn } from '@/lib/utils'
+import { useVisibleNav } from './FeatureGuard'
 
 const KEY = 'mm-sidebar-collapsed'
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { all: navItems } = useVisibleNav()
   const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
-        {DASHBOARD_NAV_ALL.map((item) => {
+        {navItems.map((item) => {
           const active = isDashboardNavActive(pathname, item.path)
           const Icon = item.icon
           return (

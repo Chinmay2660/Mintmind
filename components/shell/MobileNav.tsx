@@ -7,11 +7,13 @@ import { Menu } from 'lucide-react'
 import { DASHBOARD_NAV_MAIN, DASHBOARD_NAV_MORE, isDashboardNavActive } from '@/lib/constants/dashboardNav'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
+import { useVisibleNav } from './FeatureGuard'
 
 export function MobileNav() {
   const pathname = usePathname()
+  const { main: navMain, more: navMore } = useVisibleNav()
   const [open, setOpen] = useState(false)
-  const moreActive = DASHBOARD_NAV_MORE.some((m) => isDashboardNavActive(pathname, m.path))
+  const moreActive = navMore.some((m) => isDashboardNavActive(pathname, m.path))
 
   return (
     <nav
@@ -19,7 +21,7 @@ export function MobileNav() {
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-sidebar safe-area-inset-bottom md:hidden print:hidden"
     >
       <div className="mx-auto flex h-[4.25rem] max-w-lg items-stretch justify-around px-1">
-        {DASHBOARD_NAV_MAIN.map((item) => {
+        {navMain.map((item) => {
           const active = isDashboardNavActive(pathname, item.path)
           const Icon = item.icon
           return (
@@ -55,7 +57,7 @@ export function MobileNav() {
               <SheetTitle>More</SheetTitle>
             </SheetHeader>
             <div className="grid grid-cols-2 gap-2">
-              {DASHBOARD_NAV_MORE.map((item) => {
+              {navMore.map((item) => {
                 const Icon = item.icon
                 const active = isDashboardNavActive(pathname, item.path)
                 return (
