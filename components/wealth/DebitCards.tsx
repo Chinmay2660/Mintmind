@@ -43,7 +43,7 @@ export function DebitCardsTab() {
 
   return (
     <div className="space-y-5">
-      <PageHeader description="Debit cards spend from the bank account they are linked to. Withdraw cash with a transfer from that account to your Cash account." actions={<Button disabled={banks.length === 0} onClick={() => setDlg({})}><Plus className="mr-1.5 h-4 w-4" />Add debit card</Button>} />
+      <PageHeader actions={<Button disabled={banks.length === 0} onClick={() => setDlg({})}><Plus className="mr-1.5 h-4 w-4" />Add debit card</Button>} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <Stat label="Debit cards" value={cards.length} />
         <Stat label="Spent this month" value={<Money value={monthSpend} />} />
@@ -89,7 +89,7 @@ export function DebitCardsTab() {
                     <Tooltip {...chartTooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => (privacyMode ? '••••' : formatINR(v))} /><Bar dataKey="Spend" fill={chartColor(1)} radius={[4, 4, 0, 0]} />
                   </BarChart></ResponsiveContainer></div>
                 </Panel>
-                <Panel title="Transactions" description="Add spending from Budget & Expenses and choose this card.">
+                <Panel title="Transactions">
                   {txns.length === 0 ? <Empty title="No transactions on this card" /> : (
                     <ul className="max-h-64 divide-y divide-border overflow-y-auto">{txns.map((e: any) => <li key={e.id} className="flex items-center justify-between gap-3 py-2.5 text-sm"><span className="min-w-0"><span className="block truncate font-medium">{e.note || e.category}</span><span className="text-xs text-muted-foreground">{e.category} · {formatDate(e.date)} · {modeLabel(e.mode)}</span></span><Money value={-e.amount} signed className="shrink-0 font-medium" /></li>)}</ul>
                   )}

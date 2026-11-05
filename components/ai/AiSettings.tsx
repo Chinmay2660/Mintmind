@@ -10,7 +10,7 @@ export function AiSettings() {
   const { status, consent, setConsent } = useAiProvider()
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Panel title="My Wealth AI" description="Insights, answers, reports and the health score are calculated by the app from your own data and work with no AI service at all.">
+      <Panel title="My Wealth AI">
         {isDemo ? <p className="text-sm text-muted-foreground">Demo mode never uses an AI service. Answers are simulated from sample data by built-in rules and are labelled as such.</p> : !status ? <LoadingBlock className="h-16" /> : (
           <div className="space-y-3 text-sm">
             <p>{status.configured ? <>An AI provider (<strong>{status.provider}</strong>) is available. It can make answers read more naturally.</> : 'No AI provider is configured on this server, so built-in answers are used.'}</p>

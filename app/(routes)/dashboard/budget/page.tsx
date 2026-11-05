@@ -133,7 +133,7 @@ export default function BudgetPage() {
             <Stat label="Change vs last month" value={<Money value={p.spent - prevTotal} signed={false} />} hint={`Last month ${formatINR(prevTotal)}`} />
           </div>
 
-          <Panel title={catFilter ? `Daily pacing: ${catFilter}` : 'Daily pacing'} description="Expected cumulative spend (budget ÷ days × day) against actual cumulative spend">
+          <Panel title={catFilter ? `Daily pacing: ${catFilter}` : 'Daily pacing'}>
             <div className="h-72" role="img" aria-label="Expected versus actual cumulative spending line chart">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={p.series} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
@@ -151,7 +151,7 @@ export default function BudgetPage() {
             </div>
           </Panel>
 
-          <Panel title="Category budgets" description="Each category has its own daily budget (limit ÷ days in the month). Select one to see its pace.">
+          <Panel title="Category budgets">
             <ul className="grid gap-4 sm:grid-cols-2">
               {EXPENSE_CATEGORIES.map((c) => {
                 const lim = Number(budget.categories?.[c]) || 0
@@ -189,7 +189,7 @@ function BudgetForm({ ym, row, onClose, onSave }: { ym: string; row?: any; onClo
   const [rollover, setRollover] = useState(!!row?.rollover)
   const sum = EXPENSE_CATEGORIES.reduce((s, c) => s + (Number(cats[c]) || 0), 0)
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title={`Budget for ${ym}`} wide description="Category limits are optional. They do not need to add up exactly to the monthly total."
+    <FormDialog open onOpenChange={(o) => !o && onClose()} title={`Budget for ${ym}`} wide
       onSubmit={async () => { const t = Number(total); if (!(t > 0)) throw new Error('Monthly budget must be positive'); await onSave({ id: ym, total: t, categories: Object.fromEntries(EXPENSE_CATEGORIES.map((c) => [c, Number(cats[c]) || 0])), rollover }) }}>
       <Field label="Monthly budget (₹)" className="full">{(id) => <Input id={id} type="number" min="1" step="any" required value={total} onChange={(e) => setTotal(e.target.value)} />}</Field>
       {EXPENSE_CATEGORIES.map((c) => <Field key={c} label={c}>{(id) => <Input id={id} type="number" min="0" step="any" value={cats[c]} onChange={(e) => setCats((p) => ({ ...p, [c]: e.target.value }))} />}</Field>)}

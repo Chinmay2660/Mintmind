@@ -67,7 +67,7 @@ export default function LegacyPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader description="Plan what your family can access if you can no longer respond. Nothing is shared unless you authorise it." />
+      <PageHeader />
       <div role="note" className="flex gap-3 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
         <p><strong>Important:</strong> Inactivity is not proof of death or incapacity. This feature only notifies people you trust and shares information you chose. It does not replace a will, bank nominations or inheritance law. Passwords are never emailed or texted.</p>
@@ -99,7 +99,7 @@ export default function LegacyPage() {
               <p className="mt-1 text-xs text-muted-foreground">SMS and push only work if they are set up for this app. Email is always used as the fallback.</p></fieldset>
           </div>
         </Panel>
-        <Panel title="What happens, step by step" description="Based on your settings">
+        <Panel title="What happens, step by step">
           <ol className="space-y-3">{timeline.map((s, i) => <li key={i} className="flex gap-3 text-sm"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-accent-foreground">{i + 1}</span><span><span className="font-medium">Day {s.d}</span> · {s.t}</span></li>)}</ol>
           <p className="mt-3 text-xs text-muted-foreground">Any activity in the app, or pressing “I&apos;m safe”, cancels the process at any point before release.</p>
         </Panel>
@@ -119,7 +119,7 @@ export default function LegacyPage() {
       {link && <Panel title="Invitation link" description="Email isn't configured, so share this link with the contact yourself."><div className="flex gap-2"><Input readOnly value={link} aria-label="Invitation link" /><Button variant="outline" onClick={() => { navigator.clipboard.writeText(link); toast.success('Copied') }}><Copy className="h-4 w-4" /></Button></div></Panel>}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Legacy information package" description="Instructions and a summary your contacts see after release. No passwords.">
+        <Panel title="Legacy information package">
           <div className="space-y-3">
             <textarea aria-label="Notes for your family" rows={5} defaultValue={plan.package.notes} onBlur={(e) => patch({ package: { ...plan.package, notes: e.target.value } })} placeholder="Where documents are kept, who your CA / advisor is, FD and insurance locations…" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40" />
             <div className="flex flex-wrap gap-4">{([['netWorth', 'Net worth summary'], ['accounts', 'Bank & fund list'], ['insurance', 'Insurance policies'], ['documents', 'Document list']] as const).map(([k, l]) => <label key={k} className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={!!plan.package.include[k]} onChange={(e) => patch({ package: { ...plan.package, include: { ...plan.package.include, [k]: e.target.checked } } })} />{l}</label>)}</div>
@@ -155,7 +155,7 @@ export default function LegacyPage() {
 function ContactForm({ count, onClose, onSave }: { count: number; onClose: () => void; onSave: (v: any) => Promise<void> }) {
   const [f, setF] = useState({ name: '', email: '', mobile: '', relationship: '', kind: 'primary_nominee', priority: String(count + 1) })
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Add trusted contact" description="They receive an invitation to accept and verify their identity." submitLabel="Send invitation"
+    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Add trusted contact" submitLabel="Send invitation"
       onSubmit={async () => { if (f.mobile && !/^\+?[0-9 ()-]{8,16}$/.test(f.mobile)) throw new Error('Enter a valid mobile number'); await onSave({ ...f, priority: Number(f.priority) || 1 }) }}>
       <Field label="Name">{(id) => <Input id={id} required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
       <Field label="Email">{(id) => <Input id={id} type="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />}</Field>
@@ -178,7 +178,7 @@ function BundleForm({ plan, onClose, onKey, onSave }: { plan: Plan; onClose: () 
   if (!session) return <FormDialog open onOpenChange={(o) => !o && onClose()} title="Unlock your vault first" submitLabel="OK" onSubmit={async () => {}}><p className="full text-sm">Open <Link className="text-primary underline" href="/dashboard/vault">My Vault</Link>, unlock it, then return here (the vault key is only held in memory while unlocked).</p></FormDialog>
   const toggle = (arr: string[], set: (x: string[]) => void, id: string) => set(arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id])
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Emergency vault access" description="Only what you tick here can ever be released." submitLabel="Encrypt and save"
+    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Emergency vault access" submitLabel="Encrypt and save"
       onSubmit={async () => {
         if (!pickedItems.length || !pickedContacts.length) throw new Error('Choose at least one item and one contact')
         const chosen = (items || []).filter((i) => pickedItems.includes(i.id)).map(({ id: _id, ...rest }) => { void _id; return rest })

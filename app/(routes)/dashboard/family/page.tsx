@@ -88,7 +88,7 @@ export default function FamilyPage() {
 
   if (circle === null) {
     return (
-      <div className="mx-auto max-w-lg"><Panel title="Create your Family Circle" description="Invite family to see only what each person chooses to share. Admins cannot read anyone's data.">
+      <div className="mx-auto max-w-lg"><Panel title="Create your Family Circle">
         <Button onClick={() => api({ action: 'create', name: 'My Family' }, 'Circle created')}><UserPlus className="mr-2 h-4 w-4" />Create circle</Button></Panel></div>
     )
   }
@@ -111,7 +111,7 @@ export default function FamilyPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title={circle.name} description="Each member controls what they share. Joint assets are counted once." actions={admin ? <Button onClick={() => setDlg('invite')}><Plus className="mr-1.5 h-4 w-4" />Invite member</Button> : undefined} />
+      <PageHeader title={circle.name} actions={admin ? <Button onClick={() => setDlg('invite')}><Plus className="mr-1.5 h-4 w-4" />Invite member</Button> : undefined} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Family net worth" value={<Money value={totals.netWorth} />} hint={hidden ? `${hidden} member${hidden > 1 ? 's' : ''} not shared` : undefined} />
@@ -161,7 +161,7 @@ export default function FamilyPage() {
       </div>
 
       {self?.permissions && (
-        <Panel title="My sharing" description="You decide what the circle can see about you. Everything is off until you turn it on.">
+        <Panel title="My sharing">
           <ul className="grid gap-3 sm:grid-cols-2">{PERMS.map(([k, l, d]) => (
             <li key={k}><label className="flex items-start gap-2.5 text-sm"><input type="checkbox" className="mt-0.5 h-4 w-4 accent-[hsl(var(--primary))]" checked={!!self.permissions![k]} onChange={(e) => setSharing(k, e.target.checked)} /><span><span className="block font-medium">{l}</span><span className="text-xs text-muted-foreground">{d}</span></span></label></li>
           ))}</ul>
@@ -183,7 +183,7 @@ export default function FamilyPage() {
 function InviteForm({ onClose, onSave }: { onClose: () => void; onSave: (v: { name: string; email: string; relation: string; role: string }) => Promise<void> }) {
   const [f, setF] = useState({ name: '', email: '', relation: '', role: 'member' })
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Invite a family member" description="They choose what to share after accepting." submitLabel="Send invitation" onSubmit={() => onSave(f)}>
+    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Invite a family member" submitLabel="Send invitation" onSubmit={() => onSave(f)}>
       <Field label="Name">{(id) => <Input id={id} required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
       <Field label="Email">{(id) => <Input id={id} type="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />}</Field>
       <Field label="Relationship">{(id) => <Input id={id} value={f.relation} onChange={(e) => setF({ ...f, relation: e.target.value })} placeholder="Spouse, Parent, Sibling…" />}</Field>

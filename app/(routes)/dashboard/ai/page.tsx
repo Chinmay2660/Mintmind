@@ -29,13 +29,13 @@ export default function AiPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="My Wealth AI" description={isDemo ? 'Demo: simulated from sample data using built-in rules. No AI service is used.' : 'Answers and insights come from your own data. Figures are calculated by the app, never by an AI.'} />
+      <PageHeader title="My Wealth AI" />
       <div role="tablist" aria-label="Wealth AI" className="flex gap-1 overflow-x-auto border-b border-border print:hidden">
         {TABS.map((t) => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={cn('shrink-0 border-b-2 px-3 py-2 text-sm font-medium outline-none focus-visible:bg-muted', tab === t ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}>{t}</button>)}
       </div>
 
       {tab === 'Ask' && <Panel bodyClassName="p-4"><div className="h-[60dvh] min-h-[22rem]"><AssistantChat compact /></div></Panel>}
-      {tab === 'Insights' && <Panel title="Insights" description="Each one shows the period it covers and whether it is a fact, an estimate or a suggestion."><InsightsList /></Panel>}
+      {tab === 'Insights' && <Panel title="Insights"><InsightsList /></Panel>}
 
       {tab === 'Health score' && health && (
         <div className="space-y-4">
@@ -48,7 +48,7 @@ export default function AiPage() {
               <div><h3 className="mb-1.5 text-sm font-semibold">Suggested actions</h3>{health.actions.length ? <ul className="list-disc space-y-1 pl-5 text-sm">{health.actions.map((s) => <li key={s}>{s}</li>)}</ul> : <p className="text-sm text-muted-foreground">Keep it up.</p>}</div>
             </div>
           </Panel>
-          <Panel title="How the score is calculated" description="Weighted average of the parameters below. Parameters without data are left out, not guessed.">
+          <Panel title="How the score is calculated">
             <ul className="space-y-4">{health.params.map((p) => (
               <li key={p.key}><div className="flex flex-wrap items-baseline justify-between gap-2 text-sm"><span className="font-medium">{p.name} <span className="text-xs font-normal text-muted-foreground">weight {p.weight}</span></span><span className="text-muted-foreground">{p.value ?? 'No data'}{p.score != null ? ` · ${p.score}/100` : ''}</span></div>
                 {p.score != null && <div className="mt-1"><Progress value={p.score} tone={p.score < 40 ? 'danger' : p.score < 70 ? 'warning' : 'primary'} label={p.name} /></div>}

@@ -46,7 +46,7 @@ function CreditCardsTab() {
 
   return (
     <div className="space-y-5">
-      <PageHeader description="Credit card dues are liabilities in your net worth, and repayments are not counted as expenses." actions={<Button onClick={() => setDlg({ kind: 'card' })}><Plus className="mr-1.5 h-4 w-4" />Add card</Button>} />
+      <PageHeader actions={<Button onClick={() => setDlg({ kind: 'card' })}><Plus className="mr-1.5 h-4 w-4" />Add card</Button>} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Total limit" value={<Money value={t.limit} />} />
         <Stat label="Outstanding" value={<Money value={t.outstanding} />} />
@@ -156,7 +156,7 @@ function PayForm({ card, accounts, onClose, onSave }: { card: any; accounts: any
   const [f, setF] = useState({ amount: String(card.outstanding), accountId: '', date: toISO(new Date()), note: '' })
   const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Record card payment" description="Reduces the outstanding and, if chosen, the paying account's balance. Not counted as an expense."
+    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Record card payment"
       onSubmit={async () => { const a = Number(f.amount); if (!(a > 0)) throw new Error('Amount must be positive'); if (a > card.outstanding) throw new Error('Payment exceeds the outstanding amount'); await onSave({ amount: a, accountId: f.accountId || undefined, date: f.date, note: f.note }) }}>
       <Field label="Amount (₹)">{(id) => <Input id={id} type="number" min="0.01" step="any" required value={f.amount} onChange={set('amount')} />}</Field>
       <Field label="Date">{(id) => <Input id={id} type="date" required value={f.date} onChange={set('date')} />}</Field>

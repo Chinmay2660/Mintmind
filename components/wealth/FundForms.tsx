@@ -16,7 +16,7 @@ export function FundForm({ row, onClose, onSave }: { row?: any; onClose: () => v
   })
   const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit fund' : 'Add mutual fund'} description="Enter figures from your statement (CAS). Values can be updated any time." wide
+    <FormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit fund' : 'Add mutual fund'} wide
       onSubmit={async () => {
         const units = Number(f.units), pn = Number(f.purchaseNav), cn = Number(f.currentNav)
         const invested = f.invested === '' ? units * pn : Number(f.invested)
@@ -43,7 +43,7 @@ export function NavForm({ fund, onClose, onSave }: { fund: any; onClose: () => v
   const [nav, setNav] = useState(String(fund.currentNav || ''))
   const [date, setDate] = useState(toISO(new Date()))
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title={`Update NAV - ${fund.name}`} description="Enter the latest NAV from your statement, or use Sync from Zerodha on the Mutual Funds page."
+    <FormDialog open onOpenChange={(o) => !o && onClose()} title={`Update NAV - ${fund.name}`}
       onSubmit={async () => { if (!(Number(nav) > 0)) throw new Error('NAV must be positive'); await onSave(Number(nav), date) }}>
       <Field label="NAV (₹)">{(id) => <Input id={id} type="number" step="any" required value={nav} onChange={(e) => setNav(e.target.value)} />}</Field>
       <Field label="NAV date">{(id) => <Input id={id} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />}</Field>
@@ -55,7 +55,7 @@ export function InvestmentForm({ fund, onClose, onSave }: { fund: any; onClose: 
   const [f, setF] = useState({ date: toISO(new Date()), amount: '', nav: String(fund.currentNav || ''), type: 'lumpsum' })
   const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Add investment from statement" description="Adds units at the NAV on that date and updates invested amount."
+    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Add investment from statement"
       onSubmit={async () => { if (!(Number(f.amount) > 0) || !(Number(f.nav) > 0)) throw new Error('Amount and NAV must be positive'); await onSave({ date: f.date, amount: Number(f.amount), nav: Number(f.nav), type: f.type }) }}>
       <Field label="Date">{(id) => <Input id={id} type="date" required value={f.date} onChange={set('date')} />}</Field>
       <Field label="Type">{(id) => <Select id={id} value={f.type} onChange={set('type')}><option value="lumpsum">Lumpsum</option><option value="sip">SIP instalment</option></Select>}</Field>

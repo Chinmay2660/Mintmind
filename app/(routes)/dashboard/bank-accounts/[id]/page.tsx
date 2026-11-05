@@ -134,7 +134,7 @@ export default function BankAccountDetail() {
 function BalanceForm({ current, onClose, onSave }: { current: number; onClose: () => void; onSave: (b: number, note: string) => Promise<void> }) {
   const [b, setB] = useState(String(current)); const [note, setNote] = useState('')
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Update balance" description="Enter the balance from your latest statement or app." onSubmit={async () => { const n = Number(b); if (!Number.isFinite(n)) throw new Error('Enter a valid balance'); await onSave(n, note || 'Manual update') }}>
+    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Update balance" onSubmit={async () => { const n = Number(b); if (!Number.isFinite(n)) throw new Error('Enter a valid balance'); await onSave(n, note || 'Manual update') }}>
       <Field label="New balance (₹)" className="full">{(id) => <Input id={id} type="number" step="any" required value={b} onChange={(e) => setB(e.target.value)} />}</Field>
       <Field label="Note" className="full">{(id) => <Input id={id} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Statement balance" />}</Field>
     </FormDialog>

@@ -201,7 +201,7 @@ function Unlocked({ items, session, meta, bioOk, onLock, onSave, onDelete, db, o
 
   return (
     <div className="space-y-5">
-      <PageHeader description="End-to-end encrypted on this device. Locks automatically when idle." actions={<>
+      <PageHeader actions={<>
         <Button variant="outline" onClick={() => setGen(true)}><Wand2 className="mr-1.5 h-4 w-4" />Generator</Button>
         <Button variant="outline" onClick={() => setEdit({ type: 'note' })}>Secure note</Button>
         <Button onClick={() => setEdit({ type: 'login' })}><Plus className="mr-1.5 h-4 w-4" />Add item</Button>

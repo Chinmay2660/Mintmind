@@ -28,7 +28,7 @@ export function GoalsPanel() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="max-w-xl text-sm text-muted-foreground">A goal links to money you already track (bank accounts, funds, FDs, gold…). It shows how much of those you have earmarked; it does not move money or change your net worth.</p>
+        <span />
         <Button onClick={() => setDlg({})}><Plus className="mr-1.5 h-4 w-4" />Add goal</Button>
       </div>
       {over.length > 0 && <p role="status" className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm"><TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" />Some linked items are earmarked for more than 100% across goals, so they are counted twice. Reduce their shares in the goals that use them.</p>}
@@ -66,7 +66,7 @@ function GoalForm({ row, suggested, onClose, onSave }: { row?: any; suggested: n
   const toggle = (s: { type: GoalLink['type']; id: string }) => setLinks((ls) => (find(s) ? ls.filter((l) => !(l.type === s.type && l.id === s.id)) : [...ls, { type: s.type, id: s.id, pct: 100 }]))
   const setPct = (s: { type: string; id: string }, pct: number) => setLinks((ls) => ls.map((l) => (l.type === s.type && l.id === s.id ? { ...l, pct } : l)))
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit goal' : 'Add goal'} wide description="Tick the accounts and investments that back this goal and choose how much of each to count."
+    <FormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit goal' : 'Add goal'} wide
       onSubmit={async () => {
         const target = Number(f.target)
         if (!(target > 0)) throw new Error('Target amount must be positive')

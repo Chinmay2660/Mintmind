@@ -42,7 +42,7 @@ function AnswerCard({ m, onAsk }: { m: Msg; onAsk: (q: string) => void }) {
           {m.followups?.slice(0, 2).map((f) => <button key={f} type="button" onClick={() => onAsk(f)} className="text-left text-muted-foreground transition-colors hover:text-foreground">{f}</button>)}
         </div>
       ) : null}
-      <p className="text-[11px] text-muted-foreground/80">{m.period ? `Data: ${m.period} · ` : ''}{m.source}</p>
+      <p className="text-[11px] text-muted-foreground/80">{[m.period ? `Data: ${m.period}` : '', m.source].filter(Boolean).join(' · ')}</p>
     </div>
   )
 }
@@ -62,13 +62,13 @@ export function AssistantChat({ compact = false }: { compact?: boolean }) {
     setQ('')
     setMsgs((m) => [...m, { role: 'user', text: question }])
     const a: any = answerQuestion(question, facts, data)
-    const base: Msg = { role: 'ai', text: a.text, rows: a.rows, links: a.links, period: a.period, unavailable: a.unavailable, headline: a.headline, lead: a.lead, stats: a.stats, bar: a.bar, detail: a.detail, followups: a.followups, source: isDemo ? 'Demo: simulated with built-in rules, no AI service used' : 'Built-in analysis of your data' }
+    const base: Msg = { role: 'ai', text: a.text, rows: a.rows, links: a.links, period: a.period, unavailable: a.unavailable, headline: a.headline, lead: a.lead, stats: a.stats, bar: a.bar, detail: a.detail, followups: a.followups, source: isDemo ? 'Demo: simulated' : '' }
     if (provider.usable && !a.unavailable) {
       setBusy(true)
       try {
         // Only pre-calculated aggregates are sent: no account/card numbers, documents, vault data or credentials.
         const { data: r } = await axios.post('/api/ai/chat', { question, draft: a.text, consent: true, facts: { asOf: facts.asOf, monthLabel: facts.monthLabel, netWorth: facts.netWorth, money: facts.money, budget: facts.budget, funds: { summary: facts.funds.summary, perFund: facts.funds.perFund, monthChange: facts.funds.monthChange }, cards: facts.cards, insurance: facts.insurance, banks: { total: facts.banks.total }, family: facts.family } })
-        if (r.text) { setMsgs((m) => [...m, { ...base, lead: r.text, source: `AI-written from your calculated figures (${r.provider})` }]); setBusy(false); return }
+        if (r.text) { setMsgs((m) => [...m, { ...base, lead: r.text, source: 'AI-written' }]); setBusy(false); return }
       } catch { /* fall back to the built-in answer below */ }
       setBusy(false)
     }
@@ -97,7 +97,7 @@ export function AssistantChat({ compact = false }: { compact?: boolean }) {
         <input aria-label="Ask My Wealth AI" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" placeholder="Ask about your finances…" value={q} maxLength={300} onChange={(e) => setQ(e.target.value)} />
         <button type="submit" aria-label="Send" disabled={!q.trim() || !facts || busy} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity disabled:opacity-40"><ArrowUp className="h-4 w-4" /></button>
       </form>
-      <p className="mt-2 text-center text-[11px] text-muted-foreground">Educational information, not financial advice.{isDemo ? ' Demo: simulated with sample data.' : provider.usable ? ' AI provider enabled with your consent.' : ''}</p>
+      <p className="mt-2 text-center text-[11px] text-muted-foreground">Educational information, not financial advice.</p>
     </div>
   )
 }

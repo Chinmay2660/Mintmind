@@ -21,7 +21,7 @@ export function WealthAiWidget() {
   ) : null
   const any = picks.money || picks.spending || picks.reminder || picks.action
   return (
-    <Panel title={<span className="flex items-center gap-1.5"><Sparkles className="h-4 w-4 text-primary" />Your Wealth AI</span>} description={isDemo ? 'Demo: simulated from sample data, no AI service used' : 'From your data, by built-in rules'}
+    <Panel title={<span className="flex items-center gap-1.5"><Sparkles className="h-4 w-4 text-primary" />Your Wealth AI</span>}
       action={<Button size="sm" onClick={() => open()}>Ask Wealth AI</Button>}>
       {!any ? <p className="text-sm text-muted-foreground">Add some data and I&apos;ll start spotting things for you.</p> : (
         <ul className="space-y-3">

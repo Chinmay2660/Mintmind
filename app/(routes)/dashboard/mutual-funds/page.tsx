@@ -35,7 +35,7 @@ export default function MutualFundsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader description="Update NAVs manually from your statements or sync them from Zerodha. Returns use true dated cashflows (XIRR)." actions={<><KiteSyncButton /><Button onClick={() => setDlg({ kind: 'fund' })}><Plus className="mr-1.5 h-4 w-4" />Add fund</Button></>} />
+      <PageHeader actions={<><KiteSyncButton /><Button onClick={() => setDlg({ kind: 'fund' })}><Plus className="mr-1.5 h-4 w-4" />Add fund</Button></>} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Invested" value={<Money value={s.invested} />} />
@@ -74,7 +74,7 @@ export default function MutualFundsPage() {
         )}
       </Panel>
 
-      <Panel title="SIPs" description="Commitment, upcoming debits and status" action={<Button size="sm" variant="outline" disabled={!data.funds.length} onClick={() => setDlg({ kind: 'sip' })}><Plus className="mr-1 h-4 w-4" />Add SIP</Button>}>
+      <Panel title="SIPs" action={<Button size="sm" variant="outline" disabled={!data.funds.length} onClick={() => setDlg({ kind: 'sip' })}><Plus className="mr-1 h-4 w-4" />Add SIP</Button>}>
         {sips.length === 0 ? <Empty title="No SIPs" description={data.funds.length ? 'Add a SIP to track commitments.' : 'Add a fund first.'} /> : (
           <ul className="divide-y divide-border">
             {sips.map((x) => (

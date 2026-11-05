@@ -26,7 +26,7 @@ export function NetWorthJournal() {
   }, [data.snapshots])
 
   return (
-    <Panel title="Journal" description="A dated record of every month. Open one to see what was behind the total. Months you didn't open the app simply stay empty.">
+    <Panel title="Journal">
       {rows.length === 0 ? <Empty title="No months recorded yet" /> : (
         <ul className="divide-y divide-border">
           {rows.slice(0, 24).map(({ s, prev }: any) => {

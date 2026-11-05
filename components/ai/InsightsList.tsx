@@ -30,7 +30,7 @@ export function InsightsList({ limit, showRestore = true }: { limit?: number; sh
         </ul>
       )}
       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-        <span>{isDemo ? 'Demo: insights are generated from sample data by built-in rules.' : 'Generated from your data by built-in rules.'}</span>
+        <span>{isDemo ? 'Demo: sample data' : ''}</span>
         {showRestore && dismissedCount > 0 && <button type="button" className="rounded px-1 py-0.5 hover:bg-muted hover:text-foreground" onClick={() => restore()}>Restore {dismissedCount} dismissed</button>}
       </div>
     </div>

@@ -66,7 +66,7 @@ export default function FundDetail() {
         <Stat label="Current NAV" value={`₹${f.currentNav}`} hint={`as of ${formatDate(f.navDate)} (${f.navSource})`} />
         <Stat label="Day change" value={f.prevNav > 0 ? <Money value={(f.currentNav - f.prevNav) * f.units} signed decimals /> : '—'} hint={f.prevNav > 0 ? `prev NAV ₹${f.prevNav}` : 'Needs previous NAV'} />
       </div>
-      <Panel title="Performance" description="Invested vs value at each purchase NAV; latest point uses current NAV">
+      <Panel title="Performance">
         {perf.length < 2 ? <Empty title="Not enough history" /> : (
           <div className="h-64" role="img" aria-label="Fund performance chart">
             <ResponsiveContainer width="100%" height="100%"><LineChart data={perf} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>

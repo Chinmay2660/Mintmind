@@ -82,7 +82,7 @@ function AccountTab() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Panel title="Profile" description="Personal information">
+      <Panel title="Profile">
         <form className="space-y-4" onSubmit={async (e) => { e.preventDefault(); await db.meta.put({ key: 'profile', value: { ...profile, name: f.name, phone: f.phone, city: f.city, monthlyIncome: Number(f.monthlyIncome) || 0 } }); toast.success('Profile saved') }}>
           <Field label="Full name">{(id) => <Input id={id} required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
           <Field label="Email">{(id) => <Input id={id} disabled value={profile.email || user?.email || ''} />}</Field>
@@ -93,7 +93,7 @@ function AccountTab() {
         </form>
       </Panel>
 
-      <Panel title="Security" description="Password and two-factor authentication">
+      <Panel title="Security">
         {isDemo ? <p className="text-sm text-muted-foreground">Security settings are disabled in Demo Mode. Sign up for an account to use passwords and MFA.</p> : !sec ? <LoadingBlock className="h-24" /> : (
           <div className="space-y-6">
             <form className="space-y-3" onSubmit={async (e) => { e.preventDefault(); if (await call({ action: 'change-password', currentPassword: pw.current, newPassword: pw.next }, sec.hasPassword ? 'Password changed' : 'Password set')) setPw({ current: '', next: '' }) }}>
@@ -136,7 +136,7 @@ function AppearanceTab() {
   useEffect(() => setMounted(true), [])
   const opts = [{ v: 'light', l: 'Light', i: Sun }, { v: 'dark', l: 'Dark', i: Moon }, { v: 'system', l: 'System', i: Laptop }]
   return (
-    <Panel title="Theme" description="Saved on this device and applied before the page renders. System follows your OS setting.">
+    <Panel title="Theme">
       <div role="radiogroup" aria-label="Theme" className="grid gap-3 sm:grid-cols-3">
         {opts.map(({ v, l, i: Icon }) => {
           const on = mounted && theme === v
@@ -164,7 +164,7 @@ function PreferencesTab() {
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={privacyMode} onChange={(e) => { setPrivacyMode(e.target.checked); update({ hideBalances: e.target.checked }) }} />Hide balances by default</label>
         </div>
       </Panel>
-      <Panel title="Notifications" description="Shown in the bell menu. Email, SMS and push delivery are configured per integration.">
+      <Panel title="Notifications">
         <ul className="space-y-3">{toggles.map(([k, l]) => (
           <li key={String(k)}><label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={prefs.notifications[k]} onChange={(e) => update({ notifications: { ...prefs.notifications, [k]: e.target.checked } })} />{l}</label></li>
         ))}</ul>
@@ -183,7 +183,7 @@ function IntegrationsTab() {
   useEffect(() => { if (!isDemo) load() }, [isDemo])
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Panel title="Google Drive" description="Documents are stored in your own Drive, in a “My Wealth App” folder. We only request access to files this app creates.">
+      <Panel title="Google Drive">
         {isDemo ? <p className="text-sm text-muted-foreground">Not available in Demo Mode (demo documents are kept in your browser).</p> : !st ? <LoadingBlock className="h-16" /> : !st.configured ? (
           <p className="text-sm text-muted-foreground">Google Drive isn’t available yet. The app administrator needs to set it up.</p>
         ) : st.connected ? (
@@ -203,7 +203,7 @@ function KitePanel() {
   const { isDemo } = useWealth()
   const { status, refresh } = useKiteStatus()
   return (
-    <Panel title="Zerodha Kite" description="Sync mutual fund NAVs, SIPs and your stock holdings. Read-only: the app never places orders.">
+    <Panel title="Zerodha Kite">
       {isDemo ? <p className="text-sm text-muted-foreground">Not available in Demo Mode.</p> : !status ? <LoadingBlock className="h-16" /> : !status.configured ? (
         <p className="text-sm text-muted-foreground">Zerodha isn’t available yet. The app administrator needs to set it up.</p>
       ) : status.connected ? (
@@ -245,7 +245,7 @@ function DataTab() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Panel title="Export & backup" description="Everything you track, as a JSON file you control.">
+      <Panel title="Export & backup">
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={exportAll}><Download className="mr-2 h-4 w-4" />Export backup</Button>
           <Button variant="outline" onClick={() => fileRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Restore backup</Button>

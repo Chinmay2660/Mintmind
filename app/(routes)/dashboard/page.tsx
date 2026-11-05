@@ -91,16 +91,14 @@ export default function DashboardPage() {
           <div>
             <p className="text-sm font-medium text-muted-foreground">Net worth</p>
             <p className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl"><Money value={netWorth.netWorth} /></p>
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-              <span className="inline-flex items-center gap-1.5 text-muted-foreground">vs 1 month ago{m.monthGrowth ? ` (${formatDate(m.monthGrowth.baseDate)})` : ''} {m.monthGrowth ? <Delta amount={m.monthGrowth.diff} pct={m.monthGrowth.pct} /> : <span>—</span>}</span>
-              <span className="inline-flex items-center gap-1.5 text-muted-foreground">vs 1 year ago{m.yearGrowth ? ` (${formatDate(m.yearGrowth.baseDate)})` : ''} {m.yearGrowth ? <Delta amount={m.yearGrowth.diff} pct={m.yearGrowth.pct} /> : <span>—</span>}</span>
+            <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
+              {m.monthGrowth && <span className="inline-flex items-center gap-1.5"><Delta amount={m.monthGrowth.diff} pct={m.monthGrowth.pct} /><span className="text-xs text-muted-foreground">this month</span></span>}
+              {m.yearGrowth && <span className="inline-flex items-center gap-1.5"><Delta amount={m.yearGrowth.diff} pct={m.yearGrowth.pct} /><span className="text-xs text-muted-foreground">this year</span></span>}
             </div>
           </div>
-          <dl className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
+          <dl className="grid grid-cols-2 gap-x-8 text-sm">
             <div><dt className="text-xs text-muted-foreground">Assets</dt><dd className="font-semibold"><Money value={netWorth.assets} /></dd></div>
             <div><dt className="text-xs text-muted-foreground">Liabilities</dt><dd className="font-semibold"><Money value={netWorth.liabilities} /></dd></div>
-            <div><dt className="text-xs text-muted-foreground">1 month ago</dt><dd className="font-medium">{m.monthGrowth ? <Money value={m.monthGrowth.base} compact /> : '—'}</dd></div>
-            <div><dt className="text-xs text-muted-foreground">1 year ago</dt><dd className="font-medium">{m.yearGrowth ? <Money value={m.yearGrowth.base} compact /> : '—'}</dd></div>
           </dl>
         </div>
       </section>
@@ -147,7 +145,7 @@ export default function DashboardPage() {
           )}
         </Panel>
 
-        <Panel title="Financial health" description="Transparent rules, not a credit score" action={<Link className="text-xs font-medium text-primary hover:underline" href="/dashboard/ai">How it works</Link>}>
+        <Panel title="Financial health" action={<Link className="text-xs font-medium text-primary hover:underline" href="/dashboard/ai">How it works</Link>}>
           {!ai.health ? <LoadingBlock className="h-24" /> : (
             <>
               <div className="flex items-baseline gap-2"><span className="text-4xl font-semibold">{ai.health.score ?? '—'}</span><span className="text-sm text-muted-foreground">/ 100 · {ai.health.label}</span></div>
@@ -168,7 +166,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Income vs expenses" description="Last 6 months · transfers and card repayments excluded">
+        <Panel title="Income vs expenses">
           <div className="h-60" role="img" aria-label="Income versus expenses bar chart">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={m.cashflow} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -204,7 +202,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Upcoming payments" description="Card dues, premiums and SIPs">
+        <Panel title="Upcoming payments">
           {m.dues.length === 0 ? <Empty title="Nothing due soon" /> : (
             <ul className="divide-y divide-border">
               {m.dues.map((d) => (
@@ -233,7 +231,7 @@ export default function DashboardPage() {
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <WealthAiWidget />
-        <Panel title="AI insights" description="From your data, with the period each one covers" action={<Link className="text-xs font-medium text-primary hover:underline" href="/dashboard/ai">See all</Link>}><InsightsList limit={4} showRestore={false} /></Panel>
+        <Panel title="AI insights" action={<Link className="text-xs font-medium text-primary hover:underline" href="/dashboard/ai">See all</Link>}><InsightsList limit={4} showRestore={false} /></Panel>
       </div>
 
       {isDemo && <p className="text-center text-xs text-muted-foreground">You are viewing sample data. Changes stay in this browser only.</p>}

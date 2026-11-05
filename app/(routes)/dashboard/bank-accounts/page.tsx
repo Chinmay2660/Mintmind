@@ -21,7 +21,7 @@ export default function BankAccountsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader description="Bank accounts and cash in hand. Every expense, income, transfer, card payment, SIP and premium updates these balances." actions={<Button onClick={() => setAdding(true)}><Plus className="mr-1.5 h-4 w-4" />Add account</Button>} />
+      <PageHeader actions={<Button onClick={() => setAdding(true)}><Plus className="mr-1.5 h-4 w-4" />Add account</Button>} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <Stat label="Total balance" value={<Money value={total} />} />
         <Stat label="Accounts" value={data.bankAccounts.length} />

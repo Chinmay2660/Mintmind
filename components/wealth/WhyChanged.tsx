@@ -21,7 +21,7 @@ export function WhyChanged() {
   const max = a ? Math.max(...a.causes.map((c) => Math.abs(c.amount)), 1) : 1
 
   return (
-    <Panel title="Why did my net worth change?" description="Each cause is calculated from your balances and transactions, and together they add up to the total." action={<RangeTabs value={range} onChange={setRange} options={RANGES} label="Period" />}>
+    <Panel title="Why did my net worth change?" action={<RangeTabs value={range} onChange={setRange} options={RANGES} label="Period" />}>
       {!a || a.causes.length === 0 ? <Empty title="Nothing to compare yet" description="This fills in as your net worth snapshots build up." /> : (
         <div className="space-y-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">

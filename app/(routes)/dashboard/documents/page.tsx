@@ -109,7 +109,7 @@ export default function DocumentsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader description={isDemo ? 'Demo files stay in this browser.' : 'Stored in your own Google Drive under “My Wealth App”.'} actions={<>
+      <PageHeader actions={<>
         <Button disabled={blocked} onClick={() => pickRef.current?.click()}><Upload className="mr-1.5 h-4 w-4" />Upload</Button>
         <input ref={pickRef} type="file" accept={ACCEPT} className="hidden" onChange={(e) => { onPick(e.target.files?.[0]); e.target.value = '' }} />
         <input ref={replaceRef} type="file" accept={ACCEPT} className="hidden" onChange={(e) => { doReplace(e.target.files?.[0]); e.target.value = '' }} />
