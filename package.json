@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node --test lib/wealth/calc.test.mjs lib/totp.test.mjs lib/vault/crypto.test.mjs lib/family/visibility.test.mjs lib/legacy/stateMachine.test.mjs lib/wealth/integrations/kite.test.mjs lib/wealth/reminders.test.mjs lib/wealth/transactions.test.mjs lib/wealth/goals.test.mjs lib/ai/facts.test.mjs lib/ai/ai.test.mjs lib/ai/assistant.test.mjs lib/ai/automation.test.mjs lib/ai/report.test.mjs lib/ai/documents.test.mjs lib/calculators.test.mjs lib/wealth/journey.test.mjs"
+    "test": "node --test lib/wealth/calc.test.mjs lib/totp.test.mjs lib/vault/crypto.test.mjs lib/family/visibility.test.mjs lib/legacy/stateMachine.test.mjs lib/wealth/integrations/kite.test.mjs lib/wealth/reminders.test.mjs lib/wealth/transactions.test.mjs lib/wealth/goals.test.mjs lib/ai/facts.test.mjs lib/ai/ai.test.mjs lib/ai/assistant.test.mjs lib/ai/automation.test.mjs lib/ai/report.test.mjs lib/ai/documents.test.mjs lib/calculators.test.mjs lib/wealth/journey.test.mjs lib/features.test.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.2",

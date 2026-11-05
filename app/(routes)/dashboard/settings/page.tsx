@@ -17,10 +17,12 @@ import { useKiteStatus } from '@/components/wealth/KiteSync'
 import { AssetsLoans } from '@/components/wealth/AssetsLoans'
 import { AutomationManager } from '@/components/ai/AutomationManager'
 import { AiSettings } from '@/components/ai/AiSettings'
+import { MyAppFeatures } from '@/components/onboarding/MyAppFeatures'
+import { useFeatures } from '@/lib/features/FeaturesContext'
 import { cn } from '@/lib/utils'
 import { toISO } from '@/lib/wealth/calc'
 
-const TABS = ['Account', 'Appearance', 'Preferences', 'Assets & Loans', 'Automation', 'AI', 'Integrations', 'Data'] as const
+const TABS = ['Account', 'My App Features', 'Appearance', 'Preferences', 'Assets & Loans', 'Automation', 'AI', 'Integrations', 'Data'] as const
 type Tab = (typeof TABS)[number]
 
 const DEFAULT_PREFS = { currency: 'INR', dateFormat: 'DD MMM YYYY', hideBalances: false, notifications: { premiums: true, cardDues: true, sips: true, budget: true, lowBalance: true, navStale: true, staleValues: true, legacy: true, family: true }, autoLockMinutes: 5 }
@@ -30,20 +32,22 @@ export default function SettingsPage() {
   // deep links such as /dashboard/settings?tab=assets
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get('tab')
-    const map: Record<string, Tab> = { assets: 'Assets & Loans', automation: 'Automation', ai: 'AI', integrations: 'Integrations', data: 'Data' }
+    const map: Record<string, Tab> = { features: 'My App Features', assets: 'Assets & Loans', automation: 'Automation', ai: 'AI', integrations: 'Integrations', data: 'Data' }
     if (q && map[q]) setTab(map[q])
   }, [])
   const { ready } = useWealth()
+  const { isEnabled } = useFeatures()
   if (!ready) return <LoadingBlock className="h-64" />
   return (
     <div className="space-y-5">
       <PageHeader />
       <div role="tablist" aria-label="Settings sections" className="flex gap-1 overflow-x-auto border-b border-border">
-        {TABS.map((t) => (
+        {TABS.filter((t) => (t === 'Automation' ? isEnabled('automation') : t === 'AI' ? isEnabled('ai_assistant') : true)).map((t) => (
           <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={cn('shrink-0 border-b-2 px-3 py-2 text-sm font-medium outline-none focus-visible:bg-muted', tab === t ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}>{t}</button>
         ))}
       </div>
       {tab === 'Account' && <AccountTab />}
+      {tab === 'My App Features' && <MyAppFeatures />}
       {tab === 'Appearance' && <AppearanceTab />}
       {tab === 'Preferences' && <PreferencesTab />}
       {tab === 'Assets & Loans' && <AssetsLoans />}

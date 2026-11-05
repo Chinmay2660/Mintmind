@@ -16,6 +16,7 @@ import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { WealthAiWidget } from '@/components/ai/WealthAiWidget'
 import { InsightsList } from '@/components/ai/InsightsList'
 import { useAi } from '@/components/ai/useAi'
+import { useFeatures } from '@/lib/features/FeaturesContext'
 
 const RANGES = ['1M', '3M', '6M', '1Y', 'ALL'] as const
 type Range = (typeof RANGES)[number]
@@ -33,6 +34,7 @@ export default function DashboardPage() {
   const { ready, data, netWorth, isDemo } = useWealth()
   const { privacyMode } = usePrivacyMode()
   const ai = useAi()
+  const { isEnabled } = useFeatures()
   const [range, setRange] = useState<Range>('1Y')
   const today = useMemo(() => new Date(), [])
 
@@ -108,22 +110,22 @@ export default function DashboardPage() {
       )}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Widget title="Bank & cash" href="/dashboard/bank-accounts">
+        {isEnabled('bank_accounts') && <Widget title="Bank & cash" href="/dashboard/bank-accounts">
           <p className="mt-1 text-lg font-semibold"><Money value={m.bankTotal} /></p>
           <p className="text-xs text-muted-foreground">{data.bankAccounts.length} account{data.bankAccounts.length === 1 ? "" : "s"}</p>
-        </Widget>
-        <Widget title="Mutual funds" href="/dashboard/mutual-funds">
+        </Widget>}
+        {isEnabled('mutual_funds') && <Widget title="Mutual funds" href="/dashboard/mutual-funds">
           <p className="mt-1 text-lg font-semibold"><Money value={m.portfolio.value} /></p>
           <p className="text-xs text-muted-foreground">{m.portfolio.invested ? <Delta pct={m.portfolio.absReturnPct} /> : 'No funds yet'}{m.portfolio.xirrPct != null && <> · XIRR {formatPct(m.portfolio.xirrPct, 1)}</>}</p>
-        </Widget>
-        <Widget title="Card outstanding" href="/dashboard/credit-cards">
+        </Widget>}
+        {isEnabled('credit_cards') && <Widget title="Card outstanding" href="/dashboard/credit-cards">
           <p className="mt-1 text-lg font-semibold"><Money value={m.outstanding} /></p>
           <p className="text-xs text-muted-foreground">{m.limit ? `${m.util}% of ${formatCompactINR(m.limit)} limit` : 'No cards'}</p>
-        </Widget>
-        <Widget title="Insurance cover" href="/dashboard/insurance">
+        </Widget>}
+        {isEnabled('insurance') && <Widget title="Insurance cover" href="/dashboard/insurance">
           <p className="mt-1 text-lg font-semibold"><Money value={m.cover.total} compact /></p>
           <p className="text-xs text-muted-foreground">{m.cover.activeCount} active polic{m.cover.activeCount === 1 ? 'y' : 'ies'}</p>
-        </Widget>
+        </Widget>}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -166,7 +168,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Income vs expenses">
+        {isEnabled('budget_expenses') && <Panel title="Income vs expenses">
           <div className="h-60" role="img" aria-label="Income versus expenses bar chart">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={m.cashflow} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -180,9 +182,9 @@ export default function DashboardPage() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </Panel>
+        </Panel>}
 
-        <Panel title="This month's budget" action={<Link className="text-xs font-medium text-primary hover:underline" href="/dashboard/budget">Open</Link>}>
+        {isEnabled('budget_expenses') && <Panel title="This month's budget" action={<Link className="text-xs font-medium text-primary hover:underline" href="/dashboard/budget">Open</Link>}>
           {!m.pacing ? (
             <Empty title="No budget set" description="Set a monthly budget to see pacing." action={<Link className="text-sm font-medium text-primary underline" href="/dashboard/budget">Set budget</Link>} />
           ) : (
@@ -198,11 +200,11 @@ export default function DashboardPage() {
               </dl>
             </div>
           )}
-        </Panel>
+        </Panel>}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Upcoming payments">
+        {(isEnabled('credit_cards') || isEnabled('insurance') || isEnabled('mutual_funds')) && <Panel title="Upcoming payments">
           {m.dues.length === 0 ? <Empty title="Nothing due soon" /> : (
             <ul className="divide-y divide-border">
               {m.dues.map((d) => (
@@ -215,7 +217,7 @@ export default function DashboardPage() {
               ))}
             </ul>
           )}
-        </Panel>
+        </Panel>}
         <Panel title="Recent transactions">
           {m.recent.length === 0 ? <Empty title="No transactions yet" /> : (
             <ul className="divide-y divide-border">
@@ -229,10 +231,12 @@ export default function DashboardPage() {
           )}
         </Panel>
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
+      {isEnabled('ai_assistant') && <div className="grid gap-4 lg:grid-cols-2">
         <WealthAiWidget />
         <Panel title="AI insights" action={<Link className="text-xs font-medium text-primary hover:underline" href="/dashboard/ai">See all</Link>}><InsightsList limit={4} showRestore={false} /></Panel>
-      </div>
+      </div>}
+
+      <p className="text-center text-sm"><Link href="/dashboard/settings?tab=features" className="font-medium text-primary hover:underline">Explore more features</Link></p>
 
       {isDemo && <p className="text-center text-xs text-muted-foreground">You are viewing sample data. Changes stay in this browser only.</p>}
     </div>
