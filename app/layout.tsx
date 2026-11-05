@@ -42,7 +42,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#2563eb",
+  themeColor: "#059669",
   viewportFit: "cover",
 };
 

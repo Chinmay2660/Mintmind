@@ -64,6 +64,7 @@ module.exports = {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
+        sidebar: "hsl(var(--sidebar))",
         income: "hsl(var(--income))",
         expense: "hsl(var(--expense))",
         chart: {
