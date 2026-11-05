@@ -25,8 +25,9 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname === '/') {
-    const authToken = request.cookies.get('auth-token')
-    if (authToken) {
+    const authToken = request.cookies.get('auth-token') || request.cookies.get('mm-demo')
+    // /?home=1 lets a signed-in user view the landing page instead of being sent to the dashboard
+    if (authToken && !request.nextUrl.searchParams.has('home')) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
     return applySecurityHeaders(NextResponse.next())
@@ -41,8 +42,8 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.next())
   }
 
-  if (pathname.startsWith('/dashboard')) {
-    const authToken = request.cookies.get('auth-token')
+  if (pathname.startsWith('/dashboard') || pathname === '/onboarding') {
+    const authToken = request.cookies.get('auth-token') || request.cookies.get('mm-demo')
 
     if (!authToken) {
       const signInUrl = new URL('/auth/signin', request.url)
@@ -55,5 +56,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/dashboard/:path*', '/api/:path*'],
+  matcher: ['/', '/dashboard/:path*', '/onboarding', '/api/:path*'],
 }

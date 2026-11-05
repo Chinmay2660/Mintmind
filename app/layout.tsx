@@ -1,14 +1,6 @@
-import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner"
 import Providers from "@/components/Providers"
-
-const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-sans",
-  fallback: ["system-ui", "sans-serif"],
-});
 
 export const metadata = {
   title: {
@@ -42,14 +34,14 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#2563eb",
+  themeColor: "#059669",
   viewportFit: "cover",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${plusJakarta.variable} font-sans antialiased`}>
+      <body suppressHydrationWarning className="font-sans antialiased">
         <Providers>
           <Toaster />
           {children}

@@ -8,112 +8,113 @@
    Accent: blue — brand + primary actions */
 
 @layer base {
+  /* Light — bg #F7F8FA, card #FFF, text #1E293B / #64748B, border #E5E7EB. Emerald accent. */
   :root {
-    /* Canvas & surfaces */
-    --background: 40 25% 97%;
-    --foreground: 220 20% 12%;
+    --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --background: 216 20% 98%;
+    --foreground: 217 33% 17%;
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 12%;
+    --card-foreground: 217 33% 17%;
     --card-elevated: 0 0% 100%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 12%;
+    --popover-foreground: 217 33% 17%;
+    --sidebar: 0 0% 100%;
 
-    /* Brand accent — blue */
-    --primary: 217 91% 50%;
+    --primary: 161 94% 30%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 40 18% 93%;
-    --secondary-foreground: 220 18% 18%;
-    --muted: 40 15% 94%;
-    --muted-foreground: 220 10% 46%;
-    --accent: 217 100% 96%;
-    --accent-foreground: 217 91% 35%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 217 33% 17%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 152 76% 95%;
+    --accent-foreground: 161 94% 24%;
 
-    /* Semantic finance colors */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --success: 152 60% 38%;
+    --success: 142 72% 29%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
+    --warning: 32 95% 44%;
     --warning-foreground: 0 0% 100%;
-    --income: 152 60% 38%;
-    --expense: 0 65% 52%;
+    --income: 142 72% 29%;
+    --expense: 0 72% 51%;
 
-    /* Structure */
-    --border: 40 14% 88%;
-    --input: 40 14% 90%;
-    --ring: 217 91% 50%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 161 94% 30%;
 
-    /* Radii — generous, friendly */
-    --radius: 0.875rem;
-    --radius-lg: 1.125rem;
-    --radius-xl: 1.375rem;
+    --radius: 0.75rem;
+    --radius-lg: 0.875rem;
+    --radius-xl: 1rem;
 
-    /* Shadows — whisper-light */
-    --shadow-card: 0 1px 2px hsl(220 20% 12% / 0.03), 0 2px 8px hsl(220 20% 12% / 0.04);
-    --shadow-elevated: 0 4px 16px hsl(220 20% 12% / 0.06), 0 12px 40px hsl(220 20% 12% / 0.05);
-    --shadow-inset: inset 0 1px 2px hsl(220 20% 12% / 0.04);
+    --shadow-card: 0 1px 2px hsl(217 33% 17% / 0.04);
+    --shadow-elevated: 0 8px 24px hsl(217 33% 17% / 0.08);
+    --shadow-inset: inset 0 1px 2px hsl(217 33% 17% / 0.04);
 
-    /* Chart palette — semantic, accessible */
-    --chart-1: 217 91% 50%;
-    --chart-2: 152 60% 38%;
-    --chart-3: 217 80% 55%;
-    --chart-4: 38 92% 50%;
-    --chart-5: 0 65% 52%;
-    --chart-6: 280 55% 55%;
+    --chart-1: 161 94% 30%;
+    --chart-2: 221 83% 53%;
+    --chart-3: 32 95% 44%;
+    --chart-4: 262 52% 47%;
+    --chart-5: 0 72% 51%;
+    --chart-6: 190 90% 35%;
+    --chart-grid: 220 13% 91%;
 
-    /* Mobile layout — single scroll clearance (tab bar + FAB + safe area) */
     --mobile-tab-bar-height: 4.25rem;
     --mobile-fab-height: 3.5rem;
     --mobile-fab-gap: 0.75rem;
     --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
-    --mobile-content-pb: calc(
-      var(--mobile-tab-bar-height) + var(--mobile-safe-bottom) +
-      var(--mobile-fab-height) + var(--mobile-fab-gap) + 0.5rem
-    );
+    --mobile-content-pb: calc(var(--mobile-tab-bar-height) + var(--mobile-safe-bottom) + 1rem);
     --mobile-fab-bottom: calc(var(--mobile-tab-bar-height) + var(--mobile-safe-bottom) + var(--mobile-fab-gap));
 
-    /* Sidebar */
-    --sidebar-width: 17rem;
+    --sidebar-width: 16rem;
     --sidebar-width-collapsed: 4.5rem;
   }
 
+  /* Dark — bg #0B1120, sidebar #111827, card #172033, elevated #1E293B, text #F8FAFC / #94A3B8, border #293548 */
   .dark {
-    /* Deep navy canvas */
-    --background: 222 47% 5%;
-    --foreground: 210 20% 96%;
-    --card: 222 35% 9%;
-    --card-foreground: 210 20% 96%;
-    --card-elevated: 222 32% 11%;
-    --popover: 222 35% 8%;
-    --popover-foreground: 210 20% 96%;
+    --background: 222 49% 8%;
+    --foreground: 210 40% 98%;
+    --card: 220 38% 14%;
+    --card-foreground: 210 40% 98%;
+    --card-elevated: 217 33% 17%;
+    --popover: 217 33% 17%;
+    --popover-foreground: 210 40% 98%;
+    --sidebar: 221 39% 11%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 5%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 222 49% 8%;
 
-    --secondary: 222 28% 14%;
-    --secondary-foreground: 210 20% 92%;
-    --muted: 222 28% 13%;
-    --muted-foreground: 215 12% 58%;
-    --accent: 217 40% 16%;
-    --accent-foreground: 217 91% 70%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 17%;
+    --accent-foreground: 160 84% 45%;
 
-    --destructive: 0 62% 45%;
-    --destructive-foreground: 0 0% 100%;
-    --success: 152 55% 48%;
-    --success-foreground: 222 47% 5%;
-    --warning: 38 92% 55%;
-    --warning-foreground: 222 47% 5%;
-    --income: 152 55% 48%;
-    --expense: 0 62% 58%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 222 49% 8%;
+    --success: 142 71% 45%;
+    --success-foreground: 222 49% 8%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 49% 8%;
+    --income: 142 71% 45%;
+    --expense: 0 84% 60%;
 
-    --border: 222 22% 16%;
-    --input: 222 25% 14%;
-    --ring: 217 91% 60%;
+    --border: 217 25% 22%;
+    --input: 217 25% 22%;
+    --ring: 160 84% 39%;
 
-    --shadow-card: 0 0 0 1px hsl(var(--border)), var(--shadow-inset);
-    --shadow-elevated: 0 0 0 1px hsl(var(--border)), 0 8px 32px hsl(222 47% 2% / 0.5);
-    --shadow-inset: inset 0 1px 0 hsl(210 20% 96% / 0.04);
+    --shadow-card: 0 0 0 1px hsl(var(--border));
+    --shadow-elevated: 0 0 0 1px hsl(var(--border)), 0 8px 24px hsl(222 49% 4% / 0.4);
+    --shadow-inset: none;
+
+    --chart-1: 160 84% 45%;
+    --chart-2: 213 94% 68%;
+    --chart-3: 38 92% 55%;
+    --chart-4: 262 83% 74%;
+    --chart-5: 0 84% 65%;
+    --chart-6: 187 85% 53%;
+    --chart-grid: 217 25% 22%;
   }
 }
 
@@ -285,20 +286,9 @@
     background-size: 20px 20px;
   }
 
-  .aurora-bg {
-    background:
-      radial-gradient(ellipse 80% 50% at 15% -10%, hsl(var(--primary) / 0.12), transparent),
-      radial-gradient(ellipse 60% 40% at 85% 0%, hsl(217 80% 55% / 0.08), transparent),
-      hsl(var(--background));
-  }
+  .aurora-bg { background: hsl(var(--background)); }
 
-  .dark .aurora-bg {
-    background:
-      radial-gradient(ellipse 80% 50% at 15% -10%, hsl(var(--primary) / 0.15), transparent),
-      radial-gradient(ellipse 60% 40% at 85% 0%, hsl(217 80% 55% / 0.06), transparent),
-      hsl(var(--background));
-  }
-
+  
   .glow-border {
     position: relative;
   }
@@ -690,4 +680,11 @@
 
 .animate-liquid-float {
   animation: liquid-float 6s ease-in-out infinite;
+}
+
+/* Print / Save as PDF: let the report flow across pages instead of the fixed app shell */
+@media print {
+  .app-shell { position: static !important; display: block !important; height: auto !important; }
+  .app-main { overflow: visible !important; height: auto !important; padding-bottom: 0 !important; }
+  body { background: #fff !important; }
 }

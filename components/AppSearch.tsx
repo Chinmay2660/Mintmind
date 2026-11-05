@@ -126,7 +126,7 @@ export default function AppSearch() {
               <button
                 type="button"
                 onClick={() => setQuery('')}
-                className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -161,7 +161,7 @@ export default function AppSearch() {
                             'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors',
                             isActive
                               ? 'bg-accent text-accent-foreground'
-                              : 'hover:bg-accent/50'
+                              : 'hover:bg-muted'
                           )}
                           onMouseEnter={() => setActiveIndex(index)}
                           onClick={() => navigate(item.path)}

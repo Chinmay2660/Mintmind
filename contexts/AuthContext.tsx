@@ -18,7 +18,7 @@ function normalizeUser(userData: User | null): User | null {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(() => getCachedUser())
+  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const checkingRef = useRef(false)
@@ -61,6 +61,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     mountedRef.current = true
+    // hydrate from cache after mount so SSR and first client render match
+    setUser((u) => u ?? normalizeUser(getCachedUser()))
 
     if (!sessionFetchedRef.current) {
       sessionFetchedRef.current = true

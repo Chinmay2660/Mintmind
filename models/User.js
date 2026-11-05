@@ -28,6 +28,12 @@ const UserSchema = new mongoose.Schema({
   image: {
     type: String,
   },
+  passwordHash: { type: String, select: false },
+  mfa: {
+    enabled: { type: Boolean, default: false },
+    secretEnc: { type: String, select: false },
+    pendingSecretEnc: { type: String, select: false },
+  },
 }, {
   timestamps: true,
 });
