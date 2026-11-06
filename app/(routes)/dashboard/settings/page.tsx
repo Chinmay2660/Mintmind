@@ -4,17 +4,17 @@ import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
-import { Check, Cloud, Download, Laptop, Moon, RotateCcw, ShieldCheck, Sun, Trash2, Upload } from 'lucide-react'
+import { Check, Cloud, Download, Laptop, LogOut, Moon, RotateCcw, ShieldCheck, Sun, Trash2, Upload } from 'lucide-react'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { TABLES, clearAll } from '@/lib/wealth/db'
+import { validateMobile } from '@/lib/features'
+import { deviceNotifyOn, deviceNotifySupported, disableDeviceNotify, enableDeviceNotify } from '@/lib/notify/device'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Field, LoadingBlock, PageHeader, Panel, Select } from '@/components/wealth/kit'
-import { useKiteStatus } from '@/components/wealth/KiteSync'
-import { AssetsLoans } from '@/components/wealth/AssetsLoans'
 import { AutomationManager } from '@/components/ai/AutomationManager'
 import { AiSettings } from '@/components/ai/AiSettings'
 import { MyAppFeatures } from '@/components/onboarding/MyAppFeatures'
@@ -22,7 +22,7 @@ import { useFeatures } from '@/lib/features/FeaturesContext'
 import { cn } from '@/lib/utils'
 import { toISO } from '@/lib/wealth/calc'
 
-const TABS = ['Account', 'My App Features', 'Appearance', 'Preferences', 'Assets & Loans', 'Automation', 'AI', 'Integrations', 'Data'] as const
+const TABS = ['Account', 'My App Features', 'Appearance', 'Preferences', 'Automation', 'AI', 'Integrations', 'Data'] as const
 type Tab = (typeof TABS)[number]
 
 const DEFAULT_PREFS = { currency: 'INR', dateFormat: 'DD MMM YYYY', hideBalances: false, notifications: { premiums: true, cardDues: true, sips: true, budget: true, lowBalance: true, navStale: true, staleValues: true, legacy: true, family: true }, autoLockMinutes: 5 }
@@ -32,8 +32,9 @@ export default function SettingsPage() {
   // deep links such as /dashboard/settings?tab=assets
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get('tab')
-    const map: Record<string, Tab> = { features: 'My App Features', assets: 'Assets & Loans', automation: 'Automation', ai: 'AI', integrations: 'Integrations', data: 'Data' }
-    if (q && map[q]) setTab(map[q])
+    const map: Record<string, Tab> = { features: 'My App Features', automation: 'Automation', ai: 'AI', integrations: 'Integrations', data: 'Data' }
+    if (q === 'assets') window.location.replace('/dashboard/net-worth/manage')
+    else if (q && map[q]) setTab(map[q])
   }, [])
   const { ready } = useWealth()
   const { isEnabled } = useFeatures()
@@ -50,7 +51,6 @@ export default function SettingsPage() {
       {tab === 'My App Features' && <MyAppFeatures />}
       {tab === 'Appearance' && <AppearanceTab />}
       {tab === 'Preferences' && <PreferencesTab />}
-      {tab === 'Assets & Loans' && <AssetsLoans />}
       {tab === 'Automation' && <AutomationManager />}
       {tab === 'AI' && <AiSettings />}
       {tab === 'Integrations' && <IntegrationsTab />}
@@ -71,6 +71,7 @@ function AccountTab() {
   const { data, db, isDemo } = useWealth()
   const { user } = useAuth()
   const profile = data.meta.find((m: any) => m.key === 'profile')?.value ?? { name: user?.name ?? '', email: user?.email ?? '', phone: '', city: '' }
+  const [phoneError, setPhoneError] = useState('')
   const [f, setF] = useState({ name: profile.name || '', phone: profile.phone || '', city: profile.city || '', monthlyIncome: String(profile.monthlyIncome ?? '') })
   const [sec, setSec] = useState<{ hasPassword: boolean; mfaEnabled: boolean } | null>(null)
   const [pw, setPw] = useState({ current: '', next: '' })
@@ -87,10 +88,10 @@ function AccountTab() {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Panel title="Profile">
-        <form className="space-y-4" onSubmit={async (e) => { e.preventDefault(); await db.meta.put({ key: 'profile', value: { ...profile, name: f.name, phone: f.phone, city: f.city, monthlyIncome: Number(f.monthlyIncome) || 0 } }); toast.success('Profile saved') }}>
+        <form className="space-y-4" onSubmit={async (e) => { e.preventDefault(); const mo = validateMobile(f.phone); if (!mo.ok) { setPhoneError(mo.error); return } setPhoneError(''); await db.meta.put({ key: 'profile', value: { ...profile, name: f.name, phone: mo.value, city: f.city, monthlyIncome: Number(f.monthlyIncome) || 0 } }); toast.success('Profile saved') }}>
           <Field label="Full name">{(id) => <Input id={id} required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
           <Field label="Email">{(id) => <Input id={id} disabled value={profile.email || user?.email || ''} />}</Field>
-          <Field label="Mobile">{(id) => <Input id={id} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} />}</Field>
+          <Field label="Mobile" hint="Include the country code, e.g. +91 98765 43210" error={phoneError}>{(id) => <Input id={id} type="tel" inputMode="tel" autoComplete="tel" maxLength={20} value={f.phone} onChange={(e) => { setF({ ...f, phone: e.target.value }); setPhoneError('') }} />}</Field>
           <Field label="City">{(id) => <Input id={id} value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} />}</Field>
           <Field label="Monthly income (₹)" hint="Used only for the financial health score.">{(id) => <Input id={id} type="number" min="0" value={f.monthlyIncome} onChange={(e) => setF({ ...f, monthlyIncome: e.target.value })} />}</Field>
           <Button type="submit">Save profile</Button>
@@ -155,6 +156,24 @@ function AppearanceTab() {
   )
 }
 
+function DeviceNotifyToggle() {
+  const [on, setOn] = useState(false)
+  const [supported, setSupported] = useState(true)
+  useEffect(() => { setSupported(deviceNotifySupported()); setOn(deviceNotifyOn()) }, [])
+  const flip = async (v: boolean) => {
+    if (!v) { disableDeviceNotify(); setOn(false); return }
+    const r = await enableDeviceNotify()
+    if (r === 'on') { setOn(true); toast.success('Device notifications on') }
+    else toast.error(r === 'denied' ? 'Notifications are blocked. Allow them in your browser settings.' : 'This browser does not support notifications')
+  }
+  return (
+    <div className="mb-4 rounded-lg border border-border p-3">
+      <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={on} disabled={!supported} onChange={(e) => flip(e.target.checked)} />Show urgent reminders as device notifications</label>
+      <p className="mt-1 text-xs text-muted-foreground">{supported ? 'Dues and expiries appear on your device while Mintmind is open or installed. Reminders are worked out on this device and never sent to a server. Alerts while the app is fully closed are not available yet.' : 'Not supported in this browser.'}</p>
+    </div>
+  )
+}
+
 function PreferencesTab() {
   const { prefs, update } = usePrefs()
   const { setPrivacyMode, privacyMode } = usePrivacyMode()
@@ -163,12 +182,13 @@ function PreferencesTab() {
     <div className="grid gap-4 lg:grid-cols-2">
       <Panel title="Display">
         <div className="space-y-4">
-          <Field label="Currency" hint="Indian rupee only. Amounts use lakh/crore grouping (₹12,34,567).">{(id) => <Select id={id} disabled value="INR"><option value="INR">INR (₹)</option></Select>}</Field>
+          <Field label="Currency" hint="Currency is fixed for now.">{(id) => <Select id={id} disabled value="INR"><option value="INR">INR (₹)</option></Select>}</Field>
           <Field label="Date format">{(id) => <Select id={id} value={prefs.dateFormat} onChange={(e) => update({ dateFormat: e.target.value })}><option>DD MMM YYYY</option><option>DD/MM/YYYY</option><option>MM/DD/YYYY</option><option>YYYY-MM-DD</option></Select>}</Field>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={privacyMode} onChange={(e) => { setPrivacyMode(e.target.checked); update({ hideBalances: e.target.checked }) }} />Hide balances by default</label>
         </div>
       </Panel>
       <Panel title="Notifications">
+        <DeviceNotifyToggle />
         <ul className="space-y-3">{toggles.map(([k, l]) => (
           <li key={String(k)}><label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={prefs.notifications[k]} onChange={(e) => update({ notifications: { ...prefs.notifications, [k]: e.target.checked } })} />{l}</label></li>
         ))}</ul>
@@ -189,7 +209,7 @@ function IntegrationsTab() {
     <div className="grid gap-4 lg:grid-cols-2">
       <Panel title="Google Drive">
         {isDemo ? <p className="text-sm text-muted-foreground">Not available in Demo Mode (demo documents are kept in your browser).</p> : !st ? <LoadingBlock className="h-16" /> : !st.configured ? (
-          <p className="text-sm text-muted-foreground">Google Drive isn’t available yet. The app administrator needs to set it up.</p>
+          <div className="space-y-2"><p className="text-sm text-muted-foreground">Google Drive connection isn’t available right now. Please try again later.</p><SetupHint vars={['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET']} extra="Enable the Google Drive API and add this redirect URI in Google Cloud:" uri="/api/drive/callback" /></div>
         ) : st.connected ? (
           <div className="space-y-3"><p className="flex items-center gap-2 text-sm text-success"><Cloud className="h-4 w-4" />Connected{st.email ? ` as ${st.email}` : ''}</p>
             <Button variant="outline" onClick={async () => { await axios.post('/api/drive/disconnect'); toast.success('Google Drive disconnected. Files in your Drive are untouched.'); load() }}>Disconnect</Button></div>
@@ -198,31 +218,28 @@ function IntegrationsTab() {
             <Button asChild><a href="/api/drive/connect"><Cloud className="mr-2 h-4 w-4" />Connect Google Drive</a></Button></div>
         )}
       </Panel>
-      <KitePanel />
     </div>
   )
 }
 
-function KitePanel() {
-  const { isDemo } = useWealth()
-  const { status, refresh } = useKiteStatus()
+function SetupHint({ vars, extra, uri }: { vars: string[]; extra: string; uri: string }) {
+  // Developer-only: end users never see server setup steps in production.
+  if (process.env.NODE_ENV !== 'development') return null
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
   return (
-    <Panel title="Zerodha Kite">
-      {isDemo ? <p className="text-sm text-muted-foreground">Not available in Demo Mode.</p> : !status ? <LoadingBlock className="h-16" /> : !status.configured ? (
-        <p className="text-sm text-muted-foreground">Zerodha isn’t available yet. The app administrator needs to set it up.</p>
-      ) : status.connected ? (
-        <div className="space-y-3 text-sm">
-          <p className="flex items-center gap-2 text-success"><Cloud className="h-4 w-4" />Connected{status.kiteUserName ? ` as ${status.kiteUserName}` : ''}</p>
-          <p className="text-xs text-muted-foreground">Zerodha sessions last one trading day{status.expiresAt ? ` (this one ends ${new Date(status.expiresAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })})` : ''}. Reconnect each day you want to sync. Use “Sync from Zerodha” on the Mutual Funds page.</p>
-          <Button variant="outline" onClick={async () => { await axios.post('/api/kite/disconnect'); toast.success('Zerodha disconnected'); refresh() }}>Disconnect</Button>
-        </div>
-      ) : (
-        <div className="space-y-3">{status.expired && <p className="text-sm text-warning">Your Zerodha session expired. Log in again to sync.</p>}
-          <Button asChild><a href="/api/kite/connect"><Cloud className="mr-2 h-4 w-4" />Connect Zerodha</a></Button></div>
-      )}
-    </Panel>
+    <details className="rounded-lg border border-border p-3 text-xs text-muted-foreground">
+      <summary className="cursor-pointer font-medium text-foreground">Developer setup (shown in development only)</summary>
+      <ol className="mt-2 list-decimal space-y-1 pl-4">
+        <li>Add {vars.map((v, i) => <span key={v}>{i ? ' and ' : ''}<code className="rounded bg-muted px-1">{v}</code></span>)} to <code className="rounded bg-muted px-1">.env.local</code> (see <code className="rounded bg-muted px-1">.env.example</code>).</li>
+        <li>{extra} <code className="rounded bg-muted px-1">{origin}{uri}</code></li>
+        <li>Restart the server, then come back here to connect.</li>
+      </ol>
+    </details>
   )
 }
+
+const PLAN_KEY = 'mm-plan-inputs'
+const forgetLocalExtras = () => { try { localStorage.removeItem(PLAN_KEY) } catch { /* ignore */ } }
 
 function DataTab() {
   const { db, isDemo, resetDemo } = useWealth()
@@ -257,6 +274,7 @@ function DataTab() {
         </div>
         <p className="mt-3 text-xs text-muted-foreground">Restoring replaces current data. Vault items are not included in this file.</p>
       </Panel>
+      <Panel title="Session"><p className="mb-3 text-sm text-muted-foreground">{isDemo ? 'You are exploring the sample family. Leaving ends the demo session.' : 'Sign out on this device. Your data stays saved.'}</p><Button variant="outline" onClick={async () => { forgetLocalExtras(); await signOut() }}><LogOut className="mr-2 h-4 w-4" />{isDemo ? 'Exit demo' : 'Sign out'}</Button></Panel>
       {isDemo ? (
         <Panel title="Demo data"><p className="mb-3 text-sm text-muted-foreground">Restore the original sample data. Your edits in demo are discarded.</p><Button variant="outline" onClick={() => setDlg('reset')}><RotateCcw className="mr-2 h-4 w-4" />Reset demo data</Button></Panel>
       ) : (
@@ -267,9 +285,9 @@ function DataTab() {
           </div>
         </Panel>
       )}
-      <ConfirmDialog open={dlg === 'reset'} onOpenChange={(o) => !o && setDlg(null)} title="Reset demo data?" description="All demo changes will be lost." confirmLabel="Reset" onConfirm={async () => { await resetDemo(); setDlg(null); toast.success('Demo data reset') }} />
-      <ConfirmDialog open={dlg === 'wipe'} onOpenChange={(o) => !o && setDlg(null)} title="Erase all tracked data?" description="This cannot be undone. Export a backup first if unsure." confirmLabel="Erase" variant="destructive" onConfirm={async () => { await clearAll(db); setDlg(null); toast.success('Data erased') }} />
-      <ConfirmDialog open={dlg === 'delete'} onOpenChange={(o) => !o && setDlg(null)} title="Delete your account?" description="This permanently removes your account. It cannot be undone." confirmLabel="Delete account" variant="destructive" onConfirm={async () => { try { await axios.delete('/api/user/account'); await clearAll(db); await signOut() } catch { toast.error('Could not delete account') } }} />
+      <ConfirmDialog open={dlg === 'reset'} onOpenChange={(o) => !o && setDlg(null)} title="Reset demo data?" description="All demo changes will be lost." confirmLabel="Reset" onConfirm={async () => { await resetDemo(); forgetLocalExtras(); setDlg(null); toast.success('Demo data reset') }} />
+      <ConfirmDialog open={dlg === 'wipe'} onOpenChange={(o) => !o && setDlg(null)} title="Erase all tracked data?" description="This cannot be undone. Export a backup first if unsure." confirmLabel="Erase" variant="destructive" onConfirm={async () => { try { await axios.delete('/api/user/data') } catch { /* local-first: still erase this browser */ } await clearAll(db); forgetLocalExtras(); setDlg(null); toast.success('Data erased') }} />
+      <ConfirmDialog open={dlg === 'delete'} onOpenChange={(o) => !o && setDlg(null)} title="Delete your account?" description="This permanently removes your account. It cannot be undone." confirmLabel="Delete account" variant="destructive" onConfirm={async () => { try { await axios.delete('/api/user/account'); await clearAll(db); forgetLocalExtras(); await signOut() } catch { toast.error('Could not delete account') } }} />
     </div>
   )
 }

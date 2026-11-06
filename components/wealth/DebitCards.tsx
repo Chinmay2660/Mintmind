@@ -43,7 +43,7 @@ export function DebitCardsTab() {
 
   return (
     <div className="space-y-5">
-      <PageHeader actions={<Button disabled={banks.length === 0} onClick={() => setDlg({})}><Plus className="mr-1.5 h-4 w-4" />Add debit card</Button>} />
+      <PageHeader actions={<Button disabled={banks.length === 0} onClick={() => setDlg({})}><Plus className="mr-1.5 h-4 w-4" />Add card</Button>} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <Stat label="Debit cards" value={cards.length} />
         <Stat label="Spent this month" value={<Money value={monthSpend} />} />

@@ -39,7 +39,7 @@ export function CardGridSkeleton({ count = 4, className }: CardGridSkeletonProps
   return (
     <div className={cn('grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4', className)}>
       {Array.from({ length: count }, (_, i) => (
-        <div key={i} className="surface-card p-5">
+        <div key={i} className="surface-card p-4 sm:p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="skeleton-icon w-12 h-12" />
             <div className="skeleton w-16 h-16 rounded-full" />

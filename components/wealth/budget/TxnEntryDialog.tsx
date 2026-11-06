@@ -19,20 +19,21 @@ const label = (a: any) => a.nickname || a.bankName
 const cardLabel = (c: any) => `${c.bank} ${c.cardName}`
 
 /** Money Manager-style entry: one dialog with Expense / Income / Transfer tabs. */
-export function TxnEntryDialog({ initialType = 'expense', row, defaultMonth, accountId, onClose }: { initialType?: TxnType; row?: any; defaultMonth: string; accountId?: string; onClose: () => void }) {
+export function TxnEntryDialog({ initialType = 'expense', row, draft, defaultMonth, accountId, onClose }: { initialType?: TxnType; row?: any; draft?: any; defaultMonth: string; accountId?: string; onClose: () => void }) {
   const { data, db } = useWealth()
   const cats = useCategories()
   const [type, setType] = useState<TxnType>(row ? 'expense' : initialType)
+  const seed = row ?? draft
   const todayIso = toISO(new Date())
-  const startDate = row?.date || (defaultMonth === todayIso.slice(0, 7) ? todayIso : `${defaultMonth}-01`)
+  const startDate = seed?.date || (defaultMonth === todayIso.slice(0, 7) ? todayIso : `${defaultMonth}-01`)
 
   const accounts: any[] = data.bankAccounts
   const bankAccs = accounts.filter((a) => a.type !== 'cash')
   const cashAcc = accounts.find((a) => a.type === 'cash')
   const [f, setF] = useState({
-    amount: String(row?.amount ?? ''), date: startDate, note: row?.note || '',
-    category: row?.category || cats.expense[0] || 'Other', incomeCategory: cats.income[0] || 'Other',
-    mode: row?.mode || 'upi', cardId: row?.cardId || data.cards[0]?.id || '', debitCardId: row?.debitCardId || data.debitCards[0]?.id || '', accountId: row?.accountId || bankAccs[0]?.id || '',
+    amount: String(seed?.amount ?? ''), date: startDate, note: seed?.note || '',
+    category: seed?.category || cats.expense[0] || 'Other', incomeCategory: cats.income[0] || 'Other',
+    mode: seed?.mode || 'upi', cardId: seed?.cardId || data.cards[0]?.id || '', debitCardId: seed?.debitCardId || data.debitCards[0]?.id || '', accountId: seed?.accountId || bankAccs[0]?.id || '',
     receiveId: accountId || accounts[0]?.id || '',
     from: accountId ? `account:${accountId}` : bankAccs[0] ? `account:${bankAccs[0].id}` : cashAcc ? `account:${cashAcc.id}` : '',
     to: (() => { const other = accounts.find((a) => a.id !== accountId && (!accountId || true)); return cashAcc && cashAcc.id !== accountId ? `account:${cashAcc.id}` : other ? `account:${other.id}` : '' })(),

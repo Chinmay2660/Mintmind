@@ -100,7 +100,7 @@ export function SessionExpiryDialog({
             onClick={onLogout}
             disabled={loggingOut}
           >
-            Logout
+            Sign out
           </Button>
           <Button
             type="button"

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import axios from 'axios'
 import { Button } from '@/components/ui/button'
 
-/** Header button: "Open Mintmind" for visitors, "Go to dashboard" when already signed in (or in demo). */
+/** Header button: "Sign up" for visitors, "Go to dashboard" when already signed in (or in demo). */
 export function AppEntryButton() {
   const [signedIn, setSignedIn] = useState(false)
   useEffect(() => {
@@ -13,7 +13,7 @@ export function AppEntryButton() {
   }, [])
   return (
     <Button asChild size="sm" className="rounded-full">
-      <Link href={signedIn ? '/dashboard' : '/auth/signin?mode=signup'}>{signedIn ? 'Go to dashboard' : 'Open Mintmind'}</Link>
+      <Link href={signedIn ? '/dashboard' : '/auth/signin?mode=signup'}>{signedIn ? 'Go to dashboard' : 'Sign up'}</Link>
     </Button>
   )
 }

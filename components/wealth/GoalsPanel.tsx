@@ -9,7 +9,9 @@ import { emergencyTarget, GOAL_PRESETS, goalProgress, overAllocated } from '@/li
 import { buildFacts } from '@/lib/ai/facts'
 import { formatDate, formatINR } from '@/lib/wealth/format'
 import { Money } from './Money'
+import { assetValue } from '@/lib/wealth/holdings'
 import { Button } from '@/components/ui/button'
+import { FieldSet, ScrollList, ScrollListItem } from '@/components/ui/layout'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Empty, Field, FormDialog, Panel, Progress, Select } from './kit'
@@ -60,7 +62,7 @@ function GoalForm({ row, suggested, onClose, onSave }: { row?: any; suggested: n
   const sources: { type: GoalLink['type']; id: string; label: string; value: number }[] = [
     ...data.bankAccounts.map((a: any) => ({ type: 'bank' as const, id: a.id, label: `${a.type === 'cash' ? 'Cash' : 'Bank'}: ${a.nickname || a.bankName}`, value: a.currentBalance })),
     ...data.funds.map((x: any) => ({ type: 'fund' as const, id: x.id, label: `Fund: ${x.name}`, value: x.currentValue })),
-    ...data.assets.map((x: any) => ({ type: 'asset' as const, id: x.id, label: `Asset: ${x.name}`, value: x.value })),
+    ...data.assets.map((x: any) => ({ type: 'asset' as const, id: x.id, label: `Asset: ${x.name}`, value: assetValue(x) })),
   ]
   const find = (s: { type: string; id: string }) => links.find((l) => l.type === s.type && l.id === s.id)
   const toggle = (s: { type: GoalLink['type']; id: string }) => setLinks((ls) => (find(s) ? ls.filter((l) => !(l.type === s.type && l.id === s.id)) : [...ls, { type: s.type, id: s.id, pct: 100 }]))
@@ -78,15 +80,15 @@ function GoalForm({ row, suggested, onClose, onSave }: { row?: any; suggested: n
       <Field label="Target amount (₹)" hint={/emergency/i.test(f.name) && suggested ? `Suggested: ${formatINR(suggested)} (6 months of spending)` : undefined}>{(id) => <Input id={id} type="number" min="1" step="any" required value={f.target} onChange={(e) => setF({ ...f, target: e.target.value })} />}</Field>
       <Field label="Target date (optional)">{(id) => <Input id={id} type="date" value={f.targetDate} onChange={(e) => setF({ ...f, targetDate: e.target.value })} />}</Field>
       <Field label="Notes">{(id) => <Input id={id} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} />}</Field>
-      <fieldset className="full space-y-1.5"><legend className="mb-1 text-sm font-medium">Linked to</legend>
+      <FieldSet legend="Linked to" className="full">
         {sources.length === 0 ? <p className="text-xs text-muted-foreground">Add bank accounts, funds or assets first.</p> : (
-          <ul className="max-h-56 divide-y divide-border overflow-y-auto rounded-lg border border-border">{sources.map((s) => { const l = find(s); return (
-            <li key={`${s.type}:${s.id}`} className="flex items-center gap-2 px-3 py-2 text-sm">
+          <ScrollList>{sources.map((s) => { const l = find(s); return (
+            <ScrollListItem key={`${s.type}:${s.id}`}>
               <label className="flex min-w-0 flex-1 items-center gap-2"><input type="checkbox" className="h-4 w-4 shrink-0 accent-[hsl(var(--primary))]" checked={!!l} onChange={() => toggle(s)} /><span className="min-w-0"><span className="block truncate">{s.label}</span><span className="text-xs text-muted-foreground">{formatINR(s.value)}</span></span></label>
               {l && <Select aria-label={`Share of ${s.label}`} className="h-8 w-24 text-xs" value={l.pct} onChange={(e) => setPct(s, Number(e.target.value))}>{[100, 75, 50, 25].map((p) => <option key={p} value={p}>{p}%</option>)}</Select>}
-            </li>) })}</ul>
+            </ScrollListItem>) })}</ScrollList>
         )}
-      </fieldset>
+      </FieldSet>
     </FormDialog>
   )
 }

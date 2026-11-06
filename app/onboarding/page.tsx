@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { ArrowLeft, ArrowRight, Check, Info, Laptop, Loader2, Moon, Sun, Wallet } from 'lucide-react'
 import { toast } from 'sonner'
-import { FEATURES, GOALS, PACKAGES, featureByKey, normaliseSelection, recommendedFor, validateAge } from '@/lib/features'
+import { FEATURES, GOALS, PACKAGES, featureByKey, normaliseSelection, recommendedFor, validateAge, validateMobile } from '@/lib/features'
 import { useFeatures } from '@/lib/features/FeaturesContext'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { useAuth } from '@/lib/hooks/useAuth'
@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Field } from '@/components/wealth/kit'
 import { cn } from '@/lib/utils'
+import { FieldSet } from '@/components/ui/layout'
 
 const STEPS = ['Profile', 'Goals', 'Package', 'Features', 'Preferences', 'Quick setup'] as const
 const NEEDS = [{ v: 'personal', l: 'Personal finances' }, { v: 'family', l: 'Family finances' }, { v: 'investments', l: 'Investments' }, { v: 'complete', l: 'Complete wealth management' }]
@@ -31,6 +32,7 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(0)
   const [busy, setBusy] = useState(false)
   const [mobile, setMobile] = useState('')
+  const [mobileError, setMobileError] = useState('')
   const [age, setAge] = useState('')
   const [ageError, setAgeError] = useState('')
   const [goals, setGoals] = useState<string[]>([])
@@ -48,9 +50,11 @@ export default function OnboardingPage() {
   const finish = async () => {
     const a = validateAge(age)
     if (!a.ok) { setStep(0); setAgeError(a.error); return }
+    const mo = validateMobile(mobile)
+    if (!mo.ok) { setStep(0); setMobileError(mo.error); return }
     setBusy(true)
     try {
-      await completeOnboarding({ selection: selected, goals, package: pkg, needs, age: a.value, mobile: mobile.trim(), theme: theme || 'system', notifications: freq })
+      await completeOnboarding({ selection: selected, goals, package: pkg, needs, age: a.value, mobile: mo.value, theme: theme || 'system', notifications: freq })
       setDone(true)
       setStep(5)
     } catch (e: any) {
@@ -63,6 +67,9 @@ export default function OnboardingPage() {
       const a = validateAge(age)
       if (!a.ok) return void setAgeError(a.error)
       setAgeError('')
+      const mo = validateMobile(mobile)
+      if (!mo.ok) return void setMobileError(mo.error)
+      setMobileError('')
     }
     if (step === 4) return void finish()
     setStep((s) => s + 1)
@@ -74,13 +81,15 @@ export default function OnboardingPage() {
   const progress = ((step + 1) / STEPS.length) * 100
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border"><div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4 sm:px-6">
+    <div className="relative flex min-h-screen flex-col overflow-hidden pb-8 bg-background text-foreground">
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-0 [background-image:radial-gradient(hsl(var(--foreground)/0.12)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_30%,#000_30%,transparent_100%)]" />
+      <div aria-hidden className="pointer-events-none absolute left-1/2 top-[-12rem] h-[28rem] w-[48rem] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
+      <header className="relative border-b border-border/60 backdrop-blur"><div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Wallet className="h-4 w-4" /></span><span className="font-semibold">Mintmind</span></Link>
         {isDemo && <span className="rounded-md bg-warning/15 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-warning">Demo mode</span>}
       </div></header>
 
-      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+      <main className="relative mx-auto my-auto w-full max-w-4xl rounded-2xl border border-border bg-card/80 px-5 py-8 shadow-[var(--shadow-elevated)] backdrop-blur sm:px-10 sm:py-10">
         <div className="mb-8" role="group" aria-label={`Step ${step + 1} of ${STEPS.length}: ${STEPS[step]}`}>
           <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground"><span>Step {step + 1} of {STEPS.length}</span><span>{STEPS[step]}</span></div>
           <div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all duration-300" style={{ width: `${progress}%` }} /></div>
@@ -88,11 +97,11 @@ export default function OnboardingPage() {
 
         {step === 0 && (
           <section className="space-y-6">
-            <div><h1 className="text-2xl font-semibold tracking-tight">Let&apos;s set up your profile</h1><p className="mt-1 text-muted-foreground">Only your name and email are needed. Everything else is optional. Amounts are shown in Indian rupees (₹).</p></div>
+            <div><h1 className="text-2xl font-semibold tracking-tight">Let&apos;s set up your profile</h1><p className="mt-1 text-muted-foreground">Only your name and email are needed. Everything else is optional.</p></div>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Full name">{(id) => <Input id={id} value={nameOrEmail} readOnly />}</Field>
               <Field label="Email address">{(id) => <Input id={id} value={user?.email || ''} readOnly />}</Field>
-              <Field label="Mobile number (optional)">{(id) => <Input id={id} type="tel" inputMode="tel" value={mobile} onChange={(e) => setMobile(e.target.value)} placeholder="+91 …" />}</Field>
+              <Field label="Mobile number (optional)" hint="Include the country code, e.g. +91 98765 43210" error={mobileError}>{(id) => <Input id={id} type="tel" inputMode="tel" autoComplete="tel" maxLength={20} value={mobile} onChange={(e) => { setMobile(e.target.value); setMobileError('') }} placeholder="+91 …" />}</Field>
               <Field label="How old are you? (optional)" hint="Used only to suggest relevant guidance. It is never shared with family, and nothing is turned on because of it." error={ageError}>{(id) => <Input id={id} type="number" inputMode="numeric" min={18} max={120} value={age} onChange={(e) => { setAge(e.target.value); setAgeError('') }} />}</Field>
             </div>
           </section>
@@ -140,9 +149,9 @@ export default function OnboardingPage() {
         {step === 4 && (
           <section className="space-y-7">
             <div><h1 className="text-2xl font-semibold tracking-tight">A few preferences</h1><p className="mt-1 text-muted-foreground">All optional. You can change them later.</p></div>
-            <fieldset><legend className="mb-2 text-sm font-medium">How would you describe your financial tracking needs?</legend><div className="grid gap-2 sm:grid-cols-2">{NEEDS.map((n) => <button key={n.v} type="button" aria-pressed={needs === n.v} onClick={() => setNeeds(needs === n.v ? null : n.v)} className={cn('rounded-lg border px-3.5 py-2.5 text-left text-sm transition-colors', needs === n.v ? 'border-primary bg-accent' : 'border-border hover:bg-muted')}>{n.l}</button>)}</div></fieldset>
-            <fieldset><legend className="mb-2 text-sm font-medium">How often would you like financial updates?</legend><div className="grid gap-2 sm:grid-cols-2">{FREQ.map((n) => <button key={n.v} type="button" aria-pressed={freq === n.v} onClick={() => setFreq(n.v)} className={cn('rounded-lg border px-3.5 py-2.5 text-left text-sm transition-colors', freq === n.v ? 'border-primary bg-accent' : 'border-border hover:bg-muted')}>{n.l}</button>)}</div></fieldset>
-            <fieldset><legend className="mb-2 text-sm font-medium">Which theme do you prefer?</legend><div className="grid gap-2 sm:grid-cols-3">{THEMES.map(({ v, l, i: Icon }) => <button key={v} type="button" aria-pressed={theme === v} onClick={() => setTheme(v)} className={cn('flex items-center gap-2 rounded-lg border px-3.5 py-2.5 text-sm transition-colors', theme === v ? 'border-primary bg-accent' : 'border-border hover:bg-muted')}><Icon className="h-4 w-4" />{l}</button>)}</div></fieldset>
+            <FieldSet legend="How would you describe your financial tracking needs?"><div className="grid gap-2 sm:grid-cols-2">{NEEDS.map((n) => <button key={n.v} type="button" aria-pressed={needs === n.v} onClick={() => setNeeds(needs === n.v ? null : n.v)} className={cn('rounded-lg border px-3.5 py-2.5 text-left text-sm transition-colors', needs === n.v ? 'border-primary bg-accent' : 'border-border hover:bg-muted')}>{n.l}</button>)}</div></FieldSet>
+            <FieldSet legend="How often would you like financial updates?"><div className="grid gap-2 sm:grid-cols-2">{FREQ.map((n) => <button key={n.v} type="button" aria-pressed={freq === n.v} onClick={() => setFreq(n.v)} className={cn('rounded-lg border px-3.5 py-2.5 text-left text-sm transition-colors', freq === n.v ? 'border-primary bg-accent' : 'border-border hover:bg-muted')}>{n.l}</button>)}</div></FieldSet>
+            <FieldSet legend="Which theme do you prefer?"><div className="grid gap-2 sm:grid-cols-3">{THEMES.map(({ v, l, i: Icon }) => <button key={v} type="button" aria-pressed={theme === v} onClick={() => setTheme(v)} className={cn('flex items-center gap-2 rounded-lg border px-3.5 py-2.5 text-sm transition-colors', theme === v ? 'border-primary bg-accent' : 'border-border hover:bg-muted')}><Icon className="h-4 w-4" />{l}</button>)}</div></FieldSet>
           </section>
         )}
 
@@ -181,8 +190,8 @@ const SETUP: Record<string, { label: string; action: string; href: string; done:
   budget_expenses: { label: 'Budget & Expenses', action: 'Set your monthly budget', href: '/dashboard/budget', done: (d) => d.budgets.length > 0 },
   family_circle: { label: 'Family Circle', action: 'Invite a family member', href: '/dashboard/family', done: (d) => d.members.length > 1 },
   vault: { label: 'My Vault', action: 'Create your master password', href: '/dashboard/vault', done: (d) => d.meta.some((m: any) => m.key === 'vault') },
-  documents: { label: 'Documents', action: 'Connect Google Drive', href: '/dashboard/documents', done: (d) => d.documents.length > 0 },
-  digital_legacy: { label: 'Digital Legacy', action: 'Add a trusted contact', href: '/dashboard/legacy', done: (d) => d.legacy.length > 0 },
+  documents: { label: 'Documents', action: 'Connect Google Drive', href: '/dashboard/vault?tab=documents', done: (d) => d.documents.length > 0 },
+  digital_legacy: { label: 'Digital Legacy', action: 'Add a trusted contact', href: '/dashboard/vault?tab=legacy', done: (d) => d.legacy.length > 0 },
   ai_assistant: { label: 'AI Wealth Assistant', action: 'Ready', href: '/dashboard/ai', done: () => true },
   automation: { label: 'Smart Automation', action: 'Choose your reminders', href: '/dashboard/settings?tab=automation', done: (d) => d.automations.length > 0 },
 }

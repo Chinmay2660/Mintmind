@@ -93,3 +93,15 @@ self.addEventListener('fetch', (event) => {
     })
   )
 })
+
+// Device notifications: open (or focus) the relevant page when one is tapped.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const href = (event.notification.data && event.notification.data.href) || '/dashboard'
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
+      for (const w of wins) if ('focus' in w) { w.navigate(href); return w.focus() }
+      return self.clients.openWindow(href)
+    })
+  )
+})

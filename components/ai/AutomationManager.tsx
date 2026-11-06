@@ -13,6 +13,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Empty, Field, FormDialog, Panel, Select } from '@/components/wealth/kit'
 import { cn } from '@/lib/utils'
 import { useAi } from './useAi'
+import { FieldSet } from '@/components/ui/layout'
 
 const GROUPS = ['Budget', 'Cards', 'Insurance', 'Mutual Funds', 'Bank Accounts', 'Family']
 
@@ -94,11 +95,11 @@ function RuleForm({ rule, isNew, onClose, onSave }: { rule: any; isNew: boolean;
       <Field label="How often">{(id) => <Select id={id} value={f.frequency} onChange={(e) => setF({ ...f, frequency: e.target.value })}>{FREQUENCIES.map((x) => <option key={x.v} value={x.v}>{x.l}</option>)}</Select>}</Field>
       <Field label="Start date">{(id) => <Input id={id} type="date" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} />}</Field>
       <Field label="End date (optional)">{(id) => <Input id={id} type="date" value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} />}</Field>
-      <fieldset className="full"><legend className="mb-1.5 text-sm font-medium">Notify me by</legend>
+      <FieldSet legend="Notify me by" className="full">
         <div className="flex flex-wrap gap-4">{CHANNELS.map((c) => {
           const unavailable = c.v === 'push' || (isDemo && (c.v === 'email' || c.v === 'sms'))
           return <label key={c.v} className={cn('flex items-center gap-2 text-sm', unavailable && 'opacity-50')}><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" disabled={unavailable} checked={!!channels[c.v] && !unavailable} onChange={(e) => setChannels({ ...channels, [c.v]: e.target.checked })} />{c.l}{c.v === 'push' ? ' (not set up)' : isDemo && c.v !== 'inApp' ? ' (not in demo)' : ''}</label>
-        })}</div></fieldset>
+        })}</div></FieldSet>
       <label className="full flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={f.enabled} onChange={(e) => setF({ ...f, enabled: e.target.checked })} />Enabled</label>
     </FormDialog>
   )

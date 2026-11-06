@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { checkRateLimit, getClientIp } from '@/lib/middleware/rateLimit'
 
-function applySecurityHeaders(response: NextResponse) {
+function applySecurityHeaders(response: NextResponse, frameable = false) {
   response.headers.set('X-Content-Type-Options', 'nosniff')
-  response.headers.set('X-Frame-Options', 'DENY')
+  // Document previews are shown in a frame on our own pages, so those files may be framed by this site only.
+  response.headers.set('X-Frame-Options', frameable ? 'SAMEORIGIN' : 'DENY')
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   return response
 }
@@ -21,17 +22,11 @@ export async function middleware(request: NextRequest) {
         { status: 429, headers: { 'Retry-After': String(result.retryAfter) } }
       )
     }
-    return applySecurityHeaders(NextResponse.next())
+    return applySecurityHeaders(NextResponse.next(), pathname.startsWith('/api/drive/files/'))
   }
 
-  if (pathname === '/') {
-    const authToken = request.cookies.get('auth-token') || request.cookies.get('mm-demo')
-    // /?home=1 lets a signed-in user view the landing page instead of being sent to the dashboard
-    if (authToken && !request.nextUrl.searchParams.has('home')) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-    return applySecurityHeaders(NextResponse.next())
-  }
+  // '/' is always the public landing page; signed-in users reach the app via the "Go to dashboard" button.
+  if (pathname === '/') return applySecurityHeaders(NextResponse.next())
 
   if (
     pathname.startsWith('/auth') ||

@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { Sparkles } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { detectRecurring, suggestBudgetAdjustments, unusualSpending } from '@/lib/ai/budgetAI'
 import { formatINR } from '@/lib/wealth/format'
 import { Panel } from '@/components/wealth/kit'
@@ -27,7 +28,25 @@ export function SmartBudget() {
         <div className="mt-4 grid gap-4 border-t border-border pt-4 md:grid-cols-3">
           {extras.unusual.length > 0 && <div><h4 className="mb-1.5 text-sm font-semibold">Unusual spending</h4><ul className="space-y-1.5 text-xs text-muted-foreground">{extras.unusual.map((u, i) => <li key={i}>{u.text}</li>)}</ul></div>}
           {extras.recurring.length > 0 && <div><h4 className="mb-1.5 text-sm font-semibold">Looks recurring</h4><ul className="space-y-1.5 text-xs text-muted-foreground">{extras.recurring.map((r) => <li key={r.merchant}>{r.merchant} · {formatINR(r.amount)} around day {r.dayOfMonth} ({r.months} months){r.likelySubscription ? ' · subscription' : ''}</li>)}</ul></div>}
-          {extras.adjust.length > 0 && <div><h4 className="mb-1.5 text-sm font-semibold">Suggested limit changes</h4><ul className="space-y-1.5 text-xs text-muted-foreground">{extras.adjust.map((a) => <li key={a.category}><span className="text-foreground">{a.category}: {a.from ? formatINR(a.from) : 'no limit'} → {formatINR(a.to)}.</span> {a.reason}</li>)}</ul><p className="mt-1 text-[11px] text-muted-foreground">Suggestions only. Change limits yourself under Budget.</p></div>}
+          {extras.adjust.length > 0 && (
+            <div>
+              <h4 className="mb-2 text-sm font-semibold">Suggested limit changes</h4>
+              <ul className="divide-y divide-border rounded-lg border border-border">
+                {extras.adjust.map((a) => {
+                  const up = a.to > a.from
+                  return (
+                    <li key={a.category} title={a.reason} className="grid grid-cols-[minmax(0,1fr)_5.5rem_1rem_5.5rem] items-center gap-x-2 px-3 py-2.5 text-sm tabular-nums">
+                      <span className="min-w-0"><span className="block truncate font-medium">{a.category}</span><span className="block truncate text-xs text-muted-foreground">Avg {formatINR(a.avg ?? 0)} / month</span></span>
+                      <span className="text-right text-muted-foreground">{a.from ? formatINR(a.from) : 'No limit'}</span>
+                      <span aria-hidden className={cn('text-center', up ? 'text-destructive' : 'text-success')}>{up ? '↑' : '↓'}</span>
+                      <span className="text-right font-semibold">{formatINR(a.to)}</span>
+                    </li>
+                  )
+                })}
+              </ul>
+              <p className="mt-2 text-[11px] text-muted-foreground">Based on the last 3 months. Change limits under Budget.</p>
+            </div>
+          )}
         </div>
       )}
     </Panel>

@@ -4,7 +4,7 @@ import UserFeatureSettings from '@/models/UserFeatureSettings'
 import UserOnboarding from '@/models/UserOnboarding'
 import { requireAuth, rateLimitOrRespond } from '@/lib/middleware/api'
 import { getEnabledFeatures } from '@/lib/features/server'
-import { FEATURE_KEYS, GOALS, PACKAGES, normaliseSelection, validateAge } from '@/lib/features'
+import { FEATURE_KEYS, GOALS, PACKAGES, normaliseSelection, validateAge, validateMobile } from '@/lib/features'
 
 const THEMES = ['light', 'dark', 'system']
 const NOTIFS = ['daily', 'weekly', 'monthly', 'important']
@@ -48,9 +48,9 @@ export async function POST(request) {
       target.age = a.value ?? undefined
     }
     if (typeof b.mobile === 'string') {
-      const m = b.mobile.trim()
-      if (m && !/^\+?[0-9 ()-]{8,16}$/.test(m)) return 'Enter a valid mobile number'
-      target.mobile = m
+      const m = validateMobile(b.mobile)
+      if (!m.ok) return m.error
+      target.mobile = m.value
     }
     if (b.theme != null) { if (!THEMES.includes(b.theme)) return 'Invalid theme'; target.preferredTheme = b.theme }
     if (b.notifications != null) { if (!NOTIFS.includes(b.notifications)) return 'Invalid notification preference'; target.notificationPreference = b.notifications }

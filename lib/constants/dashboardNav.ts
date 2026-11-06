@@ -34,9 +34,7 @@ export const DASHBOARD_NAV_ALL: DashboardNavItem[] = [
   { id: 6, name: 'Insurance', icon: Shield, path: '/dashboard/insurance' },
   { id: 7, name: 'Budget & Expenses', icon: Wallet, path: '/dashboard/budget' },
   { id: 8, name: 'Family Circle', icon: Users, path: '/dashboard/family' },
-  { id: 9, name: 'My Vault', icon: KeyRound, path: '/dashboard/vault' },
-  { id: 10, name: 'Documents', icon: FileText, path: '/dashboard/documents' },
-  { id: 11, name: 'Digital Legacy', icon: HeartHandshake, path: '/dashboard/legacy' },
+  { id: 9, name: 'Vault', icon: KeyRound, path: '/dashboard/vault' },
   { id: 12, name: 'Settings', icon: Settings, path: '/dashboard/settings' },
 ]
 
@@ -53,7 +51,7 @@ export interface SearchItem {
   group?: 'pages' | 'actions'
 }
 
-export const DASHBOARD_SEARCH_PAGES: SearchItem[] = [...DASHBOARD_NAV_ALL, { id: 99, name: 'My Wealth AI', icon: Sparkles, path: '/dashboard/ai' }].map((item) => ({
+export const DASHBOARD_SEARCH_PAGES: SearchItem[] = [...DASHBOARD_NAV_ALL, { id: 99, name: 'My Wealth AI', icon: Sparkles, path: '/dashboard/ai' }, { id: 98, name: 'Documents', icon: FileText, path: '/dashboard/vault?tab=documents' }, { id: 97, name: 'Digital Legacy', icon: HeartHandshake, path: '/dashboard/vault?tab=legacy' }].map((item) => ({
   name: item.name,
   path: item.path,
   icon: item.icon,
@@ -64,9 +62,10 @@ export const DASHBOARD_SEARCH_ACTIONS: SearchItem[] = []
 
 export const DASHBOARD_SEARCH_ALL: SearchItem[] = [...DASHBOARD_SEARCH_PAGES, ...DASHBOARD_SEARCH_ACTIONS]
 
-export const DASHBOARD_PAGE_TITLES: Record<string, string> = Object.fromEntries(
-  [...DASHBOARD_NAV_ALL, { id: 99, name: 'My Wealth AI', icon: Sparkles, path: '/dashboard/ai' }].map((item) => [item.path, item.name])
-)
+export const DASHBOARD_PAGE_TITLES: Record<string, string> = {
+  ...Object.fromEntries([...DASHBOARD_NAV_ALL, { id: 99, name: 'My Wealth AI', icon: Sparkles, path: '/dashboard/ai' }].map((item) => [item.path, item.name])),
+  '/dashboard/net-worth/manage': 'Assets & Loans',
+}
 
 const DASHBOARD_PAGE_ICONS: Record<string, LucideIcon> = Object.fromEntries(
   DASHBOARD_NAV_ALL.map((item) => [item.path, item.icon])

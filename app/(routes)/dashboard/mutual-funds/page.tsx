@@ -12,21 +12,13 @@ import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Delta, Empty, LoadingBlock, PageHeader, Panel, Stat } from '@/components/wealth/kit'
-import { KiteSyncButton } from '@/components/wealth/KiteSync'
+import { StatementImportButton } from '@/components/wealth/StatementImport'
 import { FundForm, NavForm, SipForm } from '@/components/wealth/FundForms'
 
 export default function MutualFundsPage() {
   const { ready, data, db } = useWealth()
   const [dlg, setDlg] = useState<null | { kind: 'fund' | 'nav' | 'sip' | 'delSip'; row?: any }>(null)
   const today = useMemo(() => new Date(), [])
-  // result of the Zerodha login redirect (?kite=connected|denied|failed|invalid_state|unconfigured)
-  useEffect(() => {
-    const k = new URLSearchParams(window.location.search).get('kite')
-    if (!k) return
-    const m: Record<string, string> = { connected: 'Zerodha connected. Use “Sync from Zerodha”.', denied: 'Zerodha login was cancelled.', failed: 'Zerodha login failed. Check the API key/secret and redirect URL.', invalid_state: 'Zerodha login could not be verified. Try again.', unconfigured: 'Zerodha is not configured on this server.' }
-    k === 'connected' ? toast.success(m[k]) : toast.error(m[k] ?? 'Zerodha login failed')
-    window.history.replaceState(null, '', window.location.pathname)
-  }, [])
   const s = useMemo(() => portfolioSummary(data.funds, data.fundTxns, data.sips, today), [data.funds, data.fundTxns, data.sips, today])
   if (!ready) return <LoadingBlock className="h-64" />
 
@@ -35,7 +27,7 @@ export default function MutualFundsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader actions={<><KiteSyncButton /><Button onClick={() => setDlg({ kind: 'fund' })}><Plus className="mr-1.5 h-4 w-4" />Add fund</Button></>} />
+      <PageHeader actions={<><StatementImportButton /><Button onClick={() => setDlg({ kind: 'fund' })}><Plus className="mr-1.5 h-4 w-4" />Add fund</Button></>} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Invested" value={<Money value={s.invested} />} />
