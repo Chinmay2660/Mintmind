@@ -23,7 +23,9 @@ export function FeatureGuard({ children }: { children: ReactNode }) {
 
   if (!ready || !onboardingCompleted) return <LoadingBlock className="h-72" />
   const key = featureForPath(pathname)
-  if (key && !isEnabled(key)) {
+  // The Vault hub holds passwords, documents and digital legacy: it opens if any of them is on.
+  const vaultHub = key === 'vault' && (isEnabled('documents') || isEnabled('digital_legacy'))
+  if (key && !isEnabled(key) && !vaultHub) {
     const f = featureByKey(key)!
     const Icon = iconFor(f.icon)
     return (
@@ -44,7 +46,7 @@ export function FeatureGuard({ children }: { children: ReactNode }) {
 /** Nav items for enabled features only. Settings is always there; dashboard modules are always there. */
 export function useVisibleNav() {
   const { isEnabled } = useFeatures()
-  const all = DASHBOARD_NAV_ALL.filter((i) => { const k = featureForPath(i.path); return !k || isEnabled(k) })
+  const all = DASHBOARD_NAV_ALL.filter((i) => { const k = featureForPath(i.path); return !k || isEnabled(k) || (k === 'vault' && (isEnabled('documents') || isEnabled('digital_legacy'))) })
   // bottom bar: first four of the usual favourites that are on; everything else goes under More
   const favourites = [1, 2, 3, 7, 4, 5, 6]
   const main: DashboardNavItem[] = favourites.map((id) => all.find((i) => i.id === id)).filter(Boolean).slice(0, 4) as DashboardNavItem[]

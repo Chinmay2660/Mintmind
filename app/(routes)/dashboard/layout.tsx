@@ -10,6 +10,8 @@ import { TopBar } from '@/components/shell/TopBar'
 import { MobileNav } from '@/components/shell/MobileNav'
 import PageTitle from './_components/PageTitle'
 import { AssistantProvider } from '@/components/ai/AssistantProvider'
+import { PriceRefresher } from '@/components/shell/PriceRefresher'
+import { DeviceNotifier } from '@/components/shell/DeviceNotifier'
 import { AutomationRunner } from '@/components/ai/AutomationRunner'
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
@@ -19,6 +21,8 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
                 <FeaturesProvider>
                 <AssistantProvider>
                 <AutomationRunner />
+                <DeviceNotifier />
+                <PriceRefresher />
                 <div className="app-shell fixed inset-0 flex bg-background text-foreground">
                     <Sidebar />
                     <div className="flex min-w-0 flex-1 flex-col">

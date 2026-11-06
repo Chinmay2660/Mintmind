@@ -18,6 +18,7 @@ import { WhyChanged } from '@/components/wealth/WhyChanged'
 import { NetWorthJournal } from '@/components/wealth/NetWorthJournal'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { assetValue } from '@/lib/wealth/holdings'
 
 const VIEWS = ['Monthly', 'Yearly'] as const
 type Kind = 'asset' | 'liability'
@@ -75,7 +76,7 @@ function NetWorthOverview() {
         description="Assets minus liabilities, updated automatically. Add or edit EPF, FDs, gold, property, stocks and loans in Settings → Assets & Loans."
         actions={
           <>
-            <Button variant="outline" size="sm" asChild><Link href="/dashboard/settings?tab=assets">Manage assets &amp; loans</Link></Button>
+            <Button variant="outline" size="sm" asChild><Link href="/dashboard/net-worth/manage">Manage assets &amp; loans</Link></Button>
             <Button variant="outline" size="sm" onClick={exportCsv}><Download className="mr-1.5 h-4 w-4" />CSV</Button>
             <Button variant="outline" size="sm" onClick={exportXlsx}><Download className="mr-1.5 h-4 w-4" />Excel</Button>
           </>
@@ -135,7 +136,7 @@ function NetWorthOverview() {
             <Row name="Bank savings" sub="From Bank Accounts" value={netWorth.assetBreakdown.bank || 0} />
             <Row name="Mutual funds" sub="From Mutual Funds" value={netWorth.assetBreakdown.mutualFunds || 0} />
             {data.assets.map((a) => (
-              <Row key={a.id} name={a.name} sub={`${ASSET_LABELS[a.category as keyof typeof ASSET_LABELS] ?? a.category} · Updated ${formatDate(a.updated)}`} value={a.value} />
+              <Row key={a.id} name={a.name} sub={`${ASSET_LABELS[a.category as keyof typeof ASSET_LABELS] ?? a.category} · Updated ${formatDate(a.updated)}`} value={assetValue(a)} />
             ))}
           </ul>
         </Panel>

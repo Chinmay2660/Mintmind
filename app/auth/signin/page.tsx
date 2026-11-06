@@ -150,7 +150,7 @@ function SignInContent() {
                 }}
                 className={cn('rounded-md py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring', mode === m ? 'bg-card shadow-card' : 'text-muted-foreground')}
               >
-                {m === 'login' ? 'Login' : 'Sign up'}
+                {m === 'login' ? 'Sign in' : 'Sign up'}
               </button>
             ))}
           </div>
@@ -175,7 +175,7 @@ function SignInContent() {
             )}
             <Button type="submit" className="w-full" disabled={busy !== null}>
               {busy === 'form' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {mode === 'login' ? (needMfa ? 'Verify and sign in' : 'Login') : 'Create account'}
+              {mode === 'login' ? (needMfa ? 'Verify and sign in' : 'Sign in') : 'Sign up'}
             </Button>
           </form>
 

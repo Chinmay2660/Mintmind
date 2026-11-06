@@ -2,24 +2,25 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import {
   ArrowRight, Wallet, LayoutDashboard, TrendingUp, Landmark, PieChart, CreditCard, Shield, Users, KeyRound, FileText, HeartHandshake,
-  Lock, Cloud, Eye, ShieldCheck, MapPin, UserRound, Calculator, Sparkles, ListChecks, type LucideIcon,
+  Lock, Cloud, Eye, ShieldCheck, UserRound, Calculator, Sparkles, ListChecks, type LucideIcon,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { DemoButton } from '@/components/landing/DemoButton'
 import { HeroScoreCard } from '@/components/landing/HeroScoreCard'
+import { SampleSimulator } from '@/components/landing/SampleSimulator'
 import { AppEntryButton } from '@/components/landing/AppEntryButton'
 import { Button } from '@/components/ui/button'
 
 export const metadata: Metadata = {
   title: 'Mintmind: personal & family wealth in one place',
-  description: 'Net worth, bank accounts, mutual funds, cards, insurance and budgets for Indian families, with a private vault, documents in your own Drive, an AI assistant and a legacy plan.',
+  description: 'Net worth, bank accounts, mutual funds, cards, insurance and budgets for families, with a private vault, documents in your own Drive, an AI assistant and a legacy plan.',
 }
 
 const MODULES: { icon: LucideIcon; name: string; text: string }[] = [
   { icon: LayoutDashboard, name: 'Dashboard', text: 'Net worth, growth, allocation, dues and budget pace on one screen.' },
   { icon: TrendingUp, name: 'Net Worth & Goals', text: 'History, comparisons and goals like an emergency or marriage fund.' },
   { icon: Landmark, name: 'Bank Accounts', text: 'Savings and cash, minimum-balance aware, updated by every transaction.' },
-  { icon: PieChart, name: 'Mutual Funds', text: 'True XIRR, SIPs, fund history and optional Zerodha sync.' },
+  { icon: PieChart, name: 'Mutual Funds', text: 'True XIRR, SIPs, fund history and weekly NAV updates.' },
   { icon: CreditCard, name: 'Cards', text: 'Credit and debit cards, utilisation, statements and dues.' },
   { icon: Shield, name: 'Insurance', text: 'Policies, premiums, renewals and family mapping.' },
   { icon: Wallet, name: 'Budget & Expenses', text: 'Day-wise pacing, categories, calendar and stats views.' },
@@ -28,6 +29,15 @@ const MODULES: { icon: LucideIcon; name: string; text: string }[] = [
   { icon: FileText, name: 'Documents', text: 'Kept in your own Google Drive, neatly organised.' },
   { icon: HeartHandshake, name: 'Digital Legacy', text: 'Trusted contacts and a controlled, verified handover.' },
   { icon: Sparkles, name: 'My Wealth AI', text: 'Ask in plain language. Insights, reports and a transparent health score.' },
+]
+
+const CALCS = [
+  { name: 'SIP', text: 'See small monthly amounts grow over time.' },
+  { name: 'Lumpsum', text: 'One investment, its value later and doubling time.' },
+  { name: 'Goal SIP', text: 'Name a goal and a date, get the monthly amount.' },
+  { name: 'Loan & prepayment', text: 'EMI, and what extra payments save.' },
+  { name: 'Rent vs buy', text: 'Compare buying a home with renting and investing.' },
+  { name: 'Budget split', text: 'Split take-home pay into needs, wants and savings.' },
 ]
 
 const STEPS = [
@@ -50,9 +60,9 @@ export default function Home() {
         <header className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 rounded-full border border-border bg-card/95 px-3 shadow-card backdrop-blur sm:px-4">
           <Link href="/" className="flex items-center gap-2" aria-label="Mintmind home"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Wallet className="h-4 w-4" /></span><span className="font-semibold tracking-tight">Mintmind</span></Link>
           <nav aria-label="Main" className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
-            <a href="#features" className="hover:text-foreground">Features</a><Link href="/tools" className="hover:text-foreground">Calculators</Link><a href="#privacy" className="hover:text-foreground">Privacy</a>
+            <a href="#features" className="hover:text-foreground">Features</a><a href="#calculators" className="hover:text-foreground">Calculators</a><a href="#privacy" className="hover:text-foreground">Privacy</a>
           </nav>
-          <div className="flex items-center gap-1.5"><ThemeToggle /><Button asChild variant="ghost" size="sm" className="hidden rounded-full sm:inline-flex"><Link href="/auth/signin">Login</Link></Button><AppEntryButton /></div>
+          <div className="flex items-center gap-1.5"><ThemeToggle /><Button asChild variant="ghost" size="sm" className="hidden rounded-full sm:inline-flex"><Link href="/auth/signin">Sign in</Link></Button><AppEntryButton /></div>
         </header>
       </div>
 
@@ -61,13 +71,12 @@ export default function Home() {
           <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 md:py-20 lg:grid-cols-[1.1fr_1fr]">
             <div>
               <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">Is your family&apos;s money on track?<span className="block text-primary">See it clearly in minutes.</span></h1>
-              <p className="mt-5 max-w-xl text-lg text-muted-foreground">Add rough numbers, see what to fix first, then plan goals, track the budget and protect what matters. Built for Indian households.</p>
+              <p className="mt-5 max-w-xl text-lg text-muted-foreground">Add rough numbers, see what to fix first, then plan goals, track the budget and protect what matters.</p>
               <div className="mt-8 flex flex-wrap items-start gap-3">
                 <Button asChild size="lg"><Link href="/auth/signin?mode=signup">Check my money <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
                 <DemoButton size="lg" label="See a sample family" />
               </div>
               <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                <li className="flex items-center gap-1.5"><MapPin className="h-4 w-4" />Built for India</li>
                 <li className="flex items-center gap-1.5"><UserRound className="h-4 w-4" />Sample needs no sign-up</li>
                 <li className="flex items-center gap-1.5"><Lock className="h-4 w-4" />Vault encrypted on your device</li>
               </ul>
@@ -76,21 +85,35 @@ export default function Home() {
           </div>
         </section>
 
+        <SampleSimulator />
+
         <section aria-labelledby="how" className="border-t border-border">
           <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
             <h2 id="how" className="text-2xl font-semibold tracking-tight">How does it work?</h2>
             <ol className="mt-8 grid gap-4 md:grid-cols-3">{STEPS.map(({ icon: Icon, n, title, text }) => (
-              <li key={n} className="surface-card p-5"><div className="flex items-center justify-between text-xs text-muted-foreground"><span>{n}</span><Icon className="h-4 w-4" /></div><h3 className="mt-3 font-semibold">{title}</h3><p className="mt-1 text-sm text-muted-foreground">{text}</p></li>))}</ol>
+              <li key={n} className="surface-card p-4 sm:p-5"><div className="flex items-center justify-between text-xs text-muted-foreground"><span>{n}</span><Icon className="h-4 w-4" /></div><h3 className="mt-3 font-semibold">{title}</h3><p className="mt-1 text-sm text-muted-foreground">{text}</p></li>))}</ol>
           </div>
         </section>
 
         <section id="features" className="border-t border-border bg-card/40">
           <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
             <p className="text-sm font-medium text-primary">Everything in one place</p>
-            <h2 className="mt-1 text-2xl font-semibold tracking-tight">Every rupee, tracked and explained.</h2>
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight">Every penny, tracked and explained.</h2>
             <p className="mt-1 max-w-2xl text-muted-foreground">Each module does one job and they update each other, so one transaction shows up everywhere it should.</p>
             <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{MODULES.map(({ icon: Icon, name, text }) => (
-              <li key={name} className="surface-card p-4 transition-colors hover:border-primary/40"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground"><Icon className="h-[18px] w-[18px]" /></span><h3 className="mt-3 font-semibold">{name}</h3><p className="mt-1 text-sm text-muted-foreground">{text}</p></li>))}</ul>
+              <li key={name} className="surface-card p-4 sm:p-5 transition-colors hover:border-primary/40"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground"><Icon className="h-[18px] w-[18px]" /></span><h3 className="mt-3 font-semibold">{name}</h3><p className="mt-1 text-sm text-muted-foreground">{text}</p></li>))}</ul>
+          </div>
+        </section>
+
+        <section id="calculators" className="border-t border-border bg-card/40">
+          <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
+            <p className="text-sm font-medium text-primary">Free, no sign-up</p>
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight">Quick calculators</h2>
+            <p className="mt-1 max-w-2xl text-muted-foreground">Basic what-if tools you can use right now. Sign in to get planners prefilled with your own accounts and loans.</p>
+            <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{CALCS.map(({ name, text }) => (
+              <li key={name}><Link href="/tools" className="surface-card flex h-full items-start gap-3 p-4 transition-colors hover:border-primary/40"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground"><Calculator className="h-[18px] w-[18px]" /></span><span><span className="block font-semibold">{name}</span><span className="mt-1 block text-sm text-muted-foreground">{text}</span></span></Link></li>))}</ul>
+            <p className="mt-6 text-sm text-muted-foreground">After sign-in: <strong className="font-medium text-foreground">Planning tools</strong> for emergency fund runway, loan payoff order, insurance cover and retirement, using your own numbers.</p>
+            <Button asChild variant="outline" size="lg" className="mt-4"><Link href="/tools">Open all calculators <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
           </div>
         </section>
 
@@ -114,13 +137,6 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="border-t border-border bg-card/40">
-          <div className="mx-auto flex max-w-6xl flex-col items-start gap-5 px-4 py-14 sm:px-6 md:flex-row md:items-center md:justify-between">
-            <div><h2 className="text-2xl font-semibold tracking-tight">Try the numbers first</h2><p className="mt-1 max-w-xl text-muted-foreground">SIP, goal SIP, loan prepayment, retirement and rent-vs-buy calculators. No sign-up, nothing leaves your browser.</p></div>
-            <Button asChild variant="outline" size="lg"><Link href="/tools"><Calculator className="mr-2 h-4 w-4" />Open calculators</Link></Button>
-          </div>
-        </section>
-
         <section className="border-t border-border">
           <div className="mx-auto flex max-w-6xl flex-col items-start gap-5 px-4 py-14 sm:px-6 md:flex-row md:items-center md:justify-between">
             <div><h2 className="text-2xl font-semibold tracking-tight">Ready when you are</h2><p className="mt-1 text-muted-foreground">Start with the sample family or add your own numbers.</p></div>
@@ -130,7 +146,7 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-border"><div className="mx-auto max-w-6xl space-y-2 px-4 py-8 text-xs text-muted-foreground sm:px-6">
-        <p>Mintmind is a personal record-keeping and planning tool, not financial, tax, insurance or legal advice. Calculators and AI answers are educational. Digital Legacy notifies people you trust; it does not replace a will, nominations or inheritance law, and inactivity is not proof of death or incapacity.</p>
+        <p>Mintmind is a personal record-keeping and planning tool, not financial, tax, insurance or legal advice. AI answers are educational. Digital Legacy notifies people you trust; it does not replace a will, nominations or inheritance law, and inactivity is not proof of death or incapacity.</p>
         <p>© {new Date().getFullYear()} Mintmind</p></div></footer>
     </div>
   )

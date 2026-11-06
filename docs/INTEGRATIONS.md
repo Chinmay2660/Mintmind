@@ -44,18 +44,27 @@ Until then the workflow falls back to email, so the confirmation step is never s
 Call once a day: `GET /api/legacy-plan/cron` with header `Authorization: Bearer $CRON_SECRET`
 (Vercel Cron, GitHub Actions, cron-job.org…). Set `CRON_SECRET` to a long random string.
 
-## Zerodha Kite (mutual fund NAVs, SIPs, stocks)
-1. Create an app at https://developers.kite.trade (Kite Connect). Set the **Redirect URL** to `${APP_URL}/api/kite/callback`.
-2. Set `KITE_API_KEY`, `KITE_API_SECRET`, `APP_URL`.
-3. Mutual Funds → **Connect Zerodha** → log in on Zerodha → **Sync from Zerodha**.
+## Market prices: weekly NAV sync (internal, Zerodha Kite optional)
+Not a user feature. A server job keeps a shared price cache; the app reads it once a week to refresh fund NAVs.
 
-What syncs (read-only; the app never places orders):
-* **NAVs** – `/mf/holdings` last price with Kite's own price date; matched to your funds by stored symbol, then folio + name. Units and invested amounts are never overwritten (a mismatch is only flagged).
-* **Funds not in your list** – optional import (units + average price). Kite gives no investment dates, so XIRR stays unavailable until you add dated investments.
-* **SIPs** – `/mf/sips` (status, instalments completed).
-* **Stocks** – `/portfolio/holdings` aggregated into the existing Stocks asset *in place*, so stocks are never counted twice.
+**Schedule it** once a week (cron-job.org, GitHub Actions, Vercel Cron…):
+`GET /api/internal/market-sync` with header `Authorization: Bearer $CRON_SECRET`. The response is the status report
+(counts per source, errors, and `kite: ok | login_required | not_configured`).
 
-Every sync opens a review dialog; nothing changes until you apply. Kite access tokens expire around 6 AM IST daily, so you reconnect each day you want to sync (Zerodha's rule; there is no refresh token). Tokens are stored encrypted server-side and never sent to the browser. Kite's MF endpoints can require MF access on your Kite Connect plan; a failing source is reported in the dialog while the others still sync.
+Sources (each fails independently):
+* **AMFI NAV file** (public, no login): always fetched. Covers every mutual fund; this alone keeps NAVs current.
+* **Zerodha Kite** (optional): the full MF list with last prices, plus last traded prices for equities in
+  `MARKET_EQUITY_SYMBOLS` (e.g. `NSE:NIFTYBEES,NSE:RELIANCE`) to check progress. Needs `KITE_API_KEY`, `KITE_API_SECRET`.
+  Create the app at https://developers.kite.trade with Redirect URL `${APP_URL}/api/internal/kite/callback`.
+
+**Kite sign-in (owner only).** Kite access tokens expire around 6 AM IST every day and there is no refresh token, so the
+owner opens `${APP_URL}/api/internal/kite/login?key=$CRON_SECRET` on the day the weekly job should use Kite. If no valid
+session exists the job still runs on AMFI and reports `kite: "login_required"`. The token is stored encrypted and never leaves the server.
+
+**In the app.** Once a week, when someone opens the dashboard, the browser sends its fund names/ISINs to
+`POST /api/market/prices` and updates only NAV and value (source `market`). Units, invested amounts and transactions are never changed.
+Matching uses ISIN / symbol / scheme code first, then an exact normalised name; ambiguous names are skipped, never guessed.
+A fund can carry an optional `isin`, `symbol` or `schemeCode` field to make matching exact.
 
 ---
 

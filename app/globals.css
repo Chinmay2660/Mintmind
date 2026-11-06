@@ -20,15 +20,15 @@
     --popover-foreground: 217 33% 17%;
     --sidebar: 0 0% 100%;
 
-    --primary: 161 94% 30%;
+    --primary: 245 58% 51%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 14% 96%;
     --secondary-foreground: 217 33% 17%;
     --muted: 220 14% 96%;
     --muted-foreground: 215 16% 47%;
-    --accent: 152 76% 95%;
-    --accent-foreground: 161 94% 24%;
+    --accent: 226 100% 97%;
+    --accent-foreground: 245 58% 40%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
@@ -41,7 +41,7 @@
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 161 94% 30%;
+    --ring: 245 58% 51%;
 
     --radius: 0.75rem;
     --radius-lg: 0.875rem;
@@ -51,7 +51,7 @@
     --shadow-elevated: 0 8px 24px hsl(217 33% 17% / 0.08);
     --shadow-inset: inset 0 1px 2px hsl(217 33% 17% / 0.04);
 
-    --chart-1: 161 94% 30%;
+    --chart-1: 245 58% 51%;
     --chart-2: 221 83% 53%;
     --chart-3: 32 95% 44%;
     --chart-4: 262 52% 47%;
@@ -81,15 +81,15 @@
     --popover-foreground: 210 40% 98%;
     --sidebar: 221 39% 11%;
 
-    --primary: 160 84% 39%;
-    --primary-foreground: 222 49% 8%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 217 33% 17%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217 33% 17%;
     --muted-foreground: 215 20% 65%;
     --accent: 217 33% 17%;
-    --accent-foreground: 160 84% 45%;
+    --accent-foreground: 234 89% 82%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 222 49% 8%;
@@ -102,13 +102,13 @@
 
     --border: 217 25% 22%;
     --input: 217 25% 22%;
-    --ring: 160 84% 39%;
+    --ring: 239 84% 67%;
 
     --shadow-card: 0 0 0 1px hsl(var(--border));
     --shadow-elevated: 0 0 0 1px hsl(var(--border)), 0 8px 24px hsl(222 49% 4% / 0.4);
     --shadow-inset: none;
 
-    --chart-1: 160 84% 45%;
+    --chart-1: 239 84% 70%;
     --chart-2: 213 94% 68%;
     --chart-3: 38 92% 55%;
     --chart-4: 262 83% 74%;
@@ -122,6 +122,9 @@
   * {
     @apply border-border;
   }
+
+  /* A bare <fieldset> never shrinks below its content, which pushes grid/dialog layouts wider than their container. */
+  fieldset { min-width: 0; }
 
   html {
     -webkit-font-smoothing: antialiased;
@@ -688,3 +691,4 @@
   .app-main { overflow: visible !important; height: auto !important; padding-bottom: 0 !important; }
   body { background: #fff !important; }
 }
+

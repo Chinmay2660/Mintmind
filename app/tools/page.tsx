@@ -2,29 +2,17 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Wallet } from 'lucide-react'
-import { emi, goalSip, prepayment, rentVsBuy, retirementCorpus, sipFutureValue } from '@/lib/calculators'
+import { ArrowLeft, Calculator, Coins, Flag, Home, Landmark, Percent, PieChart, Scale, Sunset, TrendingUp, Wallet, type LucideIcon } from 'lucide-react'
+import { budgetRule, cagr, lumpsumFuture, emi, goalSip, prepayment, rentVsBuy, retirementCorpus, sipFutureValue } from '@/lib/calculators'
 import { formatINR } from '@/lib/wealth/format'
-import { Input } from '@/components/ui/input'
-import { Field } from '@/components/wealth/kit'
+import { Num, Result, ASSUME, num } from '@/components/tools/kit'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { cn } from '@/lib/utils'
+import { FieldSet } from '@/components/ui/layout'
 
-const TOOLS = ['Net worth', 'SIP', 'Goal SIP', 'Loan & prepayment', 'Retirement', 'Rent vs buy'] as const
+const TOOLS = ['Net worth', 'SIP', 'Lumpsum', 'Goal SIP', 'Growth rate', 'Loan & prepayment', 'Retirement', 'Rent vs buy', 'Budget split'] as const
 type Tool = (typeof TOOLS)[number]
 
-const num = (v: string) => (Number.isFinite(Number(v)) && v !== '' ? Number(v) : 0)
-
-function Num({ label, value, set, hint, min = 0 }: { label: string; value: string; set: (v: string) => void; hint?: string; min?: number }) {
-  return <Field label={label} hint={hint}>{(id) => <Input id={id} type="number" min={min} step="any" inputMode="decimal" value={value} onChange={(e) => set(e.target.value)} />}</Field>
-}
-const Result = ({ rows, note }: { rows: [string, string][]; note: string }) => (
-  <div className="surface-card p-5">
-    <dl className="divide-y divide-border">{rows.map(([k, v]) => <div key={k} className="flex items-baseline justify-between gap-3 py-2"><dt className="text-sm text-muted-foreground">{k}</dt><dd className="text-lg font-semibold tabular-nums">{v}</dd></div>)}</dl>
-    <p className="mt-3 text-xs text-muted-foreground">{note}</p>
-  </div>
-)
-const ASSUME = 'What-if arithmetic from the numbers and assumed return you enter. It is not a prediction or advice, and nothing you type leaves this page.'
 
 function Sip() {
   const [m, setM] = useState('10000'); const [r, setR] = useState('12'); const [y, setY] = useState('10'); const [s, setS] = useState('0')
@@ -50,6 +38,25 @@ function Retire() {
   return <div className="grid gap-5 md:grid-cols-2"><div className="grid gap-4 sm:grid-cols-2"><Num label="Monthly spending today (₹)" value={e} set={setE} /><Num label="Your age" value={a} set={setA} /><Num label="Retire at" value={ra} set={setRa} /><Num label="Inflation (% a year)" value={i} set={setI} /><Num label="Withdrawal rate (%)" value={w} set={setW} min={1} /></div>
     <Result rows={[['Years to retirement', String(o.yearsToRetire)], ['Yearly spending then', formatINR(o.yearlyExpenseAtRetirement)], ['Corpus needed', formatINR(o.corpus)]]} note={ASSUME} /></div>
 }
+
+function Lump() {
+  const [a, setA] = useState('500000'); const [r, setR] = useState('10'); const [y, setY] = useState('10')
+  const o = useMemo(() => lumpsumFuture({ amount: num(a), annualReturnPct: num(r), years: num(y) }), [a, r, y])
+  return <div className="grid gap-5 md:grid-cols-2"><div className="grid gap-4 sm:grid-cols-2"><Num label="Amount invested (₹)" value={a} set={setA} /><Num label="Assumed return (% a year)" value={r} set={setR} /><Num label="Years" value={y} set={setY} /></div>
+    <Result rows={[['Estimated value', formatINR(o.futureValue)], ['Estimated gain', formatINR(o.gain)], ['Doubles in about', o.doubleYears ? `${o.doubleYears.toFixed(1)} years` : '—']]} note={ASSUME} /></div>
+}
+function Growth() {
+  const [s, setS] = useState('100000'); const [e, setE] = useState('250000'); const [y, setY] = useState('7')
+  const g = useMemo(() => cagr({ start: num(s), end: num(e), years: num(y) }), [s, e, y])
+  return <div className="grid gap-5 md:grid-cols-2"><div className="grid gap-4 sm:grid-cols-2"><Num label="Starting value (₹)" value={s} set={setS} /><Num label="Ending value (₹)" value={e} set={setE} /><Num label="Years held" value={y} set={setY} /></div>
+    <Result rows={[['Yearly growth rate', g == null ? '—' : `${g.toFixed(2)}%`]]} note="Turns a total gain into a steady yearly rate you can compare. Real returns bounce around year to year." /></div>
+}
+function Split() {
+  const [i, setI] = useState('80000'); const [n, setN] = useState('50'); const [w, setW] = useState('30')
+  const o = useMemo(() => budgetRule({ income: num(i), needsPct: num(n), wantsPct: num(w) }), [i, n, w])
+  return <div className="grid gap-5 md:grid-cols-2"><div className="grid gap-4 sm:grid-cols-2"><Num label="Monthly take-home (₹)" value={i} set={setI} /><Num label="Needs (%)" value={n} set={setN} /><Num label="Wants (%)" value={w} set={setW} /></div>
+    <Result rows={[['Needs', formatINR(o.needs)], ['Wants', formatINR(o.wants)], [`Savings & debt (${o.savingsPct}%)`, formatINR(o.savings)]]} note="A rule of thumb to start from, not a rule. Adjust the percentages to your life." /></div>
+}
 function Rvb() {
   const [p, setP] = useState('8000000'); const [d, setD] = useState('20'); const [lr, setLr] = useState('9'); const [ly, setLy] = useState('20'); const [rent, setRent] = useState('25000'); const [y, setY] = useState('15')
   const o = useMemo(() => rentVsBuy({ price: num(p), downPaymentPct: num(d), loanRatePct: num(lr), loanYears: num(ly), monthlyRent: num(rent), years: num(y) }), [p, d, lr, ly, rent, y])
@@ -69,26 +76,56 @@ function NetWorthCalc() {
   return (
     <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
       <div className="space-y-6">
-        <fieldset><legend className="mb-2 text-sm font-semibold">What you own</legend><div className="grid gap-4 sm:grid-cols-2">{ASSET_FIELDS.map(([l, h]) => <Num key={l} label={l} hint={h} value={a[l] ?? ''} set={(v) => setA({ ...a, [l]: v })} />)}</div></fieldset>
-        <fieldset><legend className="mb-2 text-sm font-semibold">What you owe</legend><div className="grid gap-4 sm:grid-cols-2">{DEBT_FIELDS.map(([l, h]) => <Num key={l} label={l} hint={h} value={d[l] ?? ''} set={(v) => setD({ ...d, [l]: v })} />)}</div></fieldset>
+        <FieldSet legend="What you own"><div className="grid gap-4 sm:grid-cols-2">{ASSET_FIELDS.map(([l, h]) => <Num key={l} label={l} hint={h} value={a[l] ?? ''} set={(v) => setA({ ...a, [l]: v })} />)}</div></FieldSet>
+        <FieldSet legend="What you owe"><div className="grid gap-4 sm:grid-cols-2">{DEBT_FIELDS.map(([l, h]) => <Num key={l} label={l} hint={h} value={d[l] ?? ''} set={(v) => setD({ ...d, [l]: v })} />)}</div></FieldSet>
       </div>
       <div className="lg:sticky lg:top-6 lg:self-start"><Result rows={any ? [['Total assets', formatINR(assets)], ['Total liabilities', formatINR(debts)], ['Your net worth', formatINR(assets - debts)]] : [['Your net worth', '—']]} note="Net worth is assets minus liabilities on one date. It is a position, not a score. Count each holding once and use current balances. Nothing you enter leaves this page." /></div>
     </div>
   )
 }
 
+const META: Record<Tool, { icon: LucideIcon; text: string }> = {
+  'Net worth': { icon: Scale, text: 'What you own minus what you owe' },
+  SIP: { icon: TrendingUp, text: 'Small monthly amounts, grown over time' },
+  Lumpsum: { icon: Coins, text: 'One investment and its value later' },
+  'Goal SIP': { icon: Flag, text: 'The monthly amount a goal needs' },
+  'Growth rate': { icon: Percent, text: 'Turn a total gain into a yearly rate' },
+  'Loan & prepayment': { icon: Landmark, text: 'EMI and what extra payments save' },
+  Retirement: { icon: Sunset, text: 'The corpus you will need' },
+  'Rent vs buy': { icon: Home, text: 'Buy a home, or rent and invest' },
+  'Budget split': { icon: PieChart, text: 'Needs, wants and savings' },
+}
+
 export default function ToolsPage() {
-  const [tool, setTool] = useState<Tool>('Net worth')
+  const [tool, setTool] = useState<Tool>('SIP')
+  const Icon = META[tool].icon
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border"><div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
+    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      <div aria-hidden className="pointer-events-none absolute inset-0 [background-image:radial-gradient(hsl(var(--foreground)/0.12)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_70%_45%_at_50%_15%,#000_30%,transparent_100%)]" />
+      <div aria-hidden className="pointer-events-none absolute left-1/2 top-[-12rem] h-[26rem] w-[46rem] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
+      <header className="relative border-b border-border/60 backdrop-blur"><div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Wallet className="h-5 w-5" /></span><span className="text-lg font-semibold tracking-tight">Mintmind</span></Link>
         <div className="flex items-center gap-2"><ThemeToggle /><Link href="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Home</Link></div></div></header>
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-10 sm:px-6">
-        <div><h1 className="text-3xl font-semibold tracking-tight">Money calculators</h1><p className="mt-1 text-muted-foreground">Try the numbers first. No sign-up, and nothing you type is stored or sent.</p></div>
-        <div role="tablist" aria-label="Calculators" className="flex gap-1.5 overflow-x-auto pb-1">{TOOLS.map((t) => <button key={t} role="tab" aria-selected={tool === t} onClick={() => setTool(t)} className={cn('shrink-0 rounded-full border px-4 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', tool === t ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground')}>{t}</button>)}</div>
-        {tool === 'Net worth' && <NetWorthCalc />}{tool === 'SIP' && <Sip />}{tool === 'Goal SIP' && <GoalSip />}{tool === 'Loan & prepayment' && <Loan />}{tool === 'Retirement' && <Retire />}{tool === 'Rent vs buy' && <Rvb />}
-        <p className="text-xs text-muted-foreground">Educational tools, not investment, tax or insurance advice.</p>
+      <main className="relative mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
+        <div className="mx-auto max-w-2xl text-center">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/80 px-3 py-1 text-xs font-medium text-muted-foreground"><Calculator className="h-3.5 w-3.5 text-primary" />{TOOLS.length} free calculators</span>
+          <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">Money calculators</h1>
+          <p className="mt-2 text-muted-foreground">Try the numbers first. No sign-up, and nothing you type is stored or sent.</p>
+        </div>
+        <div className="mt-10 grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
+          <nav aria-label="Calculators" role="tablist" className="grid grid-cols-2 gap-2 lg:sticky lg:top-6 lg:grid-cols-1 lg:self-start">
+            {TOOLS.map((t) => { const M = META[t]; const on = tool === t; return (
+              <button key={t} role="tab" aria-selected={on} onClick={() => setTool(t)} className={cn('flex items-center gap-3 rounded-xl border p-3 text-left outline-none transition-all focus-visible:ring-2 focus-visible:ring-ring', on ? 'border-primary bg-accent shadow-card' : 'border-border bg-card/60 hover:border-primary/40 hover:bg-card')}>
+                <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', on ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}><M.icon className="h-4 w-4" /></span>
+                <span className="min-w-0"><span className="block text-sm font-semibold">{t}</span><span className="hidden truncate text-xs text-muted-foreground lg:block">{M.text}</span></span>
+              </button>) })}
+          </nav>
+          <section role="tabpanel" className="rounded-2xl border border-border bg-card/80 p-5 shadow-[var(--shadow-elevated)] backdrop-blur sm:p-8">
+            <div className="mb-6 flex items-center gap-3 border-b border-border pb-5"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground"><Icon className="h-5 w-5" /></span><div><h2 className="text-xl font-semibold tracking-tight">{tool}</h2><p className="text-sm text-muted-foreground">{META[tool].text}</p></div></div>
+            {tool === 'Net worth' && <NetWorthCalc />}{tool === 'SIP' && <Sip />}{tool === 'Goal SIP' && <GoalSip />}{tool === 'Loan & prepayment' && <Loan />}{tool === 'Retirement' && <Retire />}{tool === 'Rent vs buy' && <Rvb />}{tool === 'Lumpsum' && <Lump />}{tool === 'Growth rate' && <Growth />}{tool === 'Budget split' && <Split />}
+            <p className="mt-6 text-xs text-muted-foreground">Educational tools, not investment, tax or insurance advice.</p>
+          </section>
+        </div>
       </main>
     </div>
   )

@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuth } from '@/lib/hooks/useAuth'
-import { LogOut, User, Settings, Home } from 'lucide-react'
+import { LogOut, User, Settings, Home, Plug, Calculator, Database, UserCog } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -108,6 +108,11 @@ export default function UserProfile({
           <Settings className="mr-2 h-4 w-4" />
           Settings
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push('/dashboard/settings')} className="cursor-pointer"><UserCog className="mr-2 h-4 w-4" />Profile & account</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push('/dashboard/settings?tab=integrations')} className="cursor-pointer"><Plug className="mr-2 h-4 w-4" />Integrations</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push('/dashboard/tools')} className="cursor-pointer"><Calculator className="mr-2 h-4 w-4" />Planning tools</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push('/dashboard/settings?tab=data')} className="cursor-pointer"><Database className="mr-2 h-4 w-4" />Backup & data</DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => router.push('/?home=1')}
           className="cursor-pointer"
@@ -120,7 +125,7 @@ export default function UserProfile({
           className="cursor-pointer text-red-600 focus:bg-red-50 dark:text-red-400 dark:focus:bg-red-950/20"
         >
           <LogOut className="mr-2 h-4 w-4" />
-          Sign Out
+          Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

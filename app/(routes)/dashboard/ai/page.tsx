@@ -5,6 +5,8 @@ import { Copy, Download, Printer, Share2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { reportToText } from '@/lib/ai/report'
 import { AssistantChat } from '@/components/ai/AssistantChat'
+import { QuickAdd } from '@/components/ai/QuickAdd'
+import { UnusualSpending } from '@/components/ai/UnusualSpending'
 import { InsightsList } from '@/components/ai/InsightsList'
 import { useAi } from '@/components/ai/useAi'
 import { Button } from '@/components/ui/button'
@@ -12,7 +14,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { LoadingBlock, PageHeader, Panel, Progress } from '@/components/wealth/kit'
 import { cn } from '@/lib/utils'
 
-const TABS = ['Ask', 'Insights', 'Health score', 'Report'] as const
+const TABS = ['Ask', 'Quick add', 'Insights', 'Health score', 'Report'] as const
 
 export default function AiPage() {
   const [tab, setTab] = useState<(typeof TABS)[number]>('Ask')
@@ -35,7 +37,8 @@ export default function AiPage() {
       </div>
 
       {tab === 'Ask' && <Panel bodyClassName="p-4"><div className="h-[60dvh] min-h-[22rem]"><AssistantChat compact /></div></Panel>}
-      {tab === 'Insights' && <Panel title="Insights"><InsightsList /></Panel>}
+      {tab === 'Quick add' && <Panel bodyClassName="p-4"><QuickAdd /></Panel>}
+      {tab === 'Insights' && <div className="space-y-4"><Panel title="Insights"><InsightsList /></Panel><Panel bodyClassName="p-4"><UnusualSpending /></Panel></div>}
 
       {tab === 'Health score' && health && (
         <div className="space-y-4">

@@ -13,9 +13,10 @@ import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Select, Stat } from '@/components/wealth/kit'
+import { Empty, Field, FormDialog, StepFormDialog, LoadingBlock, PageHeader, Panel, Select, Stat } from '@/components/wealth/kit'
 import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
 import { cn } from '@/lib/utils'
+import { FieldSet } from '@/components/ui/layout'
 
 const typeLabel = (v: string) => POLICY_TYPES.find((t) => t.value === v)?.label ?? v
 
@@ -94,31 +95,41 @@ function PolicyForm({ row, members, documents, accounts, onClose, onSave }: { ro
   const [covered, setCovered] = useState<string[]>(row?.members || [])
   const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit policy' : 'Add policy'} wide
+    <StepFormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit policy' : 'Add policy'} wide
       onSubmit={async () => {
         if (!(Number(f.sumAssured) > 0)) throw new Error('Sum assured must be positive')
         if (!(Number(f.premium) >= 0)) throw new Error('Enter a valid premium')
         if (f.endDate && f.endDate < f.startDate) throw new Error('End date is before start date')
         await onSave({ ...row, ...f, sumAssured: Number(f.sumAssured), premium: Number(f.premium), nextPremium: f.nextPremium || null, endDate: f.endDate || null, documentId: f.documentId || null, accountId: f.accountId || null, members: covered })
-      }}>
-      <Field label="Type">{(id) => <Select id={id} value={f.type} onChange={set('type')}>{POLICY_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</Select>}</Field>
-      <Field label="Insurance company">{(id) => <Input id={id} required value={f.company} onChange={set('company')} />}</Field>
-      <Field label="Policy name">{(id) => <Input id={id} required value={f.policyName} onChange={set('policyName')} />}</Field>
-      <Field label="Policy number">{(id) => <Input id={id} required value={f.policyNumber} onChange={set('policyNumber')} />}</Field>
-      <Field label="Policy holder">{(id) => <Input id={id} required value={f.holder} onChange={set('holder')} />}</Field>
-      <Field label="Nominee">{(id) => <Input id={id} value={f.nominee} onChange={set('nominee')} />}</Field>
-      <Field label="Sum assured (₹)">{(id) => <Input id={id} type="number" min="1" step="any" required value={f.sumAssured} onChange={set('sumAssured')} />}</Field>
-      <Field label="Premium (₹)">{(id) => <Input id={id} type="number" min="0" step="any" required value={f.premium} onChange={set('premium')} />}</Field>
-      <Field label="Premium frequency">{(id) => <Select id={id} value={f.frequency} onChange={set('frequency')}>{PREMIUM_FREQUENCIES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</Select>}</Field>
-      <Field label="Next premium date">{(id) => <Input id={id} type="date" value={f.nextPremium} onChange={set('nextPremium')} />}</Field>
-      <Field label="Start date">{(id) => <Input id={id} type="date" required value={f.startDate} onChange={set('startDate')} />}</Field>
-      <Field label="End / expiry date">{(id) => <Input id={id} type="date" value={f.endDate} onChange={set('endDate')} />}</Field>
-      <Field label="Pay premium from" hint="Marking a premium paid debits this account." className="full">{(id) => <Select id={id} value={f.accountId} onChange={set('accountId')}><option value="">Do not link</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.nickname || a.bankName}</option>)}</Select>}</Field>
-      <Field label="Attached document" className="full">{(id) => <Select id={id} value={f.documentId} onChange={set('documentId')}><option value="">None (upload under Documents first)</option>{documents.filter((d) => d.category === 'Insurance').concat(documents.filter((d) => d.category !== 'Insurance')).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</Select>}</Field>
-      <fieldset className="full space-y-2"><legend className="text-sm font-medium">Covered family members</legend>
+      }}
+      steps={[
+        { title: 'The policy', description: 'Who issued it and how to identify it.', content: <>
+          <Field label="Type">{(id) => <Select id={id} value={f.type} onChange={set('type')}>{POLICY_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</Select>}</Field>
+          <Field label="Insurance company">{(id) => <Input id={id} required value={f.company} onChange={set('company')} />}</Field>
+          <Field label="Policy name">{(id) => <Input id={id} required value={f.policyName} onChange={set('policyName')} />}</Field>
+          <Field label="Policy number">{(id) => <Input id={id} required value={f.policyNumber} onChange={set('policyNumber')} />}</Field>
+        </> },
+        { title: 'People', description: 'Who holds it, who receives it and who is covered.', content: <>
+          <Field label="Policy holder">{(id) => <Input id={id} required value={f.holder} onChange={set('holder')} />}</Field>
+          <Field label="Nominee">{(id) => <Input id={id} value={f.nominee} onChange={set('nominee')} />}</Field>
+          <FieldSet legend="Covered family members" className="full">
         <div className="flex flex-wrap gap-3">{members.length === 0 && <span className="text-xs text-muted-foreground">Add members in Family Circle to map them here.</span>}{members.map((m) => (
           <label key={m.id} className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={covered.includes(m.name)} onChange={(e) => setCovered((c) => (e.target.checked ? [...c, m.name] : c.filter((x) => x !== m.name)))} />{m.name}</label>
-        ))}</div></fieldset>
-    </FormDialog>
+        ))}</div></FieldSet>
+        </> },
+        { title: 'Cover and premium', description: 'How much it covers and what it costs.', content: <>
+          <Field label="Sum assured (₹)">{(id) => <Input id={id} type="number" min="1" step="any" required value={f.sumAssured} onChange={set('sumAssured')} />}</Field>
+          <Field label="Premium (₹)">{(id) => <Input id={id} type="number" min="0" step="any" required value={f.premium} onChange={set('premium')} />}</Field>
+          <Field label="Premium frequency">{(id) => <Select id={id} value={f.frequency} onChange={set('frequency')}>{PREMIUM_FREQUENCIES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</Select>}</Field>
+          <Field label="Next premium date">{(id) => <Input id={id} type="date" value={f.nextPremium} onChange={set('nextPremium')} />}</Field>
+          <Field label="Start date">{(id) => <Input id={id} type="date" required value={f.startDate} onChange={set('startDate')} />}</Field>
+          <Field label="End / expiry date">{(id) => <Input id={id} type="date" value={f.endDate} onChange={set('endDate')} />}</Field>
+        </> },
+        { title: 'Links (optional)', description: 'Connect the policy to an account and its paperwork.', content: <>
+          <Field label="Pay premium from" hint="Marking a premium paid debits this account." className="full">{(id) => <Select id={id} value={f.accountId} onChange={set('accountId')}><option value="">Do not link</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.nickname || a.bankName}</option>)}</Select>}</Field>
+          <Field label="Attached document" className="full">{(id) => <Select id={id} value={f.documentId} onChange={set('documentId')}><option value="">None (upload under Documents first)</option>{documents.filter((d) => d.category === 'Insurance').concat(documents.filter((d) => d.category !== 'Insurance')).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</Select>}</Field>
+        </> },
+      ]}
+    />
   )
 }

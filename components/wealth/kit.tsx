@@ -1,13 +1,14 @@
 'use client'
 
-import { useId, useState, type FormEvent, type ReactNode, type SelectHTMLAttributes } from 'react'
-import { ArrowDownRight, ArrowUpRight, Loader2 } from 'lucide-react'
+import { useId, useRef, useState, type FormEvent, type ReactNode, type SelectHTMLAttributes } from 'react'
+import { ArrowDownRight, ArrowUpRight, Check, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { formatPct } from '@/lib/wealth/format'
 import { Money } from './Money'
+import { FormGrid } from '@/components/ui/layout'
 
 /** Chart colours come from CSS variables, so every chart follows the active theme. */
 export const chartColor = (n: 1 | 2 | 3 | 4 | 5 | 6) => `hsl(var(--chart-${n}))`
@@ -191,7 +192,7 @@ export function FormDialog({ open, onOpenChange, title, description, submitLabel
           <DialogDescription className={description ? undefined : 'sr-only'}>{description || title}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2 [&>.full]:sm:col-span-2">{children}</div>
+          <FormGrid>{children}</FormGrid>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
@@ -199,6 +200,71 @@ export function FormDialog({ open, onOpenChange, title, description, submitLabel
             <Button type="submit" disabled={busy}>
               {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {submitLabel}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export interface FormStep { title: string; description?: string; content: ReactNode }
+
+/**
+ * A long form split into short steps. One step is on screen at a time, "Next" checks that step's fields first,
+ * and the last step saves. State stays in the parent form, so going Back never loses what was typed.
+ * Use instead of FormDialog when a form has more than about 6 fields.
+ */
+export function StepFormDialog({ open, onOpenChange, title, steps, submitLabel = 'Save', onSubmit, wide }: {
+  open: boolean; onOpenChange: (o: boolean) => void; title: string; steps: FormStep[]; submitLabel?: string; onSubmit: () => Promise<void>; wide?: boolean
+}) {
+  const [i, setI] = useState(0)
+  const [busy, setBusy] = useState(false)
+  const body = useRef<HTMLDivElement>(null)
+  const last = i === steps.length - 1
+  const cur = steps[i]
+
+  const stepValid = () => {
+    const bad = Array.from(body.current?.querySelectorAll<HTMLInputElement>('input, select, textarea') ?? []).find((el) => !el.checkValidity())
+    if (bad) { bad.reportValidity(); return false }
+    return true
+  }
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!stepValid()) return
+    if (!last) return setI(i + 1)
+    setBusy(true)
+    try { await onSubmit(); onOpenChange(false) } catch (err) { toast.error(err instanceof Error ? err.message : 'Something went wrong') } finally { setBusy(false) }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className={wide ? 'max-w-2xl' : undefined}>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription className="sr-only">Step {i + 1} of {steps.length}: {cur.title}</DialogDescription>
+        </DialogHeader>
+
+        <ol className="flex items-center gap-2" aria-label="Progress">
+          {steps.map((st, n) => (
+            <li key={st.title} className="flex min-w-0 flex-1 items-center gap-2 last:flex-none" aria-current={n === i ? 'step' : undefined}>
+              <button type="button" disabled={n > i} onClick={() => setI(n)} aria-label={`Step ${n + 1}: ${st.title}`}
+                className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring',
+                  n < i ? 'border-primary bg-primary text-primary-foreground' : n === i ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground')}>
+                {n < i ? <Check className="h-3.5 w-3.5" /> : n + 1}
+              </button>
+              {n < steps.length - 1 && <span aria-hidden className={cn('h-0.5 flex-1 rounded-full', n < i ? 'bg-primary' : 'bg-border')} />}
+            </li>
+          ))}
+        </ol>
+
+        <form onSubmit={submit} className="space-y-4">
+          <div><p className="text-xs text-muted-foreground">Step {i + 1} of {steps.length}</p><h3 className="text-base font-semibold">{cur.title}</h3>{cur.description && <p className="mt-0.5 text-sm text-muted-foreground">{cur.description}</p>}</div>
+          <div ref={body}><FormGrid>{cur.content}</FormGrid></div>
+          <DialogFooter className="gap-2 sm:justify-between sm:gap-0 sm:space-x-0">
+            <Button type="button" variant="ghost" onClick={() => (i === 0 ? onOpenChange(false) : setI(i - 1))}>{i === 0 ? 'Cancel' : 'Back'}</Button>
+            <Button type="submit" disabled={busy}>
+              {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{last ? submitLabel : 'Next'}
             </Button>
           </DialogFooter>
         </form>

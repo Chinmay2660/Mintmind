@@ -12,11 +12,11 @@ import { Money } from '@/components/wealth/Money'
 import { cn } from '@/lib/utils'
 import { useFeatures } from '@/lib/features/FeaturesContext'
 
-const KIND_FEATURE: Record<string, string> = { card: 'credit_cards', statement: 'credit_cards', util: 'credit_cards', premium: 'insurance', expiry: 'insurance', sip: 'mutual_funds', sipend: 'mutual_funds', nav: 'mutual_funds', budget: 'budget_expenses', nobudget: 'budget_expenses', lowbal: 'bank_accounts', stale: 'dashboard', legacy: 'digital_legacy', family: 'family_circle' }
+export const KIND_FEATURE: Record<string, string> = { card: 'credit_cards', statement: 'credit_cards', util: 'credit_cards', premium: 'insurance', expiry: 'insurance', sip: 'mutual_funds', sipend: 'mutual_funds', nav: 'mutual_funds', budget: 'budget_expenses', nobudget: 'budget_expenses', lowbal: 'bank_accounts', stale: 'dashboard', legacy: 'digital_legacy', family: 'family_circle' }
 
 const dot = { high: 'bg-destructive', medium: 'bg-warning', low: 'bg-muted-foreground' } as const
 // notification kind -> preference key (Settings → Preferences → Notifications)
-const PREF_KEY: Record<string, string> = { card: 'cardDues', statement: 'cardDues', util: 'cardDues', premium: 'premiums', expiry: 'premiums', sip: 'sips', sipend: 'sips', nav: 'navStale', budget: 'budget', nobudget: 'budget', lowbal: 'lowBalance', stale: 'staleValues', legacy: 'legacy', family: 'family' }
+export const PREF_KEY: Record<string, string> = { card: 'cardDues', statement: 'cardDues', util: 'cardDues', premium: 'premiums', expiry: 'premiums', sip: 'sips', sipend: 'sips', nav: 'navStale', budget: 'budget', nobudget: 'budget', lowbal: 'lowBalance', stale: 'staleValues', legacy: 'legacy', family: 'family' }
 
 type NState = { read: Record<string, number>; dismissed: Record<string, number> }
 

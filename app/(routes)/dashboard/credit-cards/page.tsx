@@ -14,7 +14,7 @@ import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Progress, Select, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForPct } from '@/components/wealth/kit'
+import { Empty, Field, FormDialog, StepFormDialog, LoadingBlock, PageHeader, Panel, Progress, Select, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForPct } from '@/components/wealth/kit'
 import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
 import { DebitCardsTab } from '@/components/wealth/DebitCards'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
@@ -130,25 +130,33 @@ function CardForm({ row, onClose, onSave }: { row?: any; onClose: () => void; on
   const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
   const day = (v: string, n: string) => { const x = Number(v); if (!(x >= 1 && x <= 31)) throw new Error(`${n} must be between 1 and 31`); return x }
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit card' : 'Add credit card'} wide
+    <StepFormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit card' : 'Add credit card'} wide
       onSubmit={async () => {
         const limit = Number(f.limit), out = Number(f.outstanding)
         if (!(limit > 0)) throw new Error('Limit must be positive')
         if (out < 0 || out > limit) throw new Error('Outstanding must be between 0 and the limit')
         if (!/^\d{13,19}$/.test(f.cardNumber.replace(/\s/g, ''))) throw new Error('Card number must be 13-19 digits')
         await onSave({ ...row, ...f, cardNumber: f.cardNumber.replace(/\s/g, ''), limit, outstanding: out, available: limit - out, statementDay: day(f.statementDay, 'Statement day'), billingDay: day(f.billingDay, 'Billing day'), dueDay: day(f.dueDay, 'Due day') })
-      }}>
-      <Field label="Bank">{(id) => <Input id={id} required value={f.bank} onChange={set('bank')} />}</Field>
-      <Field label="Card name">{(id) => <Input id={id} required value={f.cardName} onChange={set('cardName')} />}</Field>
-      <Field label="Network">{(id) => <Select id={id} value={f.network} onChange={set('network')}>{NETWORKS.map((n) => <option key={n}>{n}</option>)}</Select>}</Field>
-      <Field label="Card holder">{(id) => <Input id={id} required value={f.holder} onChange={set('holder')} />}</Field>
-      <Field label="Card number" className="full">{(id) => <Input id={id} inputMode="numeric" required value={f.cardNumber} onChange={set('cardNumber')} />}</Field>
-      <Field label="Credit limit (₹)">{(id) => <Input id={id} type="number" min="1" step="any" required value={f.limit} onChange={set('limit')} />}</Field>
-      <Field label="Outstanding (₹)">{(id) => <Input id={id} type="number" min="0" step="any" required value={f.outstanding} onChange={set('outstanding')} />}</Field>
-      <Field label="Statement day">{(id) => <Input id={id} type="number" min="1" max="31" value={f.statementDay} onChange={set('statementDay')} />}</Field>
-      <Field label="Billing day">{(id) => <Input id={id} type="number" min="1" max="31" value={f.billingDay} onChange={set('billingDay')} />}</Field>
-      <Field label="Payment due day">{(id) => <Input id={id} type="number" min="1" max="31" value={f.dueDay} onChange={set('dueDay')} />}</Field>
-    </FormDialog>
+      }}
+      steps={[
+        { title: 'Card details', description: 'As printed on the card.', content: <>
+          <Field label="Bank">{(id) => <Input id={id} required value={f.bank} onChange={set('bank')} />}</Field>
+          <Field label="Card name">{(id) => <Input id={id} required value={f.cardName} onChange={set('cardName')} />}</Field>
+          <Field label="Network">{(id) => <Select id={id} value={f.network} onChange={set('network')}>{NETWORKS.map((n) => <option key={n}>{n}</option>)}</Select>}</Field>
+          <Field label="Card holder">{(id) => <Input id={id} required value={f.holder} onChange={set('holder')} />}</Field>
+          <Field label="Card number" className="full">{(id) => <Input id={id} inputMode="numeric" required value={f.cardNumber} onChange={set('cardNumber')} />}</Field>
+        </> },
+        { title: 'Limit and balance', description: 'Your credit limit and what you owe today.', content: <>
+          <Field label="Credit limit (₹)">{(id) => <Input id={id} type="number" min="1" step="any" required value={f.limit} onChange={set('limit')} />}</Field>
+          <Field label="Outstanding (₹)">{(id) => <Input id={id} type="number" min="0" step="any" required value={f.outstanding} onChange={set('outstanding')} />}</Field>
+        </> },
+        { title: 'Billing dates', description: 'Day of the month, 1 to 31. Used for due-date reminders.', content: <>
+          <Field label="Statement day">{(id) => <Input id={id} type="number" min="1" max="31" value={f.statementDay} onChange={set('statementDay')} />}</Field>
+          <Field label="Billing day">{(id) => <Input id={id} type="number" min="1" max="31" value={f.billingDay} onChange={set('billingDay')} />}</Field>
+          <Field label="Payment due day">{(id) => <Input id={id} type="number" min="1" max="31" value={f.dueDay} onChange={set('dueDay')} />}</Field>
+        </> },
+      ]}
+    />
   )
 }
 
