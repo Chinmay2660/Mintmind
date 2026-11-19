@@ -56,13 +56,13 @@ export function PageHeader({ title, description, actions, primaryAction, seconda
       {secondaryAction && (
         <button type="button" onClick={secondaryAction.onClick} disabled={secondaryAction.disabled} aria-label={secondaryAction.label}
           className="fab fixed bottom-[calc(var(--mobile-fab-bottom)+8.5rem)] right-4 z-30 flex h-14 w-14 items-center justify-center gap-2 rounded-full border-2 border-primary bg-card text-foreground shadow-lg outline-none transition-transform hover:bg-muted active:scale-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 md:bottom-[8.75rem] md:h-12 md:w-auto md:px-5 md:text-sm md:font-semibold">
-          <Plus className="h-6 w-6 md:h-4 md:w-4" aria-hidden /><span className="hidden md:inline">{secondaryAction.label}</span>
+          <Plus className="h-6 w-6 md:h-4 md:w-4" /><span className="hidden md:inline">{secondaryAction.label}</span>
         </button>
       )}
       {primaryAction && (
         <button type="button" onClick={primaryAction.onClick} disabled={primaryAction.disabled} aria-label={primaryAction.label}
           className="fab fixed bottom-[calc(var(--mobile-fab-bottom)+4.25rem)] right-4 z-30 flex h-14 w-14 items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 outline-none transition-transform hover:bg-primary/90 active:scale-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 md:bottom-[5.25rem] md:h-12 md:w-auto md:px-5 md:text-sm md:font-semibold paper:border paper:border-[hsl(var(--edge))] paper:shadow-[1.5px_3px_0_0_hsl(var(--drop))] print:hidden">
-          <Plus className="h-6 w-6 md:h-4 md:w-4" aria-hidden /><span className="hidden md:inline">{primaryAction.label}</span>
+          <Plus className="h-6 w-6 md:h-4 md:w-4" /><span className="hidden md:inline">{primaryAction.label}</span>
         </button>
       )}
     </div>
@@ -114,7 +114,7 @@ export function InfoTip({ label, children }: { label: string; children: ReactNod
     <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
       <PopoverPrimitive.Trigger asChild>
         <button type="button" aria-label={`About ${label}`} onPointerEnter={(e) => { if (e.pointerType === 'mouse') show() }} onPointerLeave={(e) => { if (e.pointerType === 'mouse') hide() }}
-          className="inline-flex h-5 w-5 shrink-0 translate-y-px items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><Info className="h-3.5 w-3.5" aria-hidden /></button>
+          className="inline-flex h-5 w-5 shrink-0 translate-y-px paper:-translate-y-0.5 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><Info className="h-3.5 w-3.5" /></button>
       </PopoverPrimitive.Trigger>
       <PopoverPrimitive.Portal>
         <PopoverPrimitive.Content side="bottom" align="end" sideOffset={6} collisionPadding={12} onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()} onPointerEnter={show} onPointerLeave={hide}
@@ -156,7 +156,7 @@ export function Metric({ amount, pct, invertGood, hint, pill, compact = true, de
   const v = amount ?? pct
   const t = metricTone({ amount, pct, invertGood })
   if (t.state === 'none' || v == null) {
-    return <span className={cn('inline-flex items-center gap-1 text-xs text-muted-foreground', className)} title={hint}><Minus className="h-3.5 w-3.5" aria-hidden />{hint ? <span className="sr-only">{hint}</span> : <span className="sr-only">Not available</span>}</span>
+    return <span className={cn('inline-flex items-center gap-1 text-xs text-muted-foreground', className)} title={hint}><Minus className="h-3.5 w-3.5" />{hint ? <span className="sr-only">{hint}</span> : <span className="sr-only">Not available</span>}</span>
   }
   const flat = t.state === 'flat'
   const good = t.state === 'good'
@@ -181,7 +181,7 @@ export function Delta(props: Parameters<typeof Metric>[0]) { return <Metric {...
 
 export function RangeTabs({ value, onChange, options, label = 'Range' }: { value: string; onChange: (v: any) => void; options: readonly string[]; label?: string }) {
   return (
-    <div role="group" aria-label={label} className="inline-flex rounded-lg border border-border bg-muted p-0.5">
+    <div className="inline-flex rounded-lg border border-border bg-muted p-0.5">
       {options.map((o) => (
         <button
           key={o}

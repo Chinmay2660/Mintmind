@@ -106,13 +106,13 @@ export function IsometricHero() {
       </div>
 
       <figcaption className="mx-auto mt-2 max-w-[460px]">
-        <div role="group" aria-label="Parts of the illustration" className="flex flex-wrap justify-center gap-1.5">
+        <div className="flex flex-wrap justify-center gap-1.5">
           {PARTS.map((p) => (
             <button key={p.key} type="button" aria-pressed={active === p.key} onMouseEnter={() => setActive(p.key)} onMouseLeave={() => setActive(null)} onFocus={() => setActive(p.key)} onBlur={() => setActive(null)}
               className={cn('rounded-full border px-3 py-1 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', active === p.key ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card hover:bg-muted')}>{p.label}</button>
           ))}
         </div>
-        <p className="mt-2 min-h-[2.5rem] text-center text-xs text-muted-foreground" aria-live="polite">{shown ? shown.note : 'Sample figures. Hover a card, or pick a part, to see what it shows.'}</p>
+        <p className="mt-2 min-h-[2.5rem] text-center text-xs text-muted-foreground">{shown ? shown.note : 'Sample figures. Hover a card, or pick a part, to see what it shows.'}</p>
       </figcaption>
     </figure>
   )

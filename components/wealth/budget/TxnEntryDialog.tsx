@@ -202,7 +202,7 @@ export function TxnEntryDialog({ initialType = 'expense', row, draft, defaultMon
               <input id="txn-amount" inputMode="decimal" autoComplete="off" placeholder="0" value={expr} onChange={(e) => { const v = e.target.value.replace(/[^0-9.]/g, ''); const i = v.indexOf('.'); setExpr(i < 0 ? v : v.slice(0, i + 1) + v.slice(i + 1).replace(/./g, '')) }} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); save() } }}
                 className={cn('h-12 w-full rounded-xl border border-input bg-background pl-8 pr-3 text-2xl font-semibold tabular-nums outline-none placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-ring/40', tone.text)} /></div>
           </section>
-          <section className="shrink-0 px-6 pb-3 pt-2 text-center md:hidden" aria-live="polite">
+          <section className="shrink-0 px-6 pb-3 pt-2 text-center md:hidden">
             <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">{verb.verb}</p>
             <p className={cn('mt-1 flex items-baseline justify-center gap-1 tabular-nums', tone.text)}>
               <span className="text-2xl font-medium opacity-70">₹</span>
@@ -228,7 +228,7 @@ export function TxnEntryDialog({ initialType = 'expense', row, draft, defaultMon
                   )
                 })}
               </div>
-              <button type="button" onClick={() => { onClose(); if (window.location.pathname === '/dashboard/budget') window.dispatchEvent(new Event('mm:open-categories')); else router.push('/dashboard/budget?add=categories') }} className="-mt-1 inline-flex items-center gap-1 self-start rounded text-xs font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><Tags className="h-3.5 w-3.5" aria-hidden />Add or edit categories</button>
+              <button type="button" onClick={() => { onClose(); if (window.location.pathname === '/dashboard/budget') window.dispatchEvent(new Event('mm:open-categories')); else router.push('/dashboard/budget?add=categories') }} className="-mt-1 inline-flex items-center gap-1 self-start rounded text-xs font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><Tags className="h-3.5 w-3.5" />Add or edit categories</button>
               </>
             )}
             {type === 'expense' && suggestion && suggestion.category !== f.category && (
@@ -252,7 +252,7 @@ export function TxnEntryDialog({ initialType = 'expense', row, draft, defaultMon
 
               {type === 'transfer' && <>
                 <Row name="From"><Select aria-label="From" value={f.from} onChange={set('from')}>{fromOptions.length === 0 && <option value="">Nothing to transfer from</option>}{fromOptions.map((o, i) => <option key={`${o.v}-${i}`} value={o.v}>{o.l}</option>)}</Select></Row>
-                <div className="flex items-center gap-3 pl-[6.5rem] text-muted-foreground"><ArrowRight className="h-4 w-4 rotate-90" aria-hidden /></div>
+                <div className="flex items-center gap-3 pl-[6.5rem] text-muted-foreground"><ArrowRight className="h-4 w-4 rotate-90" /></div>
                 <Row name="To"><Select aria-label="To" value={f.to} onChange={set('to')}>{toOptions.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}</Select></Row>
               </>}
 
@@ -262,7 +262,7 @@ export function TxnEntryDialog({ initialType = 'expense', row, draft, defaultMon
                   className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/40" />
               </Row>
               {type !== 'transfer' && <Row name="Tags"><input value={f.tags} onChange={set('tags')} onFocus={() => setTyping(true)} onBlur={() => setTyping(false)} aria-label="Tags, separated by commas" placeholder="e.g. trip, work (optional)" className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/40" /></Row>}
-              {ruleHit && !pickedByHand && <p className="text-xs text-muted-foreground" aria-live="polite">Rule: description contains <strong className="text-foreground">{ruleHit.contains}</strong>, so the category is <strong className="text-foreground">{ruleHit.category}</strong>. Pick another to override.</p>}
+              {ruleHit && !pickedByHand && <p className="text-xs text-muted-foreground">Rule: description contains <strong className="text-foreground">{ruleHit.contains}</strong>, so the category is <strong className="text-foreground">{ruleHit.category}</strong>. Pick another to override.</p>}
             </div>
 
             {type === 'expense' && (f.mode === 'card' || target || f.mode === 'cash') && (
@@ -285,14 +285,14 @@ export function TxnEntryDialog({ initialType = 'expense', row, draft, defaultMon
               </div>
             )}
             {!typing && (
-              <div className="grid grid-cols-4 gap-1.5 md:hidden" role="group" aria-label="Amount keypad">
+              <div className="grid grid-cols-4 gap-1.5 md:hidden">
                 {KEYS.flat().map(({ k, l }) => {
                   const op = ['/', '*', '-', '+'].includes(k)
                   return (
                     <button key={k} type="button" onClick={() => setExpr((p) => pressKey(p, k))} onDoubleClick={k === 'back' ? () => setExpr('') : undefined}
                       aria-label={k === 'back' ? 'Backspace' : k === '/' ? 'Divide' : k === '*' ? 'Multiply' : k === '-' ? 'Subtract' : k === '+' ? 'Add' : k === '.' ? 'Decimal point' : l}
                       className={cn('flex h-12 items-center justify-center rounded-full bg-muted/70 text-xl [@media(max-height:720px)]:h-10 [@media(max-height:720px)]:text-lg tabular-nums outline-none transition-colors active:scale-95 active:bg-muted focus-visible:ring-2 focus-visible:ring-ring hover:bg-muted', op ? cn('font-medium', tone.text) : 'font-medium')}>
-                      {k === 'back' ? <Delete className="h-5 w-5" aria-hidden /> : l}
+                      {k === 'back' ? <Delete className="h-5 w-5" /> : l}
                     </button>
                   )
                 })}

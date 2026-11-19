@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb'
 import User from '@/models/User'
 import DriveConnection from '@/models/DriveConnection'
 import DriveDocument from '@/models/DriveDocument'
+import SyncDoc from '@/models/SyncDoc'
 import { requireAuth } from '@/lib/middleware/api'
 import { revokeToken } from '@/lib/google/drive'
 import { invalidateUserCache } from '@/lib/auth'
@@ -13,7 +14,7 @@ export async function DELETE() {
   if (response) return response
   await connectDB()
   await revokeToken(user._id)
-  await Promise.all([DriveConnection.deleteMany({ userId: user._id }), DriveDocument.deleteMany({ userId: user._id })])
+  await Promise.all([DriveConnection.deleteMany({ userId: user._id }), DriveDocument.deleteMany({ userId: user._id }), SyncDoc.deleteMany({ userId: user._id })])
   await User.deleteOne({ _id: user._id })
   invalidateUserCache(user._id)
   const res = NextResponse.json({ success: true })

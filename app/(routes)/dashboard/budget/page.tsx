@@ -180,7 +180,7 @@ export default function BudgetPage() {
           </div>
 
           <Panel title={catFilter ? `Daily pacing: ${catFilter}` : 'Daily pacing'}>
-            <div className="h-72" role="img" aria-label="Expected versus actual cumulative spending line chart">
+            <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={p.series} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                   <CartesianGrid stroke={chartGrid} vertical={false} />

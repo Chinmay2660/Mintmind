@@ -53,7 +53,7 @@ function NetWorthTile() {
       </div>
       <div className="relative mt-4 min-h-40 flex-1" onPointerLeave={() => setHover(null)}
         onPointerMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); setHover(Math.max(0, Math.min(pts.length - 1, Math.round(((e.clientX - r.left) / r.width) * (pts.length - 1))))) }}>
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" role="img" aria-label={`Sample net worth for ${range}`}>
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
           <path d={`${line} L100,100 L0,100 Z`} fill="hsl(var(--primary))" fillOpacity="0.22" />
           <path d={line} fill="none" stroke="hsl(var(--primary))" strokeWidth="1.6" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
           <line x1={x(i)} x2={x(i)} y1="0" y2="100" stroke="hsl(var(--foreground))" strokeOpacity="0.35" strokeDasharray="2 2" vectorEffect="non-scaling-stroke" />
@@ -81,7 +81,7 @@ function AllocationTile() {
     <Tile title="Allocation" icon={Wallet} hint="Tap a slice to focus it.">
       <div className="flex flex-col items-center gap-3">
         <div className="relative h-32 w-32 shrink-0">
-          <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" role="img" aria-label="Sample asset allocation donut">
+          <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
             {ALLOC.map((a, i) => {
               const len = (a.v / 100) * C; const off = (ALLOC.slice(0, i).reduce((n, x) => n + x.v, 0) / 100) * C
               return <circle key={a.name} cx="50" cy="50" r={R} fill="none" stroke={a.tone} strokeWidth={sel === i ? 15 : 12} strokeDasharray={`${Math.max(0, len - 1.5)} ${C}`} strokeDashoffset={-off} className="cursor-pointer transition-all duration-200" opacity={sel === null || sel === i ? 1 : 0.3} onClick={() => setSel(sel === i ? null : i)} />
@@ -112,10 +112,10 @@ function GoalTile() {
   return (
     <Tile title="Goal planner" icon={Target} hint="Move the slider to see how saving more shortens the wait.">
       <div><p className="text-sm font-medium">Emergency fund</p><p className="text-xs text-muted-foreground tabular-nums">{inr(have)} of {inr(target)}</p></div>
-      <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-muted" role="img" aria-label="34 percent of goal"><div className="h-full rounded-full bg-primary transition-all" style={{ width: '34%' }} /></div>
+      <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all" style={{ width: '34%' }} /></div>
       <label className="mt-4 block text-xs text-muted-foreground" htmlFor="bento-save">Save each month: <strong className="text-foreground tabular-nums">{inr(monthly)}</strong></label>
       <input id="bento-save" type="range" min={5000} max={80000} step={5000} value={monthly} onChange={(e) => setMonthly(Number(e.target.value))} className="mt-1.5 w-full accent-[hsl(var(--primary))]" />
-      <p className="mt-3 min-h-[2.5rem] text-sm" aria-live="polite">About <strong className="tabular-nums">{months} mo</strong>{months >= 12 ? <span className="text-muted-foreground tabular-nums"> ({(months / 12).toFixed(1)} yrs)</span> : null} to reach it.</p>
+      <p className="mt-3 min-h-[2.5rem] text-sm">About <strong className="tabular-nums">{months} mo</strong>{months >= 12 ? <span className="text-muted-foreground tabular-nums"> ({(months / 12).toFixed(1)} yrs)</span> : null} to reach it.</p>
     </Tile>
   )
 }
@@ -130,7 +130,7 @@ function PrivacyTile() {
         <p className="text-2xl font-semibold tabular-nums tracking-tight">{hidden ? '₹ ••••••' : inr(2175000)}</p>
       </div>
       <button type="button" onClick={() => setHidden((v) => !v)} aria-pressed={hidden} className="mt-3 inline-flex items-center gap-2 self-start rounded-full border border-border px-3 py-1.5 text-xs font-medium outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring">
-        {hidden ? <EyeOff className="h-3.5 w-3.5" aria-hidden /> : <Eye className="h-3.5 w-3.5" aria-hidden />}{hidden ? 'Show balances' : 'Hide balances'}
+        {hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}{hidden ? 'Show balances' : 'Hide balances'}
       </button>
     </Tile>
   )
@@ -150,7 +150,7 @@ function SpendTile() {
             <span>{s.n}</span><span className="h-2 overflow-hidden rounded-full bg-border"><span className="block h-full rounded-full bg-primary transition-all" style={{ width: `${(s.v / max) * 100}%`, opacity: sel === i ? 1 : 0.55 }} /></span><span className="text-right tabular-nums text-muted-foreground">{compact(s.v)}</span></button></li>
         ))}
       </ul>
-      <p className="mt-3 min-h-[2.5rem] text-sm" aria-live="polite"><strong>{SPEND[sel].n}</strong> is <strong className="tabular-nums">{Math.round((SPEND[sel].v / total) * 100)}%</strong> of this month&apos;s spending.</p>
+      <p className="mt-3 min-h-[2.5rem] text-sm"><strong>{SPEND[sel].n}</strong> is <strong className="tabular-nums">{Math.round((SPEND[sel].v / total) * 100)}%</strong> of this month&apos;s spending.</p>
     </Tile>
   )
 }
@@ -162,7 +162,7 @@ function OfflineTile() {
     <Tile title="Offline" icon={Plane} hint="Your data lives on your device, so the app keeps working without a connection.">
       <div className={cn('flex min-h-[3rem] items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-sm transition-colors', off ? 'border-warning/50 bg-warning/10' : 'border-border bg-muted/50')}>
         <span className="font-medium">{off ? 'Offline' : 'Online'}</span>
-        <span className="text-xs text-muted-foreground">{off ? 'Still adding and reading entries' : 'Everything saved on this device'}</span>
+        <span className="text-xs text-muted-foreground">{off ? 'Still adding and reading entries' : 'Everything saved to your account'}</span>
       </div>
       <button type="button" onClick={() => setOff((v) => !v)} aria-pressed={off} className="mt-3 self-start rounded-full border border-border px-3 py-1.5 text-xs font-medium outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring">{off ? 'Go back online' : 'Try airplane mode'}</button>
     </Tile>
@@ -179,11 +179,11 @@ function FamilyTile() {
     <Tile className="md:col-span-3" title="Family" icon={Users} hint="Look at everyone together, or one person at a time.">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div><p className="text-xs text-muted-foreground">{sel === 'all' ? 'Whole family' : PEOPLE[sel].n}</p><p className="text-3xl font-semibold tabular-nums tracking-tight">{compact(shown)}</p></div>
-        <div role="group" aria-label="Family member" className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5">
           {(['all', 0, 1, 2] as const).map((k) => <button key={String(k)} type="button" aria-pressed={sel === k} onClick={() => setSel(k)} className={cn('rounded-full border px-3 py-1 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', sel === k ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:bg-muted')}>{k === 'all' ? 'Everyone' : PEOPLE[k].n}</button>)}
         </div>
       </div>
-      <div className="mt-4 flex h-3 overflow-hidden rounded-full bg-border" role="img" aria-label="Share of family net worth by member">
+      <div className="mt-4 flex h-3 overflow-hidden rounded-full bg-border">
         {PEOPLE.map((p, i) => <span key={p.n} className="h-full transition-all duration-300" style={{ width: `${(p.v / total) * 100}%`, background: `hsl(var(--chart-${[1, 2, 4][i]}))`, opacity: sel === 'all' || sel === i ? 1 : 0.25 }} />)}
       </div>
       <ul className="mt-4 grid gap-2 sm:grid-cols-3">

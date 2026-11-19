@@ -106,7 +106,7 @@ function NavPanel({ collapsed = false, drawer = false, onNavigate, onToggleRail 
 
             <div className="mt-4 border-t border-border pt-4">
               <div className="mb-2 flex items-center justify-between px-1">
-                <span className="flex items-center gap-2 text-sm font-bold"><Folder className="h-[18px] w-[18px] fill-current" aria-hidden />Your money</span>
+                <span className="flex items-center gap-2 text-sm font-bold"><Folder className="h-[18px] w-[18px] fill-current" />Your money</span>
                 <span className="text-xs tabular-nums text-muted-foreground">{moduleCount} modules</span>
               </div>
               <ul className="space-y-0.5">
@@ -116,8 +116,8 @@ function NavPanel({ collapsed = false, drawer = false, onNavigate, onToggleRail 
                     <li key={g.key}>
                       <button type="button" aria-expanded={expanded} onClick={() => setFolder(g, !expanded)}
                         className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm font-medium outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring">
-                        <ChevronRight className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-150 motion-reduce:transition-none', expanded && 'rotate-90')} aria-hidden />
-                        <Folder className={cn('h-[18px] w-[18px] shrink-0 fill-current', g.tone)} aria-hidden />
+                        <ChevronRight className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-150 motion-reduce:transition-none', expanded && 'rotate-90')} />
+                        <Folder className={cn('h-[18px] w-[18px] shrink-0 fill-current', g.tone)} />
                         <span className="min-w-0 flex-1 truncate">{g.label}</span>
                         <span className="text-xs tabular-nums text-muted-foreground" title="Modules set up">{g.items.filter((i) => done[i.id]).length}/{g.items.length}</span>
                       </button>
@@ -169,7 +169,7 @@ export function MobileMenu() {
     <>
       <button type="button" onClick={() => setOpen(true)} aria-label="Open menu" aria-expanded={open}
         className="mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring md:hidden print:hidden">
-        <Menu className="h-[18px] w-[18px]" aria-hidden />
+        <Menu className="h-[18px] w-[18px]" />
       </button>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="flex w-[86vw] max-w-[19rem] flex-col gap-0 bg-sidebar p-0 sm:max-w-[19rem] [&>button]:hidden">

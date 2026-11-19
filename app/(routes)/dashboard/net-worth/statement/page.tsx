@@ -13,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { LoadingBlock } from '@/components/wealth/kit'
 
 // a document is dark text on white paper whichever theme the app is in, on screen and when printed
-const PAPER = { '--background': '0 0% 100%', '--foreground': '0 0% 9%', '--card': '0 0% 100%', '--muted-foreground': '0 0% 32%', '--border': '0 0% 78%' } as React.CSSProperties
+const PAPER = { '--background': '0 0% 100%', '--foreground': '0 0% 0%', '--card': '0 0% 100%', '--muted-foreground': '0 0% 20%', '--border': '0 0% 72%' } as React.CSSProperties
 
 /** A net worth statement to sign: assets and liabilities as of today, with space for a signature. It is self-declared, not an audit. */
 export default function StatementPage() {

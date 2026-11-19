@@ -18,7 +18,7 @@ export function CheckUp({ result }: { result: ReturnType<typeof moneyCheckup> })
       <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold">Your money check-up</h3>
         <div className="flex flex-wrap gap-2 text-xs">{(['fix', 'watch', 'hold', 'ok'] as const).map((s) => <span key={s} className="flex items-center gap-1"><Pill s={s} />{result.counts[s]}</span>)}</div></div>
       {hs.score != null && (
-        <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1" role="group" aria-label="Score"><span className="text-4xl font-bold tabular-nums">{hs.score}</span><span className="text-sm text-muted-foreground">/ 100</span><span className="rounded-full border border-border px-2.5 py-0.5 text-xs font-bold">{hs.label}</span></div>
+        <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1"><span className="text-4xl font-bold tabular-nums">{hs.score}</span><span className="text-sm text-muted-foreground">/ 100</span><span className="rounded-full border border-border px-2.5 py-0.5 text-xs font-bold">{hs.label}</span></div>
       )}
       <div className="mt-4 grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <ul role="tablist" className="space-y-2">{result.groups.map((x) => (

@@ -53,7 +53,7 @@ function StrengthMeter({ value }: { value: string }) {
   const s = passwordStrength(value)
   const color = ['bg-destructive', 'bg-destructive', 'bg-warning', 'bg-success', 'bg-success'][s.score]
   return (
-    <div aria-live="polite">
+    <div>
       <div className="flex gap-1" aria-hidden>{[0, 1, 2, 3].map((i) => <span key={i} className={cn('h-1.5 flex-1 rounded-full bg-muted', value && i < Math.max(1, s.score) && color)} />)}</div>
       <p className="mt-1 text-xs text-muted-foreground">{value ? `${s.label} · ~${s.bits} bits` : 'Enter a password'}</p>
     </div>
@@ -243,7 +243,7 @@ function Unlocked({ items, session, meta, bioOk, onLock, onSave, onDelete, db, o
         <div className="relative min-w-52 flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input aria-label="Search vault" className="pl-9" placeholder="Search name, username, website" value={q} onChange={(e) => setQ(e.target.value)} /></div>
         <Button variant={favOnly ? 'default' : 'outline'} aria-pressed={favOnly} onClick={() => setFavOnly(!favOnly)}><Star className="mr-1.5 h-4 w-4" />Favourites</Button>
       </div>
-      <div role="group" aria-label="Category" className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1.5">
         {['All', ...CATEGORIES].map((c) => <button key={c} type="button" aria-pressed={cat === c} onClick={() => setCat(c)} className={cn('rounded-full border px-3 py-1 text-xs font-medium transition-colors', cat === c ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{c}</button>)}
       </div>
 
@@ -264,7 +264,7 @@ function Unlocked({ items, session, meta, bioOk, onLock, onSave, onDelete, db, o
           <Button variant="outline" onClick={() => fileRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import encrypted</Button>
           <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) importEnc(f); e.target.value = '' }} />
         </div>
-        <FootNote className="mt-3">Vault data stays on this device and is never sent to our servers. Use the encrypted export to move it to another device.</FootNote>
+        <FootNote className="mt-3">Vault items are encrypted on this device before they are saved to your account, so the server only ever holds ciphertext. Your master password and recovery key never leave this device.</FootNote>
       </Panel>
 
       {edit && <ItemForm row={edit.row} type={edit.type} members={members} onClose={() => setEdit(null)} onSave={async (v) => { await onSave({ ...edit.row, ...v, type: edit.type }); toast.success('Saved') }} />}

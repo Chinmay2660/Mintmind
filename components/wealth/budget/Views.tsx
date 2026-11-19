@@ -128,7 +128,7 @@ export function TransactionsView({ list, ym, onEdit, onDelete, onAdd, onDuplicat
       <SummaryStrip list={list} />
       <div className="space-y-2.5 md:flex md:flex-wrap md:items-center md:gap-2 md:space-y-0">
         <div className="relative md:min-w-56 md:flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input aria-label="Search transactions" className="h-11 pl-9 md:h-10" placeholder="Search description, category" value={q} onChange={(e) => setQ(e.target.value)} /></div>
-        <div role="group" aria-label="Type" className="grid grid-cols-4 rounded-xl border border-border bg-muted p-1 md:inline-grid md:w-auto">
+        <div className="grid grid-cols-4 rounded-xl border border-border bg-muted p-1 md:inline-grid md:w-auto">
           {(['all', 'expense', 'income', 'transfer'] as const).map((k) => <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)} className={cn('min-h-9 rounded-lg px-3 text-xs font-medium capitalize outline-none focus-visible:ring-2 focus-visible:ring-ring', kind === k ? 'bg-card shadow-card' : 'text-muted-foreground hover:text-foreground')}>{k}</button>)}
         </div>
         <div className="flex items-center gap-2">
@@ -138,7 +138,7 @@ export function TransactionsView({ list, ym, onEdit, onDelete, onAdd, onDuplicat
           <Button variant="outline" onClick={() => exportTxCsv(shown, ym)} disabled={!shown.length} aria-label="Download CSV" className="h-10 shrink-0"><Download className="h-4 w-4 md:mr-1.5" /><span className="max-md:sr-only">CSV</span></Button>
         </div>
       </div>
-      <div className="grid items-end gap-2 [grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr))]" role="group" aria-label="More filters">
+      <div className="grid items-end gap-2 [grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr))]">
         <label className="min-w-0 text-xs text-muted-foreground [grid-column:1/-1] sm:max-w-sm">Account or card
           <Select aria-label="Account or card" value={acct} onChange={(e) => setAcct(e.target.value)}>
             <option value="">All accounts and cards</option>
@@ -150,7 +150,7 @@ export function TransactionsView({ list, ym, onEdit, onDelete, onAdd, onDuplicat
         <label className="min-w-0 text-xs text-muted-foreground">From<div className="mt-0.5"><DateInput aria-label="From date" min={`${ym}-01`} max={to || `${ym}-31`} value={from} onChange={(e) => setFrom(e.target.value)} /></div></label>
         <label className="min-w-0 text-xs text-muted-foreground">To<div className="mt-0.5"><DateInput aria-label="To date" min={from || `${ym}-01`} max={`${ym}-31`} value={to} onChange={(e) => setTo(e.target.value)} /></div></label>
         {(acct || tag || from || to || cat || kind !== 'all' || q || onlyStar) && <Button type="button" variant="ghost" size="sm" className="justify-self-start [grid-column:1/-1]" onClick={() => { setAcct(''); setTag(''); setFrom(''); setTo(''); setCat(''); setKind('all'); setQ(''); setOnlyStar(false) }}>Clear filters</Button>}
-        <span className="text-right text-xs text-muted-foreground tabular-nums [grid-column:1/-1]" aria-live="polite">{shown.length} of {list.length}</span>
+        <span className="text-right text-xs text-muted-foreground tabular-nums [grid-column:1/-1]">{shown.length} of {list.length}</span>
       </div>
       {groups.length === 0 ? <Empty title={onlyStar ? 'No bookmarked transactions this month' : list.length ? 'No matches' : 'No transactions this month'} description={onlyStar ? 'Tap the star on a transaction to keep it handy.' : undefined} action={!list.length ? <Button onClick={onAdd}><Plus className="mr-1.5 h-4 w-4" />Add transaction</Button> : undefined} /> : (
         <div className={cn('space-y-3', selecting && 'pb-24')}>
@@ -239,12 +239,12 @@ export function StatsView({ list }: { list: Tx[] }) {
     <div className="space-y-4">
       <SummaryStrip list={list} />
       <Panel title="By category" action={
-        <div role="group" aria-label="Stats type" className="inline-flex rounded-lg border border-border bg-muted p-0.5">
+        <div className="inline-flex rounded-lg border border-border bg-muted p-0.5">
           {(['expense', 'income'] as const).map((k) => <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)} className={cn('rounded-md px-2.5 py-1 text-xs font-medium capitalize outline-none focus-visible:ring-2 focus-visible:ring-ring', kind === k ? 'bg-card shadow-card' : 'text-muted-foreground')}>{k === 'expense' ? 'Expenses' : 'Income'}</button>)}
         </div>}>
         {rows.length === 0 ? <Empty title={`No ${kind === 'expense' ? 'expenses' : 'income'} this month`} /> : (
           <div className="flex flex-col items-center gap-6 md:flex-row">
-            <div className="relative h-52 w-52 shrink-0" role="img" aria-label={`${kind} by category donut chart`}>
+            <div className="relative h-52 w-52 shrink-0">
               <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={rows} dataKey="value" nameKey="name" innerRadius={62} outerRadius={92} paddingAngle={2} stroke="hsl(var(--card))" strokeWidth={2}>{rows.map((r, i) => <Cell key={r.name} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />)}</Pie><Tooltip {...chartTooltipStyle} formatter={(v: number) => (privacyMode ? '••••' : formatINR(v))} /></PieChart></ResponsiveContainer>
               <div className="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center"><span className="text-xs text-muted-foreground">Total</span><span className="text-sm font-semibold"><Money value={total} compact /></span></div>
             </div>
@@ -343,7 +343,7 @@ export function MonthlyView({ all, ym, curYm, onPick }: { all: Tx[]; ym: string;
                     <span><span className="block text-[10px] uppercase text-muted-foreground">Total</span><span className="font-semibold"><Money value={m.s.net} compact signed /></span></span>
                   </span>
                 )}
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
               </button>
             </li>
           )
@@ -362,7 +362,7 @@ function Bars({ rows, total }: { rows: { name: string; value: number }[]; total:
         return (
           <li key={r.name}>
             <div className="mb-1 flex items-baseline justify-between gap-3 text-sm"><span className="min-w-0 truncate">{r.name}</span><span className="shrink-0 tabular-nums"><Money value={r.value} /> <span className="text-xs text-muted-foreground">{pct}%</span></span></div>
-            <div className="h-2 overflow-hidden rounded-full bg-muted" role="img" aria-label={`${r.name}: ${pct} percent`}><div className="h-full rounded-full" style={{ width: `${Math.max(pct, 2)}%`, background: CHART_PALETTE[i % CHART_PALETTE.length] }} /></div>
+            <div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full" style={{ width: `${Math.max(pct, 2)}%`, background: CHART_PALETTE[i % CHART_PALETTE.length] }} /></div>
           </li>
         )
       })}

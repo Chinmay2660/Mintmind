@@ -45,9 +45,12 @@ Open the app and choose **Explore Demo Account**: no sign-up, sample data stored
 
 ## Where data lives
 
-Money data is kept **on the device** (IndexedDB through Dexie), so it is not on any server. Use Settings, Data to export
-and restore a backup, because clearing the browser's data removes it. The server (MongoDB) holds accounts, feature
-choices, uploaded-document records, family-circle sharing and the legacy release.
+Money data lives **on the server** (MongoDB, the `SyncDoc` collection behind `/api/sync`), so the same account works on
+every phone and laptop. Each signed-in device keeps a local copy (IndexedDB through Dexie, `lib/wealth/sync.js`) so the
+app is fast and keeps working offline; changes are pushed shortly after they are made and pulled when the app opens,
+regains focus or comes back online. The first time a device syncs, any data it already holds is uploaded. Vault items
+are encrypted in the browser before they are sent, so the server only stores ciphertext. Demo Mode is the exception:
+its sample data stays in the browser and never syncs. Settings, Data still offers an export and restore.
 
 ## Security
 

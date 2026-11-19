@@ -41,13 +41,13 @@ export function ForecastPanel() {
       </section>
 
       <Panel title="Net worth ahead" description="Your net worth grown at the yearly return you choose, with the monthly saving above rising 5% a year. An estimate, not a promise."
-        action={<div role="group" aria-label="Years shown" className="flex gap-1">{YEARS.map((y) => <button key={y} type="button" onClick={() => setYears(y)} aria-pressed={years === y} className={cn('rounded-full border px-2.5 py-1 text-xs', years === y ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{y}y</button>)}</div>}>
+        action={<div className="flex gap-1">{YEARS.map((y) => <button key={y} type="button" onClick={() => setYears(y)} aria-pressed={years === y} className={cn('rounded-full border px-2.5 py-1 text-xs', years === y ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{y}y</button>)}</div>}>
         <div className="mb-3 grid gap-3 sm:grid-cols-3">
           <div><p className="text-xs text-muted-foreground">In {years} years</p><p className="text-xl font-semibold tabular-nums"><Money value={Math.round(nw.points[years])} /></p></div>
           <div><p className="text-xs text-muted-foreground">Change from today</p><Metric amount={Math.round(nw.points[years] - netWorth.netWorth)} className="text-base font-semibold" /></div>
           <label className="text-xs text-muted-foreground">Yearly return: <strong className="text-foreground">{growth}%</strong><InfoTip label="Yearly return">The average yearly growth of what you own. Equity has swung widely from year to year, so try a lower figure too.</InfoTip><Slider aria-label="Yearly return in percent" min={3} max={14} step={1} value={growth} onChange={setGrowth} className="mt-1" /></label>
         </div>
-        <div className="h-60" role="img" aria-label={`Projected net worth over ${years} years at ${growth} percent`}>
+        <div className="h-60">
           <ResponsiveContainer width="100%" height="100%"><LineChart data={nwRows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid stroke={chartGrid} strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="label" {...chartAxis} interval="preserveStartEnd" /><YAxis {...chartAxis} width={64} tickFormatter={(v) => formatCompactINR(v)} />
@@ -62,7 +62,7 @@ export function ForecastPanel() {
           <span>{cash.net >= 0 ? 'Growing by' : 'Falling by'} <strong className={cn('tabular-nums', cash.net < 0 && 'text-destructive')}>{formatINR(Math.abs(cash.net))}</strong> a month</span>
           {cash.runsOut ? <span className="font-semibold text-destructive" role="status">Runs out in {label(cash.runsOut.ym)} at this pace</span> : <span className="text-muted-foreground">Lowest: {formatINR(cash.lowest.end)} in {label(cash.lowest.ym)}</span>}
         </div>
-        <div className="h-52" role="img" aria-label="Projected cash balance for six months">
+        <div className="h-52">
           <ResponsiveContainer width="100%" height="100%"><LineChart data={cash.points.map((p) => ({ label: label(p.ym), value: p.end }))} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid stroke={chartGrid} strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="label" {...chartAxis} /><YAxis {...chartAxis} width={64} tickFormatter={(v) => formatCompactINR(v)} />

@@ -102,7 +102,7 @@ export default function OnboardingPage() {
       </div></header>
 
       <main className="relative mx-auto my-auto w-full max-w-4xl rounded-2xl border border-border bg-card/80 px-5 py-8 shadow-[var(--shadow-elevated)] backdrop-blur sm:px-10 sm:py-10">
-        <div className="mb-8" role="group" aria-label={`Step ${step + 1} of ${STEPS.length}: ${STEPS[step]}`}>
+        <div className="mb-8">
           <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground"><span>Step {step + 1} of {STEPS.length}</span><span>{STEPS[step]}</span></div>
           <div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all duration-300" style={{ width: `${progress}%` }} /></div>
         </div>

@@ -37,7 +37,7 @@ export default function BankAccountsPage() {
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-highlight/30 text-[hsl(85_60%_26%)] dark:bg-highlight/20 dark:text-highlight"><Landmark className="h-5 w-5" /></span>
                 <div className="min-w-0 flex-1"><p className="truncate font-medium">{b.nickname || b.bankName}</p><p className="truncate text-xs text-muted-foreground">{b.type === 'cash' ? 'Cash in hand' : `${b.bankName} · ${b.holderName}`}</p></div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
               </div>
               <p className="mt-4 text-2xl font-semibold"><Money value={b.currentBalance} /></p>
               <p className="mt-1 text-xs text-muted-foreground">{b.type === 'cash' ? '' : <>Available <Money value={availableBalance(b)} />{mabShortfall(b) > 0 && <span className="text-warning"> (below MAB)</span>} · </>}updated {formatDate(b.lastUpdated)}</p>

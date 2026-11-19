@@ -14,7 +14,7 @@ function Item({ block, shown, half, first, last, onToggle, onSize, onMove }: { b
   const controls = useDragControls()
   return (
     <Reorder.Item value={block.id} dragListener={false} dragControls={controls} className="flex items-center gap-2 rounded-xl border border-border bg-card px-2 py-1.5">
-      <button type="button" aria-label={`Drag ${block.label}`} onPointerDown={(e) => controls.start(e)} className="flex h-9 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-muted-foreground hover:bg-muted active:cursor-grabbing"><GripVertical className="h-4 w-4" aria-hidden /></button>
+      <button type="button" aria-label={`Drag ${block.label}`} onPointerDown={(e) => controls.start(e)} className="flex h-9 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-muted-foreground hover:bg-muted active:cursor-grabbing"><GripVertical className="h-4 w-4" /></button>
       <label className="flex min-w-0 flex-1 items-center gap-2.5 py-1 text-sm">
         <Checkbox checked={shown} onChange={onToggle} aria-label={`Show ${block.label}`} />
         <span className={cn('min-w-0 truncate', !shown && 'text-muted-foreground line-through')}>{block.label}</span>

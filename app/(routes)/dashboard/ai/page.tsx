@@ -60,7 +60,7 @@ export default function AiPage() {
       {tab === 'Report' && report && (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2 print:hidden">
-            <Button variant="outline" onClick={() => { const prev = document.title; document.title = `financial-summary-${report.period.replace(/s/g, '-')}`; window.addEventListener('afterprint', () => { document.title = prev }, { once: true }); window.print() }}><Printer className="mr-1.5 h-4 w-4" />Download PDF</Button>
+            <Button variant="outline" onClick={() => { const prev = document.title; document.title = `financial-summary-${report.period.replace(/\s/g, '-')}`; window.addEventListener('afterprint', () => { document.title = prev }, { once: true }); window.print() }}><Printer className="mr-1.5 h-4 w-4" />Download PDF</Button>
             <Button variant="outline" onClick={download}><Download className="mr-1.5 h-4 w-4" />Export text</Button>
             <Button variant="outline" onClick={() => { navigator.clipboard.writeText(reportToText(report)).then(() => toast.success('Report copied'), () => toast.error('Could not copy')) }}><Copy className="mr-1.5 h-4 w-4" />Copy</Button>
             <Button variant="outline" onClick={() => setShare(true)}><Share2 className="mr-1.5 h-4 w-4" />Family summary</Button>

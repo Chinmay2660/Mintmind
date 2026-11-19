@@ -89,7 +89,7 @@ function MutualFundsTab() {
                       <span className="mt-1 block text-lg font-semibold tabular-nums"><Money value={m.value} /></span>
                     </span>
                     <Delta pill amount={m.absReturn} pct={m.absReturnPct} />
-                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                   </Link>
                 </li>
               )

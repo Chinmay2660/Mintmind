@@ -29,7 +29,7 @@ export function AchievementsPanel() {
         <ul className="flex flex-wrap gap-2" aria-label="Earned">
           {earned.map((a) => { const top = a.earned[a.earned.length - 1]; return (
             <li key={a.id} className="inline-flex items-center gap-2 rounded-full border border-primary/50 bg-primary/15 px-3 py-1.5 text-sm font-semibold">
-              <Award className="h-4 w-4" aria-hidden /><span>{a.title}<span className="font-normal text-muted-foreground"> · {top} {a.unit}</span></span>
+              <Award className="h-4 w-4" /><span>{a.title}<span className="font-normal text-muted-foreground"> · {top} {a.unit}</span></span>
             </li>
           ) })}
         </ul>

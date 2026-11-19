@@ -41,7 +41,7 @@ export function LimitsPanel() {
             ) : (
               <>
                 <div className="mt-2"><Progress value={st.pct} tone={st.over > 0 ? 'danger' : st.pct >= 90 ? 'warning' : 'primary'} label={`${LIMITS[k].label} used this year`} /></div>
-                <p className="mt-1.5 text-sm tabular-nums" aria-live="polite">
+                <p className="mt-1.5 text-sm tabular-nums">
                   <strong><Money value={st.used} /></strong> of {formatINR(st.limit)} used
                   {st.over > 0 ? <span className="font-bold text-destructive"> · over by {formatINR(st.over)}</span> : <span className="text-muted-foreground"> · {formatINR(st.left)} left</span>}
                 </p>

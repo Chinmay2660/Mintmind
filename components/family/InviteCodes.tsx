@@ -39,7 +39,7 @@ export function InviteReady({ info, onClose, onRefresh }: { info: InviteInfo; on
           <DialogDescription>Give them the code to type in the app, or send the link. They need to be signed in to Mintmind. Either works for 2 minutes, and anyone who has it can join in that time, so share it only with them.</DialogDescription>
         </DialogHeader>
 
-        {info.demo && <p role="note" className="rounded-lg border border-warning/50 bg-warning/10 px-3 py-2 text-xs">Demo account: this is a sample code and link. They count down like real ones, but they cannot be used to join, because the demo has no server.</p>}
+        {info.demo && <p className="rounded-lg border border-warning/50 bg-warning/10 px-3 py-2 text-xs">Demo account: this is a sample code and link. They count down like real ones, but they cannot be used to join, because the demo has no server.</p>}
         <div className="rounded-xl border border-border p-4 text-center">
           <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">Code</p>
           <p className={`mt-1 text-4xl font-bold tabular-nums tracking-[0.2em] ${expired ? 'text-muted-foreground line-through' : ''}`} aria-label={`Code ${info.otp.split('').join(' ')}`}>{info.otp.slice(0, 3)} {info.otp.slice(3)}</p>

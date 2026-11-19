@@ -42,11 +42,11 @@ export default function CookieConsent() {
       {decided === false && createPortal(
         <section role="region" aria-label="Cookie consent" style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 200, maxHeight: '85dvh', overflowY: 'auto', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }} className="border-t-2 border-[hsl(var(--edge))] bg-popover px-4 pt-4 text-popover-foreground shadow-elevated print:hidden sm:px-6">
           <div className="mx-auto flex max-w-6xl items-start gap-3">
-            <Cookie className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+            <Cookie className="mt-0.5 h-5 w-5 shrink-0" />
             <div className="min-w-0 flex-1">
               <h2 className="text-sm font-bold">Cookies and local storage</h2>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Essential storage keeps you signed in and holds your records on this device, so it is always on. With your OK we also remember your theme, sidebar and planning inputs between visits.
+                Essential storage keeps you signed in and holds a local copy of your records, so it is always on. With your OK we also remember your theme, sidebar and planning inputs between visits.
                 We don&apos;t use advertising or analytics cookies and nothing goes to a third party. <Link href="/cookies" className="font-medium text-foreground underline">What exactly is stored</Link>.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -68,7 +68,7 @@ export default function CookieConsent() {
           </DialogHeader>
           <ul className="space-y-3">
             <li className="flex items-start justify-between gap-4 rounded-lg border border-border p-3">
-              <div><p className="text-sm font-bold">Essential</p><p className="mt-0.5 text-xs text-muted-foreground">Your sign-in session, the demo flag, your records stored on this device, and the failed-attempt counter that protects the vault. The app cannot work without these.</p></div>
+              <div><p className="text-sm font-bold">Essential</p><p className="mt-0.5 text-xs text-muted-foreground">Your sign-in session, the demo flag, your local copy of your records (the server holds the saved version), and the failed-attempt counter that protects the vault. The app cannot work without these.</p></div>
               <Switch checked disabled onCheckedChange={() => {}} aria-label="Essential storage, always on" />
             </li>
             <li className="flex items-start justify-between gap-4 rounded-lg border border-border p-3">

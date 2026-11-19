@@ -134,7 +134,7 @@ export function AssetForm({ row, category: startCategory, onClose, onSave }: { r
       </>}
 
       <Field label="Notes" className="full">{(id) => <Input id={id} value={f.notes} onChange={set('notes')} />}</Field>
-      <p className="full rounded-lg bg-muted px-3 py-2 text-sm" aria-live="polite">Value today: <strong className="tabular-nums">₹{Math.round(preview).toLocaleString('en-IN')}</strong></p>
+      <p className="full rounded-lg bg-muted px-3 py-2 text-sm">Value today: <strong className="tabular-nums">₹{Math.round(preview).toLocaleString('en-IN')}</strong></p>
         </>) },
       ]} />
   )

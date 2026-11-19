@@ -24,7 +24,7 @@ export default function CookiesPage() {
       <Table>
         <Row name="auth-token" kind="Cookie, HTTP only" what="Keeps you signed in. It cannot be read by scripts on the page." how="Up to 30 days, or until you sign out" />
         <Row name="mm-demo" kind="Cookie, HTTP only" what="Remembers that you are exploring the sample family." how="12 hours, or until you exit the demo" />
-        <Row name="Your records" kind="Browser database (IndexedDB)" what="Your accounts, transactions, funds and goals live on this device." how="Until you erase them or clear site data" />
+        <Row name="Your records" kind="Browser database (IndexedDB)" what="A local copy of your accounts, transactions, funds and goals, kept in step with your account on our server so it works on every device." how="Until you erase them or clear site data" />
         <Row name="mm-vault-fails" kind="Local storage" what="Counts failed vault unlock attempts so guessing slows down." how="Until the lock clears" />
         <Row name="App files cache" kind="Service worker cache" what="Lets the app open offline." how="Replaced on each update" />
       </Table>
@@ -34,7 +34,6 @@ export default function CookiesPage() {
       <Table>
         <Row name="mm-theme" kind="Local storage" what="Light, dark or system mode." how="Until you clear it" />
         <Row name="mm-sidebar-collapsed, mm-sidebar-open" kind="Local storage" what="Whether the sidebar is collapsed and which folders are open." how="Until you clear it" />
-        <Row name="mm-plan-inputs" kind="Local storage" what="The numbers you typed into the planning tools." how="Until you clear it" />
         <Row name="mm-device-notify, mm-device-notify-seen" kind="Local storage" what="Your choice about device notifications and which ones you have seen." how="Until you clear it" />
       </Table>
 

@@ -29,12 +29,12 @@ export function QuickAdd() {
         <Input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. 450 lunch with card yesterday" aria-label="Describe an expense" />
         <Button type="submit" disabled={!ok}><Sparkles className="mr-1.5 h-4 w-4" />Review</Button>
       </form>
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Examples">
+      <div className="flex flex-wrap gap-2">
         {EXAMPLES.map((x) => <button key={x} type="button" aria-pressed={text === x} onClick={() => setText(x)} className={cn('rounded-full border px-3 py-1.5 text-xs transition-colors', text === x ? 'border-primary bg-primary/10 font-medium text-primary' : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground')}>{x}</button>)}
-        <button type="button" aria-pressed={text.trim() !== '' && !EXAMPLES.includes(text)} onClick={() => { setText(''); inputRef.current?.focus() }} className={cn('inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs transition-colors', text.trim() !== '' && !EXAMPLES.includes(text) ? 'border-primary bg-primary/10 font-medium text-primary' : 'border-dashed border-primary/50 text-primary hover:bg-primary/10')}><PenLine className="h-3 w-3" aria-hidden />Other: write your own</button>
+        <button type="button" aria-pressed={text.trim() !== '' && !EXAMPLES.includes(text)} onClick={() => { setText(''); inputRef.current?.focus() }} className={cn('inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs transition-colors', text.trim() !== '' && !EXAMPLES.includes(text) ? 'border-primary bg-primary/10 font-medium text-primary' : 'border-dashed border-primary/50 text-primary hover:bg-primary/10')}><PenLine className="h-3 w-3" />Other: write your own</button>
       </div>
       {draft && (
-        <dl className="grid gap-3 rounded-xl border border-border p-4 text-sm sm:grid-cols-4" aria-live="polite">
+        <dl className="grid gap-3 rounded-xl border border-border p-4 text-sm sm:grid-cols-4">
           {[['Amount', draft.amount ? formatINR(draft.amount) : 'Not found'], ['Category', draft.category], ['Paid via', draft.mode], ['Date', formatDate(draft.date)]].map(([k, v]) => <div key={k}><dt className="text-xs text-muted-foreground">{k}</dt><dd className="font-medium capitalize">{v}</dd></div>)}
           {!draft.confident && draft.amount && <p className="text-xs text-warning sm:col-span-4">Category is a guess. You can change it on the next screen.</p>}
         </dl>

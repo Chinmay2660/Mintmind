@@ -39,11 +39,10 @@ const UserSchema = new mongoose.Schema({
 });
 
 // Ensure at least email or phoneNumber is provided
-UserSchema.pre('validate', function(next) {
+// (Mongoose 9 hooks no longer receive a `next` callback: throw to fail, return to continue.)
+UserSchema.pre('validate', function() {
   if (!this.email && !this.phoneNumber) {
-    next(new Error('Either email or phoneNumber must be provided'));
-  } else {
-    next();
+    throw new Error('Either email or phoneNumber must be provided');
   }
 });
 

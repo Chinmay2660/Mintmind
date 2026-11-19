@@ -68,7 +68,7 @@ export default function FundDetail() {
       </div>
       <Panel title="Performance">
         {perf.length < 2 ? <Empty title="Not enough history" /> : (
-          <div className="h-64" role="img" aria-label="Fund performance chart">
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%"><LineChart data={perf} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid stroke={chartGrid} vertical={false} /><XAxis dataKey="label" {...chartAxis} minTickGap={32} />
               <YAxis {...chartAxis} width={56} tickFormatter={(v) => (privacyMode ? '••' : `${Math.round(v / 1000)}k`)} />

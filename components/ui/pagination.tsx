@@ -33,7 +33,7 @@ export function Pagination({ page, pageCount, total, from, to, pageSize, onPage,
   if (total <= Math.min(...PAGE_SIZES) && pageCount <= 1) return null
   return (
     <nav aria-label={label} className={cn('flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pt-3 pr-16 text-xs text-muted-foreground', className)}>
-      <span className="tabular-nums" aria-live="polite">{from}-{to} of {total}{loading ? ' …' : ''}</span>
+      <span className="tabular-nums">{from}-{to} of {total}{loading ? ' …' : ''}</span>
       <div className="flex items-center gap-1">
         <button type="button" aria-label="Previous page" disabled={page <= 1 || loading} onClick={() => onPage(page - 1)} className="flex h-8 w-8 items-center justify-center rounded-md border border-border outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"><ChevronLeft className="h-4 w-4" /></button>
         {pagesToShow(page, pageCount).map((p, i) => p === 'gap'

@@ -91,14 +91,14 @@ export function ImportCsvDialog({ open, onOpenChange }: { open: boolean; onOpenC
 
         {!map ? (
           <button type="button" onClick={() => pick.current?.click()} className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border px-4 py-10 text-center outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring">
-            <Upload className="h-6 w-6 text-muted-foreground" aria-hidden />
+            <Upload className="h-6 w-6 text-muted-foreground" />
             <span className="text-sm font-bold">Choose a CSV file</span>
             <span className="text-xs text-muted-foreground">A bank statement export or a spreadsheet saved as CSV. It needs a header row with a date, a description and an amount.</span>
             <input ref={pick} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) load(f); e.target.value = '' }} />
           </button>
         ) : (
           <div className="space-y-4">
-            <p className="flex items-center gap-2 text-sm"><FileSpreadsheet className="h-4 w-4" aria-hidden /><span className="min-w-0 truncate font-medium">{name}</span><span className="text-muted-foreground">{rows.length} rows</span><button type="button" onClick={reset} className="ml-auto rounded text-xs underline outline-none focus-visible:ring-2 focus-visible:ring-ring">Choose another</button></p>
+            <p className="flex items-center gap-2 text-sm"><FileSpreadsheet className="h-4 w-4" /><span className="min-w-0 truncate font-medium">{name}</span><span className="text-muted-foreground">{rows.length} rows</span><button type="button" onClick={reset} className="ml-auto rounded text-xs underline outline-none focus-visible:ring-2 focus-visible:ring-ring">Choose another</button></p>
 
             <fieldset className="space-y-2"><legend className="mb-1 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">Which column is which</legend>
               <div className="grid gap-2 sm:grid-cols-3">{FIELDS.map(([k, l]) => colSelect(k, l))}</div>
@@ -132,7 +132,7 @@ export function ImportCsvDialog({ open, onOpenChange }: { open: boolean; onOpenC
                     </tbody>
                   </table>
                 </div>
-                <p className="text-sm" aria-live="polite"><strong className="tabular-nums">{result.items.length}</strong> readable rows{result.skipped.length ? `, ${result.skipped.length} skipped (no date or amount)` : ''}{dupes ? `, ${dupes} look already recorded` : ''}.</p>
+                <p className="text-sm"><strong className="tabular-nums">{result.items.length}</strong> readable rows{result.skipped.length ? `, ${result.skipped.length} skipped (no date or amount)` : ''}{dupes ? `, ${dupes} look already recorded` : ''}.</p>
                 {dupes > 0 && <label className="flex items-center gap-2.5 text-sm"><Checkbox checked={skipDupes} onChange={(e) => setSkipDupes(e.target.checked)} aria-label="Leave out rows that look already recorded" />Leave out the {dupes} that look already recorded</label>}
               </>
             )}

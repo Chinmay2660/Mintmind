@@ -9,6 +9,7 @@ import { computeNetWorth } from './calc'
 import { upsertSnapshot } from './actions'
 import { setDefaultDateStyle } from './format'
 import { seedCashAccount } from './seedCash'
+import { startSync, stopSync } from './sync'
 
 type Rows = any[]
 export interface WealthData {
@@ -53,7 +54,12 @@ export function WealthProvider({ children }: { children: ReactNode }) {
         // reseed when the demo dataset schema changed (e.g. cash account + debit cards were added)
         if (!seeded || ver?.value !== DEMO_SEED_VERSION) await seedDemo(db)
       }
-      else await seedCashAccount(db)
+      else {
+        // the server's copy comes first, so a new device does not invent data (such as the Cash wallet) that already exists
+        await startSync(db).catch(() => {})
+        if (cancelled) return
+        await seedCashAccount(db)
+      }
       if (cancelled) return
       // One live query per table: a write only refreshes the table(s) it touched, instead of re-reading everything.
       // The first emission of every table is batched into a single state update so startup renders once.
@@ -85,6 +91,7 @@ export function WealthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
       sub?.unsubscribe()
+      if (profileId !== 'demo') stopSync(db)
     }
   }, [db, profileId])
 
