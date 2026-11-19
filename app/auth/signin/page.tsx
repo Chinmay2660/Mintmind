@@ -42,7 +42,9 @@ function SignInContent() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (params.get('error')) setError('Authentication failed. Please try again.')
+    const e = params.get('error')
+    if (!e) return
+    setError(e === 'google_unconfigured' ? 'Google sign-in is not set up on this site. Use email and password instead.' : e === 'google_denied' ? 'Google sign-in was cancelled.' : 'Authentication failed. Please try again.')
   }, [params])
 
   // Load Google Identity Services only if configured
@@ -84,10 +86,15 @@ function SignInContent() {
     }
   }
 
+  // The popup can be blocked (desktop blockers, in-app and installed-app windows), so Google can also be reached by a full-page redirect.
+  const googleRedirect = () => { setBusy('google'); window.location.href = `/api/auth/google/redirect?next=${encodeURIComponent(callbackUrl)}` }
+
   const google = () => {
     setError('')
     if (!GOOGLE_CLIENT_ID) return setError('Google sign-in isn’t available right now. Use email and password instead.')
-    if (!window.google?.accounts) return setError('Google sign-in could not load. Check your connection or any ad blocker, then try again.')
+    // an installed app window has no real popups, so go straight to the redirect
+    if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true) return googleRedirect()
+    if (!window.google?.accounts) return googleRedirect()
     setBusy('google')
     // Google answers through one of two callbacks, and a closed or blocked popup only uses the second one,
     // so both must end the loading state. The timer covers the case where neither is ever called.
@@ -116,14 +123,14 @@ function SignInContent() {
           error_callback: (err: { type?: string }) => {
             done()
             setBusy(null)
-            if (err?.type !== 'popup_closed') setError(err?.type === 'popup_failed_to_open' ? 'Your browser blocked the Google window. Allow pop-ups for this site and try again.' : 'Google sign-in failed. Please try again.')
+            if (err?.type === 'popup_failed_to_open') return googleRedirect() // blocked: carry on in this window instead
+            if (err?.type !== 'popup_closed') setError('Google sign-in failed. Please try again.')
           },
         })
         .requestAccessToken()
     } catch {
       done()
-      setBusy(null)
-      setError('Google sign-in failed to start. Please try again.')
+      googleRedirect()
     }
   }
 
