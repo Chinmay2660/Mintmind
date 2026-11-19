@@ -99,7 +99,8 @@ function NetWorthOverview() {
         description="Assets minus liabilities, updated automatically. Add or edit EPF, FDs, gold, property, stocks and loans in Settings → Assets & Loans."
         actions={
           <>
-            <Button variant="outline" size="sm" asChild><Link href="/dashboard/net-worth/manage">Manage assets &amp; loans</Link></Button>
+            <Button variant="outline" size="sm" asChild><Link href="/dashboard/net-worth/manage">Assets</Link></Button>
+            <Button variant="outline" size="sm" asChild><Link href="/dashboard/net-worth/loans">Loans</Link></Button>
             <Button variant="outline" size="sm" asChild><Link href="/dashboard/net-worth/statement"><FileText className="mr-1.5 h-4 w-4" />Statement</Link></Button>
             <Button variant="outline" size="sm" onClick={exportCsv}><Download className="mr-1.5 h-4 w-4" />CSV</Button>
             <Button variant="outline" size="sm" onClick={exportXlsx}><Download className="mr-1.5 h-4 w-4" />Excel</Button>

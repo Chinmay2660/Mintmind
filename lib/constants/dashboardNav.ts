@@ -3,6 +3,8 @@ import {
   LayoutDashboard,
   TrendingUp,
   Landmark,
+  Building2,
+  Scale,
   PieChart,
   CreditCard,
   Shield,
@@ -29,6 +31,8 @@ export interface DashboardNavItem {
 export const DASHBOARD_NAV_ALL: DashboardNavItem[] = [
   { id: 1, name: 'Overview', icon: LayoutDashboard, path: '/dashboard' },
   { id: 2, name: 'Net Worth', icon: TrendingUp, path: '/dashboard/net-worth' },
+  { id: 14, name: 'Assets', icon: Building2, path: '/dashboard/net-worth/manage' },
+  { id: 15, name: 'Loans', icon: Scale, path: '/dashboard/net-worth/loans' },
   { id: 3, name: 'Accounts', icon: Landmark, path: '/dashboard/bank-accounts' },
   { id: 4, name: 'Investments', icon: PieChart, path: '/dashboard/mutual-funds' },
   { id: 5, name: 'Cards', icon: CreditCard, path: '/dashboard/credit-cards' },
@@ -66,7 +70,6 @@ export const DASHBOARD_SEARCH_ALL: SearchItem[] = [...DASHBOARD_SEARCH_PAGES, ..
 
 export const DASHBOARD_PAGE_TITLES: Record<string, string> = {
   ...Object.fromEntries([...DASHBOARD_NAV_ALL, { id: 99, name: 'My Wealth AI', icon: Sparkles, path: '/dashboard/ai' }].map((item) => [item.path, item.name])),
-  '/dashboard/net-worth/manage': 'Assets & Loans',
 }
 
 const DASHBOARD_PAGE_ICONS: Record<string, LucideIcon> = Object.fromEntries(
@@ -75,6 +78,8 @@ const DASHBOARD_PAGE_ICONS: Record<string, LucideIcon> = Object.fromEntries(
 
 export function isDashboardNavActive(pathname: string, menuPath: string): boolean {
   if (menuPath === '/dashboard') return pathname === '/dashboard'
+  // Assets and Loans live under /net-worth/ but are their own places in the menu
+  if (menuPath === '/dashboard/net-worth' && (pathname.startsWith('/dashboard/net-worth/manage') || pathname.startsWith('/dashboard/net-worth/loans'))) return false
   return pathname === menuPath || pathname.startsWith(`${menuPath}/`)
 }
 

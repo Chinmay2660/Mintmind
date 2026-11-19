@@ -11,7 +11,7 @@ const UserOnboardingSchema = new mongoose.Schema(
     trackingNeeds: { type: String },
     age: { type: Number, min: 18, max: 120 },
     mobile: { type: String },
-    preferredTheme: { type: String, enum: ['light', 'dark', 'system'], default: 'system' },
+    preferredTheme: { type: String, enum: ['light', 'dark', 'system'], default: 'light' },
     notificationPreference: { type: String, enum: ['daily', 'weekly', 'monthly', 'important'], default: 'important' },
     completedAt: { type: Date },
   },

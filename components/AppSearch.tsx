@@ -50,7 +50,7 @@ export default function AppSearch() {
     const holdings: Found[] = [
       ...data.funds.filter((x: any) => has(q, x.name, x.fundHouse, x.category)).map((x: any) => ({ key: 'f' + x.id, name: x.name, sub: `Mutual fund · ${formatINR(x.currentValue)}`, path: `/dashboard/mutual-funds/${x.id}`, icon: PieChart, group: 'holdings' })),
       ...data.assets.filter((x: any) => has(q, x.name, x.category)).map((x: any) => ({ key: 's' + x.id, name: x.name, sub: `Asset · ${x.category}`, path: '/dashboard/net-worth/manage', icon: Wallet, group: 'holdings' })),
-      ...data.liabilities.filter((x: any) => has(q, x.name, x.category)).map((x: any) => ({ key: 'l' + x.id, name: x.name, sub: `Loan · outstanding ${formatINR(Number(x.outstanding) || 0)}`, path: '/dashboard/net-worth/manage', icon: Scale, group: 'holdings' })),
+      ...data.liabilities.filter((x: any) => has(q, x.name, x.category)).map((x: any) => ({ key: 'l' + x.id, name: x.name, sub: `Loan · outstanding ${formatINR(Number(x.outstanding) || 0)}`, path: '/dashboard/net-worth/loans', icon: Scale, group: 'holdings' })),
     ]
     const more: Found[] = [
       ...data.goals.filter((x: any) => has(q, x.name)).map((x: any) => ({ key: 'g' + x.id, name: x.name, sub: 'Goal', path: '/dashboard/net-worth', icon: Target, group: 'goals' })),

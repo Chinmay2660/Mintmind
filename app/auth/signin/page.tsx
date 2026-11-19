@@ -51,6 +51,7 @@ function SignInContent() {
     const s = document.createElement('script')
     s.src = 'https://accounts.google.com/gsi/client'
     s.async = true
+    s.onerror = () => { s.remove() } // a blocked or failed script is reported when the button is pressed
     document.head.appendChild(s)
   }, [])
 
@@ -86,28 +87,44 @@ function SignInContent() {
   const google = () => {
     setError('')
     if (!GOOGLE_CLIENT_ID) return setError('Google sign-in isn’t available right now. Use email and password instead.')
-    if (!window.google?.accounts) return setError('Google sign-in is still loading. Try again in a moment.')
+    if (!window.google?.accounts) return setError('Google sign-in could not load. Check your connection or any ad blocker, then try again.')
     setBusy('google')
-    window.google.accounts.oauth2
-      .initTokenClient({
-        client_id: GOOGLE_CLIENT_ID,
-        scope: 'openid email profile',
-        callback: async (resp) => {
-          if (resp.error || !resp.access_token) {
-            setError('Google sign-in was cancelled or failed.')
+    // Google answers through one of two callbacks, and a closed or blocked popup only uses the second one,
+    // so both must end the loading state. The timer covers the case where neither is ever called.
+    const stuck = window.setTimeout(() => { setBusy((b) => (b === 'google' ? null : b)); setError('Google sign-in did not respond. Please try again.') }, 60_000)
+    const done = () => window.clearTimeout(stuck)
+    try {
+      window.google.accounts.oauth2
+        .initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: 'openid email profile',
+          callback: async (resp) => {
+            done()
+            if (resp.error || !resp.access_token) {
+              setError('Google sign-in was cancelled or failed.')
+              setBusy(null)
+              return
+            }
+            try {
+              await axios.post('/api/auth/google', { accessToken: resp.access_token })
+              go()
+            } catch (err) {
+              setError(errMsg(err, 'Google sign-in failed.'))
+              setBusy(null)
+            }
+          },
+          error_callback: (err: { type?: string }) => {
+            done()
             setBusy(null)
-            return
-          }
-          try {
-            await axios.post('/api/auth/google', { accessToken: resp.access_token })
-            go()
-          } catch (err) {
-            setError(errMsg(err, 'Google sign-in failed.'))
-            setBusy(null)
-          }
-        },
-      })
-      .requestAccessToken()
+            if (err?.type !== 'popup_closed') setError(err?.type === 'popup_failed_to_open' ? 'Your browser blocked the Google window. Allow pop-ups for this site and try again.' : 'Google sign-in failed. Please try again.')
+          },
+        })
+        .requestAccessToken()
+    } catch {
+      done()
+      setBusy(null)
+      setError('Google sign-in failed to start. Please try again.')
+    }
   }
 
   const demo = async () => {

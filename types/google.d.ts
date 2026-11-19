@@ -13,6 +13,8 @@ interface Google {
       initTokenClient: (config: {
         client_id: string
         callback: (response: { error?: string; access_token?: string }) => void
+        /** Called when the popup is closed, blocked, or fails to open. The normal callback is not called then. */
+        error_callback?: (error: { type?: string; message?: string }) => void
         scope?: string
       }) => GoogleTokenClient
     }
