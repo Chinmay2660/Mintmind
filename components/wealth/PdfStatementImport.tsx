@@ -1,5 +1,6 @@
 'use client'
 
+import { FootNote, InfoTip } from '@/components/wealth/kit'
 import { useMemo, useRef, useState } from 'react'
 import { FileText, Loader2, Lock } from 'lucide-react'
 import { toast } from 'sonner'
@@ -108,7 +109,7 @@ export function PdfStatementImport({ label = 'Import PDF' }: { label?: string })
       {/* Password */}
       <Dialog open={!!askPwd} onOpenChange={(o) => { if (!o) { setAskPwd(null); setPwd('') } }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Statement password</DialogTitle><DialogDescription>This PDF is protected. It is usually your PAN in capital letters, sometimes with your date of birth. The password stays in this tab and is not stored.</DialogDescription></DialogHeader>
+          <DialogHeader><div className="flex items-center gap-2"><DialogTitle>Statement password</DialogTitle><InfoTip label="Details">This PDF is protected. It is usually your PAN in capital letters, sometimes with your date of birth. The password stays in this tab and is not stored.</InfoTip></div><DialogDescription className="sr-only">This PDF is protected. It is usually your PAN in capital letters, sometimes with your date of birth. The password stays in this tab and is not stored.</DialogDescription></DialogHeader>
           <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (picked.current && pwd) read(picked.current, pwd) }}>
             <Input type="password" autoComplete="off" autoFocus aria-label="PDF password" value={pwd} onChange={(e) => setPwd(e.target.value)} />
             {askPwd?.wrong && <p role="alert" className="text-sm text-destructive">That password did not open the file. Try again.</p>}
@@ -120,7 +121,7 @@ export function PdfStatementImport({ label = 'Import PDF' }: { label?: string })
       {/* Review */}
       <Dialog open={!!res} onOpenChange={(o) => !o && setRes(null)}>
         <DialogContent className="sm:max-w-xl">
-          <DialogHeader><DialogTitle>Review before importing</DialogTitle><DialogDescription>{name}. Read in your browser only. Check every figure; layouts differ between providers, and you can edit values or untick anything.</DialogDescription></DialogHeader>
+          <DialogHeader><div className="flex items-center gap-2"><DialogTitle>Review before importing</DialogTitle><InfoTip label="Details">{name}. Read in your browser only. Check every figure; layouts differ between providers, and you can edit values or untick anything.</InfoTip></div><DialogDescription className="sr-only">{name}. Read in your browser only. Check every figure; layouts differ between providers, and you can edit values or untick anything.</DialogDescription></DialogHeader>
           {nothing ? (
             <p className="rounded-xl bg-muted px-3 py-3 text-sm">We could not find anything we recognise. Supported: CAMS and KFintech CAS (funds), NSDL and CDSL demat statements (stocks), NPS statements and EPF passbooks. Scanned or image PDFs cannot be read.</p>
           ) : (
@@ -140,7 +141,7 @@ export function PdfStatementImport({ label = 'Import PDF' }: { label?: string })
               {section('NPS', 'nps')}
               {section('EPF', 'epf')}
               {res && res.mfUnitsSkipped > 0 && <p className="text-xs text-muted-foreground">{res.mfUnitsSkipped} mutual fund holding{res.mfUnitsSkipped === 1 ? '' : 's'} inside the demat were not imported here. Use the CAMS or KFintech CAS for fund transactions.</p>}
-              <p className="text-xs text-muted-foreground">Stocks, NPS and EPF are saved as Net Worth assets at the value shown. Importing again updates the same entries instead of adding duplicates.</p>
+              <FootNote>Stocks, NPS and EPF are saved as Net Worth assets at the value shown. Importing again updates the same entries instead of adding duplicates.</FootNote>
             </div>
           )}
           <DialogFooter className="gap-2 sm:gap-0"><Button variant="outline" onClick={() => setRes(null)}>Cancel</Button><Button onClick={run} disabled={busy || nothing || !somethingOn}>{busy && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}Import</Button></DialogFooter>

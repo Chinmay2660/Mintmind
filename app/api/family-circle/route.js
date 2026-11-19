@@ -6,6 +6,11 @@ import FamilyCircle from '@/models/FamilyCircle'
 import { requireAuth, rateLimitOrRespond } from '@/lib/middleware/api'
 import { sendEmail } from '@/lib/email/resend'
 import { visibleSummary } from '@/lib/family/visibility'
+import { decryptJson, encryptJson } from '@/lib/utils/crypto'
+
+// A member's shared figures are kept encrypted in the database. Older plain records are still read.
+const sealSummary = (obj) => ({ enc: encryptJson(obj) })
+const openSummary = (s) => (s && typeof s === 'object' && s.enc ? decryptJson(s.enc) : s)
 
 const ROLES = ['admin', 'member', 'emergency_contact']
 const PERM_KEYS = ['netWorth', 'overview', 'bank', 'mutualFunds', 'insurance', 'documents', 'emergencyOnly']
@@ -31,7 +36,7 @@ function present(circle, user) {
         id: m._id.toString(), name: m.name, relation: m.relation, role: m.role, status: m.status, self: !!mine,
         email: mine || (self && self.role === 'admin') ? m.email : undefined,
         permissions: mine ? m.permissions : undefined,
-        summary: mine ? m.summary : m.status === 'active' ? visibleSummary(m.summary, m.permissions) : null,
+        summary: mine ? openSummary(m.summary) : m.status === 'active' ? visibleSummary(openSummary(m.summary), m.permissions) : null,
         invitePending: m.status === 'invited',
       }
     }),
@@ -108,7 +113,7 @@ export async function POST(request) {
       if (!self) return NextResponse.json({ error: 'Not in a circle' }, { status: 404 })
       const n = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0)
       const s = body.summary || {}
-      self.summary = { assets: n(s.assets), liabilities: n(s.liabilities), netWorth: n(s.netWorth), growthPct: s.growthPct == null ? null : n(s.growthPct), bank: n(s.bank), mutualFunds: n(s.mutualFunds), insuranceCover: n(s.insuranceCover), joint: Array.isArray(s.joint) ? s.joint.slice(0, 50).map((j) => ({ key: String(j.key).slice(0, 80), value: n(j.value) })) : [], updatedAt: new Date() }
+      self.summary = sealSummary({ assets: n(s.assets), liabilities: n(s.liabilities), netWorth: n(s.netWorth), growthPct: s.growthPct == null ? null : n(s.growthPct), bank: n(s.bank), mutualFunds: n(s.mutualFunds), insuranceCover: n(s.insuranceCover), joint: Array.isArray(s.joint) ? s.joint.slice(0, 50).map((j) => ({ key: String(j.key).slice(0, 80), value: n(j.value) })) : [], updatedAt: new Date() })
       await circle.save()
       return NextResponse.json({ success: true })
     }

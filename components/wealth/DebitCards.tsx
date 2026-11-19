@@ -1,8 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useDetailCrumb } from '@/components/shell/DetailCrumb'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { ChevronRight, CreditCard, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, ChevronRight, CreditCard, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { remove, save } from '@/lib/wealth/actions'
@@ -29,7 +30,8 @@ export function DebitCardsTab() {
   const [dlg, setDlg] = useState<null | { row?: any; del?: boolean }>(null)
   const banks = data.bankAccounts.filter((a: any) => !isCash(a))
   const cards: any[] = data.debitCards
-  const card = cards.find((c) => c.id === sel) ?? cards[0]
+  const card = sel ? cards.find((c) => c.id === sel) : undefined
+  useDetailCrumb(card ? `${card.bank} ${card.cardName}` : null, () => setSel(null))
   const acc = (id: string) => data.bankAccounts.find((a: any) => a.id === id)
   const ym = toISO(new Date()).slice(0, 7)
 
@@ -52,21 +54,22 @@ export function DebitCardsTab() {
 
       {cards.length === 0 ? <Empty title="No debit cards" description={banks.length ? 'Add a debit card to record spending against a bank account.' : 'Add a bank account first, then link a debit card to it.'} action={banks.length ? <Button onClick={() => setDlg({})}>Add debit card</Button> : undefined} /> : (
         <>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {!card && <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {cards.map((c) => {
               const a = acc(c.accountId)
               return (
-                <button key={c.id} type="button" aria-pressed={card?.id === c.id} onClick={() => setSel(c.id)} className={cn('surface-card block w-full p-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', card?.id === c.id ? 'border-primary' : 'hover:border-primary/40')}>
+                <button key={c.id} type="button" aria-label={`${c.bank} ${c.cardName}, open details`} onClick={() => setSel(c.id)} className={cn('surface-card block w-full p-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', 'hover:border-primary/40')}>
                   <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-4/15 text-chart-4"><CreditCard className="h-5 w-5" /></span><div className="min-w-0"><p className="truncate font-medium">{c.bank} {c.cardName}</p><p className="text-xs text-muted-foreground">{c.network} · ···· {String(c.cardNumber).slice(-4)}</p></div>
-                    <ChevronRight className={cn('ml-auto h-4 w-4 shrink-0 transition-transform', card?.id === c.id ? 'rotate-90 text-primary' : 'text-muted-foreground')} aria-hidden /></div>
+                    <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" aria-hidden /></div>
                   <div className="mt-4 flex items-end justify-between"><div className="min-w-0"><p className="text-xs text-muted-foreground">Linked account</p><p className="truncate text-sm font-medium">{a ? accountLabel(a) : 'Not linked'}</p></div><div className="text-right"><p className="text-xs text-muted-foreground">Balance</p><p className="font-semibold">{a ? <Money value={a.currentBalance} /> : '-'}</p></div></div>
                 </button>
               )
             })}
-          </div>
+          </div>}
 
           {card && (
             <>
+              <button type="button" onClick={() => setSel(null)} className="mb-3 inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" aria-hidden />All debit cards</button>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-lg font-semibold">{card.bank} {card.cardName}</h2>
                 <div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => setDlg({ row: card })}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button><Button size="sm" variant="outline" onClick={() => setDlg({ row: card, del: true })}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button></div>

@@ -1,5 +1,6 @@
 'use client'
 
+import { FootNote, InfoTip } from '@/components/wealth/kit'
 import { useRef, useState } from 'react'
 import { FileUp, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -46,7 +47,7 @@ export function StatementImportButton() {
       <input ref={ref} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) read(f); e.target.value = '' }} />
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl">
-          <DialogHeader><DialogTitle>Import statement</DialogTitle><DialogDescription>{file}: review before anything is added. The file is read in your browser and never uploaded.</DialogDescription></DialogHeader>
+          <DialogHeader><div className="flex items-center gap-2"><DialogTitle>Import statement</DialogTitle><InfoTip label="Details">{file}: review before anything is added. The file is read in your browser and never uploaded.</InfoTip></div><DialogDescription className="sr-only">{file}: review before anything is added. The file is read in your browser and never uploaded.</DialogDescription></DialogHeader>
           {res && res.txns.length === 0 ? (
             <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{res.errors[0] ?? 'No transactions found.'} Expected columns such as Scheme, Folio, Date, Type, Amount, Units and NAV.</p>
           ) : (
@@ -55,7 +56,7 @@ export function StatementImportButton() {
               <ul className="max-h-64 divide-y divide-border overflow-y-auto rounded-xl border border-border">{groups.map((g) => { const p = positionFrom(g.txns); return (
                 <li key={g.key} className="flex items-center justify-between gap-3 px-3 py-2"><span className="min-w-0"><span className="block truncate font-medium">{g.name}</span><span className="text-xs text-muted-foreground">{g.folio ? `Folio ${g.folio} · ` : ''}{g.txns.length} txns · {g.txns[0].date} to {g.txns[g.txns.length - 1].date}</span></span><span className="shrink-0 text-right text-xs text-muted-foreground">{p.units} units<br />{formatINR(p.invested)}</span></li>) })}</ul>
               {res && res.errors.length > 0 && <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">{res.errors.length} row{res.errors.length === 1 ? '' : 's'} skipped</summary><ul className="mt-1 list-disc pl-4">{res.errors.slice(0, 10).map((e) => <li key={e}>{e}</li>)}</ul></details>}
-              <p className="text-xs text-muted-foreground">New funds use the last NAV in the file until you update it. Redemptions reduce your cost at the average price.</p>
+              <FootNote>New funds use the last NAV in the file until you update it. Redemptions reduce your cost at the average price.</FootNote>
             </div>
           )}
           <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button onClick={run} disabled={busy || !res?.txns.length}>{busy && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}Import</Button></DialogFooter>

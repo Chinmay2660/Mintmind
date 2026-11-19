@@ -1,7 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ChevronRight, Pencil, Plus, Target, Trash2, TriangleAlert, X } from 'lucide-react'
+import { useDetailCrumb } from '@/components/shell/DetailCrumb'
+import { useAddParam } from '@/lib/hooks/useAddParam'
+import { ArrowLeft, ChevronRight, Pencil, Plus, Target, Trash2, TriangleAlert, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
@@ -26,7 +28,9 @@ type GoalLink = { type: 'bank' | 'fund' | 'asset'; id: string; pct: number }
 export function GoalsPanel() {
   const { data, db, netWorth } = useWealth()
   const [dlg, setDlg] = useState<null | { row?: any; del?: boolean }>(null)
+  useAddParam((what) => { if (what === 'goal') setDlg({}) })
   const [detail, setDetail] = useState<string | null>(null)
+  useDetailCrumb(detail ? data.goals.find((x: any) => x.id === detail)?.name ?? null : null, () => setDetail(null))
   const goals = data.goals
   const progress = useMemo(() => goals.map((g: any) => ({ g, p: goalProgress(g, data) })), [goals, data])
   const over = useMemo(() => overAllocated(goals), [goals])
@@ -35,12 +39,12 @@ export function GoalsPanel() {
   return (
     <div className="space-y-4">
       <PageHeader primaryAction={{ label: 'Add goal', onClick: () => setDlg({}) }} />
-      {over.length > 0 && <p role="status" className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm"><TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" />Some linked items are earmarked for more than 100% across goals, so they are counted twice. Reduce their shares in the goals that use them.</p>}
-      {goals.length === 0 ? <Empty title="No goals yet" description="Create an Emergency fund or a Marriage fund and link the accounts or investments that back it." action={<Button onClick={() => setDlg({})}>Add goal</Button>} /> : (
+      {!detail && over.length > 0 && <p role="status" className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm"><TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" />Some linked items are earmarked for more than 100% across goals, so they are counted twice. Reduce their shares in the goals that use them.</p>}
+      {!detail && (goals.length === 0 ? <Empty title="No goals yet" description="Create an Emergency fund or a Marriage fund and link the accounts or investments that back it." action={<Button onClick={() => setDlg({})}>Add goal</Button>} /> : (
         <div className="grid gap-3 md:grid-cols-2">
           {progress.map(({ g, p }) => <GoalCard key={g.id} g={g} p={p} onOpen={() => setDetail(g.id)} />)}
         </div>
-      )}
+      ))}
       {detail && (() => { const x = progress.find((y) => y.g.id === detail); return x ? <GoalDetail g={x.g} p={x.p} onClose={() => setDetail(null)} onEdit={() => { setDetail(null); setDlg({ row: x.g }) }} onDelete={() => { setDetail(null); setDlg({ row: x.g, del: true }) }} /> : null })()}
       {dlg && !dlg.del && <GoalForm row={dlg.row} suggested={suggested} onClose={() => setDlg(null)} onSave={async (r) => { await save(db, 'goals', r); toast.success('Goal saved') }} />}
       <ConfirmDialog open={!!dlg?.del} onOpenChange={(o) => !o && setDlg(null)} title={`Delete “${dlg?.row?.name}”?`} description="Only the goal is removed. The linked accounts and investments are untouched." confirmLabel="Delete" variant="destructive" onConfirm={async () => { await remove(db, 'goals', dlg!.row.id); setDlg(null); toast.success('Goal deleted') }} />
@@ -72,12 +76,10 @@ function GoalCard({ g, p, onOpen }: { g: any; p: any; onOpen: () => void }) {
 function GoalDetail({ g, p, onClose, onEdit, onDelete }: { g: any; p: any; onClose: () => void; onEdit: () => void; onDelete: () => void }) {
   const [tab, setTab] = useState<'overview' | 'linked'>('overview')
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="content-start">
-        <DialogHeader>
-          <DialogTitle>{g.name}</DialogTitle>
-          <DialogDescription>{g.targetDate ? `Target date ${formatDate(g.targetDate)}` : 'No target date'}</DialogDescription>
-        </DialogHeader>
+    <section className="space-y-3">
+      <button type="button" onClick={onClose} className="inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" aria-hidden />All goals</button>
+      <div className="surface-card space-y-4 p-5">
+        <div><h3 className="text-xl font-semibold">{g.name}</h3><p className="text-sm text-muted-foreground">{g.targetDate ? `Target date ${formatDate(g.targetDate)}` : 'No target date'}</p></div>
         <div>
           <div className="flex items-baseline justify-between"><span className="text-2xl font-semibold tabular-nums"><Money value={p.current} /></span><span className="text-sm text-muted-foreground">of <Money value={p.target} /></span></div>
           <div className="mt-2"><Progress value={p.pct} tone={p.achieved ? 'primary' : p.pct < 40 ? 'warning' : 'primary'} label={`${g.name} progress`} /></div>
@@ -104,8 +106,8 @@ function GoalDetail({ g, p, onClose, onEdit, onDelete }: { g: any; p: any; onClo
           <Button variant="outline" className="h-11" onClick={onEdit}><Pencil className="mr-1.5 h-4 w-4" />Edit goal</Button>
           <Button variant="destructive" className="h-11" onClick={onDelete}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </section>
   )
 }
 

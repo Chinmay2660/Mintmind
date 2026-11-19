@@ -8,7 +8,7 @@ export default function Icon() {
     (
       <div
         style={{
-          background: '#9d00ff',
+          background: '#A9C987',
           width: '100%',
           height: '100%',
           display: 'flex',
@@ -22,7 +22,7 @@ export default function Icon() {
           height="20"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="white"
+          stroke="#141613"
           strokeWidth="2.25"
           strokeLinecap="round"
           strokeLinejoin="round"

@@ -34,8 +34,8 @@ export function TxnRow({ kind, title, category, meta, amount, actions, leading, 
   const cancel = () => { if (timer.current) { clearTimeout(timer.current); timer.current = null } }
   return (
     <li onPointerDown={start} onPointerUp={cancel} onPointerLeave={cancel} onPointerMove={cancel} onPointerCancel={cancel}
-      className={cn('flex items-center gap-3 py-3 transition-colors', selected && 'bg-primary/10')}>
-      {leading}
+      className={cn('cv-auto flex items-center gap-3 py-3 transition-colors', leading && '-mx-4 px-4', selected && 'bg-primary/15 shadow-[inset_3px_0_0_0_hsl(var(--primary))]')}>
+      {leading && <span className="flex h-10 w-6 shrink-0 items-center justify-center">{leading}</span>}
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary" aria-hidden><Icon className="h-5 w-5" /></span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium">{title}</span>

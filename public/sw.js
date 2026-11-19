@@ -3,7 +3,7 @@
 //  - pages (navigations): network first with a short timeout, then the cached copy, then the offline page
 //  - other same-origin GET files (icons, fonts, images): stale-while-revalidate
 //  - /api and Next's RSC data requests are never intercepted (data lives in IndexedDB; Next falls back to a full page load)
-const VERSION = 'v3'
+const VERSION = 'v4'
 const STATIC_CACHE = `mintmind-static-${VERSION}`
 const RUNTIME_CACHE = `mintmind-runtime-${VERSION}`
 const NETWORK_TIMEOUT_MS = 3500

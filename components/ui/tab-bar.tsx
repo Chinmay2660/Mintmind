@@ -75,8 +75,8 @@ export function TabBar({ label, tabs, value, onChange, className }: { label: str
           )
         })}
       </div>
-      {edge.left && <span aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-background to-transparent md:hidden" />}
-      {edge.right && <span aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent md:hidden" />}
+      {edge.left && <span aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-2 bg-background/90 md:hidden" />}
+      {edge.right && <span aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-2 bg-background/90 md:hidden" />}
     </div>
   )
 }

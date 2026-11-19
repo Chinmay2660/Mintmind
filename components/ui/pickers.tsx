@@ -41,7 +41,7 @@ function Surface({ open, onOpenChange, title, trigger, children, width = 'trigge
     )
   }
   return (
-    <PopoverPrimitive.Root open={open} onOpenChange={onOpenChange}>
+    <PopoverPrimitive.Root open={open} onOpenChange={onOpenChange} modal>
       <PopoverPrimitive.Trigger asChild>{trigger}</PopoverPrimitive.Trigger>
       <PopoverPrimitive.Portal>
         <PopoverPrimitive.Content
@@ -147,7 +147,7 @@ export function Select({ id, value, onChange, className, disabled, required, chi
         onOpenChange={setOpen}
         title={title}
         trigger={
-          <button type="button" id={id} disabled={disabled} role="combobox" aria-haspopup="listbox" aria-expanded={open} aria-label={ariaLabel} className={cn(triggerBase, className)}>
+          <button type="button" id={id} disabled={disabled} role="combobox" aria-haspopup="listbox" aria-expanded={open} aria-controls={`${id ?? title.replace(/\W+/g, "-")}-list`} aria-label={ariaLabel} className={cn(triggerBase, className)}>
             <span className={cn('min-w-0 flex-1 truncate', (showsPlaceholder || selected?.value === '') && 'text-muted-foreground')}>{selected && selected.label.trim() ? selected.label : placeholder || 'Select…'}</span>
             <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" aria-hidden />
           </button>
@@ -161,7 +161,7 @@ export function Select({ id, value, onChange, className, disabled, required, chi
             </div>
           </div>
         )}
-        <div ref={listRef} role="listbox" aria-label={title} onKeyDown={move} className="flex flex-col gap-0.5">
+        <div ref={listRef} role="listbox" id={`${id ?? title.replace(/W+/g, "-")}-list`} aria-label={title} onKeyDown={move} className="flex flex-col gap-0.5">
           {shown.length === 0 && <p className="px-3 py-6 text-center text-sm text-muted-foreground">No matches</p>}
           {shown.map((o, i) => {
             const on = o.value === current
@@ -311,7 +311,7 @@ export function MultiSelect({ id, options, selected, onToggle, placeholder = 'Ch
       onOpenChange={setOpen}
       title={title}
       trigger={
-        <button type="button" id={id} role="combobox" aria-haspopup="listbox" aria-expanded={open} aria-label={ariaLabel} className={cn(triggerBase, 'h-auto min-h-10 py-2', className)}>
+        <button type="button" id={id} role="combobox" aria-haspopup="listbox" aria-expanded={open} aria-controls={`${id ?? title.replace(/\W+/g, "-")}-list`} aria-label={ariaLabel} className={cn(triggerBase, 'h-auto min-h-10 py-2', className)}>
           <span className={cn('min-w-0 flex-1 truncate', chosen.length === 0 && 'text-muted-foreground')}>
             {chosen.length === 0 ? placeholder : chosen.length <= 2 ? chosen.map((c) => c.label).join(', ') : `${chosen.length} ${summaryLabel}`}
           </span>
@@ -328,7 +328,7 @@ export function MultiSelect({ id, options, selected, onToggle, placeholder = 'Ch
           </div>
         </div>
       )}
-      <div role="listbox" aria-multiselectable="true" aria-label={title} className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain py-1">
+      <div role="listbox" id={`${id ?? title.replace(/W+/g, "-")}-list`} aria-multiselectable="true" aria-label={title} className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain py-1">
         {shown.length === 0 && <p className="px-3 py-6 text-center text-sm text-muted-foreground">No matches</p>}
         {shown.map((o) => {
           const on = selected.includes(o.value)

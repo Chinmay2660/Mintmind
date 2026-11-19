@@ -23,7 +23,6 @@ export function MobileWelcome() {
       aria-label="Welcome to Mintmind"
       className="relative flex min-h-dvh flex-col overflow-hidden bg-[#0b0414] px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))] text-white md:hidden"
     >
-      <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_32%,rgba(157,0,255,0.45),rgba(11,4,20,0)_62%)]" />
 
       <div className="relative flex items-center gap-2">
         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary"><Wallet className="h-5 w-5" aria-hidden /></span>

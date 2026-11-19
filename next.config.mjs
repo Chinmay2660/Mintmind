@@ -9,7 +9,7 @@ const nextConfig = {
   compress: true,
   experimental: {
     // import only the icons / chart parts that are used instead of whole packages
-    optimizePackageImports: ['lucide-react', 'recharts', 'date-fns'],
+    optimizePackageImports: ['lucide-react', 'recharts', 'date-fns', 'framer-motion', '@radix-ui/react-popover', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
   },
   images: {
     unoptimized: false,
@@ -26,6 +26,10 @@ const nextConfig = {
   async headers() {
     return [
       {
+        source: '/fonts/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      {
         // Everything except uploaded-document previews cannot be framed at all.
         source: '/((?!api/drive/files/).*)',
         headers: [
@@ -34,6 +38,12 @@ const nextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
           { key: 'X-DNS-Prefetch-Control', value: 'on' },
+          // HTTPS only for two years, once the site has been served over HTTPS
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' },
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
+          { key: 'Cross-Origin-Resource-Policy', value: 'same-site' },
+          // Enforced: no plugins, no <base> hijack, forms post only to us, never framed.
+          { key: 'Content-Security-Policy', value: "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" },
         ],
       },
       {

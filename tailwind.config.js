@@ -60,6 +60,8 @@ module.exports = {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
         },
+        info: { DEFAULT: "hsl(var(--info, 217 82% 52%))" },
+        "chart-up": "hsl(var(--chart-up, var(--success)))",
         warning: {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
@@ -161,5 +163,11 @@ module.exports = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    // `paper:` applies a class only in the Paper style (data-style="paper" on <html>), in light and dark
+    ({ addVariant }) => addVariant('paper', '[data-style="paper"] &'),
+    // `retro:` applies only in the Retro style
+    ({ addVariant }) => addVariant('retro', '[data-retro] &'),
+  ],
 }

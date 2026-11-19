@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { useAddParam } from '@/lib/hooks/useAddParam'
 import { ChevronRight, Landmark } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
@@ -16,6 +17,7 @@ import { AccountForm } from '@/components/wealth/AccountForm'
 export default function BankAccountsPage() {
   const { ready, data, db } = useWealth()
   const [adding, setAdding] = useState(false)
+  useAddParam((what) => { if (what === 'account') setAdding(true) })
   if (!ready) return <LoadingBlock className="h-64" />
   const total = data.bankAccounts.reduce((s, b) => s + b.currentBalance, 0)
 

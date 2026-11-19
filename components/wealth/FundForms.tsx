@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { toISO } from '@/lib/wealth/calc'
 import { Input } from '@/components/ui/input'
-import { Field, FormDialog, Select } from './kit'
+import { Field, FormDialog, Select, StepFormDialog } from './kit'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { DateInput } from '@/components/ui/pickers'
 
@@ -17,7 +17,7 @@ export function FundForm({ row, onClose, onSave }: { row?: any; onClose: () => v
   })
   const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit fund' : 'Add mutual fund'} wide
+    <StepFormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit fund' : 'Add mutual fund'} wide
       onSubmit={async () => {
         const units = Number(f.units), pn = Number(f.purchaseNav), cn = Number(f.currentNav)
         const invested = f.invested === '' ? units * pn : Number(f.invested)
@@ -25,18 +25,23 @@ export function FundForm({ row, onClose, onSave }: { row?: any; onClose: () => v
         if (!(units > 0) || !(invested > 0)) throw new Error('Units and invested amount must be positive')
         if (!/^[A-Za-z0-9/\- ]{3,30}$/.test(f.folio)) throw new Error('Enter a valid folio number')
         await onSave({ ...row, ...f, units, purchaseNav: pn || invested / units, currentNav: cn || (units ? value / units : 0), invested, currentValue: Math.round(value * 100) / 100 })
-      }}>
+      }}
+      steps={[
+        { title: "Fund", content: (<>
       <Field label="Fund name" className="full">{(id) => <Input id={id} required value={f.name} onChange={set('name')} />}</Field>
       <Field label="Folio number">{(id) => <Input id={id} required value={f.folio} onChange={set('folio')} />}</Field>
       <Field label="Investment type">{(id) => <Select id={id} value={f.investmentType} onChange={set('investmentType')}>{INVESTMENT_TYPES.map((t) => <option key={t}>{t}</option>)}</Select>}</Field>
       <Field label="First investment date">{(id) => <DateInput id={id} required value={f.investmentDate} onChange={set('investmentDate')} />}</Field>
+        </>) },
+        { title: "Holding", content: (<>
       <Field label="Units held">{(id) => <Input id={id} type="number" step="any" min="0" required value={f.units} onChange={set('units')} />}</Field>
       <Field label="Purchase NAV (avg)">{(id) => <Input id={id} type="number" step="any" min="0" value={f.purchaseNav} onChange={set('purchaseNav')} />}</Field>
       <Field label="Current NAV">{(id) => <Input id={id} type="number" step="any" min="0" required value={f.currentNav} onChange={set('currentNav')} />}</Field>
       <Field label="Invested amount (₹)">{(id) => <Input id={id} type="number" step="any" min="0" value={f.invested} onChange={set('invested')} placeholder="units × purchase NAV" />}</Field>
       <Field label="Current value (₹)">{(id) => <Input id={id} type="number" step="any" min="0" value={f.currentValue} onChange={set('currentValue')} placeholder="units × current NAV" />}</Field>
       <Field label="Notes">{(id) => <Input id={id} value={f.notes} onChange={set('notes')} />}</Field>
-    </FormDialog>
+        </>) },
+      ]} />
   )
 }
 

@@ -3,8 +3,12 @@
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { useTheme } from 'next-themes'
+import { START_TOUR_EVENT } from '@/components/shell/ProductTour'
+import { SHOW_SHORTCUTS_EVENT } from '@/components/shell/Shortcuts'
+import { CookieSettingsButton } from '@/components/landing/CookieSettingsButton'
 import { toast } from 'sonner'
-import { Check, Cloud, Download, Laptop, LogOut, Moon, RotateCcw, ShieldCheck, Sun, Trash2, Upload } from 'lucide-react'
+import { formatINR } from '@/lib/wealth/format'
+import { Check, Cloud, Download, Laptop, LogOut, Moon, Pencil, RotateCcw, ShieldCheck, Sun, Trash2, Upload } from 'lucide-react'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { TABLES, clearAll } from '@/lib/wealth/db'
 import { validateMobile } from '@/lib/features'
@@ -14,7 +18,7 @@ import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Field, LoadingBlock, PageHeader, Panel, Select } from '@/components/wealth/kit'
+import { Field, InfoTip, LoadingBlock, PageHeader, Panel, Select } from '@/components/wealth/kit'
 import { AutomationManager } from '@/components/ai/AutomationManager'
 import { AiSettings } from '@/components/ai/AiSettings'
 import { MyAppFeatures } from '@/components/onboarding/MyAppFeatures'
@@ -70,6 +74,9 @@ function AccountTab() {
   const { user } = useAuth()
   const profile = data.meta.find((m: any) => m.key === 'profile')?.value ?? { name: user?.name ?? '', email: user?.email ?? '', phone: '', city: '' }
   const [phoneError, setPhoneError] = useState('')
+  const [editing, setEditing] = useState(false)
+  const [changingPw, setChangingPw] = useState(false)
+  const [disablingMfa, setDisablingMfa] = useState(false)
   const [f, setF] = useState({ name: profile.name || '', phone: profile.phone || '', city: profile.city || '', monthlyIncome: String(profile.monthlyIncome ?? '') })
   const [sec, setSec] = useState<{ hasPassword: boolean; mfaEnabled: boolean } | null>(null)
   const [pw, setPw] = useState({ current: '', next: '' })
@@ -85,35 +92,51 @@ function AccountTab() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Panel title="Profile">
-        <form className="space-y-4" onSubmit={async (e) => { e.preventDefault(); const mo = validateMobile(f.phone); if (!mo.ok) { setPhoneError(mo.error); return } setPhoneError(''); await db.meta.put({ key: 'profile', value: { ...profile, name: f.name, phone: mo.value, city: f.city, monthlyIncome: Number(f.monthlyIncome) || 0 } }); toast.success('Profile saved') }}>
+      <Panel title="Profile" action={!editing ? <Button type="button" size="sm" variant="outline" onClick={() => { setF({ name: profile.name || '', phone: profile.phone || '', city: profile.city || '', monthlyIncome: String(profile.monthlyIncome ?? '') }); setEditing(true) }}><Pencil className="mr-1.5 h-3.5 w-3.5" />Edit</Button> : undefined}>
+        {!editing ? (
+          <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+            <div className="min-w-0"><dt className="text-xs text-muted-foreground">Full name</dt><dd className="mt-0.5 truncate text-sm font-medium">{profile.name || '-'}</dd></div>
+            <div className="min-w-0"><dt className="text-xs text-muted-foreground">Email</dt><dd className="mt-0.5 truncate text-sm font-medium">{profile.email || user?.email || '-'}</dd></div>
+            <div className="min-w-0"><dt className="text-xs text-muted-foreground">Mobile</dt><dd className="mt-0.5 truncate text-sm font-medium">{profile.phone || '-'}</dd></div>
+            <div className="min-w-0"><dt className="text-xs text-muted-foreground">City</dt><dd className="mt-0.5 truncate text-sm font-medium">{profile.city || '-'}</dd></div>
+            <div className="min-w-0"><dt className="text-xs text-muted-foreground">Monthly income</dt><dd className="mt-0.5 truncate text-sm font-medium">{profile.monthlyIncome ? formatINR(Number(profile.monthlyIncome)) : '-'}</dd></div>
+          </dl>
+        ) : (
+        <form className="space-y-4" onSubmit={async (e) => { e.preventDefault(); const mo = validateMobile(f.phone); if (!mo.ok) { setPhoneError(mo.error); return } setPhoneError(''); await db.meta.put({ key: 'profile', value: { ...profile, name: f.name, phone: mo.value, city: f.city, monthlyIncome: Number(f.monthlyIncome) || 0 } }); toast.success('Profile saved'); setEditing(false) }}>
           <Field label="Full name">{(id) => <Input id={id} required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
           <Field label="Email">{(id) => <Input id={id} disabled value={profile.email || user?.email || ''} />}</Field>
           <Field label="Mobile" hint="Include the country code, e.g. +91 98765 43210" error={phoneError}>{(id) => <Input id={id} type="tel" inputMode="tel" autoComplete="tel" maxLength={20} value={f.phone} onChange={(e) => { setF({ ...f, phone: e.target.value }); setPhoneError('') }} />}</Field>
           <Field label="City">{(id) => <Input id={id} value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} />}</Field>
           <Field label="Monthly income (₹)" hint="Used only for the financial health score.">{(id) => <Input id={id} type="number" min="0" value={f.monthlyIncome} onChange={(e) => setF({ ...f, monthlyIncome: e.target.value })} />}</Field>
-          <Button type="submit">Save profile</Button>
+          <div className="flex gap-2"><Button type="submit">Save profile</Button><Button type="button" variant="outline" onClick={() => { setEditing(false); setPhoneError('') }}>Cancel</Button></div>
         </form>
+        )}
       </Panel>
 
       <Panel title="Security">
         {isDemo ? <p className="text-sm text-muted-foreground">Security settings are disabled in Demo Mode. Sign up for an account to use passwords and MFA.</p> : !sec ? <LoadingBlock className="h-24" /> : (
           <div className="space-y-6">
+            {!changingPw ? (
+              <div className="flex items-center justify-between gap-3"><div><h4 className="text-sm font-semibold">{sec.hasPassword ? 'Password' : 'No password set'}</h4><p className="text-xs text-muted-foreground">{sec.hasPassword ? 'Protected with a password.' : 'Set one to sign in without a link.'}</p></div><Button type="button" size="sm" variant="outline" onClick={() => setChangingPw(true)}>{sec.hasPassword ? 'Change' : 'Set password'}</Button></div>
+            ) : (
             <form className="space-y-3" onSubmit={async (e) => { e.preventDefault(); if (await call({ action: 'change-password', currentPassword: pw.current, newPassword: pw.next }, sec.hasPassword ? 'Password changed' : 'Password set')) setPw({ current: '', next: '' }) }}>
               <h4 className="text-sm font-semibold">{sec.hasPassword ? 'Change password' : 'Set a password'}</h4>
               {sec.hasPassword && <Field label="Current password">{(id) => <Input id={id} type="password" required autoComplete="current-password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} />}</Field>}
               <Field label="New password" hint="At least 10 characters, mixing letters, numbers and symbols.">{(id) => <Input id={id} type="password" required minLength={10} autoComplete="new-password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} />}</Field>
-              <Button type="submit" variant="outline">Update password</Button>
+              <div className="flex gap-2"><Button type="submit" variant="outline">Update password</Button><Button type="button" variant="ghost" onClick={() => { setChangingPw(false); setPw({ current: '', next: '' }) }}>Cancel</Button></div>
             </form>
+            )}
             <div className="space-y-3 border-t border-border pt-5">
               <h4 className="flex items-center gap-2 text-sm font-semibold"><ShieldCheck className="h-4 w-4" />Two-factor authentication (authenticator app)</h4>
               {sec.mfaEnabled ? (
-                <form className="space-y-3" onSubmit={async (e) => { e.preventDefault(); await call({ action: 'disable-mfa', ...disable }, 'MFA disabled') }}>
-                  <p className="text-sm text-success">MFA is on.</p>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-3"><p className="text-sm text-success">MFA is on.</p>{!disablingMfa && <Button type="button" size="sm" variant="outline" onClick={() => setDisablingMfa(true)}>Disable</Button>}</div>
+                {disablingMfa && <form className="space-y-3" onSubmit={async (e) => { e.preventDefault(); if (await call({ action: 'disable-mfa', ...disable }, 'MFA disabled')) { setDisablingMfa(false); setDisable({ password: '', code: '' }) } }}>
                   <Field label="Password">{(id) => <Input id={id} type="password" required value={disable.password} onChange={(e) => setDisable({ ...disable, password: e.target.value })} />}</Field>
                   <Field label="Authenticator code">{(id) => <Input id={id} inputMode="numeric" maxLength={6} required value={disable.code} onChange={(e) => setDisable({ ...disable, code: e.target.value })} />}</Field>
-                  <Button type="submit" variant="outline">Disable MFA</Button>
-                </form>
+                  <div className="flex gap-2"><Button type="submit" variant="outline">Disable MFA</Button><Button type="button" variant="ghost" onClick={() => { setDisablingMfa(false); setDisable({ password: '', code: '' }) }}>Cancel</Button></div>
+                </form>}
+                </div>
               ) : mfa ? (
                 <form className="space-y-3" onSubmit={async (e) => { e.preventDefault(); if (await call({ action: 'enable-mfa', code }, 'MFA enabled')) { setMfa(null); setCode('') } }}>
                   <p className="text-sm">Add this key to your authenticator app (Google Authenticator, Authy, 1Password), then enter the 6-digit code.</p>
@@ -150,6 +173,10 @@ function AppearanceTab() {
           )
         })}
       </div>
+      <h4 className="mb-2 mt-6 text-sm font-semibold">Help</h4>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-4"><span className="text-sm"><span className="block font-medium">Cookies and storage</span><span className="block text-xs text-muted-foreground">Choose whether the app remembers your theme and layout between visits.</span></span><CookieSettingsButton /></div>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-4"><span className="text-sm"><span className="block font-medium">Keyboard shortcuts</span><span className="block text-xs text-muted-foreground">Add things, jump between pages and search without the mouse. Press ? anywhere.</span></span><Button type="button" variant="outline" size="sm" onClick={() => window.dispatchEvent(new Event(SHOW_SHORTCUTS_EVENT))}>Show shortcuts</Button></div>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-4"><span className="text-sm"><span className="block font-medium">Product tour</span><span className="block text-xs text-muted-foreground">A short walk through net worth, investments, transactions, goals and reports.</span></span><Button type="button" variant="outline" size="sm" onClick={() => window.dispatchEvent(new Event(START_TOUR_EVENT))}>Restart tour</Button></div>
     </Panel>
   )
 }
@@ -264,22 +291,21 @@ function DataTab() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Panel title="Export & backup">
+      <Panel title="Export & backup" description="Restoring replaces current data. Vault items are not included in this file.">
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={exportAll}><Download className="mr-2 h-4 w-4" />Export backup</Button>
           <Button variant="outline" onClick={() => fileRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Restore backup</Button>
           <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) restore(f); e.target.value = '' }} />
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">Restoring replaces current data. Vault items are not included in this file.</p>
       </Panel>
-      <Panel title="Session"><p className="mb-3 text-sm text-muted-foreground">{isDemo ? 'You are exploring the sample family. Leaving ends the demo session.' : 'Sign out on this device. Your data stays saved.'}</p><Button variant="outline" onClick={async () => { forgetLocalExtras(); await signOut() }}><LogOut className="mr-2 h-4 w-4" />{isDemo ? 'Exit demo' : 'Sign out'}</Button></Panel>
+      <Panel title="Session" description={isDemo ? 'You are exploring the sample family. Leaving ends the demo session.' : 'Sign out on this device. Your data stays saved.'}><Button variant="outline" onClick={async () => { forgetLocalExtras(); await signOut() }}><LogOut className="mr-2 h-4 w-4" />{isDemo ? 'Exit demo' : 'Sign out'}</Button></Panel>
       {isDemo ? (
-        <Panel title="Demo data"><p className="mb-3 text-sm text-muted-foreground">Restore the original sample data. Your edits in demo are discarded.</p><Button variant="outline" onClick={() => setDlg('reset')}><RotateCcw className="mr-2 h-4 w-4" />Reset demo data</Button></Panel>
+        <Panel title="Demo data" description="Restore the original sample data. Your edits in demo are discarded."><Button variant="outline" onClick={() => setDlg('reset')}><RotateCcw className="mr-2 h-4 w-4" />Reset demo data</Button></Panel>
       ) : (
         <Panel title="Account management">
           <div className="space-y-3">
-            <div><Button variant="outline" onClick={() => setDlg('wipe')}><Trash2 className="mr-2 h-4 w-4" />Erase my tracked data</Button><p className="mt-1 text-xs text-muted-foreground">Clears banks, funds, cards, policies, budget and expenses from this browser.</p></div>
-            <div><Button variant="destructive" onClick={() => setDlg('delete')}>Delete my account</Button><p className="mt-1 text-xs text-muted-foreground">Removes your login, Drive link and server-side records. Files already in your Google Drive are not deleted.</p></div>
+            <div className="flex items-center gap-2"><Button variant="outline" onClick={() => setDlg('wipe')}><Trash2 className="mr-2 h-4 w-4" />Erase my tracked data</Button><InfoTip label="Erase my tracked data">Clears banks, funds, cards, policies, budget and expenses from this browser.</InfoTip></div>
+            <div className="flex items-center gap-2"><Button variant="destructive" onClick={() => setDlg('delete')}>Delete my account</Button><InfoTip label="Delete my account">Removes your login, Drive link and server-side records. Files already in your Google Drive are not deleted.</InfoTip></div>
           </div>
         </Panel>
       )}

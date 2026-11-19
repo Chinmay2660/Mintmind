@@ -6,7 +6,7 @@ import { availableBalance, toISO } from '@/lib/wealth/calc'
 import { emergencyFund, loanPayoff, retirementCorpus, termCover } from '@/lib/calculators'
 import { formatINR } from '@/lib/wealth/format'
 import { Num, Result, ASSUME, num } from '@/components/tools/kit'
-import { LoadingBlock, PageHeader, Select } from '@/components/wealth/kit'
+import { LoadingBlock, PageHeader, Select, FootNote } from '@/components/wealth/kit'
 import { cn } from '@/lib/utils'
 import { moneyCheckup } from '@/lib/planning'
 import { AboutYou } from '@/components/planning/AboutYou'
@@ -37,7 +37,7 @@ export default function PlanningToolsPage() {
       {tab === 'Loan payoff' && <Payoff data={data} />}
       {tab === 'Insurance cover' && <Cover data={data} />}
       {tab === 'Retirement' && <Retire />}
-      <p className="text-xs text-muted-foreground">Educational what-if tools, not investment, tax or insurance advice.</p>
+      <FootNote>Educational what-if tools, not investment, tax or insurance advice.</FootNote>
     </div>
   )
 }

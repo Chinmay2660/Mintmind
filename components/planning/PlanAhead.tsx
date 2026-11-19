@@ -5,7 +5,7 @@ import { ArrowDownRight, ArrowUpRight, X } from 'lucide-react'
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { EVENT_TYPES, projectPlan } from '@/lib/planning'
 import { formatCompactINR } from '@/lib/wealth/format'
-import { chartAxis, chartColor, chartGrid, chartTooltipStyle } from '@/components/wealth/kit'
+import { chartAxis, chartColor, chartGrid, chartTooltipStyle, FootNote } from '@/components/wealth/kit'
 import { cn } from '@/lib/utils'
 import { num } from '@/components/tools/kit'
 import { Slider } from '@/components/ui/slider'
@@ -57,7 +57,7 @@ export function PlanAhead({ netWorth, monthlySave }: { netWorth: number; monthly
             <Line dataKey="plan" name="With the changes" stroke={chartColor(1)} strokeWidth={3} dot={false} />
           </LineChart></ResponsiveContainer>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">Projected, not guaranteed. Assumes 9% yearly growth and monthly saving that rises 5% a year.</p>
+        <FootNote className="mt-2">Projected, not guaranteed. Assumes 9% yearly growth and monthly saving that rises 5% a year.</FootNote>
       </div>
     </div>
   )

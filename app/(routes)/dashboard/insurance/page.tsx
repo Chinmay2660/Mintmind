@@ -1,10 +1,11 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ChevronRight, Paperclip, Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react'
+import { ArrowLeft, Check, ChevronRight, Paperclip, Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { deletePolicy, recordPremiumPaid, save } from '@/lib/wealth/actions'
+import { premiumPayable } from '@/lib/wealth/premium'
 import { toISO } from '@/lib/wealth/calc'
 import { POLICY_TYPES, PREMIUM_FREQUENCIES } from '@/lib/wealth/labels'
 import { annualPremium, coverageTotals, daysUntil } from '@/lib/wealth/selectors'
@@ -12,8 +13,9 @@ import { formatDate } from '@/lib/wealth/format'
 import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useDetailCrumb } from '@/components/shell/DetailCrumb'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, StepFormDialog, LoadingBlock, PageHeader, Panel, Select, Stat } from '@/components/wealth/kit'
+import { Empty, Field, FormDialog, InfoTip, StepFormDialog, LoadingBlock, PageHeader, Panel, Select, Stat } from '@/components/wealth/kit'
 import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
 import { cn } from '@/lib/utils'
 import { FieldSet } from '@/components/ui/layout'
@@ -31,11 +33,11 @@ export default function InsurancePage() {
   const [detail, setDetail] = useState<string | null>(null)
   const today = useMemo(() => new Date(), [])
   const cover = useMemo(() => coverageTotals(data.policies, today), [data.policies, today])
+  useDetailCrumb(detail ? data.policies.find((x: any) => x.id === detail)?.policyName ?? null : null, () => setDetail(null))
   if (!ready) return <LoadingBlock className="h-64" />
 
   const annual = data.policies.reduce((s, p) => s + annualPremium(p), 0)
   const list = data.policies.filter((p) => filter === 'all' || p.type === filter)
-  const hist = [...data.premiums].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12)
 
   return (
     <div className="space-y-5">
@@ -46,26 +48,23 @@ export default function InsurancePage() {
         {Object.entries(cover.byType).slice(0, 2).map(([k, v]) => <Stat key={k} label={`${typeLabel(k)} cover`} value={<Money value={v} compact />} />)}
       </div>
 
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by type">
+      {!detail && <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by type">
         {[{ value: 'all', label: 'All' }, ...POLICY_TYPES].map((t) => (
           <button key={t.value} type="button" aria-pressed={filter === t.value} onClick={() => setFilter(t.value)} className={cn('rounded-full border px-3 py-1 text-xs font-medium', filter === t.value ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{t.label}</button>
         ))}
-      </div>
+      </div>}
 
-      {list.length === 0 ? <Empty title="No policies" action={<Button onClick={() => setDlg({ kind: 'edit' })}>Add policy</Button>} /> : (
+      {!detail && (list.length === 0 ? <Empty title="No policies" action={<Button onClick={() => setDlg({ kind: 'edit' })}>Add policy</Button>} /> : (
         <div className="grid gap-3 lg:grid-cols-2">
           {list.map((p) => <PolicyCard key={p.id} p={p} today={today} onOpen={() => setDetail(p.id)} />)}
         </div>
-      )}
+      ))}
 
-      <Panel title="Premium payment history">
-        {hist.length === 0 ? <Empty title="No premiums recorded" /> : <ul className="divide-y divide-border">{hist.map((h) => <li key={h.id} className="flex justify-between py-2.5 text-sm"><span>{data.policies.find((p) => p.id === h.policyId)?.policyName ?? 'Policy'}<span className="block text-xs text-muted-foreground">{formatDate(h.date)}</span></span><Money value={h.amount} className="font-medium" /></li>)}</ul>}
-      </Panel>
 
       {detail && (() => { const p = data.policies.find((x: any) => x.id === detail); return p ? (
         <PolicyDetail p={p} today={today} doc={data.documents.find((x: any) => x.id === p.documentId)} history={data.premiums.filter((h: any) => h.policyId === p.id).sort((x: any, y: any) => y.date.localeCompare(x.date)).slice(0, 5)}
           onClose={() => setDetail(null)}
-          onPaid={async () => { await recordPremiumPaid(db, p.id); toast.success('Premium recorded; next due date moved forward') }}
+          onPaid={async () => { try { await recordPremiumPaid(db, p.id); toast.success('Premium recorded; next due date moved forward') } catch (e) { toast.error(e instanceof Error ? e.message : 'Could not record the premium') } }}
           onEdit={() => { setDetail(null); setDlg({ kind: 'edit', row: p }) }}
           onDelete={() => { setDetail(null); setDlg({ kind: 'del', row: p }) }} />
       ) : null })()}
@@ -114,15 +113,14 @@ function PolicyDetail({ p, today, doc, history, onClose, onPaid, onEdit, onDelet
   const [tab, setTab] = useState<'details' | 'premium'>('details')
   const [busy, setBusy] = useState(false)
   const st = premiumStatus(p, today)
+  const can = premiumPayable(p, today)
   const freq = PREMIUM_FREQUENCIES.find((x) => x.value === p.frequency)?.label
-  const Row = ({ k, children }: { k: string; children: React.ReactNode }) => <div className="flex items-start justify-between gap-4 py-2.5 text-sm"><dt className="shrink-0 text-muted-foreground">{k}</dt><dd className="min-w-0 text-right font-medium">{children}</dd></div>
+  const row = (k: string, children: React.ReactNode) => <div key={k} className="flex items-start justify-between gap-4 py-2.5 text-sm"><dt className="shrink-0 text-muted-foreground">{k}</dt><dd className="min-w-0 text-right font-medium">{children}</dd></div>
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{p.policyName}</DialogTitle>
-          <DialogDescription>{p.company} · {typeLabel(p.type)}</DialogDescription>
-        </DialogHeader>
+    <section className="space-y-3">
+      <button type="button" onClick={onClose} className="inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" aria-hidden />All policies</button>
+      <div className="surface-card space-y-4 p-5">
+        <div><h3 className="text-xl font-semibold">{p.policyName}</h3><p className="text-sm text-muted-foreground">{p.company} · {typeLabel(p.type)}</p></div>
         <div className="flex items-end justify-between gap-3">
           <div><p className="text-xs text-muted-foreground">Sum assured</p><p className="text-2xl font-semibold tabular-nums"><Money value={p.sumAssured} /></p></div>
           <span className={cn('rounded-full px-2.5 py-1 text-xs font-medium', st.cls)}>{st.label}</span>
@@ -131,31 +129,33 @@ function PolicyDetail({ p, today, doc, history, onClose, onPaid, onEdit, onDelet
         <div className="min-h-[17.5rem]">
           {tab === 'details' ? (
             <dl className="divide-y divide-border">
-              <Row k="Policy number"><CopyValue value={p.policyNumber} label="Policy number" mono /></Row>
-              <Row k="Policy holder"><CopyValue value={p.holder} label="Policy holder" /></Row>
-              <Row k="Nominee"><CopyValue value={p.nominee} label="Nominee" /></Row>
-              <Row k="Period">{formatDate(p.startDate)} to {formatDate(p.endDate)}</Row>
-              <Row k="Covers">{p.members?.length ? p.members.join(', ') : '-'}</Row>
-              <Row k="Document"><span className="inline-flex items-center gap-1"><Paperclip className="h-3.5 w-3.5 text-muted-foreground" />{doc ? doc.name : 'None attached'}</span></Row>
+              {row("Policy number", <><CopyValue value={p.policyNumber} label="Policy number" mono /></>)}
+              {row("Policy holder", <><CopyValue value={p.holder} label="Policy holder" /></>)}
+              {row("Nominee", <><CopyValue value={p.nominee} label="Nominee" /></>)}
+              {row("Period", <>{formatDate(p.startDate)} to {formatDate(p.endDate)}</>)}
+              {row("Covers", <>{p.members?.length ? p.members.join(', ') : '-'}</>)}
+              {row("Document", <><span className="inline-flex items-center gap-1"><Paperclip className="h-3.5 w-3.5 text-muted-foreground" />{doc ? doc.name : 'None attached'}</span></>)}
             </dl>
           ) : (
             <div className="space-y-3">
               <dl className="divide-y divide-border">
-                <Row k="Premium"><Money value={p.premium} /> <span className="text-xs font-normal text-muted-foreground">{freq}</span></Row>
-                <Row k="Next premium">{p.nextPremium ? formatDate(p.nextPremium) : '-'}</Row>
+                {row("Premium", <><Money value={p.premium} /> <span className="text-xs font-normal text-muted-foreground">{freq}</span></>)}
+                {row("Next premium", <>{p.nextPremium ? formatDate(p.nextPremium) : '-'}</>)}
               </dl>
               <p className="text-xs font-medium text-muted-foreground">Recent payments</p>
               {history.length === 0 ? <p className="text-sm text-muted-foreground">No premiums recorded yet.</p> : <ul className="divide-y divide-border rounded-xl border border-border text-sm">{history.map((h) => <li key={h.id} className="flex justify-between px-3 py-2.5"><span>{formatDate(h.date)}</span><Money value={h.amount} className="font-medium" /></li>)}</ul>}
             </div>
           )}
         </div>
-        {p.frequency !== 'single' && <Button className="h-11" disabled={busy} onClick={async () => { setBusy(true); try { await onPaid() } finally { setBusy(false) } }}>Mark premium paid</Button>}
+        {p.frequency !== 'single' && (can.ok
+          ? <Button className="h-11" disabled={busy} onClick={async () => { setBusy(true); try { await onPaid() } finally { setBusy(false) } }}>Mark premium paid</Button>
+          : <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm"><span className="flex items-center gap-2 font-medium"><Check className="h-4 w-4 text-success" aria-hidden />{p.endDate && p.endDate < toISO(today) ? 'Policy ended' : 'Paid for this period'}</span><InfoTip label="Premium status">{can.reason}</InfoTip></div>)}
         <div className="grid grid-cols-2 gap-2">
           <Button variant="outline" className="h-11" onClick={onEdit}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button>
           <Button variant="destructive" className="h-11" onClick={onDelete}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </section>
   )
 }
 

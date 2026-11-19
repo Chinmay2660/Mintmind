@@ -2,6 +2,11 @@
 import React from 'react'
 import AppSearch from '@/components/AppSearch'
 import { MainScroll } from '@/components/shell/MainScroll'
+import dynamic from 'next/dynamic'
+import { Shortcuts } from '@/components/shell/Shortcuts'
+
+const ProductTour = dynamic(() => import('@/components/shell/ProductTour').then((m) => m.ProductTour), { ssr: false })
+import { DetailCrumbProvider } from '@/components/shell/DetailCrumb'
 import { AppSearchProvider } from '@/contexts/AppSearchContext'
 import { WealthProvider } from '@/lib/wealth/WealthContext'
 import { FeaturesProvider } from '@/lib/features/FeaturesContext'
@@ -22,8 +27,12 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
                 <FeaturesProvider>
                 <AssistantProvider>
                 <AutomationRunner />
+                <ProductTour />
+                <Shortcuts />
                 <DeviceNotifier />
                 <PriceRefresher />
+                <DetailCrumbProvider>
+                <a href="#dashboard-main-scroll" className="sr-only z-[100] rounded-md bg-primary px-4 py-2 text-sm font-bold text-primary-foreground focus:not-sr-only focus:fixed focus:left-3 focus:top-3">Skip to main content</a>
                 <div className="app-shell fixed inset-0 flex bg-background text-foreground">
                     <Sidebar />
                     <div className="flex min-w-0 flex-1 flex-col">
@@ -33,6 +42,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
                     </div>
                     <MobileNav />
                 </div>
+                </DetailCrumbProvider>
                 </AssistantProvider>
                 <AppSearch />
                 </FeaturesProvider>

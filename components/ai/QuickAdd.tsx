@@ -1,5 +1,6 @@
 'use client'
 
+import { InfoTip } from '@/components/wealth/kit'
 import { useMemo, useRef, useState } from 'react'
 import { PenLine, Sparkles } from 'lucide-react'
 import { parseExpenseText } from '@/lib/ai/quickAdd'
@@ -23,7 +24,7 @@ export function QuickAdd() {
   const ok = !!draft?.amount
   return (
     <div className="space-y-4">
-      <div><h3 className="font-semibold">Quick add</h3><p className="text-sm text-muted-foreground">Write it the way you would say it. Nothing is saved until you confirm.</p></div>
+      <div className="flex items-center gap-1.5"><h3 className="font-semibold">Quick add</h3><InfoTip label="Quick add">Write it the way you would say it. Nothing is saved until you confirm.</InfoTip></div>
       <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); if (ok) setOpen(true) }}>
         <Input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. 450 lunch with card yesterday" aria-label="Describe an expense" />
         <Button type="submit" disabled={!ok}><Sparkles className="mr-1.5 h-4 w-4" />Review</Button>

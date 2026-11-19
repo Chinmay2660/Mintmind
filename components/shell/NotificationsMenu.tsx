@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { Bell, Check, CheckCheck, Circle, RotateCcw, Settings, Trash2, X } from 'lucide-react'
+import { Bell, CheckCheck, RotateCcw, Settings, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useWealth } from '@/lib/wealth/WealthContext'
@@ -101,8 +101,7 @@ export function NotificationsMenu() {
                     </span>
                   </Link>
                   <div className="flex shrink-0 gap-0.5">
-                    <Button size="icon" variant="ghost" className={cn('h-9 w-9 transition-colors', isRead ? 'text-muted-foreground hover:bg-muted hover:text-foreground' : 'text-foreground hover:bg-muted')} aria-label={isRead ? 'Mark as unread' : 'Mark as read'} title={isRead ? 'Mark as unread' : 'Mark as read'} onClick={() => mark(n.key, !isRead)}>{isRead ? <Circle className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}</Button>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Dismiss" title="Dismiss" onClick={() => dismiss(n.key)}><X className="h-3.5 w-3.5" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground transition-opacity hover:bg-muted hover:text-foreground md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100" aria-label="Dismiss" title="Dismiss" onClick={() => dismiss(n.key)}><X className="h-3.5 w-3.5" /></Button>
                   </div>
                 </li>
               )

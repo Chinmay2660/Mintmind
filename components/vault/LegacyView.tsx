@@ -14,7 +14,7 @@ import { getVaultSession } from '@/lib/vault/session'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Select } from '@/components/wealth/kit'
+import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Select, FootNote } from '@/components/wealth/kit'
 import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
 import { cn } from '@/lib/utils'
 import { FieldSet } from '@/components/ui/layout'
@@ -98,12 +98,12 @@ export function LegacyView() {
             </div>
             <FieldSet legend="Notify you by"><div className="flex flex-wrap gap-4">
               {(['email', 'push', 'sms'] as const).map((c) => <label key={c} className="flex items-center gap-2 text-sm capitalize"><Checkbox checked={plan.channels[c]} onChange={(e) => patch({ channels: { ...plan.channels, [c]: e.target.checked } })} />{c === 'sms' ? 'SMS' : c}</label>)}</div>
-              <p className="mt-1 text-xs text-muted-foreground">SMS and push only work if they are set up for this app. Email is always used as the fallback.</p></FieldSet>
+              <FootNote className="mt-1">SMS and push only work if they are set up for this app. Email is always used as the fallback.</FootNote></FieldSet>
           </div>
         </Panel>
         <Panel title="What happens, step by step">
           <ol className="space-y-3">{timeline.map((s, i) => <li key={i} className="flex gap-3 text-sm"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-accent-foreground">{i + 1}</span><span><span className="font-medium">Day {s.d}</span> · {s.t}</span></li>)}</ol>
-          <p className="mt-3 text-xs text-muted-foreground">Any activity in the app, or pressing “I&apos;m safe”, cancels the process at any point before release.</p>
+          <FootNote className="mt-3">Any activity in the app, or pressing “I&apos;m safe”, cancels the process at any point before release.</FootNote>
         </Panel>
       </div>
 
@@ -135,7 +135,7 @@ export function LegacyView() {
             <div className="space-y-3 text-sm"><p>{plan.vaultBundle.itemCount} item(s) shared with {plan.vaultBundle.grantedContactIds?.length || 0} contact(s), updated {formatDate(plan.vaultBundle.updatedAt?.slice(0, 10))}.</p>
               <div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => setDlg('bundle')}>Replace</Button><Button variant="outline" size="sm" onClick={async () => { await post({ action: 'revoke-bundle' }); toast.success('Emergency access revoked') }}>Revoke</Button></div></div>
           ) : <Button variant="outline" onClick={() => setDlg('bundle')}><KeyRound className="mr-2 h-4 w-4" />Set up emergency vault access</Button>}
-          <p className="mt-3 text-xs text-muted-foreground">Contacts can only receive the encrypted bundle after the grace period and a one-time-code check, and can only read it with the Emergency Access Key. Family and admins never get automatic access.</p>
+          <FootNote className="mt-3">Contacts can only receive the encrypted bundle after the grace period and a one-time-code check, and can only read it with the Emergency Access Key. Family and admins never get automatic access.</FootNote>
         </Panel>
       </div>
 

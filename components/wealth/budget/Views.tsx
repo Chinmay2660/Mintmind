@@ -13,11 +13,16 @@ import { useCategories } from '@/lib/wealth/useCategories'
 import { formatCompactINR, formatDate, formatINR, modeLabel } from '@/lib/wealth/format'
 import { daysInMonth } from '@/lib/wealth/calc'
 import { Money } from '../Money'
+import { Pagination } from '@/components/ui/pagination'
+import { usePagination } from '@/lib/hooks/usePagination'
+import { useKeys } from '@/lib/hooks/useKeys'
+import { matchesAll } from '@/lib/search'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
+import { childOf, cleanName, groupCategories, makeSub, parentOf } from '@/lib/wealth/subcategories'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { CHART_PALETTE, Empty, Panel, Select, chartTooltipStyle } from '../kit'
+import { CHART_PALETTE, DateInput, Empty, Panel, Select, chartTooltipStyle, InfoTip } from '../kit'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { cn } from '@/lib/utils'
@@ -32,22 +37,21 @@ export function SummaryStrip({ list }: { list: Tx[] }) {
   const count = (k: Tx['kind']) => list.filter((t) => t.kind === k).length
   const saved = s.income > 0 ? Math.round((s.net / s.income) * 100) : null
   const cards = [
-    { key: 'income', label: 'Income', icon: ArrowDownLeft, value: <Money value={s.income} />, hint: `${count('income')} ${count('income') === 1 ? 'entry' : 'entries'} this month`, tone: 'from-primary to-[hsl(282_100%_68%)] text-primary-foreground' },
-    { key: 'expense', label: 'Expenses', icon: ArrowUpRight, value: <Money value={s.expense} />, hint: `${count('expense')} ${count('expense') === 1 ? 'expense' : 'expenses'} this month`, tone: 'from-[hsl(217_82%_52%)] to-[hsl(200_90%_62%)] text-white' },
-    { key: 'net', label: s.net < 0 ? 'Overspent' : 'Saved', icon: Scale, value: <Money value={s.net} signed />, hint: saved === null ? 'No income recorded yet' : `${saved}% of income`, tone: 'from-foreground to-[hsl(var(--foreground)/0.82)] text-background' },
+    { key: 'income', label: 'Income', icon: ArrowDownLeft, value: <Money value={s.income} />, hint: `${count('income')} ${count('income') === 1 ? 'entry' : 'entries'} this month`, chip: 'bg-success/25 text-foreground', bar: 'bg-success/20 !border-success/50' },
+    { key: 'expense', label: 'Expenses', icon: ArrowUpRight, value: <Money value={s.expense} />, hint: `${count('expense')} ${count('expense') === 1 ? 'expense' : 'expenses'} this month`, chip: 'bg-destructive/25 text-foreground', bar: 'bg-destructive/20 !border-destructive/50' },
+    { key: 'net', label: s.net < 0 ? 'Overspent' : 'Saved', icon: Scale, value: <Money value={s.net} signed />, hint: saved === null ? 'No income recorded yet' : `${saved}% of income`, chip: s.net < 0 ? 'bg-destructive/25 text-foreground' : 'bg-primary/30 text-foreground', bar: s.net < 0 ? 'bg-destructive/20 !border-destructive/50' : 'bg-primary/20 !border-primary/50' },
   ]
   // Swipeable on phones, three across from tablet up. Every figure is the month's real total.
   return (
     <SnapCarousel label="Month summary" cols={3} itemWidth="w-[72%]">
       {cards.map((c) => (
-        <div key={c.key} className={cn('relative flex h-full flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br p-4 shadow-card', c.tone)}>
-          <span aria-hidden className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/10" />
-          <div className="relative flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20"><c.icon className="h-4 w-4" aria-hidden /></span>
-            <p className="text-sm font-medium opacity-90">{c.label}</p>
+        <div key={c.key} className={cn('surface-card relative flex h-full flex-col justify-between overflow-hidden p-4', c.bar)}>
+          <div className="flex items-center gap-2">
+            <span className={cn('flex h-8 w-8 items-center justify-center rounded-lg', c.chip)}><c.icon className="h-4 w-4" aria-hidden /></span>
+            <p className="text-sm font-medium">{c.label}</p>
           </div>
-          <p className="relative mt-4 text-2xl font-semibold tracking-tight tabular-nums">{c.value}</p>
-          <p className="relative mt-1 text-xs opacity-80">{c.hint}</p>
+          <p className="mt-4 text-2xl font-semibold tracking-tight tabular-nums [&_*]:!text-foreground">{c.value}</p>
+          <p className="mt-1 text-xs opacity-80">{c.hint}</p>
         </div>
       ))}
     </SnapCarousel>
@@ -61,7 +65,7 @@ function Row({ t, onEdit, onDelete, onDuplicate, onBookmark, selecting, selected
   const starred = !!t.raw?.bookmarked
   return (
     <TxnRow kind={t.kind} title={t.title} category={t.category} amount={t.amount} selected={selected}
-      meta={t.kind === 'expense' ? `${t.sub} · ${modeLabel(t.raw.mode)}` : t.sub}
+      meta={`${t.kind === 'expense' ? `${t.sub} · ${modeLabel(t.raw.mode)}` : t.sub}${t.raw?.tags?.length ? ' · ' + t.raw.tags.map((x: string) => '#' + x).join(' ') : ''}`}
       onLongPress={onLongPress && !selecting ? () => onLongPress(t) : undefined}
       leading={selecting ? <Checkbox checked={!!selected} onChange={() => onToggle?.(t)} aria-label={`Select ${t.title}`} /> : undefined}
       actions={selecting ? undefined : <>
@@ -88,20 +92,30 @@ export function TransactionsView({ list, ym, onEdit, onDelete, onAdd, onDuplicat
   const [q, setQ] = useState('')
   const [kind, setKind] = useState<'all' | Tx['kind']>('all')
   const [cat, setCat] = useState('')
+  const [acct, setAcct] = useState('')
+  const [tag, setTag] = useState('')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  const { data: wd } = useWealth()
+  const allTags = useMemo(() => [...new Set(list.flatMap((t) => (t.raw?.tags || []) as string[]))].sort(), [list])
+  const accountName = (t: Tx) => { const r = t.raw || {}; const id = r.accountId || r.cardId || r.fromId; const a = wd.bankAccounts.find((x: any) => x.id === id) || wd.cards.find((x: any) => x.id === id); return a ? (a.nickname || a.bankName || `${a.bank} ${a.cardName}`) : '' }
   const [onlyStar, setOnlyStar] = useState(false)
   const [selecting, setSelecting] = useState(false)
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const cats = useCategories()
   const allCats = useMemo(() => [...new Set([...cats.expense, ...cats.income])], [cats])
 
-  const shown = useMemo(() => list.filter((t) => (kind === 'all' || t.kind === kind) && (!cat || t.category === cat) && (!onlyStar || t.raw?.bookmarked) && (!q || `${t.title} ${t.sub} ${t.category}`.toLowerCase().includes(q.toLowerCase()))), [list, kind, cat, q, onlyStar])
-  const groups = useMemo(() => groupByDay(shown as any) as unknown as { date: string; items: Tx[]; income: number; expense: number }[], [shown])
+  const shown = useMemo(() => list.filter((t) => (kind === 'all' || t.kind === kind) && (!cat || t.category === cat) && (!acct || t.raw?.accountId === acct || t.raw?.cardId === acct || t.raw?.fromId === acct || t.raw?.toId === acct) && (!from || t.date >= from) && (!to || t.date <= to) && (!tag || (t.raw?.tags || []).includes(tag)) && (!onlyStar || t.raw?.bookmarked) && matchesAll(q, t.title, t.sub, t.category, t.amount, t.date, t.raw?.note, accountName(t), (t.raw?.tags || []).join(' '))), [list, kind, cat, acct, tag, from, to, q, onlyStar])
+  const pg = usePagination(shown, { pageSize: 25, resetKey: `${ym}|${kind}|${cat}|${acct}|${tag}|${from}|${to}|${q}|${onlyStar}` })
+  const groups = useMemo(() => groupByDay(pg.slice as any) as unknown as { date: string; items: Tx[]; income: number; expense: number }[], [pg.slice])
   const starCount = useMemo(() => list.filter((t) => t.raw?.bookmarked).length, [list])
 
   const chosen = shown.filter((t) => picked.has(t.key))
   const toggle = (t: Tx) => setPicked((p) => { const n = new Set(p); n.has(t.key) ? n.delete(t.key) : n.add(t.key); return n })
   const begin = (t?: Tx) => { setSelecting(true); setPicked(t ? new Set([t.key]) : new Set()) }
   const stop = () => { setSelecting(false); setPicked(new Set()) }
+  // J and K step through the pages, S starts or ends selecting
+  useKeys({ j: () => pg.setPage(Math.min(pg.pageCount, pg.page + 1)), k: () => pg.setPage(Math.max(1, pg.page - 1)), s: () => (selecting ? stop() : begin()) })
   const allOn = shown.length > 0 && chosen.length === shown.length
   const everyStarred = chosen.length > 0 && chosen.every((t) => t.raw?.bookmarked)
 
@@ -120,6 +134,20 @@ export function TransactionsView({ list, ym, onEdit, onDelete, onAdd, onDuplicat
           <Button variant="outline" onClick={() => exportTxCsv(shown, ym)} disabled={!shown.length} aria-label="Download CSV" className="h-10 shrink-0"><Download className="h-4 w-4 md:mr-1.5" /><span className="max-md:sr-only">CSV</span></Button>
         </div>
       </div>
+      <div className="flex flex-wrap items-end gap-2" role="group" aria-label="More filters">
+        <label className="min-w-0 flex-1 text-xs text-muted-foreground md:max-w-xs md:flex-none">Account or card
+          <Select aria-label="Account or card" value={acct} onChange={(e) => setAcct(e.target.value)}>
+            <option value="">All accounts and cards</option>
+            {wd.bankAccounts.map((a: any) => <option key={a.id} value={a.id}>{a.nickname || a.bankName}</option>)}
+            {wd.cards.map((x: any) => <option key={x.id} value={x.id}>{x.bank} {x.cardName}</option>)}
+          </Select>
+        </label>
+        {allTags.length > 0 && <label className="w-full text-xs text-muted-foreground sm:w-44">Tag<Select aria-label="Tag" value={tag} onChange={(e) => setTag(e.target.value)}><option value="">All tags</option>{allTags.map((x) => <option key={x} value={x}>#{x}</option>)}</Select></label>}
+        <label className="text-xs text-muted-foreground">From<div className="mt-0.5 md:w-40"><DateInput aria-label="From date" min={`${ym}-01`} max={to || `${ym}-31`} value={from} onChange={(e) => setFrom(e.target.value)} /></div></label>
+        <label className="text-xs text-muted-foreground">To<div className="mt-0.5 md:w-40"><DateInput aria-label="To date" min={from || `${ym}-01`} max={`${ym}-31`} value={to} onChange={(e) => setTo(e.target.value)} /></div></label>
+        {(acct || tag || from || to || cat || kind !== 'all' || q || onlyStar) && <Button type="button" variant="ghost" size="sm" onClick={() => { setAcct(''); setTag(''); setFrom(''); setTo(''); setCat(''); setKind('all'); setQ(''); setOnlyStar(false) }}>Clear filters</Button>}
+        <span className="ml-auto text-xs text-muted-foreground tabular-nums" aria-live="polite">{shown.length} of {list.length}</span>
+      </div>
       {groups.length === 0 ? <Empty title={onlyStar ? 'No bookmarked transactions this month' : list.length ? 'No matches' : 'No transactions this month'} description={onlyStar ? 'Tap the star on a transaction to keep it handy.' : undefined} action={!list.length ? <Button onClick={onAdd}><Plus className="mr-1.5 h-4 w-4" />Add transaction</Button> : undefined} /> : (
         <div className={cn('space-y-3', selecting && 'pb-24')}>
           {groups.map((g) => (
@@ -137,6 +165,8 @@ export function TransactionsView({ list, ym, onEdit, onDelete, onAdd, onDuplicat
           ))}
         </div>
       )}
+
+      <Pagination page={pg.page} pageCount={pg.pageCount} total={pg.total} from={pg.from} to={pg.to} pageSize={pg.pageSize} onPage={pg.setPage} onPageSize={pg.setPageSize} label="Transactions pages" />
 
       {selecting && (
         <div role="toolbar" aria-label="Selected transactions" className="fixed inset-x-3 z-40 flex items-center gap-2 rounded-2xl border border-border bg-card p-2 shadow-elevated md:left-1/2 md:right-auto md:w-[28rem] md:-translate-x-1/2" style={{ bottom: 'calc(var(--mobile-tab-bar-height) + var(--mobile-safe-bottom) + 0.5rem)' }}>
@@ -222,7 +252,7 @@ export function StatsView({ list }: { list: Tx[] }) {
       </Panel>
       {picked && (
         <Panel title={picked} description={`${list.filter((t) => t.kind === kind && t.category === picked).length} this month`} action={<button type="button" onClick={() => setPicked(null)} className="rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted">Close</button>}>
-          <ul className="divide-y divide-border">{list.filter((t) => t.kind === kind && t.category === picked).map((t) => <TxnRow key={t.key} kind={t.kind} title={t.title} category={t.category} meta={`${t.sub} · ${formatDate(t.date)}`} amount={t.amount} />)}</ul>
+          <DrillList items={list.filter((t) => t.kind === kind && t.category === picked)} />
         </Panel>
       )}
     </div>
@@ -237,7 +267,9 @@ export function CategoryManager({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('')
   const [editing, setEditing] = useState<{ from: string; to: string } | null>(null)
   const [del, setDel] = useState<string | null>(null)
-  const list = cats[kind]
+  const groups = groupCategories(cats[kind])
+  const list = groups.flatMap((g) => [g.name, ...g.children])
+  const [parent, setParent] = useState('')
   const stored = !!data.meta.find((m: any) => m.key === 'categories')
   const used = (c: string) => (kind === 'expense' ? data.expenses.filter((e: any) => e.category === c).length : data.bankTxns.filter((t: any) => t.type === 'income' && t.category === c).length)
   const init = async () => { if (!stored) await saveCategories(db, { expense: cats.expense, income: cats.income }) }
@@ -246,31 +278,31 @@ export function CategoryManager({ onClose }: { onClose: () => void }) {
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle>Categories</DialogTitle><DialogDescription>Renaming updates past entries. Deleting moves its entries to “Other”.</DialogDescription></DialogHeader>
+        <DialogHeader><div className="flex items-center gap-2"><DialogTitle>Categories</DialogTitle><InfoTip label="Details">Renaming updates past entries. Deleting moves its entries to “Other”.</InfoTip></div><DialogDescription className="sr-only">Renaming updates past entries. Deleting moves its entries to “Other”.</DialogDescription></DialogHeader>
         <div role="tablist" aria-label="Category type" className="grid grid-cols-2 rounded-lg bg-muted p-1 text-sm font-medium">
           {(['expense', 'income'] as const).map((k) => <button key={k} role="tab" aria-selected={kind === k} onClick={() => { setKind(k); setEditing(null) }} className={cn('rounded-md py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring', kind === k ? 'bg-card shadow-card' : 'text-muted-foreground')}>{k === 'expense' ? 'Expense' : 'Income'}</button>)}
         </div>
-        <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const n = name.trim(); if (!n) return; if (list.some((c) => c.toLowerCase() === n.toLowerCase())) return void toast.error('That category already exists'); run(async () => { await saveCategories(db, { expense: kind === 'expense' ? [...cats.expense, n] : cats.expense, income: kind === 'income' ? [...cats.income, n] : cats.income }); setName('') }) }}>
-          <Input aria-label="New category" placeholder={`New ${kind} category`} value={name} maxLength={30} onChange={(e) => setName(e.target.value)} /><Button type="submit" disabled={!name.trim()}><Plus className="mr-1 h-4 w-4" />Add</Button>
+        <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const base = cleanName(name); if (!base) return; const n = parent ? makeSub(parent, base) : base; if (list.some((c) => c.toLowerCase() === n.toLowerCase())) return void toast.error('That category already exists'); run(async () => { await saveCategories(db, { expense: kind === 'expense' ? [...cats.expense, n] : cats.expense, income: kind === 'income' ? [...cats.income, n] : cats.income }); setName('') }) }}>
+          <div className="w-36 shrink-0"><Select aria-label="Add under" value={parent} onChange={(e) => setParent(e.target.value)}><option value="">Main category</option>{groups.map((g) => <option key={g.name} value={g.name}>Under {g.name}</option>)}</Select></div><Input aria-label={parent ? `New sub category under ${parent}` : 'New category'} placeholder={parent ? `New sub category of ${parent}` : `New ${kind} category`} value={name} maxLength={30} onChange={(e) => setName(e.target.value)} /><Button type="submit" disabled={!cleanName(name)}><Plus className="mr-1 h-4 w-4" />Add</Button>
         </form>
         <ul className="max-h-72 divide-y divide-border overflow-y-auto">
           {list.map((c) => (
-            <li key={c} className="flex items-center justify-between gap-2 py-2 text-sm">
+            <li key={c} className={cn('flex items-center justify-between gap-2 py-2 text-sm', childOf(c) && 'pl-5')}>
               {editing?.from === c ? (
-                <form className="flex flex-1 gap-2" onSubmit={(e) => { e.preventDefault(); const to = editing.to.trim(); if (!to) return; run(async () => { await renameCategory(db, kind, c, to); setEditing(null); toast.success('Renamed') }) }}>
+                <form className="flex flex-1 gap-2" onSubmit={(e) => { e.preventDefault(); const to = editing.to; const clean = cleanName(to); if (!clean) return; run(async () => { if (childOf(c)) await renameCategory(db, kind, c, makeSub(parentOf(c), clean)); else { await renameCategory(db, kind, c, clean); for (const k of list.filter((x) => parentOf(x) === c && childOf(x))) await renameCategory(db, kind, k, makeSub(clean, childOf(k)!)) } setEditing(null); toast.success('Renamed') }) }}>
                   <Input aria-label={`Rename ${c}`} autoFocus value={editing.to} maxLength={30} onChange={(e) => setEditing({ from: c, to: e.target.value })} /><Button type="submit" size="sm">Save</Button><Button type="button" size="sm" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
                 </form>
               ) : (
                 <>
-                  <span className="min-w-0 truncate">{c}<span className="ml-2 text-xs text-muted-foreground">{used(c)} entr{used(c) === 1 ? 'y' : 'ies'}</span></span>
-                  <span className="flex shrink-0"><Button size="icon" variant="ghost" className="h-8 w-8" aria-label={`Rename ${c}`} onClick={() => setEditing({ from: c, to: c })}><Pencil className="h-3.5 w-3.5" /></Button>
+                  <span className="min-w-0 truncate">{childOf(c) ?? c}<span className="ml-2 text-xs text-muted-foreground">{used(c)} entr{used(c) === 1 ? 'y' : 'ies'}</span></span>
+                  <span className="flex shrink-0"><Button size="icon" variant="ghost" className="h-8 w-8" aria-label={`Rename ${c}`} onClick={() => setEditing({ from: c, to: childOf(c) ?? c })}><Pencil className="h-3.5 w-3.5" /></Button>
                     {c !== 'Other' && <Button size="icon" variant="ghost" className="h-8 w-8" aria-label={`Delete ${c}`} onClick={() => setDel(c)}><Trash2 className="h-3.5 w-3.5" /></Button>}</span>
                 </>
               )}
             </li>
           ))}
         </ul>
-        <ConfirmDialog open={!!del} onOpenChange={(o) => !o && setDel(null)} title={`Delete “${del}”?`} description={`${del ? used(del) : 0} entries will move to “Other”.`} confirmLabel="Delete" variant="destructive" onConfirm={() => run(async () => { await deleteCategory(db, kind, del!); setDel(null); toast.success('Deleted') })} />
+        <ConfirmDialog open={!!del} onOpenChange={(o) => !o && setDel(null)} title={`Delete “${del}”?`} description={`${del ? used(del) : 0} entries will move to “Other”${del && list.some((x) => childOf(x) && parentOf(x) === del) ? ', and so will those of its sub categories, which are deleted too' : ''}.`} confirmLabel="Delete" variant="destructive" onConfirm={() => run(async () => { for (const k of list.filter((x) => childOf(x) && parentOf(x) === del)) await deleteCategory(db, kind, k); await deleteCategory(db, kind, del!); setDel(null); toast.success('Deleted') })} />
       </DialogContent>
     </Dialog>
   )
@@ -380,5 +412,16 @@ export function SummaryView({ list, ym }: { list: Tx[]; ym: string }) {
       <Panel title="Paid from" description="Accounts and cards that funded your spending"><Bars rows={byAccount} total={s.expense} /></Panel>
       <div className="flex justify-end"><Button variant="outline" onClick={() => exportTxCsv(list, ym)} disabled={!list.length}><Download className="mr-1.5 h-4 w-4" />Export this month (CSV)</Button></div>
     </div>
+  )
+}
+
+/** The entries of one category for the month, paged so a busy category never renders hundreds of rows at once. */
+function DrillList({ items }: { items: Tx[] }) {
+  const pg = usePagination(items, { pageSize: 15, resetKey: String(items.length) })
+  return (
+    <>
+      <ul className="divide-y divide-border">{pg.slice.map((t) => <TxnRow key={t.key} kind={t.kind} title={t.title} category={t.category} meta={`${t.sub} · ${formatDate(t.date)}`} amount={t.amount} />)}</ul>
+      <Pagination page={pg.page} pageCount={pg.pageCount} total={pg.total} from={pg.from} to={pg.to} pageSize={pg.pageSize} onPage={pg.setPage} onPageSize={pg.setPageSize} label="Category entries pages" />
+    </>
   )
 }

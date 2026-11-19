@@ -81,7 +81,7 @@ export function NumberTicker({ value, suffix = '', className }: { value: number;
 /** Endless sideways strip that pauses on hover or focus (Magic UI "marquee"). The copy is hidden from screen readers. */
 export function Marquee({ children, className, label }: { children: ReactNode; className?: string; label: string }) {
   return (
-    <div role="region" aria-label={label} className={cn('group relative flex overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]', className)}>
+    <div role="region" aria-label={label} className={cn('group relative flex overflow-hidden', className)}>
       <div className="flex shrink-0 animate-marquee items-center gap-3 pr-3 group-hover:[animation-play-state:paused] group-focus-within:[animation-play-state:paused] motion-reduce:animate-none">{children}</div>
       <div aria-hidden className="flex shrink-0 animate-marquee items-center gap-3 pr-3 group-hover:[animation-play-state:paused] motion-reduce:hidden">{children}</div>
     </div>
@@ -99,9 +99,9 @@ export function Aurora() {
   )
 }
 
-/** Brand-colour gradient that slowly slides across text. Falls back to the plain brand colour when motion is reduced. */
+/** Emphasised text in the brand colour. */
 export function GradientText({ children, className }: { children: ReactNode; className?: string }) {
-  return <span className={cn('animate-gradient bg-gradient-to-r from-primary via-[hsl(300_100%_65%)] to-primary bg-300% bg-clip-text text-transparent motion-reduce:animate-none motion-reduce:text-primary motion-reduce:[background-image:none]', className)}>{children}</span>
+  return <span className={cn('text-primary', className)}>{children}</span>
 }
 
 /** A light that travels around a card's edge (Magic UI "border beam"). */

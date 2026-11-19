@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { Check, Lightbulb } from 'lucide-react'
-import { COMING_SOON, FEATURES, featureByKey, suggestFeatures } from '@/lib/features'
+import { FEATURES, featureByKey, suggestFeatures } from '@/lib/features'
 import { useFeatures } from '@/lib/features/FeaturesContext'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { iconFor } from './icons'
@@ -12,9 +12,9 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Panel } from '@/components/wealth/kit'
+import { Panel, InfoTip } from '@/components/wealth/kit'
 
-/** Settings → My App Features: Active, Available and Coming soon. Turning a feature off never deletes its data. */
+/** Settings → My App Features: Active and Available. Turning a feature off never deletes its data. */
 export function MyAppFeatures() {
   const { isEnabled, setFeature, enabled } = useFeatures()
   const { data } = useWealth()
@@ -66,11 +66,10 @@ export function MyAppFeatures() {
       )}
       <Panel title="Active"><ul className="divide-y divide-border">{active.map((f) => <Row key={f.key} k={f.key} />)}</ul></Panel>
       {available.length > 0 && <Panel title="Available"><ul className="divide-y divide-border">{available.map((f) => <Row key={f.key} k={f.key} />)}</ul></Panel>}
-      <Panel title="Coming soon"><ul className="divide-y divide-border">{COMING_SOON.map((c) => <li key={c.key} className="py-2.5 text-sm"><p className="font-medium">{c.name}</p><p className="text-xs text-muted-foreground">{c.description}</p></li>)}</ul></Panel>
 
       <Dialog open={!!intro} onOpenChange={(o) => !o && setIntro(null)}>
         <DialogContent>{intro && (() => { const f = featureByKey(intro)!; return (<>
-          <DialogHeader><DialogTitle>Turn on {f.name}</DialogTitle><DialogDescription>{f.description}</DialogDescription></DialogHeader>
+          <DialogHeader><div className="flex items-center gap-2"><DialogTitle>Turn on {f.name}</DialogTitle><InfoTip label="Details">{f.description}</InfoTip></div><DialogDescription className="sr-only">{f.description}</DialogDescription></DialogHeader>
           <ul className="space-y-1.5 text-sm">{f.benefits.map((b) => <li key={b} className="flex gap-2"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />{b}</li>)}</ul>
           <p className="rounded-lg bg-muted px-3 py-2 text-sm"><strong>What it needs:</strong> {f.needs}</p>
           <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setIntro(null)}>Cancel</Button><Button disabled={busy} onClick={() => change(intro, true)}>Turn on</Button></div>

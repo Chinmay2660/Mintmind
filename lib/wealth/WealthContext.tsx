@@ -8,8 +8,8 @@ import { seedDemo, DEMO_SEED_VERSION } from './seedDemo'
 import { computeNetWorth } from './calc'
 import { upsertSnapshot } from './actions'
 import { setDefaultDateStyle } from './format'
+import { seedCashAccount } from './seedCash'
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 type Rows = any[]
 export interface WealthData {
   bankAccounts: Rows; balanceHistory: Rows; bankTxns: Rows; funds: Rows; fundTxns: Rows; sips: Rows
@@ -53,13 +53,7 @@ export function WealthProvider({ children }: { children: ReactNode }) {
         // reseed when the demo dataset schema changed (e.g. cash account + debit cards were added)
         if (!seeded || ver?.value !== DEMO_SEED_VERSION) await seedDemo(db)
       }
-      else if (!(await db.meta.get('cashSeeded'))) {
-        // every real profile starts with a Cash wallet at zero. Created once, so deleting it stays deleted.
-        if (!(await db.bankAccounts.toArray()).some((a: any) => a.type === 'cash')) {
-          await db.bankAccounts.put({ id: 'bank_cash', bankName: 'Cash', holderName: '-', nickname: 'Cash in hand', accountNumber: '', ifsc: '', type: 'cash', currentBalance: 0, mab: 0, notes: '', lastUpdated: new Date().toISOString().slice(0, 10) })
-        }
-        await db.meta.put({ key: 'cashSeeded', value: true })
-      }
+      else await seedCashAccount(db)
       if (cancelled) return
       // One live query per table: a write only refreshes the table(s) it touched, instead of re-reading everything.
       // The first emission of every table is batched into a single state update so startup renders once.

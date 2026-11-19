@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import axios from 'axios'
-import { ArrowUp, Loader2, PenLine, Sparkles } from 'lucide-react'
-import { answerQuestion, SUGGESTED_QUESTIONS } from '@/lib/ai/assistant'
+import { ArrowUp, ChevronRight, ListChecks, Loader2, PenLine, Sparkles } from 'lucide-react'
+import { answerQuestion, QUESTION_MENU, SUGGESTED_QUESTIONS } from '@/lib/ai/assistant'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { checkAnswer, checkQuestion } from '@/lib/ai/guardrails'
 import { useAi, useAiProvider } from './useAi'
 import { cn } from '@/lib/utils'
@@ -37,10 +38,10 @@ function AnswerCard({ m, onAsk, onOther }: { m: Msg; onAsk: (q: string) => void;
       {m.stats && m.stats.length > 0 && <dl className="divide-y divide-border border-t border-border text-sm">{m.stats.map(([k, v]) => <div key={k} className="flex items-baseline justify-between gap-3 py-1.5"><dt className="text-muted-foreground">{k}</dt><dd className="text-right font-medium tabular-nums">{v}</dd></div>)}</dl>}
       {m.rows && <dl className="divide-y divide-border border-t border-border text-sm">{m.rows.map(([k, v], j) => <div key={j} className="flex items-baseline justify-between gap-3 py-1.5"><dt className="min-w-0 truncate">{k}</dt><dd className="shrink-0 text-right text-muted-foreground">{v}</dd></div>)}</dl>}
       {m.detail && <details className="text-xs text-muted-foreground"><summary className="cursor-pointer select-none hover:text-foreground">How this is calculated</summary><p className="mt-1.5 leading-relaxed">{m.detail}</p></details>}
-      {!m.unavailable ? (
-        <div className="flex flex-col items-start gap-1 border-t border-border pt-2.5 text-xs">
+      {!m.unavailable || m.followups?.length ? (
+        <div className="flex flex-col items-start gap-1.5 border-t border-border pt-2.5 text-xs">
           {m.links?.slice(0, 1).map((l) => <Link key={l.href} href={l.href} className="font-medium text-primary hover:underline">Open {l.label} →</Link>)}
-          {m.followups?.slice(0, 2).map((f) => <button key={f} type="button" onClick={() => onAsk(f)} className="text-left text-muted-foreground transition-colors hover:text-foreground">{f}</button>)}
+          {m.followups?.slice(0, 2).map((f) => <button key={f} type="button" onClick={() => onAsk(f)} className="flex w-full items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-left text-foreground outline-none transition-colors hover:border-primary/50 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"><span className="min-w-0">{f}</span><ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden /></button>)}
           <button type="button" onClick={onOther} className="inline-flex items-center gap-1 text-left font-medium text-primary transition-colors hover:underline"><PenLine className="h-3 w-3" aria-hidden />Other: ask something else</button>
         </div>
       ) : null}
@@ -108,6 +109,22 @@ export function AssistantChat({ compact = false }: { compact?: boolean }) {
         <div ref={end} />
       </div>
       <form className="mt-3 flex items-center gap-2 rounded-full border border-border bg-card py-1.5 pl-4 pr-1.5 focus-within:ring-2 focus-within:ring-ring/40" onSubmit={(e) => { e.preventDefault(); ask(q) }}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button type="button" aria-label="Choose a question" className="flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 text-xs font-medium text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ListChecks className="h-3.5 w-3.5" aria-hidden /><span className="hidden sm:inline">Questions</span></button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" side="top" className="max-h-[min(24rem,60dvh)] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto">
+            {QUESTION_MENU.map((g, gi) => (
+              <div key={g.group}>
+                {gi > 0 && <DropdownMenuSeparator />}
+                <DropdownMenuLabel className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{g.group}</DropdownMenuLabel>
+                {g.items.map((it) => <DropdownMenuItem key={it} disabled={!facts || busy} onSelect={() => ask(it)} className="cursor-pointer whitespace-normal py-2 text-sm">{it}</DropdownMenuItem>)}
+              </div>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => setTimeout(() => inputRef.current?.focus(), 0)} className="cursor-pointer gap-2 text-sm font-medium text-primary"><PenLine className="h-3.5 w-3.5" aria-hidden />Type your own question</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <input ref={inputRef} aria-label="Ask My Wealth AI" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" placeholder="Ask about your finances…" value={q} maxLength={300} onChange={(e) => setQ(e.target.value)} />
         <button type="submit" aria-label="Send" disabled={!q.trim() || !facts || busy} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity disabled:opacity-40"><ArrowUp className="h-4 w-4" /></button>
       </form>

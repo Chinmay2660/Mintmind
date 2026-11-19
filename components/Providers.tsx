@@ -6,6 +6,8 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { PrivacyProvider } from '@/contexts/PrivacyContext'
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
+import TruncationTitles from '@/components/TruncationTitles'
+import CookieConsent from '@/components/CookieConsent'
 
 interface ProvidersProps {
   children: ReactNode
@@ -29,6 +31,8 @@ export default function Providers({ children }: ProvidersProps) {
       <AuthProvider>
         <PrivacyProvider>
           <ServiceWorkerRegister />
+          <TruncationTitles />
+          <CookieConsent />
           <ErrorBoundary>{children}</ErrorBoundary>
         </PrivacyProvider>
       </AuthProvider>

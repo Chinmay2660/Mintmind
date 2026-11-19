@@ -1,7 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ChevronRight, CreditCard, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useDetailCrumb } from '@/components/shell/DetailCrumb'
+import { ArrowLeft, ChevronRight, CreditCard, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useWealth } from '@/lib/wealth/WealthContext'
@@ -37,9 +38,11 @@ function CreditCardsTab() {
     const monthSpend = data.expenses.filter((e) => e.mode === 'card' && monthKey(e.date) === ym).reduce((s, e) => s + e.amount, 0)
     return { limit, outstanding, available: limit - outstanding, util: cardUtilisation(limit, outstanding), monthSpend }
   }, [data.cards, data.expenses, today])
+  const openCard = sel ? data.cards.find((c) => c.id === sel) : undefined
+  useDetailCrumb(openCard ? `${openCard.bank} ${openCard.cardName}` : null, () => setSel(null))
   if (!ready) return <LoadingBlock className="h-64" />
 
-  const card = data.cards.find((c) => c.id === sel) ?? data.cards[0]
+  const card = sel ? data.cards.find((c) => c.id === sel) : undefined
   const dues = upcomingCardDues(data.cards, today)
   const cardTxns = card ? data.expenses.filter((e) => e.mode === 'card' && e.cardId === card.id).sort((a, b) => b.date.localeCompare(a.date)) : []
   const statements = card ? data.cardStatements.filter((s) => s.cardId === card.id).sort((a, b) => b.statementDate.localeCompare(a.statementDate)) : []
@@ -59,25 +62,26 @@ function CreditCardsTab() {
 
       {data.cards.length === 0 ? <Empty title="No credit cards" action={<Button onClick={() => setDlg({ kind: 'card' })}>Add card</Button>} /> : (
         <>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {!card && <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {data.cards.map((c) => {
               const u = cardUtilisation(c.limit, c.outstanding)
               return (
-                <button key={c.id} type="button" onClick={() => setSel(c.id)} aria-pressed={card?.id === c.id}
-                  className={cn('surface-card block w-full p-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', card?.id === c.id ? 'border-primary' : 'hover:border-primary/40')}>
+                <button key={c.id} type="button" onClick={() => setSel(c.id)} aria-label={`${c.bank} ${c.cardName}, open details`}
+                  className={cn('surface-card block w-full p-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', 'hover:border-primary/40')}>
                   <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/15 text-destructive"><CreditCard className="h-5 w-5" /></span>
                     <div className="min-w-0"><p className="truncate font-medium">{c.bank} {c.cardName}</p><p className="text-xs text-muted-foreground">{c.network} · •••• {String(c.cardNumber).slice(-4)}</p></div>
-                    <ChevronRight className={cn('ml-auto h-4 w-4 shrink-0 transition-transform', card?.id === c.id ? 'rotate-90 text-primary' : 'text-muted-foreground')} aria-hidden /></div>
+                    <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" aria-hidden /></div>
                   <div className="mt-4 flex items-end justify-between"><div><p className="text-xs text-muted-foreground">Outstanding</p><p className="text-xl font-semibold"><Money value={c.outstanding} /></p></div><p className="text-sm text-muted-foreground">{u}% of <Money value={c.limit} compact /></p></div>
                   <div className="mt-2"><Progress value={u} tone={toneForPct(u)} label={`${c.cardName} utilisation`} /></div>
                   <p className="mt-2 text-xs text-muted-foreground">{c.outstanding > 0 ? `Due ${formatDate(nextDayOfMonth(c.dueDay, today))}` : 'No dues'}</p>
                 </button>
               )
             })}
-          </div>
+          </div>}
 
           {card && (
             <>
+              <button type="button" onClick={() => setSel(null)} className="mb-3 inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" aria-hidden />All cards</button>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-lg font-semibold">{card.bank} {card.cardName}</h2>
                 <div className="flex flex-wrap gap-2">

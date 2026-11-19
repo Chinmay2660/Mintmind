@@ -16,7 +16,7 @@ import { setVaultSession } from '@/lib/vault/session'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Select } from '@/components/wealth/kit'
+import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Select, FootNote } from '@/components/wealth/kit'
 import { formatDate } from '@/lib/wealth/format'
 import { cn } from '@/lib/utils'
 import { Slider } from '@/components/ui/slider'
@@ -60,7 +60,7 @@ function StrengthMeter({ value }: { value: string }) {
   )
 }
 
-function PasswordsView() {
+function PasswordsView({ onLockChange }: { onLockChange?: (unlocked: boolean) => void }) {
   const { ready, db, isDemo, data } = useWealth()
   const [meta, setMeta] = useState<any>(undefined)
   const [session, setSession] = useState<null | { key: CryptoKey; bits: ArrayBuffer }>(null)
@@ -68,6 +68,8 @@ function PasswordsView() {
   const [bioOk, setBioOk] = useState(false)
   const autoLock = (data.meta.find((m: any) => m.key === 'prefs')?.value?.autoLockMinutes ?? 5) as number
 
+  // tell the Vault hub whether the vault is open, so Documents and Digital Legacy stay behind the same lock
+  useEffect(() => { onLockChange?.(!!session) }, [session, onLockChange])
   useEffect(() => { biometricSupported().then(setBioOk) }, [])
   useEffect(() => { if (ready) db.meta.get('vault').then((m: any) => setMeta(m?.value ?? null)) }, [ready, db])
 
@@ -262,7 +264,7 @@ function Unlocked({ items, session, meta, bioOk, onLock, onSave, onDelete, db, o
           <Button variant="outline" onClick={() => fileRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import encrypted</Button>
           <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) importEnc(f); e.target.value = '' }} />
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">Vault data stays on this device and is never sent to our servers. Use the encrypted export to move it to another device.</p>
+        <FootNote className="mt-3">Vault data stays on this device and is never sent to our servers. Use the encrypted export to move it to another device.</FootNote>
       </Panel>
 
       {edit && <ItemForm row={edit.row} type={edit.type} members={members} onClose={() => setEdit(null)} onSave={async (v) => { await onSave({ ...edit.row, ...v, type: edit.type }); toast.success('Saved') }} />}
@@ -323,6 +325,10 @@ export default function VaultPage() {
   const tabs = (['passwords', 'documents', 'legacy'] as VaultTab[]).filter((t) => t === 'passwords' ? isEnabled('vault') : t === 'documents' ? isEnabled('documents') : isEnabled('digital_legacy'))
   const [tab, setTab] = useState<VaultTab>('passwords')
   const [opened, setOpened] = useState<Record<string, boolean>>({ passwords: true })
+  // The master password lock covers every tab. Without the Passwords feature there is no vault to unlock, so nothing is gated.
+  const vaultOn = tabs.includes('passwords')
+  const [unlocked, setUnlocked] = useState(false)
+  const open = !vaultOn || unlocked
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get('tab') as VaultTab | null
     if (q && ['passwords', 'documents', 'legacy'].includes(q)) { setTab(q); setOpened((o) => ({ ...o, [q]: true })) }
@@ -335,9 +341,9 @@ export default function VaultPage() {
       {tabs.length > 1 && (
         <TabBar label="Vault sections" tabs={tabs.map((t) => ({ key: t, label: TAB_LABEL[t], icon: TAB_ICON[t] }))} value={active} onChange={(k) => go(k as typeof active)} />
       )}
-      {show('passwords') && <div hidden={active !== 'passwords'}><PasswordsView /></div>}
-      {show('documents') && <div hidden={active !== 'documents'}><DocumentsView /></div>}
-      {show('legacy') && <div hidden={active !== 'legacy'}><LegacyView /></div>}
+      {vaultOn && <div hidden={open && active !== 'passwords'}><PasswordsView onLockChange={setUnlocked} /></div>}
+      {open && show('documents') && <div hidden={active !== 'documents'}><DocumentsView /></div>}
+      {open && show('legacy') && <div hidden={active !== 'legacy'}><LegacyView /></div>}
     </div>
   )
 }

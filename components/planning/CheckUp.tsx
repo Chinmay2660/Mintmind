@@ -1,5 +1,6 @@
 'use client'
 
+import { FootNote } from '@/components/wealth/kit'
 import { useState } from 'react'
 import { moneyCheckup } from '@/lib/planning'
 import { cn } from '@/lib/utils'
@@ -22,7 +23,7 @@ export function CheckUp({ result }: { result: ReturnType<typeof moneyCheckup> })
           <ul className="mt-3 divide-y divide-border">{g.checks.map((c) => (
             <li key={c.id} className="flex items-start justify-between gap-3 py-2.5"><div><p className="text-sm font-medium">{c.label}</p><p className="text-xs text-muted-foreground">{c.detail}</p></div><Pill s={c.status} /></li>))}</ul></div>
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">Rules of thumb to start a conversation with yourself, not advice. Growth and retirement checks wait until the safety basics pass.</p>
+      <FootNote className="mt-3">Rules of thumb to start a conversation with yourself, not advice. Growth and retirement checks wait until the safety basics pass.</FootNote>
     </div>
   )
 }

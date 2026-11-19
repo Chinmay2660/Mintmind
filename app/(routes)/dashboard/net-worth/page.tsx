@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { Download } from 'lucide-react'
 import { useWealth } from '@/lib/wealth/WealthContext'
@@ -14,11 +14,14 @@ import { Input } from '@/components/ui/input'
 import { Delta, Empty, LoadingBlock, PageHeader, Panel, RangeTabs, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle } from '@/components/wealth/kit'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { GoalsPanel } from '@/components/wealth/GoalsPanel'
+import { FinancialMetrics } from '@/components/wealth/FinancialMetrics'
+import { LimitsPanel } from '@/components/wealth/LimitsPanel'
 import { WhyChanged } from '@/components/wealth/WhyChanged'
 import { NetWorthJournal } from '@/components/wealth/NetWorthJournal'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { assetValue } from '@/lib/wealth/holdings'
+import { byAccountType } from '@/lib/wealth/accountTypes'
 import { DateInput } from '@/components/ui/pickers'
 import { TabBar } from '@/components/ui/tab-bar'
 
@@ -45,6 +48,7 @@ function NetWorthOverview() {
     return s
   }, [data.snapshots, from, to, view])
 
+  const byType = useMemo(() => byAccountType(netWorth.assetBreakdown), [netWorth.assetBreakdown])
   if (!ready) return <LoadingBlock className="h-96" />
 
   const cmp = [
@@ -129,6 +133,24 @@ function NetWorthOverview() {
         )}
       </Panel>
 
+      <Panel title="By account type" description="Your assets grouped by the kind of account they sit in. Liabilities are not netted off here.">
+        {byType.length === 0 ? <Empty title="No assets yet" /> : (
+          <>
+            <div className="flex h-3 overflow-hidden rounded-full border border-border" role="img" aria-label={`Split: ${byType.map((r) => `${r.label} ${r.pct} percent`).join(', ')}`}>
+              {byType.map((r, i) => <span key={r.key} style={{ width: `${r.pct}%`, background: chartColor((((i % 6) + 1)) as 1 | 2 | 3 | 4 | 5 | 6) }} />)}
+            </div>
+            <ul className="mt-3 divide-y divide-border">
+              {byType.map((r, i) => (
+                <li key={r.key} className="flex items-center justify-between gap-3 py-2 text-sm">
+                  <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full" style={{ background: chartColor((((i % 6) + 1)) as 1 | 2 | 3 | 4 | 5 | 6) }} aria-hidden />{r.label}<span className="text-xs text-muted-foreground">{r.pct}%</span></span>
+                  <Money value={r.value} className="font-medium" />
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </Panel>
+
       <WhyChanged />
       <NetWorthJournal />
 
@@ -170,10 +192,12 @@ function Row({ name, sub, value }: { name: string; sub: string; value: number })
 
 export default function NetWorthPage() {
   const [tab, setTab] = useState<'Overview' | 'Goals'>('Overview')
+  // a link like ?add=goal lands on the Goals tab (set after mount, so the server and browser render the same first paint)
+  useEffect(() => { if (new URLSearchParams(window.location.search).get('add') === 'goal') setTab('Goals') }, [])
   return (
     <div className="space-y-5">
       <TabBar label="Net worth views" tabs={[{ key: 'Overview', label: 'Overview' }, { key: 'Goals', label: 'Goals' }]} value={tab} onChange={(k) => setTab(k as typeof tab)} />
-      {tab === 'Overview' ? <NetWorthOverview /> : <GoalsPanel />}
+      {tab === 'Overview' ? <><NetWorthOverview /><FinancialMetrics /><LimitsPanel /></> : <GoalsPanel />}
     </div>
   )
 }

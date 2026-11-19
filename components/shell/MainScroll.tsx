@@ -25,7 +25,7 @@ export function MainScroll({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <main ref={outer} id="dashboard-main-scroll" className={cn('app-main min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain mobile-content-pb md:pb-0', pad && 'md:pb-28')}>
+    <main ref={outer} id="dashboard-main-scroll" tabIndex={-1} className={cn('app-main outline-none min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain mobile-content-pb md:pb-0', pad && 'md:pb-28')}>
       <div ref={inner} className="mx-auto w-full max-w-[88rem] space-y-5 px-4 py-5 md:px-6 lg:px-8">{children}</div>
     </main>
   )

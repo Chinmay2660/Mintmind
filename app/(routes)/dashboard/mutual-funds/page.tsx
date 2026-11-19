@@ -2,25 +2,47 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import { useAddParam } from '@/lib/hooks/useAddParam'
 import { Plus, RefreshCw, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { addFund, recordSipInstalment, save, remove, updateNav } from '@/lib/wealth/actions'
 import { fundMetrics, nextSipDate, portfolioSummary, monthlyEquivalent } from '@/lib/wealth/calc'
-import { cap, formatDate, formatPct } from '@/lib/wealth/format'
+import { cap, formatDate, formatINR, formatPct } from '@/lib/wealth/format'
 import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Delta, Empty, Metric, LoadingBlock, PageHeader, Panel, Stat } from '@/components/wealth/kit'
+import { Pagination } from '@/components/ui/pagination'
+import { usePagination } from '@/lib/hooks/usePagination'
+import { Delta, Empty, Metric, LoadingBlock, PageHeader, Panel, Select, Stat } from '@/components/wealth/kit'
 import { StatementImportButton } from '@/components/wealth/StatementImport'
 import { FundForm, NavForm, SipForm } from '@/components/wealth/FundForms'
+import { AssetForm } from '@/components/wealth/AssetForm'
 import { PdfStatementImport } from '@/components/wealth/PdfStatementImport'
+
+import { assetGain, assetValue } from '@/lib/wealth/holdings'
+import { ASSET_LABELS } from '@/lib/wealth/labels'
+
+const INVEST_CATS = ['fd', 'rd', 'epf', 'ppf', 'nps', 'etf', 'stocks', 'gold']
 
 export default function MutualFundsPage() {
   const { ready, data, db } = useWealth()
-  const [dlg, setDlg] = useState<null | { kind: 'fund' | 'nav' | 'sip' | 'delSip'; row?: any }>(null)
+  const [dlg, setDlg] = useState<null | { kind: 'fund' | 'nav' | 'sip' | 'delSip' | 'asset' | 'delAsset'; row?: any }>(null)
+  useAddParam((what) => { if (what === 'fund') setDlg({ kind: 'fund' }) })
   const today = useMemo(() => new Date(), [])
+  const ranked = useMemo(() => data.funds.map((f: any) => ({ f, m: fundMetrics(f, data.fundTxns, today) })).filter((x: any) => x.m.invested > 0).sort((a: any, b: any) => b.m.absReturnPct - a.m.absReturnPct), [data.funds, data.fundTxns, today])
+  const [fcat, setFcat] = useState('')
+  const [sortBy, setSortBy] = useState<'name' | 'value' | 'return' | 'pct'>('name')
+  const fundCats = useMemo(() => [...new Set<string>(data.funds.map((f: any) => f.category).filter(Boolean))], [data.funds])
+  const visibleFunds = useMemo(() => {
+    const rows = data.funds.filter((f: any) => !fcat || f.category === fcat)
+    const key: Record<string, (f: any) => number> = { value: (f) => f.currentValue, return: (f) => fundMetrics(f, data.fundTxns, today).absReturn, pct: (f) => fundMetrics(f, data.fundTxns, today).absReturnPct }
+    return sortBy === 'name' ? rows : [...rows].sort((a: any, b: any) => key[sortBy](b) - key[sortBy](a))
+  }, [data.funds, data.fundTxns, fcat, sortBy, today])
+  const pg = usePagination(visibleFunds, { pageSize: 10, resetKey: `${fcat}|${sortBy}` })
   const s = useMemo(() => portfolioSummary(data.funds, data.fundTxns, data.sips, today), [data.funds, data.fundTxns, data.sips, today])
+  const otherInv = useMemo(() => (data.assets as any[]).filter((a) => INVEST_CATS.includes(a.category)).map((a) => ({ a, label: ASSET_LABELS[a.category as keyof typeof ASSET_LABELS] ?? a.category, value: assetValue(a, today), gain: assetGain(a, today) })), [data.assets, today])
+  const otherTotal = otherInv.reduce((t, x) => t + x.value, 0)
   if (!ready) return <LoadingBlock className="h-64" />
 
   const sips = data.sips.map((x) => ({ ...x, fund: data.funds.find((f) => f.id === x.fundId), next: nextSipDate(x, today) }))
@@ -41,11 +63,28 @@ export default function MutualFundsPage() {
         <Stat label="Monthly SIP commitment" info="Total of all active SIP instalments in a month." value={<Money value={s.monthlySipCommitment} />} />
       </div>
 
-      <Panel title="Holdings">
+      {ranked.length >= 2 && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {([['Best performing', ranked.slice(0, 3)], ['Lagging', [...ranked].reverse().slice(0, 3)]] as const).map(([title, list]) => (
+            <Panel key={title} title={title} description="By absolute return on what you invested">
+              <ul className="divide-y divide-border">
+                {list.map(({ f, m }: any) => (
+                  <li key={f.id}><Link href={`/dashboard/mutual-funds/${f.id}`} className="flex items-center justify-between gap-3 py-2.5 outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring">
+                    <span className="min-w-0"><span className="block truncate text-sm font-medium">{f.name}</span><span className="block text-xs text-muted-foreground tabular-nums">Invested {formatINR(m.invested)}</span></span>
+                    <Metric amount={m.absReturn} pct={m.absReturnPct} />
+                  </Link></li>
+                ))}
+              </ul>
+            </Panel>
+          ))}
+        </div>
+      )}
+
+      <Panel title="Holdings" action={data.funds.length > 1 ? <div className="flex flex-wrap items-center justify-end gap-2"><div className="w-40"><Select aria-label="Fund category" value={fcat} onChange={(e) => setFcat(e.target.value)}><option value="">All categories</option>{fundCats.map((x) => <option key={x}>{x}</option>)}</Select></div><div className="w-40"><Select aria-label="Sort funds" value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)}><option value="name">Sort: name</option><option value="value">Sort: value</option><option value="return">Sort: return</option><option value="pct">Sort: return %</option></Select></div></div> : undefined}>
         {data.funds.length === 0 ? <Empty title="No mutual funds yet" description="Add a fund manually from your statement." action={<Button onClick={() => setDlg({ kind: 'fund' })}>Add fund</Button>} /> : (
           <>
           <ul className="space-y-2 md:hidden">
-            {data.funds.map((f) => {
+            {pg.slice.map((f: any) => {
               const m = fundMetrics(f, data.fundTxns, today)
               return (
                 <li key={f.id}>
@@ -65,7 +104,7 @@ export default function MutualFundsPage() {
             <table className="w-full min-w-[720px] text-sm">
               <thead><tr className="border-b border-border text-left text-xs text-muted-foreground"><th className="py-2 pr-3 font-medium">Fund</th><th className="px-3 text-right font-medium">Invested</th><th className="px-3 text-right font-medium">Value</th><th className="px-3 text-right font-medium">Return</th><th className="px-3 text-right font-medium">XIRR</th><th className="px-3 text-right font-medium">NAV</th><th className="pl-3" /></tr></thead>
               <tbody className="divide-y divide-border">
-                {data.funds.map((f) => {
+                {pg.slice.map((f: any) => {
                   const m = fundMetrics(f, data.fundTxns, today)
                   return (
                     <tr key={f.id}>
@@ -82,6 +121,23 @@ export default function MutualFundsPage() {
               </tbody>
             </table>
           </div>
+          <Pagination page={pg.page} pageCount={pg.pageCount} total={pg.total} from={pg.from} to={pg.to} pageSize={pg.pageSize} onPage={pg.setPage} onPageSize={pg.setPageSize} label="Holdings pages" />
+          </>
+        )}
+      </Panel>
+
+      <Panel title="Other investments" description="Fixed deposits, recurring deposits, EPF, PPF, NPS, ETFs, stocks and gold. They count towards your net worth." action={<Button size="sm" variant="outline" onClick={() => setDlg({ kind: 'asset' })}><Plus className="mr-1 h-4 w-4" />Add investment</Button>}>
+        {otherInv.length === 0 ? <p className="text-sm text-muted-foreground">None yet. Add a fixed deposit, EPF, gold or any other investment.</p> : (
+          <>
+            <ul className="divide-y divide-border">
+              {otherInv.map(({ a, label, value, gain }) => (
+                <li key={a.id} className="flex items-center justify-between gap-3 py-2.5">
+                  <span className="min-w-0"><span className="block truncate text-sm font-medium">{a.name}</span><span className="block text-xs text-muted-foreground">{label}{gain ? ` · Invested ${formatINR(gain.invested)}` : ''}</span></span>
+                  <span className="flex items-center gap-2"><Money value={value} />{gain && <Delta pill amount={gain.gain} pct={gain.pct} />}<Button size="sm" variant="outline" aria-label={`Edit ${a.name}`} onClick={() => setDlg({ kind: 'asset', row: a })}>Edit</Button><Button size="sm" variant="ghost" aria-label={`Delete ${a.name}`} onClick={() => setDlg({ kind: 'delAsset', row: a })}>Delete</Button></span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 flex justify-between border-t border-border pt-3 text-sm font-bold"><span>Total, with mutual funds</span><Money value={otherTotal + s.value} /></p>
           </>
         )}
       </Panel>
@@ -108,6 +164,8 @@ export default function MutualFundsPage() {
       {dlg?.kind === 'fund' && <FundForm row={dlg.row} onClose={() => setDlg(null)} onSave={async (r) => { dlg.row ? await save(db, 'funds', r) : await addFund(db, r); toast.success('Fund saved') }} />}
       {dlg?.kind === 'nav' && <NavForm fund={dlg.row} onClose={() => setDlg(null)} onSave={async (nav, date) => { await updateNav(db, dlg.row.id, nav, date); toast.success('NAV updated') }} />}
       {dlg?.kind === 'sip' && <SipForm row={dlg.row} funds={data.funds} onClose={() => setDlg(null)} onSave={async (r) => { await save(db, 'sips', r); toast.success('SIP saved') }} />}
+      {dlg?.kind === 'asset' && <AssetForm row={dlg.row} category={dlg.row ? undefined : 'fd'} onClose={() => setDlg(null)} onSave={async (rec) => { await save(db, 'assets', rec); toast.success('Saved') }} />}
+      <ConfirmDialog open={dlg?.kind === 'delAsset'} onOpenChange={(o) => !o && setDlg(null)} title="Delete this investment?" description="It is removed from your net worth too." confirmLabel="Delete" variant="destructive" onConfirm={async () => { await remove(db, 'assets', dlg!.row.id); setDlg(null); toast.success('Deleted') }} />
       <ConfirmDialog open={dlg?.kind === 'delSip'} onOpenChange={(o) => !o && setDlg(null)} title="Delete this SIP?" description="Past investments are kept." confirmLabel="Delete" variant="destructive" onConfirm={async () => { await remove(db, 'sips', dlg!.row.id); setDlg(null); toast.success('SIP deleted') }} />
     </div>
   )

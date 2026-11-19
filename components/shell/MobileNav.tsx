@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 import { useVisibleNav } from './FeatureGuard'
 
 // One short word per tab. "Budget & Expenses" reads as "Expenses" because that is what people look for.
-const tabLabel = (name: string) => (/expense/i.test(name) ? 'Expenses' : name.split(' ')[0])
+const tabLabel = (name: string) => (/transaction|expense/i.test(name) ? 'Spend' : name.split(' ')[0])
 
 export function MobileNav() {
   const pathname = usePathname()
