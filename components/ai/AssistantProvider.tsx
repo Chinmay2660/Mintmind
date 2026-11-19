@@ -23,7 +23,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={value}>
       {children}
       {aiOn && <button type="button" onClick={() => setOpen(true)} aria-label="Ask My Wealth AI"
-        className="fixed right-4 z-40 flex h-12 items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-elevated outline-none transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bottom-[calc(var(--mobile-tab-bar-height)+var(--mobile-safe-bottom)+0.75rem)] md:bottom-6 paper:border paper:border-[hsl(var(--edge))] paper:shadow-[1.5px_3px_0_0_hsl(var(--drop))] print:hidden">
+        className="fab fixed right-4 z-40 flex h-12 w-12 items-center justify-center gap-2 rounded-full bg-primary p-0 text-sm sm:w-auto sm:px-4 font-semibold text-primary-foreground shadow-elevated outline-none transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bottom-[calc(var(--mobile-tab-bar-height)+var(--mobile-safe-bottom)+0.75rem)] md:bottom-6 paper:border paper:border-[hsl(var(--edge))] paper:shadow-[1.5px_3px_0_0_hsl(var(--drop))] print:hidden">
         <Sparkles className="h-4 w-4" /><span className="hidden sm:inline">Wealth AI</span>
       </button>}
       <Sheet open={isOpen && aiOn} onOpenChange={setOpen}>

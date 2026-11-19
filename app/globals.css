@@ -246,6 +246,13 @@
   /* Layout stability: the scrollbar gutter is always reserved so content changes never shift the page sideways, and
    long rows skip layout and paint until they are near the screen (the size is remembered once seen). */
 .app-main { scrollbar-gutter: stable; overflow-anchor: auto; }
+/* icons never squash or sit off centre inside buttons, chips and rows */
+button > svg, a > svg, [role='tab'] > svg { flex-shrink: 0; }
+@media (max-width: 767px) {
+  .fab { transition: transform 200ms ease, opacity 200ms ease; }
+  [data-fab-hidden] .fab { transform: translateY(calc(100% + 6rem)); opacity: 0; pointer-events: none; }
+}
+@media (prefers-reduced-motion: reduce) { .fab { transition: none; } }
 .cv-auto { content-visibility: auto; contain-intrinsic-size: auto 4.5rem; }
 
 [data-style='paper'] .surface-card { border: 1px solid hsl(var(--input)); border-radius: 12px; box-shadow: var(--shadow-card); }

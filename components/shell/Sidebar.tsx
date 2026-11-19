@@ -69,7 +69,7 @@ function NavPanel({ collapsed = false, drawer = false, onNavigate, onToggleRail 
     const Icon = nested ? (ready ? CheckCircle2 : FileText) : item.icon
     return (
       <Link href={item.path} onClick={onNavigate} aria-current={active ? 'page' : undefined} title={collapsed ? item.name : undefined}
-        className={cn('flex items-center gap-2.5 rounded-lg px-2.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', nested ? 'py-1.5' : 'py-2', active ? ACTIVE : IDLE, collapsed && 'justify-center px-0 py-2.5')}>
+        className={cn('flex items-center gap-2.5 rounded-lg px-2.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', nested ? 'py-1.5' : 'py-2', active ? ACTIVE : IDLE, collapsed && 'mx-auto h-10 w-10 justify-center p-0')}>
         <Icon className={cn('h-[16px] w-[16px] shrink-0', nested && ready && !active && 'text-success')} strokeWidth={1.9} aria-hidden />
         {!collapsed && <span className="min-w-0 flex-1 truncate">{item.name}</span>}
         {nested && !collapsed && <span className="sr-only">{ready ? ', set up' : ', nothing added yet'}</span>}
@@ -81,7 +81,7 @@ function NavPanel({ collapsed = false, drawer = false, onNavigate, onToggleRail 
     <>
       <div className={cn('flex h-16 shrink-0 items-center gap-2.5 px-4', collapsed && 'justify-center px-0')}>
         <Link href="/dashboard" onClick={onNavigate} className="flex items-center gap-2.5" aria-label={`${APP_NAME} home`}>
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Wallet className="h-5 w-5" strokeWidth={2} /></span>
+          <span className={cn('flex items-center justify-center rounded-lg bg-primary text-primary-foreground', collapsed ? 'h-10 w-10' : 'h-9 w-9')}><Wallet className="h-5 w-5" strokeWidth={2} /></span>
           {!collapsed && <span className="text-lg font-semibold tracking-tight">{APP_NAME}</span>}
         </Link>
       </div>
@@ -91,7 +91,7 @@ function NavPanel({ collapsed = false, drawer = false, onNavigate, onToggleRail 
           // icon rail: every destination, flat
           <div className="space-y-1">
             {[...top, ...groups.flatMap((g) => g.items)].map((i) => <Fragment key={i.id}>{row(i)}</Fragment>)}
-            {aiOn && <Link href="/dashboard/ai" title="My Wealth AI" aria-label="My Wealth AI" className={cn('flex items-center justify-center rounded-lg py-2.5 outline-none focus-visible:ring-2 focus-visible:ring-ring', aiActive ? ACTIVE : IDLE)}><Sparkles className="h-[17px] w-[17px]" /></Link>}
+            {aiOn && <Link href="/dashboard/ai" title="My Wealth AI" aria-label="My Wealth AI" className={cn('mx-auto flex h-10 w-10 items-center justify-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring', aiActive ? ACTIVE : IDLE)}><Sparkles className="h-[17px] w-[17px]" /></Link>}
           </div>
         ) : (
           <>
@@ -145,7 +145,7 @@ function NavPanel({ collapsed = false, drawer = false, onNavigate, onToggleRail 
         )}
         {!drawer && onToggleRail && (
           <button type="button" onClick={onToggleRail} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed}
-            className={cn('flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring', collapsed && 'justify-center px-0')}>
+            className={cn('flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring', collapsed && 'mx-auto h-10 w-10 justify-center p-0')}>
             {collapsed ? <PanelLeftOpen className="h-[18px] w-[18px]" /> : <PanelLeftClose className="h-[18px] w-[18px]" />}
             {!collapsed && <span>Collapse</span>}
           </button>

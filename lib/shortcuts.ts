@@ -1,6 +1,6 @@
 // Every keyboard shortcut in one place: the handler and the help dialog both read this, so they cannot disagree.
 
-export interface Shortcut { keys: string[]; label: string; /** shown as "then" between keys, for two key sequences */ then?: boolean }
+export interface Shortcut { keys: string[]; label: string; /** shown as "then" between keys, for two key sequences */ then?: boolean; /** a short second line under the label */ hint?: string }
 export interface ShortcutGroup { title: string; items: Shortcut[] }
 
 export const GO_TO: Record<string, { label: string; path: string }> = {
@@ -36,7 +36,7 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
   {
     title: 'On the Transactions & budgets page',
     items: [
-      { keys: ['1-9'], label: 'Switch tab: Overview, Budgets, Transactions, Calendar, Monthly, Summary, Recurring, Stats, Cash flow' },
+      { keys: ['1-0'], label: 'Switch tab', hint: '1 Overview, 2 Budgets, 3 Transactions, 4 Calendar, 5 Monthly, 6 Summary, 7 Recurring, 8 Stats, 9 Cash flow, 0 Review' },
       { keys: ['['], label: 'Previous month' },
       { keys: [']'], label: 'Next month' },
       { keys: ['J'], label: 'Next page of transactions' },

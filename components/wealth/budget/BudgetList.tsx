@@ -28,7 +28,7 @@ export function BudgetList({ budget, prevBudget, expenses, ym, today, onEdit }: 
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 min-[460px]:grid-cols-2 lg:grid-cols-4">
         <Stat label="Budget" value={<Money value={total.limit} />} hint={`${days} days`} />
         <Stat label={now ? `Can spend till day ${dayToday}` : 'Allowed so far'} info="The monthly budget divided by the days in the month, times the days gone. Spend less than this and you are on pace." value={<Money value={total.allowedToDate} />} hint={total.canSpendNow > 0 ? `${formatINR(total.canSpendNow)} still free` : total.limit > 0 ? 'none left at this pace' : undefined} />
         <Stat label="Spent" value={<Money value={total.spent} />} hint={total.limit > 0 ? `${total.usedPct}% of budget` : undefined} />

@@ -38,10 +38,13 @@ export const viewport = {
   viewportFit: "cover",
 };
 
+import { BOOT_SCRIPT } from "@/lib/uiStyle";
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning data-style="paper" data-retro="true">
       <head suppressHydrationWarning>
+        <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
         <link rel="preload" href="/fonts/jetbrains-mono-400.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/jetbrains-mono-800.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
       </head>

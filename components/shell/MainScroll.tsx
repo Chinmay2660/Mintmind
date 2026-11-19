@@ -24,6 +24,22 @@ export function MainScroll({ children }: { children: ReactNode }) {
     return () => ro.disconnect()
   }, [])
 
+  // On a phone the floating buttons slide away while you scroll down and come back when you scroll up, so they never sit on top of what you are reading.
+  useLayoutEffect(() => {
+    const o = outer.current
+    if (!o) return
+    let last = o.scrollTop
+    const root = document.documentElement
+    const onScroll = () => {
+      const y = o.scrollTop
+      if (y - last > 10 && y > 80) root.setAttribute('data-fab-hidden', 'true')
+      else if (last - y > 10 || y <= 80) root.removeAttribute('data-fab-hidden')
+      last = y
+    }
+    o.addEventListener('scroll', onScroll, { passive: true })
+    return () => { o.removeEventListener('scroll', onScroll); root.removeAttribute('data-fab-hidden') }
+  }, [])
+
   return (
     <main ref={outer} id="dashboard-main-scroll" tabIndex={-1} className={cn('app-main outline-none min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain mobile-content-pb md:pb-0', pad && 'md:pb-28')}>
       <div ref={inner} className="mx-auto w-full max-w-[88rem] space-y-5 px-4 py-5 md:px-6 lg:px-8">{children}</div>

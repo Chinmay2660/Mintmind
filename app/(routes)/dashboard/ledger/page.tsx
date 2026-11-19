@@ -68,15 +68,15 @@ export default function LedgerPage() {
         <Stat label="Net" value={<Money value={totalIn - totalOut} signed />} />
       </div>
 
-      <div className="flex flex-wrap items-end gap-2" role="group" aria-label="Ledger filters">
-        <div className="relative min-w-52 flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden /><Input aria-label="Search the ledger" className="h-10 pl-9" placeholder="Search description, account, amount" value={q} onChange={(e) => setQ(e.target.value)} /></div>
-        <label className="w-full text-xs text-muted-foreground sm:w-48">Account<Select aria-label="Account" value={acct} onChange={(e) => setAcct(e.target.value)}><option value="">All accounts</option>{data.bankAccounts.map((a: any) => <option key={a.id} value={a.id}>{a.nickname || a.bankName}</option>)}</Select></label>
-        <div role="group" aria-label="Direction" className="grid grid-cols-3 rounded-xl border border-border bg-muted p-1">
+      <div className="grid items-end gap-2 [grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr))]" role="group" aria-label="Ledger filters">
+        <div className="relative [grid-column:1/-1] sm:max-w-md"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden /><Input aria-label="Search the ledger" className="h-10 pl-9" placeholder="Search description, account, amount" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+        <label className="min-w-0 text-xs text-muted-foreground [grid-column:1/-1] sm:max-w-sm">Account<Select aria-label="Account" value={acct} onChange={(e) => setAcct(e.target.value)}><option value="">All accounts</option>{data.bankAccounts.map((a: any) => <option key={a.id} value={a.id}>{a.nickname || a.bankName}</option>)}</Select></label>
+        <div role="group" aria-label="Direction" className="grid grid-cols-3 rounded-xl border border-border bg-muted p-1 [grid-column:1/-1] sm:max-w-xs">
           {([['all', 'All'], ['out', 'Out'], ['in', 'In']] as const).map(([k, l]) => <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)} className={`min-h-8 rounded-lg px-3 text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-ring ${kind === k ? 'bg-card shadow-card' : 'text-muted-foreground hover:text-foreground'}`}>{l}</button>)}
         </div>
-        <label className="text-xs text-muted-foreground">From<div className="mt-0.5 w-40"><DateInput aria-label="From date" max={to || undefined} value={from} onChange={(e) => setFrom(e.target.value)} /></div></label>
-        <label className="text-xs text-muted-foreground">To<div className="mt-0.5 w-40"><DateInput aria-label="To date" min={from || undefined} value={to} onChange={(e) => setTo(e.target.value)} /></div></label>
-        {(acct || kind !== 'all' || from || to || q) && <Button variant="ghost" size="sm" onClick={() => { setAcct(''); setKind('all'); setFrom(''); setTo(''); setQ('') }}>Clear</Button>}
+        <label className="min-w-0 text-xs text-muted-foreground">From<div className="mt-0.5"><DateInput aria-label="From date" max={to || undefined} value={from} onChange={(e) => setFrom(e.target.value)} /></div></label>
+        <label className="min-w-0 text-xs text-muted-foreground">To<div className="mt-0.5"><DateInput aria-label="To date" min={from || undefined} value={to} onChange={(e) => setTo(e.target.value)} /></div></label>
+        {(acct || kind !== 'all' || from || to || q) && <Button variant="ghost" size="sm" className="justify-self-start [grid-column:1/-1]" onClick={() => { setAcct(''); setKind('all'); setFrom(''); setTo(''); setQ('') }}>Clear</Button>}
       </div>
 
       <Panel title="Ledger">

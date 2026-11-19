@@ -134,19 +134,19 @@ export function TransactionsView({ list, ym, onEdit, onDelete, onAdd, onDuplicat
           <Button variant="outline" onClick={() => exportTxCsv(shown, ym)} disabled={!shown.length} aria-label="Download CSV" className="h-10 shrink-0"><Download className="h-4 w-4 md:mr-1.5" /><span className="max-md:sr-only">CSV</span></Button>
         </div>
       </div>
-      <div className="flex flex-wrap items-end gap-2" role="group" aria-label="More filters">
-        <label className="min-w-0 flex-1 text-xs text-muted-foreground md:max-w-xs md:flex-none">Account or card
+      <div className="grid items-end gap-2 [grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr))]" role="group" aria-label="More filters">
+        <label className="min-w-0 text-xs text-muted-foreground [grid-column:1/-1] sm:max-w-sm">Account or card
           <Select aria-label="Account or card" value={acct} onChange={(e) => setAcct(e.target.value)}>
             <option value="">All accounts and cards</option>
             {wd.bankAccounts.map((a: any) => <option key={a.id} value={a.id}>{a.nickname || a.bankName}</option>)}
             {wd.cards.map((x: any) => <option key={x.id} value={x.id}>{x.bank} {x.cardName}</option>)}
           </Select>
         </label>
-        {allTags.length > 0 && <label className="w-full text-xs text-muted-foreground sm:w-44">Tag<Select aria-label="Tag" value={tag} onChange={(e) => setTag(e.target.value)}><option value="">All tags</option>{allTags.map((x) => <option key={x} value={x}>#{x}</option>)}</Select></label>}
-        <label className="text-xs text-muted-foreground">From<div className="mt-0.5 md:w-40"><DateInput aria-label="From date" min={`${ym}-01`} max={to || `${ym}-31`} value={from} onChange={(e) => setFrom(e.target.value)} /></div></label>
-        <label className="text-xs text-muted-foreground">To<div className="mt-0.5 md:w-40"><DateInput aria-label="To date" min={from || `${ym}-01`} max={`${ym}-31`} value={to} onChange={(e) => setTo(e.target.value)} /></div></label>
-        {(acct || tag || from || to || cat || kind !== 'all' || q || onlyStar) && <Button type="button" variant="ghost" size="sm" onClick={() => { setAcct(''); setTag(''); setFrom(''); setTo(''); setCat(''); setKind('all'); setQ(''); setOnlyStar(false) }}>Clear filters</Button>}
-        <span className="ml-auto text-xs text-muted-foreground tabular-nums" aria-live="polite">{shown.length} of {list.length}</span>
+        {allTags.length > 0 && <label className="min-w-0 text-xs text-muted-foreground [grid-column:1/-1] sm:max-w-sm">Tag<Select aria-label="Tag" value={tag} onChange={(e) => setTag(e.target.value)}><option value="">All tags</option>{allTags.map((x) => <option key={x} value={x}>#{x}</option>)}</Select></label>}
+        <label className="min-w-0 text-xs text-muted-foreground">From<div className="mt-0.5"><DateInput aria-label="From date" min={`${ym}-01`} max={to || `${ym}-31`} value={from} onChange={(e) => setFrom(e.target.value)} /></div></label>
+        <label className="min-w-0 text-xs text-muted-foreground">To<div className="mt-0.5"><DateInput aria-label="To date" min={from || `${ym}-01`} max={`${ym}-31`} value={to} onChange={(e) => setTo(e.target.value)} /></div></label>
+        {(acct || tag || from || to || cat || kind !== 'all' || q || onlyStar) && <Button type="button" variant="ghost" size="sm" className="justify-self-start [grid-column:1/-1]" onClick={() => { setAcct(''); setTag(''); setFrom(''); setTo(''); setCat(''); setKind('all'); setQ(''); setOnlyStar(false) }}>Clear filters</Button>}
+        <span className="text-right text-xs text-muted-foreground tabular-nums [grid-column:1/-1]" aria-live="polite">{shown.length} of {list.length}</span>
       </div>
       {groups.length === 0 ? <Empty title={onlyStar ? 'No bookmarked transactions this month' : list.length ? 'No matches' : 'No transactions this month'} description={onlyStar ? 'Tap the star on a transaction to keep it handy.' : undefined} action={!list.length ? <Button onClick={onAdd}><Plus className="mr-1.5 h-4 w-4" />Add transaction</Button> : undefined} /> : (
         <div className={cn('space-y-3', selecting && 'pb-24')}>

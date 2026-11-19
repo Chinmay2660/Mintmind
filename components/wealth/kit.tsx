@@ -55,7 +55,7 @@ export function PageHeader({ title, description, actions, primaryAction }: { tit
       )}
       {primaryAction && (
         <button type="button" onClick={primaryAction.onClick} disabled={primaryAction.disabled} aria-label={primaryAction.label}
-          className="fixed bottom-[calc(var(--mobile-fab-bottom)+4.25rem)] right-4 z-30 flex h-14 w-14 items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 outline-none transition-transform hover:bg-primary/90 active:scale-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 md:bottom-[5.25rem] md:h-12 md:w-auto md:px-5 md:text-sm md:font-semibold paper:border paper:border-[hsl(var(--edge))] paper:shadow-[1.5px_3px_0_0_hsl(var(--drop))] print:hidden">
+          className="fab fixed bottom-[calc(var(--mobile-fab-bottom)+4.25rem)] right-4 z-30 flex h-14 w-14 items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 outline-none transition-transform hover:bg-primary/90 active:scale-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 md:bottom-[5.25rem] md:h-12 md:w-auto md:px-5 md:text-sm md:font-semibold paper:border paper:border-[hsl(var(--edge))] paper:shadow-[1.5px_3px_0_0_hsl(var(--drop))] print:hidden">
           <Plus className="h-6 w-6 md:h-4 md:w-4" aria-hidden /><span className="hidden md:inline">{primaryAction.label}</span>
         </button>
       )}
@@ -70,6 +70,7 @@ export function Panel({
   children,
   className,
   bodyClassName,
+  card = false,
 }: {
   title?: ReactNode
   description?: ReactNode
@@ -77,19 +78,21 @@ export function Panel({
   children: ReactNode
   className?: string
   bodyClassName?: string
+  /** Draw a box around the section. Off by default: most sections are a heading and a line, and boxes are kept for things that need to read as one object. */
+  card?: boolean
 }) {
   return (
-    <section className={cn('surface-card min-w-0', className)}>
+    <section className={cn('min-w-0', card && 'surface-card', className)}>
       {(title || action) && (
-        <header className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 px-5 pt-4">
+        <header className={cn('flex flex-wrap items-center justify-between gap-x-3 gap-y-1', card ? 'px-5 pt-4' : 'border-b border-border pb-2.5')}>
           <div className="flex min-w-0 items-center gap-1.5">
-            {title && <h3 className="flex items-center gap-2 text-sm font-semibold"><span className="retro-dots" aria-hidden><i className="h-2 w-2 rounded-full border border-[hsl(var(--edge))] bg-destructive/70" /><i className="h-2 w-2 rounded-full border border-[hsl(var(--edge))] bg-warning/70" /><i className="h-2 w-2 rounded-full border border-[hsl(var(--edge))] bg-primary" /></span>{title}</h3>}
+            {title && <h3 className="flex items-center gap-2 text-sm font-semibold">{title}</h3>}
             {title && description && <InfoTip label={typeof title === 'string' ? title : 'this section'}>{description}</InfoTip>}
           </div>
           {action && <div className="min-w-0 max-w-full shrink-0">{action}</div>}
         </header>
       )}
-      <div className={cn('p-5', title && 'pt-3', bodyClassName)}>{children}</div>
+      <div className={cn(card ? 'p-5' : title ? 'pt-3.5' : '', card && title && 'pt-3', bodyClassName)}>{children}</div>
     </section>
   )
 }
@@ -104,7 +107,7 @@ export function InfoTip({ label, children }: { label: string; children: ReactNod
     <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
       <PopoverPrimitive.Trigger asChild>
         <button type="button" aria-label={`About ${label}`} onPointerEnter={(e) => { if (e.pointerType === 'mouse') show() }} onPointerLeave={(e) => { if (e.pointerType === 'mouse') hide() }}
-          className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><Info className="h-3.5 w-3.5" aria-hidden /></button>
+          className="inline-flex h-5 w-5 shrink-0 translate-y-px items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><Info className="h-3.5 w-3.5" aria-hidden /></button>
       </PopoverPrimitive.Trigger>
       <PopoverPrimitive.Portal>
         <PopoverPrimitive.Content side="bottom" align="end" sideOffset={6} collisionPadding={12} onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()} onPointerEnter={show} onPointerLeave={hide}
@@ -116,7 +119,7 @@ export function InfoTip({ label, children }: { label: string; children: ReactNod
 
 /** A note kept out of the way: a small "i" on its own line, with the text on hover, focus or tap. */
 export function FootNote({ children, className, label = 'Note' }: { children: ReactNode; className?: string; label?: string }) {
-  return <div className={cn('flex', className)}><InfoTip label={label}>{children}</InfoTip></div>
+  return <div className={cn('flex items-center gap-1.5 text-xs text-muted-foreground', className)}><InfoTip label={label}>{children}</InfoTip><span>{label}</span></div>
 }
 
 /** A figure with a label. Extra explanation goes in `info` (behind an "i"), so every card stays the same height and shape. */

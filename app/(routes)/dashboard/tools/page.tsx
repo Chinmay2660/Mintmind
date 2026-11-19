@@ -31,7 +31,7 @@ export default function PlanningToolsPage() {
       <PageHeader title="Planning tools" description="Planners prefilled with your own numbers. Change any value to try a what-if. Nothing here is saved." />
       <TabBar label="Planning tools" tabs={TABS.map((t) => ({ key: t, label: t }))} value={tab} onChange={(k) => setTab(k as typeof tab)} />
       {(tab === 'Plan ahead' || tab === 'Money check-up') && <AboutYou v={v} set={set} />}
-      {tab === 'Plan ahead' && <PlanAhead netWorth={derived.netWorth} monthlySave={Math.max(num(v.takeHome) - num(v.spend), 0)} />}
+      {tab === 'Plan ahead' && <PlanAhead netWorth={derived.netWorth} monthlySave={Math.max(num(v.takeHome) - num(v.spend), 0)} age={num(v.age)} monthlyExpense={num(v.spend)} plannedRetireAge={num(v.retireAge)} />}
       {tab === 'Money check-up' && <CheckUp result={moneyCheckup({ takeHome: num(v.takeHome), spend: num(v.spend), essentials: num(v.essentials), liquid: derived.liquid, loans: derived.loans, termCover: derived.termCover, healthCover: derived.healthCover, age: num(v.age), retireAge: num(v.retireAge), monthlyInvest: derived.monthlyInvest, retirementSavings: derived.retirementSavings })} />}
       {tab === 'Emergency fund' && <Emergency data={data} />}
       {tab === 'Loan payoff' && <Payoff data={data} />}

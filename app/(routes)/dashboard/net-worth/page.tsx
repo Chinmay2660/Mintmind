@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Download } from 'lucide-react'
+import { Area, AreaChart, CartesianGrid, ReferenceDot, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Check, Download, Flag, Plus, StickyNote, TrendingUp } from 'lucide-react'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { growthVs, toISO } from '@/lib/wealth/calc'
 import { ASSET_LABELS, LIABILITY_LABELS } from '@/lib/wealth/labels'
@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Delta, Empty, LoadingBlock, PageHeader, Panel, RangeTabs, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle } from '@/components/wealth/kit'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { GoalsPanel } from '@/components/wealth/GoalsPanel'
+import { AllocationLeverage } from '@/components/wealth/AllocationLeverage'
 import { FinancialMetrics } from '@/components/wealth/FinancialMetrics'
 import { LimitsPanel } from '@/components/wealth/LimitsPanel'
 import { WhyChanged } from '@/components/wealth/WhyChanged'
@@ -22,10 +23,21 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { assetValue } from '@/lib/wealth/holdings'
 import { byAccountType } from '@/lib/wealth/accountTypes'
+import { netWorthEvents } from '@/lib/wealth/nwEvents'
 import { DateInput } from '@/components/ui/pickers'
 import { TabBar } from '@/components/ui/tab-bar'
 
 const VIEWS = ['Monthly', 'Yearly'] as const
+
+// how each kind of milestone looks: a colour and an icon, so it never depends on colour alone
+const EVENT_STYLE: Record<string, { color: string; icon: typeof Flag; label: string }> = {
+  start: { color: 'hsl(var(--chart-1))', icon: Flag, label: 'Start' },
+  'debt-new': { color: 'hsl(var(--destructive))', icon: Flag, label: 'New debt' },
+  'debt-down': { color: 'hsl(var(--success))', icon: Check, label: 'Debt reduced' },
+  'asset-new': { color: 'hsl(var(--chart-2))', icon: Plus, label: 'New asset' },
+  'asset-up': { color: 'hsl(var(--chart-2))', icon: TrendingUp, label: 'Asset up' },
+  note: { color: 'hsl(var(--muted-foreground))', icon: StickyNote, label: 'Your note' },
+}
 type Kind = 'asset' | 'liability'
 
 function NetWorthOverview() {
@@ -48,6 +60,7 @@ function NetWorthOverview() {
     return s
   }, [data.snapshots, from, to, view])
 
+  const events = useMemo(() => netWorthEvents(data.snapshots), [data.snapshots])
   const byType = useMemo(() => byAccountType(netWorth.assetBreakdown), [netWorth.assetBreakdown])
   if (!ready) return <LoadingBlock className="h-96" />
 
@@ -56,7 +69,10 @@ function NetWorthOverview() {
     { label: '3 months ago', g: growthVs(data.snapshots, netWorth.netWorth, 3, today) },
     { label: 'Last year', g: growthVs(data.snapshots, netWorth.netWorth, 12, today) },
   ]
-  const chart = snapshots.map((s) => ({ label: view === 'Yearly' ? s.date.slice(0, 4) : monthLabel(s.date.slice(0, 7)), netWorth: s.netWorth, assets: s.assets, liabilities: s.liabilities }))
+  const chart = snapshots.map((s) => ({ ym: s.date.slice(0, 7), label: view === 'Yearly' ? s.date.slice(0, 4) : monthLabel(s.date.slice(0, 7)), netWorth: s.netWorth, assets: s.assets, liabilities: s.liabilities }))
+
+  // markers sit on months, so they show in the monthly view and only for months inside the range
+  const shownEvents = view === 'Monthly' ? events.filter((e) => chart.some((c) => c.ym === e.ym)) : []
 
   const exportXlsx = async () => {
     const XLSX = await import('xlsx') // ~400 KB, loaded only on demand
@@ -127,9 +143,20 @@ function NetWorthOverview() {
                 <Area type="monotone" dataKey="assets" name="Assets" stroke={chartColor(2)} fill={chartColor(2)} fillOpacity={0.08} strokeWidth={1.5} />
                 <Area type="monotone" dataKey="liabilities" name="Liabilities" stroke={chartColor(5)} fill={chartColor(5)} fillOpacity={0.08} strokeWidth={1.5} />
                 <Area type="monotone" dataKey="netWorth" name="Net worth" stroke={chartColor(1)} fill={chartColor(1)} fillOpacity={0.15} strokeWidth={2.5} />
+                {shownEvents.map((e) => { const pt = chart.find((c) => c.ym === e.ym); if (!pt) return null; const st = EVENT_STYLE[e.kind]; return (<g key={e.id}><ReferenceLine x={pt.label} stroke={st.color} strokeDasharray="2 4" strokeOpacity={0.6} /><ReferenceDot x={pt.label} y={pt.netWorth} r={6} fill={st.color} stroke="hsl(var(--card))" strokeWidth={2} /></g>) })}
               </AreaChart>
             </ResponsiveContainer>
           </div>
+        )}
+        {shownEvents.length > 0 && (
+          <ol className="mt-4 grid gap-x-6 gap-y-2.5 border-t border-border pt-3 sm:grid-cols-2" aria-label="Milestones on the chart">
+            {shownEvents.map((e) => { const st = EVENT_STYLE[e.kind]; const Icon = st.icon; return (
+              <li key={e.id} className="flex items-start gap-2.5 text-sm">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white" style={{ background: st.color }} aria-hidden><Icon className="h-3.5 w-3.5" strokeWidth={2.5} /></span>
+                <span className="min-w-0"><span className="block font-medium"><span className="sr-only">{st.label}: </span>{e.text}</span><span className="block text-xs text-muted-foreground">{monthLabel(e.ym)}{e.nwDelta != null ? <> · <span className={e.nwDelta < 0 ? 'text-destructive' : 'text-success'}>{e.nwDelta < 0 ? '-' : '+'}{formatCompactINR(Math.abs(e.nwDelta))} net worth</span></> : ''}</span></span>
+              </li>
+            ) })}
+          </ol>
         )}
       </Panel>
 
@@ -197,7 +224,7 @@ export default function NetWorthPage() {
   return (
     <div className="space-y-5">
       <TabBar label="Net worth views" tabs={[{ key: 'Overview', label: 'Overview' }, { key: 'Goals', label: 'Goals' }]} value={tab} onChange={(k) => setTab(k as typeof tab)} />
-      {tab === 'Overview' ? <><NetWorthOverview /><FinancialMetrics /><LimitsPanel /></> : <GoalsPanel />}
+      {tab === 'Overview' ? <><NetWorthOverview /><AllocationLeverage /><FinancialMetrics /><LimitsPanel /></> : <GoalsPanel />}
     </div>
   )
 }

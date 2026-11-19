@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, InfoTip, Metric, Progress, Select, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForPct, UsagePct } from '@/components/wealth/kit'
 import { cn } from '@/lib/utils'
+import { DateInput } from '@/components/ui/pickers'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { TabBar } from '@/components/ui/tab-bar'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -53,7 +54,7 @@ export default function BudgetPage() {
     if (!ready || !db) return
     if (!data.budgets.some((b) => b.id === curYm)) {
       const prev = [...data.budgets].sort((a, b) => b.id.localeCompare(a.id))[0]
-      if (prev) save(db, 'budgets', { id: curYm, total: prev.total, categories: prev.categories, rollover: prev.rollover, rolloverCats: prev.rolloverCats || [], periods: prev.periods || {} })
+      if (prev) save(db, 'budgets', { id: curYm, total: prev.total, categories: prev.categories, rollover: prev.rollover, rolloverCats: prev.rolloverCats || [], periods: Object.fromEntries(Object.entries(prev.periods || {}).filter(([, p]) => p !== 'custom')) })
     }
   }, [ready, db, data.budgets, curYm])
 
@@ -107,7 +108,7 @@ export default function BudgetPage() {
       <PageHeader
         actions={
           <>
-            <div className="flex items-center gap-1">
+            <div className="flex w-full items-center justify-center gap-1 sm:w-auto sm:justify-start">
               <Button variant="outline" size="icon" aria-label="Previous month" onClick={() => setYm(prevYm)}><ChevronLeft className="h-4 w-4" /></Button>
               <MonthPicker value={ym} max={curYm} onChange={setYm} className="min-w-32 justify-center" />
               <Button variant="outline" size="icon" aria-label="Next month" disabled={ym >= curYm} onClick={() => setYm(addMonths(`${ym}-01`, 1).slice(0, 7))}><ChevronRight className="h-4 w-4" /></Button>
@@ -162,7 +163,7 @@ export default function BudgetPage() {
             </Select>
             {catFilter && catLimit === 0 && <span className="text-xs text-warning">No limit set for {catFilter}. Set one under Budget to see its daily pace.</span>}
           </div>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 min-[460px]:grid-cols-2 lg:grid-cols-4">
             <Stat label={catFilter ? `${catFilter} budget` : 'Monthly budget'} value={<Money value={scopeBudget} />} hint={!catFilter && carry > 0 ? `incl. ${formatINR(carry)} rolled over` : `${p.days} days`} />
             <Stat label="Spent" value={<Money value={p.spent} />} hint={<span className="flex flex-wrap items-center gap-x-2"><span><UsagePct value={p.utilisation} warnAt={70} highAt={90} /> used</span><Metric amount={p.spent - prevTotal} invertGood className="text-xs" hint="No spending last month" /></span>} />
             <Stat label="Remaining" value={<span className={p.remaining < 0 ? 'text-destructive' : ''}><Money value={p.remaining} /></span>} hint={p.remainingDays > 0 ? `${formatINR(p.safeDailySpend)}/day safe to spend` : undefined} />
@@ -238,28 +239,47 @@ function BudgetForm({ ym, row, onClose, onSave }: { ym: string; row?: any; onClo
   const [cats, setCats] = useState<Record<string, string>>(Object.fromEntries(EXPENSE_CATEGORIES.map((c) => [c, String(row?.categories?.[c] ?? '')])))
   const [rollover, setRollover] = useState(!!row?.rollover)
   const [periods, setPeriods] = useState<Record<string, string>>(row?.periods || {})
+  const [ranges, setRanges] = useState<Record<string, { start: string; end: string }>>(row?.customRanges || {})
   const [rollCats, setRollCats] = useState<string[]>(row?.rolloverCats || [])
   const sum = EXPENSE_CATEGORIES.reduce((s, c) => s + (Number(cats[c]) || 0), 0)
   return (
     <FormDialog open onOpenChange={(o) => !o && onClose()} title={`Budget for ${ym}`} wide
-      onSubmit={async () => { const t = Number(total); if (!(t > 0)) throw new Error('Monthly budget must be positive'); await onSave({ id: ym, total: t, categories: Object.fromEntries(EXPENSE_CATEGORIES.map((c) => [c, Number(cats[c]) || 0])), rollover, rolloverCats: rollCats.filter((c) => Number(cats[c]) > 0), periods: Object.fromEntries(Object.entries(periods).filter(([c, p]) => p !== 'monthly' && Number(cats[c]) > 0)) }) }}>
+      onSubmit={async () => { const t = Number(total); if (!(t > 0)) throw new Error('Monthly budget must be positive'); await onSave({ id: ym, total: t, categories: Object.fromEntries(EXPENSE_CATEGORIES.map((c) => [c, Number(cats[c]) || 0])), rollover, rolloverCats: rollCats.filter((c) => Number(cats[c]) > 0), periods: Object.fromEntries(Object.entries(periods).filter(([c, p]) => p !== 'monthly' && Number(cats[c]) > 0)), customRanges: Object.fromEntries(Object.entries(ranges).filter(([c, r]) => periods[c] === 'custom' && r.start && r.end && r.end >= r.start)) }) }}>
       <Field label="Monthly budget (₹)" className="full">{(id) => <Input id={id} type="number" min="1" step="any" required value={total} onChange={(e) => setTotal(e.target.value)} />}</Field>
       <div className="full">
-        <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+        <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
           <span className="flex-1">Category limits</span>
-          <InfoTip label="About limits">Monthly limits reset each month. A quarterly or yearly limit is for the whole quarter or year (a holiday fund, say) and its spending counts from the start of that period. Tick Roll over to carry what is unspent into the next month.</InfoTip>
+          <InfoTip label="About budget periods">Choose how long each limit lasts. Monthly resets every month. Quarterly and Yearly are one limit for the whole quarter or year, and spending counts from its start. Custom is a date range of your own, such as a trip. Tick Roll over to carry what is unspent into next month (monthly limits).</InfoTip>
         </div>
-        <div className="divide-y divide-border rounded-xl border border-border">
-          <div className="hidden grid-cols-[1fr_7.5rem_7.5rem_4.5rem] gap-2 bg-muted/50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground sm:grid"><span>Category</span><span>Limit (₹)</span><span>Repeats</span><span>Roll over</span></div>
-          {EXPENSE_CATEGORIES.map((c) => (
-            <div key={c} className="grid grid-cols-2 items-center gap-2 px-3 py-2 sm:grid-cols-[1fr_7.5rem_7.5rem_4.5rem]">
-              <span className="col-span-2 truncate text-sm font-medium sm:col-span-1">{c}</span>
-              <Input aria-label={`${c} limit`} type="number" min="0" step="any" inputMode="decimal" placeholder="0" value={cats[c]} onChange={(e) => setCats((p) => ({ ...p, [c]: e.target.value }))} />
-              <Select aria-label={`${c} budget period`} value={periods[c] || 'monthly'} onChange={(e) => setPeriods((p) => ({ ...p, [c]: e.target.value }))}><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="yearly">Yearly</option></Select>
-              <label className="col-span-2 flex items-center gap-2 text-xs text-muted-foreground sm:col-span-1 sm:justify-center"><Checkbox checked={rollCats.includes(c)} disabled={!(Number(cats[c]) > 0)} onChange={(e) => setRollCats((p) => (e.target.checked ? [...p, c] : p.filter((x) => x !== c)))} aria-label={`Roll over unspent ${c} budget`} /><span className="sm:sr-only">Roll over</span></label>
-            </div>
-          ))}
-        </div>
+        <ul className="space-y-2">
+          {EXPENSE_CATEGORIES.map((c) => {
+            const per = periods[c] || 'monthly'
+            const rng = ranges[c] || { start: '', end: '' }
+            return (
+              <li key={c} className="rounded-xl border border-border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="min-w-0 truncate text-sm font-semibold">{c}</span>
+                  <div className="w-32 shrink-0"><Input aria-label={`${c} limit in rupees`} type="number" min="0" step="any" inputMode="decimal" placeholder="Limit" value={cats[c]} onChange={(e) => setCats((p) => ({ ...p, [c]: e.target.value }))} /></div>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                  <div role="radiogroup" aria-label={`${c} budget period`} className="inline-flex rounded-lg border border-border bg-muted p-0.5"
+                    onKeyDown={(e) => { const order = ['monthly', 'quarterly', 'yearly', 'custom']; const i = order.indexOf(per); const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0; if (!d) return; e.preventDefault(); const next = order[(i + d + order.length) % order.length]; setPeriods((p) => ({ ...p, [c]: next })); requestAnimationFrame(() => (e.currentTarget.querySelector(`[data-period="${next}"]`) as HTMLElement | null)?.focus()) }}>
+                    {[['monthly', 'Monthly'], ['quarterly', 'Quarterly'], ['yearly', 'Yearly'], ['custom', 'Custom']].map(([v, l]) => (
+                      <button key={v} type="button" role="radio" data-period={v} tabIndex={per === v ? 0 : -1} aria-checked={per === v} onClick={() => setPeriods((p) => ({ ...p, [c]: v }))} className={cn('rounded-md px-2.5 py-1 text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-ring', per === v ? 'bg-primary text-primary-foreground shadow-card' : 'text-muted-foreground hover:text-foreground')}>{l}</button>
+                    ))}
+                  </div>
+                  {per === 'monthly' && <label className="flex items-center gap-1.5 text-xs text-muted-foreground"><Checkbox checked={rollCats.includes(c)} disabled={!(Number(cats[c]) > 0)} onChange={(e) => setRollCats((p) => (e.target.checked ? [...p, c] : p.filter((x) => x !== c)))} aria-label={`Roll over unspent ${c} budget`} />Roll over</label>}
+                </div>
+                {per === 'custom' && (
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <label className="text-xs text-muted-foreground">From<DateInput aria-label={`${c} starts`} value={rng.start} onChange={(e) => setRanges((p) => ({ ...p, [c]: { ...rng, start: e.target.value } }))} /></label>
+                    <label className="text-xs text-muted-foreground">To<DateInput aria-label={`${c} ends`} value={rng.end} onChange={(e) => setRanges((p) => ({ ...p, [c]: { ...rng, end: e.target.value } }))} /></label>
+                  </div>
+                )}
+              </li>
+            )
+          })}
+        </ul>
         <p className="mt-1.5 text-xs tabular-nums text-muted-foreground">Limits add up to {formatINR(sum)}{Number(total) ? ` · ${formatINR(Number(total) - sum)} unallocated` : ''}</p>
       </div>
       <label className="full flex items-center gap-2 text-sm"><Checkbox checked={rollover} onChange={(e) => setRollover(e.target.checked)} />Roll over the unspent total budget<InfoTip label="About total rollover">Adds whatever was left of last month's total budget to this month's.</InfoTip></label>

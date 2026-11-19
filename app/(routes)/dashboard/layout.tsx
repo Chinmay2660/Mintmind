@@ -7,6 +7,7 @@ import { Shortcuts } from '@/components/shell/Shortcuts'
 
 const ProductTour = dynamic(() => import('@/components/shell/ProductTour').then((m) => m.ProductTour), { ssr: false })
 import { DetailCrumbProvider } from '@/components/shell/DetailCrumb'
+import { EdgeSwipeBack } from '@/components/shell/EdgeSwipeBack'
 import { AppSearchProvider } from '@/contexts/AppSearchContext'
 import { WealthProvider } from '@/lib/wealth/WealthContext'
 import { FeaturesProvider } from '@/lib/features/FeaturesContext'
@@ -32,6 +33,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
                 <DeviceNotifier />
                 <PriceRefresher />
                 <DetailCrumbProvider>
+                <EdgeSwipeBack />
                 <a href="#dashboard-main-scroll" className="sr-only z-[100] rounded-md bg-primary px-4 py-2 text-sm font-bold text-primary-foreground focus:not-sr-only focus:fixed focus:left-3 focus:top-3">Skip to main content</a>
                 <div className="app-shell fixed inset-0 flex bg-background text-foreground">
                     <Sidebar />

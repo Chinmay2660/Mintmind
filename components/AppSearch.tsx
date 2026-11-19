@@ -128,6 +128,7 @@ export default function AppSearch() {
             <input
               ref={inputRef}
               type="search"
+              aria-label="Search everything"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={onKeyDown}

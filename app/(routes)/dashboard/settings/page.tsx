@@ -26,6 +26,7 @@ import { useFeatures } from '@/lib/features/FeaturesContext'
 import { cn } from '@/lib/utils'
 import { toISO } from '@/lib/wealth/calc'
 import { TabBar } from '@/components/ui/tab-bar'
+import { UI_STYLES, UI_STYLE_KEY, applyStyle, normaliseStyle } from '@/lib/uiStyle'
 import { Checkbox } from '@/components/ui/checkbox'
 
 const TABS = ['Account', 'My App Features', 'Appearance', 'Preferences', 'Automation', 'AI', 'Integrations', 'Data'] as const
@@ -161,6 +162,8 @@ function AppearanceTab() {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
   const opts = [{ v: 'light', l: 'Light', i: Sun }, { v: 'dark', l: 'Dark', i: Moon }, { v: 'system', l: 'System', i: Laptop }]
+  const [look, setLook] = useState('retro')
+  useEffect(() => { try { setLook(normaliseStyle(localStorage.getItem(UI_STYLE_KEY))) } catch { /* default look */ } }, [])
   return (
     <Panel title="Theme">
       <div role="radiogroup" aria-label="Theme" className="grid gap-3 sm:grid-cols-3">
@@ -169,6 +172,17 @@ function AppearanceTab() {
           return (
             <button key={v} role="radio" aria-checked={on} onClick={() => setTheme(v)} className={cn('flex items-center gap-3 rounded-lg border p-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring', on ? 'border-primary bg-accent' : 'border-border hover:border-primary/40')}>
               <Icon className="h-5 w-5" /><span className="flex-1 font-medium">{l}</span>{on && <Check className="h-4 w-4 text-primary" />}
+            </button>
+          )
+        })}
+      </div>
+      <h4 className="mb-2 mt-6 flex items-center gap-1.5 text-sm font-semibold">Look<InfoTip label="Look">Retro is the warm paper style with a monospace font. Clean is a plainer white and grey style with a regular font. It is remembered on this device, and Light, Dark and System work with both.</InfoTip></h4>
+      <div role="radiogroup" aria-label="Look" className="grid gap-3 sm:grid-cols-2">
+        {UI_STYLES.map((o) => {
+          const on = look === o.value
+          return (
+            <button key={o.value} type="button" role="radio" aria-checked={on} onClick={() => { setLook(o.value); applyStyle(o.value) }} className={cn('flex items-center gap-3 rounded-lg border p-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring', on ? 'border-primary bg-accent' : 'border-border hover:bg-muted')}>
+              <span className="min-w-0 flex-1"><span className="block font-medium">{o.label}</span><span className="block text-xs text-muted-foreground">{o.note}</span></span>{on && <Check className="h-4 w-4 text-primary" />}
             </button>
           )
         })}

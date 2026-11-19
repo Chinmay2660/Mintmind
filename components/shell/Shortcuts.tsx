@@ -10,6 +10,9 @@ import { useAppSearch } from '@/contexts/AppSearchContext'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { useAssistant } from '@/components/ai/AssistantProvider'
 import { GO_TO, SHORTCUT_GROUPS } from '@/lib/shortcuts'
+import { cn } from '@/lib/utils'
+
+const SHORT_TITLE: Record<string, string> = { 'Add something': 'Add', 'Go to a page': 'Go to', 'On the Transactions & budgets page': 'Budget', Everywhere: 'Anywhere', 'Lists and menus': 'Lists' }
 
 export const SHOW_SHORTCUTS_EVENT = 'mm:show-shortcuts'
 export const QUICK_ADD_EVENT = 'mm:quick-add'
@@ -26,6 +29,7 @@ export function Shortcuts() {
   const { open: openAssistant } = useAssistant()
   const { resolvedTheme, setTheme } = useTheme()
   const [help, setHelp] = useState(false)
+  const [group, setGroup] = useState(0)
   const chord = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -77,27 +81,30 @@ export function Shortcuts() {
 
   return (
     <Dialog open={help} onOpenChange={setHelp}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><Keyboard className="h-4 w-4" aria-hidden />Keyboard shortcuts</DialogTitle>
           <DialogDescription>Shortcuts pause while you type in a field or while a dialog is open. Press <Key>?</Key> any time to see this list.</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
-          {SHORTCUT_GROUPS.map((g) => (
-            <section key={g.title} aria-label={g.title}>
-              <h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">{g.title}</h3>
-              <ul className="space-y-1.5">
-                {g.items.map((s) => (
-                  <li key={g.title + s.label + s.keys.join('')} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="min-w-0">{s.label}</span>
-                    <span className="flex shrink-0 items-center gap-1">
-                      {s.keys.map((key, i) => <Fragment key={key + i}>{i > 0 && <span className="text-[11px] text-muted-foreground">{s.then ? 'then' : '+'}</span>}<Key>{key}</Key></Fragment>)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </section>
+        {/* one group at a time keeps the list short; arrow keys move between the tabs */}
+        <div role="tablist" aria-label="Shortcut groups" className="flex flex-wrap gap-1 rounded-lg border border-border bg-muted p-0.5"
+          onKeyDown={(e) => { const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0; if (!d) return; e.preventDefault(); const n = (group + d + SHORTCUT_GROUPS.length) % SHORTCUT_GROUPS.length; setGroup(n); requestAnimationFrame(() => (document.getElementById(`sc-tab-${n}`) as HTMLElement | null)?.focus()) }}>
+          {SHORTCUT_GROUPS.map((g, i) => (
+            <button key={g.title} id={`sc-tab-${i}`} type="button" role="tab" aria-selected={group === i} aria-controls="sc-panel" tabIndex={group === i ? 0 : -1} onClick={() => setGroup(i)}
+              className={cn('flex-1 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-ring', group === i ? 'bg-card shadow-card' : 'text-muted-foreground hover:text-foreground')}>{SHORT_TITLE[g.title] ?? g.title}</button>
           ))}
+        </div>
+        <div id="sc-panel" role="tabpanel" aria-label={SHORTCUT_GROUPS[group].title} tabIndex={0} className="max-h-[55vh] overflow-y-auto pr-1 outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <ul className="divide-y divide-border/60">
+            {SHORTCUT_GROUPS[group].items.map((s) => (
+              <li key={s.label + s.keys.join('')} className="flex items-start justify-between gap-4 py-2.5 text-sm">
+                <span className="min-w-0"><span className="block">{s.label}</span>{s.hint && <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">{s.hint}</span>}</span>
+                <span className="flex shrink-0 items-center gap-1 pt-px" role="img" aria-label={s.keys.join(s.then ? ' then ' : ' plus ')}>
+                  {s.keys.map((key, i) => <Fragment key={key + i}>{i > 0 && <span aria-hidden className="text-[11px] text-muted-foreground">{s.then ? 'then' : '+'}</span>}<span aria-hidden><Key>{key}</Key></span></Fragment>)}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       </DialogContent>
     </Dialog>

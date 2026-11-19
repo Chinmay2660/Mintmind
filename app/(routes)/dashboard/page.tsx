@@ -322,7 +322,7 @@ export default function DashboardPage() {
 
       <p className="text-center text-sm"><Link href="/dashboard/settings?tab=features" className="font-medium text-primary hover:underline">Explore more features</Link></p>
 
-      {isDemo && <FootNote className="text-center">You are viewing sample data. Changes stay in this browser only.</FootNote>}
+      {isDemo && <FootNote label="Sample data" className="justify-center">You are viewing sample data. Changes stay in this browser only.</FootNote>}
     </div>
   )
 }
