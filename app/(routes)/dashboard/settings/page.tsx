@@ -39,25 +39,41 @@ export default function SettingsPage() {
   // deep links such as /dashboard/settings?tab=assets
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get('tab')
-    const map: Record<string, Tab> = { features: 'My App Features', automation: 'Automation', ai: 'AI', integrations: 'Integrations', data: 'Data' }
+    const map: Record<string, Tab> = { account: 'Account', features: 'My App Features', automation: 'Automation', ai: 'AI', integrations: 'Integrations', data: 'Data' }
     if (q === 'assets') window.location.replace('/dashboard/net-worth/manage')
     else if (q && map[q]) setTab(map[q])
   }, [])
   const { ready } = useWealth()
   const { isEnabled } = useFeatures()
   if (!ready) return <LoadingBlock className="h-64" />
+  const sections = TABS.filter((t) => (t === 'Automation' ? isEnabled('automation') : t === 'AI' ? isEnabled('ai_assistant') : true))
   return (
     <div className="space-y-5">
       <PageHeader />
-      <TabBar label="Settings sections" tabs={TABS.filter((t) => (t === 'Automation' ? isEnabled('automation') : t === 'AI' ? isEnabled('ai_assistant') : true)).map((t) => ({ key: t, label: t }))} value={tab} onChange={(k) => setTab(k as typeof tab)} />
-      {tab === 'Account' && <AccountTab />}
-      {tab === 'My App Features' && <MyAppFeatures />}
-      {tab === 'Appearance' && <AppearanceTab />}
-      {tab === 'Preferences' && <PreferencesTab />}
-      {tab === 'Automation' && <AutomationManager />}
-      {tab === 'AI' && <AiSettings />}
-      {tab === 'Integrations' && <IntegrationsTab />}
-      {tab === 'Data' && <DataTab />}
+      <div className="md:grid md:grid-cols-[13rem_minmax(0,1fr)] md:gap-8">
+        {/* a list down the left on a wide screen, the usual tab strip on a phone */}
+        <nav aria-label="Settings sections" className="mb-5 hidden md:sticky md:top-20 md:mb-0 md:block md:self-start">
+          <ul className="space-y-0.5">
+            {sections.map((t) => (
+              <li key={t}>
+                <button type="button" onClick={() => setTab(t)} aria-current={tab === t ? 'page' : undefined}
+                  className={cn('flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', tab === t ? 'bg-accent text-accent-foreground paper:bg-primary paper:text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>{t}</button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <div className="md:hidden"><TabBar label="Settings sections" tabs={sections.map((t) => ({ key: t, label: t }))} value={tab} onChange={(k) => setTab(k as typeof tab)} /></div>
+        <div className="min-w-0 space-y-5 max-md:mt-5">
+          {tab === 'Account' && <AccountTab />}
+          {tab === 'My App Features' && <MyAppFeatures />}
+          {tab === 'Appearance' && <AppearanceTab />}
+          {tab === 'Preferences' && <PreferencesTab />}
+          {tab === 'Automation' && <AutomationManager />}
+          {tab === 'AI' && <AiSettings />}
+          {tab === 'Integrations' && <IntegrationsTab />}
+          {tab === 'Data' && <DataTab />}
+        </div>
+      </div>
     </div>
   )
 }
@@ -93,7 +109,7 @@ function AccountTab() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Panel flat title="Profile" action={!editing ? <Button type="button" size="sm" variant="outline" onClick={() => { setF({ name: profile.name || '', phone: profile.phone || '', city: profile.city || '', monthlyIncome: String(profile.monthlyIncome ?? '') }); setEditing(true) }}><Pencil className="mr-1.5 h-3.5 w-3.5" />Edit</Button> : undefined}>
+      <Panel title="Profile" action={!editing ? <Button type="button" size="sm" variant="outline" onClick={() => { setF({ name: profile.name || '', phone: profile.phone || '', city: profile.city || '', monthlyIncome: String(profile.monthlyIncome ?? '') }); setEditing(true) }}><Pencil className="mr-1.5 h-3.5 w-3.5" />Edit</Button> : undefined}>
         {!editing ? (
           <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
             <div className="min-w-0"><dt className="text-xs text-muted-foreground">Full name</dt><dd className="mt-0.5 truncate text-sm font-medium">{profile.name || '-'}</dd></div>
@@ -114,7 +130,7 @@ function AccountTab() {
         )}
       </Panel>
 
-      <Panel flat title="Security">
+      <Panel title="Security">
         {isDemo ? <p className="text-sm text-muted-foreground">Security settings are disabled in Demo Mode. Sign up for an account to use passwords and MFA.</p> : !sec ? <LoadingBlock className="h-24" /> : (
           <div className="space-y-6">
             {!changingPw ? (

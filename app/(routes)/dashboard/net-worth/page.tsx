@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Area, AreaChart, CartesianGrid, ReferenceDot, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Check, Download, Flag, Plus, StickyNote, TrendingUp } from 'lucide-react'
+import { Check, Download, FileText, Flag, Plus, StickyNote, TrendingUp } from 'lucide-react'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { growthVs, toISO } from '@/lib/wealth/calc'
 import { ASSET_LABELS, LIABILITY_LABELS } from '@/lib/wealth/labels'
@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Delta, Empty, LoadingBlock, PageHeader, Panel, RangeTabs, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle } from '@/components/wealth/kit'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { GoalsPanel } from '@/components/wealth/GoalsPanel'
+import { ForecastPanel } from '@/components/wealth/ForecastPanel'
 import { AllocationLeverage } from '@/components/wealth/AllocationLeverage'
 import { FinancialMetrics } from '@/components/wealth/FinancialMetrics'
 import { LimitsPanel } from '@/components/wealth/LimitsPanel'
@@ -99,6 +100,7 @@ function NetWorthOverview() {
         actions={
           <>
             <Button variant="outline" size="sm" asChild><Link href="/dashboard/net-worth/manage">Manage assets &amp; loans</Link></Button>
+            <Button variant="outline" size="sm" asChild><Link href="/dashboard/net-worth/statement"><FileText className="mr-1.5 h-4 w-4" />Statement</Link></Button>
             <Button variant="outline" size="sm" onClick={exportCsv}><Download className="mr-1.5 h-4 w-4" />CSV</Button>
             <Button variant="outline" size="sm" onClick={exportXlsx}><Download className="mr-1.5 h-4 w-4" />Excel</Button>
           </>
@@ -219,13 +221,13 @@ function Row({ name, sub, value }: { name: string; sub: string; value: number })
 
 
 export default function NetWorthPage() {
-  const [tab, setTab] = useState<'Overview' | 'Goals'>('Overview')
+  const [tab, setTab] = useState<'Overview' | 'Goals' | 'Forecast'>('Overview')
   // a link like ?add=goal lands on the Goals tab (set after mount, so the server and browser render the same first paint)
   useEffect(() => { if (new URLSearchParams(window.location.search).get('add') === 'goal') setTab('Goals') }, [])
   return (
     <div className="space-y-5">
-      <TabBar label="Net worth views" tabs={[{ key: 'Overview', label: 'Overview' }, { key: 'Goals', label: 'Goals' }]} value={tab} onChange={(k) => setTab(k as typeof tab)} />
-      {tab === 'Overview' ? <><NetWorthOverview /><AllocationLeverage /><FinancialMetrics /><LimitsPanel /></> : <GoalsPanel />}
+      <TabBar label="Net worth views" tabs={[{ key: 'Overview', label: 'Overview' }, { key: 'Goals', label: 'Goals' }, { key: 'Forecast', label: 'Forecast' }]} value={tab} onChange={(k) => setTab(k as typeof tab)} />
+      {tab === 'Overview' ? <><NetWorthOverview /><AllocationLeverage /><FinancialMetrics /><LimitsPanel /></> : tab === 'Goals' ? <GoalsPanel /> : <ForecastPanel />}
     </div>
   )
 }

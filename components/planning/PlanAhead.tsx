@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { ArrowDownRight, ArrowUpRight, X } from 'lucide-react'
 import { CartesianGrid, Line, LineChart, ReferenceDot, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { EVENT_TYPES, earliestRetirementAge, projectPlan } from '@/lib/planning'
+import { EVENT_TYPES, applyPlanToCheckup, earliestRetirementAge, healthScore, moneyCheckup, projectPlan } from '@/lib/planning'
 import { formatCompactINR } from '@/lib/wealth/format'
 import { chartAxis, chartColor, chartGrid, chartTooltipStyle, FootNote } from '@/components/wealth/kit'
 import { cn } from '@/lib/utils'
@@ -16,7 +16,7 @@ const HORIZONS = [2, 5, 10, 20, 25] as const
  * What-if planner. Each change has an amount and a time (now, or in N years). The chart shows today's path dashed and the
  * path with the changes solid, with a marker where each change happens. Everything is an assumption, never a prediction.
  */
-export function PlanAhead({ netWorth, monthlySave, age = 0, monthlyExpense = 0, plannedRetireAge = 0 }: { netWorth: number; monthlySave: number; age?: number; monthlyExpense?: number; plannedRetireAge?: number }) {
+export function PlanAhead({ netWorth, monthlySave, age = 0, monthlyExpense = 0, plannedRetireAge = 0, checkInputs }: { netWorth: number; monthlySave: number; age?: number; monthlyExpense?: number; plannedRetireAge?: number; checkInputs?: Parameters<typeof moneyCheckup>[0] }) {
   const [events, setEvents] = useState<Ev[]>([])
   const [years, setYears] = useState<(typeof HORIZONS)[number]>(10)
   const base = useMemo(() => projectPlan({ netWorth, monthlySave }), [netWorth, monthlySave])
@@ -26,6 +26,14 @@ export function PlanAhead({ netWorth, monthlySave, age = 0, monthlyExpense = 0, 
   const retireBase = earliestRetirementAge({ points: base.points, age, monthlyExpense })
   const retirePlan = earliestRetirementAge({ points: plan.points, age, monthlyExpense })
   const retireShift = retireBase != null && retirePlan != null ? retirePlan - retireBase : null
+
+  // the money check-up score today, and with every change in place
+  const scores = useMemo(() => {
+    if (!checkInputs) return null
+    const now = healthScore(moneyCheckup(checkInputs))
+    const next = healthScore(moneyCheckup(applyPlanToCheckup(checkInputs, events)))
+    return { now, next, chips: next.groups.map((g, i) => ({ name: g.name, d: g.score != null && now.groups[i].score != null ? g.score - (now.groups[i].score as number) : 0 })).filter((x) => x.d !== 0) }
+  }, [checkInputs, events])
 
   const stat = (label: string, value: string, delta: number, hint?: string) => (
     <div className="rounded-lg bg-muted/60 p-3"><dt className="text-xs text-muted-foreground">{label}</dt><dd className="mt-1 text-lg font-semibold tabular-nums">{value}</dd>
@@ -50,6 +58,20 @@ export function PlanAhead({ netWorth, monthlySave, age = 0, monthlyExpense = 0, 
             <p className="mt-2 text-xs text-muted-foreground">{c.note}</p></li>) })}</ul>
       </div>
       <div className="surface-card p-4 sm:p-5">
+        {scores && scores.now.score != null && (
+          <div className="mb-4 border-b border-border pb-4">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1" role="group" aria-label="Money check-up score">
+              <span className="text-xs text-muted-foreground">Your score</span>
+              {events.length > 0 && scores.next.score !== scores.now.score && <span className="text-2xl font-semibold tabular-nums text-muted-foreground line-through" aria-label={`was ${scores.now.score}`}>{scores.now.score}</span>}
+              <span className="text-4xl font-bold tabular-nums">{events.length > 0 ? scores.next.score : scores.now.score}</span>
+              <span className="text-sm text-muted-foreground">/ 100</span>
+              <span className="rounded-full border border-border px-2.5 py-0.5 text-xs font-bold">{events.length > 0 ? scores.next.label : scores.now.label}</span>
+            </div>
+            {events.length > 0 && (scores.chips.length > 0
+              ? <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="What changes">{scores.chips.map((c) => <li key={c.name} className="rounded-full border border-border px-2.5 py-1 text-xs font-medium">{c.name} <span className={c.d > 0 ? 'font-bold text-success' : 'font-bold text-destructive'}>{c.d > 0 ? '+' : '-'}{Math.abs(c.d)}</span></li>)}</ul>
+              : <p className="mt-2 text-xs text-muted-foreground">These changes do not move your check-up score.</p>)}
+          </div>
+        )}
         <dl className="grid gap-3 sm:grid-cols-3">
           {stat(`Net worth in ${years} years`, formatCompactINR(plan.points[years]), dEnd)}
           {age > 0 && monthlyExpense > 0

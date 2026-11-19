@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
-import { ArrowDownLeft, ArrowUpRight, CheckSquare, ChevronLeft, ChevronRight, Copy, Download, Pencil, Plus, Scale, Search, Star, Trash2, X } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, CheckSquare, ChevronLeft, ChevronRight, Copy, Download, Pencil, Plus, Scale, Search, Split, Star, Trash2, X } from 'lucide-react'
 import { SnapCarousel } from '@/components/ui/snap-carousel'
 import { TxnRow } from './TxnRow'
 import { toast } from 'sonner'
@@ -20,6 +20,7 @@ import { matchesAll } from '@/lib/search'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
+import { expenseParts } from '@/lib/wealth/splits'
 import { childOf, cleanName, groupCategories, makeSub, parentOf } from '@/lib/wealth/subcategories'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { CHART_PALETTE, DateInput, Empty, Panel, Select, chartTooltipStyle, InfoTip } from '../kit'
@@ -58,19 +59,22 @@ export function SummaryStrip({ list }: { list: Tx[] }) {
   )
 }
 
-function Row({ t, onEdit, onDelete, onDuplicate, onBookmark, selecting, selected, onToggle, onLongPress }: {
-  t: Tx; onEdit: (t: Tx) => void; onDelete: (t: Tx) => void; onDuplicate?: (t: Tx) => void
+function Row({ t, onEdit, onDelete, onDuplicate, onSplit, onBookmark, selecting, selected, onToggle, onLongPress }: {
+  t: Tx; onEdit: (t: Tx) => void; onDelete: (t: Tx) => void; onDuplicate?: (t: Tx) => void; onSplit?: (t: Tx) => void
   onBookmark?: (t: Tx, on: boolean) => void; selecting?: boolean; selected?: boolean; onToggle?: (t: Tx) => void; onLongPress?: (t: Tx) => void
 }) {
   const starred = !!t.raw?.bookmarked
   return (
     <TxnRow kind={t.kind} title={t.title} category={t.category} amount={t.amount} selected={selected}
-      meta={`${t.kind === 'expense' ? `${t.sub} · ${modeLabel(t.raw.mode)}` : t.sub}${t.raw?.tags?.length ? ' · ' + t.raw.tags.map((x: string) => '#' + x).join(' ') : ''}`}
+      meta={`${t.kind === 'expense' ? `${expenseParts(t.raw).length > 1 ? 'Split: ' + expenseParts(t.raw).map((p) => `${p.category} ${formatINR(p.amount)}`).join(', ') : t.sub} · ${modeLabel(t.raw.mode)}` : t.sub}${t.raw?.tags?.length ? ' · ' + t.raw.tags.map((x: string) => '#' + x).join(' ') : ''}`}
       onLongPress={onLongPress && !selecting ? () => onLongPress(t) : undefined}
+      onSwipeLeft={!selecting && !t.legacy ? { label: 'Delete', run: () => onDelete(t) } : undefined}
+      onSwipeRight={!selecting && t.kind === 'expense' ? { label: 'Edit', run: () => onEdit(t) } : undefined}
       leading={selecting ? <Checkbox checked={!!selected} onChange={() => onToggle?.(t)} aria-label={`Select ${t.title}`} /> : undefined}
       actions={selecting ? undefined : <>
         {onBookmark && <Button variant="ghost" size="icon" className="h-9 w-9" aria-label={starred ? 'Remove bookmark' : 'Bookmark'} aria-pressed={starred} onClick={() => onBookmark(t, !starred)}><Star className={cn('h-4 w-4', starred && 'fill-[hsl(var(--highlight))] text-[hsl(85_60%_30%)] dark:text-highlight')} /></Button>}
         {t.kind === 'expense' && onDuplicate && <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Duplicate expense" title="Duplicate" onClick={() => onDuplicate(t)}><Copy className="h-4 w-4" /></Button>}
+        {t.kind === 'expense' && onSplit && <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Split expense across categories" title="Split across categories" onClick={() => onSplit(t)}><Split className="h-4 w-4" /></Button>}
         {t.kind === 'expense' && <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Edit expense" onClick={() => onEdit(t)}><Pencil className="h-4 w-4" /></Button>}
         {!t.legacy && <Button variant="ghost" size="icon" className="h-9 w-9" aria-label={`Delete ${t.kind}`} onClick={() => onDelete(t)}><Trash2 className="h-4 w-4" /></Button>}
       </>} />
@@ -85,8 +89,8 @@ function exportTxCsv(rows: Tx[], ym: string) {
 }
 
 /** Daily view: transactions grouped by date with day totals, search, filters, bookmarks and multi-select. */
-export function TransactionsView({ list, ym, onEdit, onDelete, onAdd, onDuplicate, onBookmark, onBulkDelete }: {
-  list: Tx[]; ym: string; onEdit: (t: Tx) => void; onDelete: (t: Tx) => void; onAdd: () => void; onDuplicate?: (t: Tx) => void
+export function TransactionsView({ list, ym, onEdit, onDelete, onAdd, onDuplicate, onSplit, onBookmark, onBulkDelete }: {
+  list: Tx[]; ym: string; onEdit: (t: Tx) => void; onDelete: (t: Tx) => void; onAdd: () => void; onDuplicate?: (t: Tx) => void; onSplit?: (t: Tx) => void
   onBookmark?: (items: Tx[], on: boolean) => void; onBulkDelete?: (items: Tx[]) => void
 }) {
   const [q, setQ] = useState('')
@@ -160,7 +164,7 @@ export function TransactionsView({ list, ym, onEdit, onDelete, onAdd, onDuplicat
                 </span>
                 <span className="flex gap-3 text-xs font-medium tabular-nums">{g.income > 0 && <span>+{formatINR(g.income)}</span>}{g.expense > 0 && <span className="text-muted-foreground">-{formatINR(g.expense)}</span>}</span>
               </header>
-              <ul className="divide-y divide-border px-4">{g.items.map((t) => <Row key={t.key} t={t} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} onBookmark={onBookmark ? (x, on) => onBookmark([x], on) : undefined} selecting={selecting} selected={picked.has(t.key)} onToggle={toggle} onLongPress={begin} />)}</ul>
+              <ul className="divide-y divide-border px-4">{g.items.map((t) => <Row key={t.key} t={t} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} onSplit={onSplit} onBookmark={onBookmark ? (x, on) => onBookmark([x], on) : undefined} selecting={selecting} selected={picked.has(t.key)} onToggle={toggle} onLongPress={begin} />)}</ul>
             </section>
           ))}
         </div>

@@ -19,7 +19,7 @@ import { TabBar } from '@/components/ui/tab-bar'
 import { FieldSet, ScrollList, ScrollListItem } from '@/components/ui/layout'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, PageHeader, Panel, Progress, Select } from './kit'
+import { Empty, Field, FormDialog, StepFormDialog, PageHeader, Panel, Progress, Select } from './kit'
 import { DateInput, MultiSelect } from '@/components/ui/pickers'
 
 type GoalLink = { type: 'bank' | 'fund' | 'asset'; id: string; pct: number }
@@ -124,17 +124,21 @@ function GoalForm({ row, suggested, onClose, onSave }: { row?: any; suggested: n
   const toggle = (s: { type: GoalLink['type']; id: string }) => setLinks((ls) => (find(s) ? ls.filter((l) => !(l.type === s.type && l.id === s.id)) : [...ls, { type: s.type, id: s.id, pct: 100 }]))
   const setPct = (s: { type: string; id: string }, pct: number) => setLinks((ls) => ls.map((l) => (l.type === s.type && l.id === s.id ? { ...l, pct } : l)))
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit goal' : 'Add goal'} wide
+    <StepFormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit goal' : 'Add goal'} wide
       onSubmit={async () => {
         const target = Number(f.target)
         if (!(target > 0)) throw new Error('Target amount must be positive')
         if (f.targetDate && f.targetDate < new Date().toISOString().slice(0, 10)) throw new Error('Target date must be in the future')
         await onSave({ ...row, id: row?.id, name: f.name.trim(), target, targetDate: f.targetDate || null, notes: f.notes, links })
-      }}>
+      }}
+      steps={[
+        { title: "The goal", description: "What you are saving for, how much, and by when.", content: <>
       <Field label="Goal">{(id) => <Input id={id} required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
       <div className="full -mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Goal suggestions">{GOAL_PRESETS.filter((p) => p !== f.name).slice(0, 8).map((p) => <button key={p} type="button" onClick={() => setF({ ...f, name: p })} className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground">{p}</button>)}</div>
       <Field label="Target amount (₹)" hint={/emergency/i.test(f.name) && suggested ? `Suggested: ${formatINR(suggested)} (6 months of spending)` : undefined}>{(id) => <Input id={id} type="number" min="1" step="any" required value={f.target} onChange={(e) => setF({ ...f, target: e.target.value })} />}</Field>
       <Field label="Target date (optional)">{(id) => <DateInput id={id} value={f.targetDate} onChange={(e) => setF({ ...f, targetDate: e.target.value })} />}</Field>
+        </> },
+        { title: "What backs it", description: "Pick the accounts, funds and assets that count towards it. Nothing is moved.", content: <>
       <Field label="Notes">{(id) => <Input id={id} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} />}</Field>
       <div className="full space-y-2">
         <Field label="Linked to" hint="Pick the accounts, funds and assets that back this goal. Nothing is moved.">{(id) => sources.length === 0
@@ -154,7 +158,8 @@ function GoalForm({ row, suggested, onClose, onSave }: { row?: any; suggested: n
           </ul>
         )}
       </div>
-    </FormDialog>
+        </> },
+      ]} />
   )
 }
 

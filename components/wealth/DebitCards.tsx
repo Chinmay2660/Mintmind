@@ -16,7 +16,7 @@ import { CopyValue } from './CopyButton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, PageHeader, Panel, Select, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle } from './kit'
+import { Empty, Field, FormDialog, StepFormDialog, PageHeader, Panel, Select, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle } from './kit'
 import { accountLabel, isCash } from './AccountForm'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { cn } from '@/lib/utils'
@@ -155,18 +155,23 @@ function DebitForm({ row, accounts, onClose, onSave }: { row?: any; accounts: an
   const [f, setF] = useState({ bank: row?.bank || accounts[0]?.bankName || '', cardName: row?.cardName || '', network: row?.network || 'Visa', cardNumber: row?.cardNumber || '', holder: row?.holder || accounts[0]?.holderName || '', accountId: row?.accountId || accounts[0]?.id || '' })
   const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit debit card' : 'Add debit card'} wide
+    <StepFormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit debit card' : 'Add debit card'} wide
       onSubmit={async () => {
         if (!/^\d{13,19}$/.test(f.cardNumber.replace(/\s/g, ''))) throw new Error('Card number must be 13-19 digits')
         if (!f.accountId) throw new Error('Choose the linked account')
         await onSave({ ...row, ...f, cardNumber: f.cardNumber.replace(/\s/g, '') })
-      }}>
+      }}
+      steps={[
+        { title: "Linked account", description: "Every purchase on this card is taken from this bank account.", content: <>
       <Field label="Linked bank account" className="full">{(id) => <Select id={id} required value={f.accountId} onChange={(e) => { const a = accounts.find((x) => x.id === e.target.value); setF((p) => ({ ...p, accountId: e.target.value, bank: a?.bankName || p.bank, holder: p.holder || a?.holderName || '' })) }}>{accounts.map((a) => <option key={a.id} value={a.id}>{accountLabel(a)} ({a.bankName})</option>)}</Select>}</Field>
       <Field label="Bank">{(id) => <Input id={id} required value={f.bank} onChange={set('bank')} />}</Field>
+        </> },
+        { title: "Card details", description: "As printed on the card.", content: <>
       <Field label="Card name">{(id) => <Input id={id} required value={f.cardName} onChange={set('cardName')} placeholder="Platinum Debit" />}</Field>
       <Field label="Network">{(id) => <Select id={id} value={f.network} onChange={set('network')}>{NETWORKS.map((n) => <option key={n}>{n}</option>)}</Select>}</Field>
       <Field label="Card holder">{(id) => <Input id={id} required value={f.holder} onChange={set('holder')} />}</Field>
       <Field label="Card number" className="full">{(id) => <Input id={id} inputMode="numeric" required value={f.cardNumber} onChange={set('cardNumber')} />}</Field>
-    </FormDialog>
+        </> },
+      ]} />
   )
 }

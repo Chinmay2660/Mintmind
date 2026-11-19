@@ -9,6 +9,8 @@ import { SubscriptionsPanel } from '@/components/wealth/budget/Subscriptions'
 import { ReviewView } from '@/components/wealth/budget/ReviewView'
 import { CashFlowView } from '@/components/wealth/budget/CashFlowView'
 import { BudgetList } from '@/components/wealth/budget/BudgetList'
+import { expenseParts } from '@/lib/wealth/splits'
+import { SplitDialog } from '@/components/wealth/budget/SplitDialog'
 import { RulesDialog } from '@/components/wealth/budget/RulesDialog'
 import { ImportCsvDialog } from '@/components/wealth/budget/ImportCsvDialog'
 import { toast } from 'sonner'
@@ -33,6 +35,8 @@ import { DateInput } from '@/components/ui/pickers'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { TabBar } from '@/components/ui/tab-bar'
 import { Checkbox } from '@/components/ui/checkbox'
+
+const TAB_ORDER = ['overview', 'budgets', 'transactions', 'calendar', 'monthly', 'summary', 'recurring', 'stats', 'cashflow', 'review'] as const
 
 export default function BudgetPage() {
   const { ready, data, db } = useWealth()
@@ -68,7 +72,7 @@ export default function BudgetPage() {
   // Pacing scope: the whole month, or one category (its own limit, daily budget, pace line and projection)
   const catLimit = catFilter ? Number(budget?.categories?.[catFilter]) || 0 : 0
   const scopeBudget = catFilter ? catLimit : effective
-  const scopeExpenses = useMemo(() => (catFilter ? data.expenses.filter((e) => e.category === catFilter) : data.expenses), [data.expenses, catFilter])
+  const scopeExpenses = useMemo(() => (catFilter ? data.expenses.flatMap((e) => expenseParts(e).filter((p) => p.category === catFilter).map((p) => ({ ...e, amount: p.amount }))) : data.expenses), [data.expenses, catFilter])
   const p = useMemo(() => (budget ? budgetPacing({ budget: scopeBudget, expenses: scopeExpenses, year, month, today }) : null), [budget, scopeBudget, scopeExpenses, year, month, today])
   const cats = useMemo(() => categoryTotals(data.expenses, ym), [data.expenses, ym])
   const prevTotal = monthTotal(scopeExpenses, prevYm)
@@ -76,6 +80,7 @@ export default function BudgetPage() {
   const reviewCount = useMemo(() => allTx.filter((t: any) => t.raw?.needsReview).length, [allTx])
   const monthTx = useMemo(() => inMonth(allTx as any, ym) as unknown as Tx[], [allTx, ym])
   const edit = (t: Tx) => setDlg({ kind: 'txn', row: t.raw })
+  const [splitFor, setSplitFor] = useState<any>(null)
   // Duplicate: opens the entry sheet pre-filled with this expense (today's date) so a repeat purchase is two taps.
   const duplicate = (t: Tx) => setDlg({ kind: 'txn', type: 'expense', draft: { ...t.raw, date: undefined } })
   const bookmark = (items: Tx[], on: boolean) => setBookmarks(db, items.map((t) => ({ kind: t.kind, id: t.id, legacy: t.legacy })), on).then(() => toast.success(on ? 'Bookmarked' : 'Bookmark removed')).catch(() => toast.error('Could not update bookmarks'))
@@ -130,17 +135,17 @@ export default function BudgetPage() {
 
       <TabBar label="Budget views" tabs={[{ key: 'overview', label: 'Overview' }, { key: 'budgets', label: 'Budgets' }, { key: 'transactions', label: 'Transactions' }, { key: 'calendar', label: 'Calendar' }, { key: 'monthly', label: 'Monthly' }, { key: 'summary', label: 'Summary' }, { key: 'recurring', label: 'Recurring' }, { key: 'stats', label: 'Stats' }, { key: 'cashflow', label: 'Cash flow' }, { key: 'review', label: reviewCount ? `Review (${reviewCount})` : 'Review' }]} value={tab} onChange={(k) => setTab(k as typeof tab)} />
 
-      {/* Swipe sideways to move between months, like a paper ledger. Scrollers, sliders and fields keep their own gestures. */}
+      {/* Swipe sideways to move between tabs. Months have their arrows and the [ ] keys. Scrollers, sliders, fields and swipeable rows keep their own gestures. */}
       <div className="space-y-5"
         onTouchStart={(e) => { const t = e.touches[0]; swipe.current = { x: t.clientX, y: t.clientY } }}
         onTouchEnd={(e) => {
           const st = swipe.current; swipe.current = null
-          if (!st || tab === 'monthly' || tab === 'overview') return
-          if ((e.target as HTMLElement).closest('[role="region"], [role="tablist"], [role="slider"], input, textarea')) return
+          if (!st) return
+          if ((e.target as HTMLElement).closest('[role="region"], [role="tablist"], [role="slider"], [data-swipe-row], input, textarea, [role="dialog"]')) return
           const t = e.changedTouches[0]; const dx = t.clientX - st.x; const dy = t.clientY - st.y
-          if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 2) step(dx < 0 ? 1 : -1)
+          if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 2) { const i = TAB_ORDER.indexOf(tab); const n = TAB_ORDER[i + (dx < 0 ? 1 : -1)]; if (n) setTab(n) }
         }}>
-      {tab === 'transactions' && <TransactionsView list={monthTx} ym={ym} onEdit={edit} onDelete={askDelete} onDuplicate={duplicate} onBookmark={bookmark} onBulkDelete={(txs) => setDlg({ kind: 'delmany', txs })} onAdd={() => setDlg({ kind: 'txn', type: 'expense' })} />}
+      {tab === 'transactions' && <TransactionsView list={monthTx} ym={ym} onEdit={edit} onDelete={askDelete} onDuplicate={duplicate} onSplit={(t) => setSplitFor(t.raw)} onBookmark={bookmark} onBulkDelete={(txs) => setDlg({ kind: 'delmany', txs })} onAdd={() => setDlg({ kind: 'txn', type: 'expense' })} />}
       {tab === 'calendar' && <CalendarView list={monthTx} ym={ym} onEdit={edit} onDelete={askDelete} onDuplicate={duplicate} onBookmark={bookmark} />}
       {tab === 'monthly' && <MonthlyView all={allTx} ym={ym} curYm={curYm} onPick={(k) => { setYm(k); setTab('transactions') }} />}
       {tab === 'summary' && <SummaryView list={monthTx} ym={ym} />}
@@ -216,6 +221,7 @@ export default function BudgetPage() {
       {dlg?.kind === 'budget' && <BudgetForm ym={ym} row={budget} onClose={() => setDlg(null)} onSave={async (r) => { await save(db, 'budgets', r); toast.success('Budget saved') }} />}
       {dlg?.kind === 'categories' && <CategoryManager onClose={() => setDlg(null)} />}
       {dlg?.kind === 'txn' && <TxnEntryDialog initialType={dlg.type} row={dlg.row} draft={dlg.draft} defaultMonth={ym} onClose={() => setDlg(null)} />}
+      {splitFor && <SplitDialog expense={splitFor} onClose={() => setSplitFor(null)} />}
       <RulesDialog open={rulesOpen} onOpenChange={setRulesOpen} />
       <ImportCsvDialog open={importOpen} onOpenChange={setImportOpen} />
       <ConfirmDialog open={dlg?.kind === 'delmany'} onOpenChange={(o) => !o && setDlg(null)} title={`Delete ${dlg?.txs?.length ?? 0} transactions?`}

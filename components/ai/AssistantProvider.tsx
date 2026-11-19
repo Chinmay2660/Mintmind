@@ -6,6 +6,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { useIsMobile } from '@/lib/hooks/useIsMobile'
 import dynamic from 'next/dynamic'
 
+const QuickAdd = dynamic(() => import('./QuickAdd').then((m) => m.QuickAdd), { ssr: false })
+
 // the chat, and everything it pulls in, is fetched the first time the panel opens
 const AssistantChat = dynamic(() => import('./AssistantChat').then((m) => m.AssistantChat), { ssr: false, loading: () => <p className="p-4 text-sm text-muted-foreground">Loading…</p> })
 import { useFeatures } from '@/lib/features/FeaturesContext'
@@ -15,6 +17,7 @@ const Ctx = createContext<{ open: () => void } | null>(null)
 /** Floating "Wealth AI" button + slide-over assistant available on every dashboard screen. */
 export function AssistantProvider({ children }: { children: ReactNode }) {
   const [isOpen, setOpen] = useState(false)
+  const [mode, setMode] = useState<'ask' | 'add'>('ask')
   const mobile = useIsMobile()
   const { isEnabled } = useFeatures()
   const aiOn = isEnabled('ai_assistant')
@@ -29,7 +32,10 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       <Sheet open={isOpen && aiOn} onOpenChange={setOpen}>
         <SheetContent side={mobile ? 'bottom' : 'right'} className={mobile ? 'flex h-[88dvh] flex-col rounded-t-2xl border-t border-border bg-card pb-4' : 'flex w-full flex-col bg-card sm:max-w-xl lg:max-w-2xl'}>
           <SheetHeader className="text-left"><SheetTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" />My Wealth AI</SheetTitle></SheetHeader>
-          <div className="mt-3 min-h-0 flex-1"><AssistantChat compact /></div>
+          <div role="tablist" aria-label="Wealth AI" className="mt-3 grid grid-cols-2 rounded-lg border border-border bg-muted p-0.5 text-sm font-bold">
+            {([['ask', 'Ask'], ['add', 'Quick add']] as const).map(([k, l]) => <button key={k} role="tab" type="button" aria-selected={mode === k} onClick={() => setMode(k)} className={`rounded-md py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring ${mode === k ? 'bg-card shadow-card' : 'text-muted-foreground hover:text-foreground'}`}>{l}</button>)}
+          </div>
+          <div className="mt-3 min-h-0 flex-1 overflow-y-auto">{mode === 'ask' ? <AssistantChat compact /> : <QuickAdd />}</div>
         </SheetContent>
       </Sheet>
     </Ctx.Provider>

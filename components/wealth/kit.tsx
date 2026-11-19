@@ -91,7 +91,7 @@ export function Panel({
   return (
     <section className={cn('min-w-0', card && 'surface-card', className)}>
       {(title || action) && (
-        <header className={cn('flex flex-wrap items-center justify-between gap-x-3 gap-y-1', card ? 'px-5 pt-4' : 'border-b border-border pb-2.5')}>
+        <header className={cn('flex min-h-9 flex-wrap items-center justify-between gap-x-3 gap-y-1', card ? 'px-5 pt-4' : 'border-b border-border pb-2.5')}>
           <div className="flex min-w-0 items-center gap-1.5">
             {title && <h3 className="flex items-center gap-2 text-sm font-semibold">{title}</h3>}
             {title && description && <InfoTip label={typeof title === 'string' ? title : 'this section'}>{description}</InfoTip>}

@@ -13,7 +13,7 @@ import { Money } from './Money'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, Panel, Select } from './kit'
+import { Empty, Field, FormDialog, StepFormDialog, Panel, Select } from './kit'
 import { PdfStatementImport } from '@/components/wealth/PdfStatementImport'
 import { AssetSections } from './AssetSections'
 import { AssetForm } from './AssetForm'
@@ -49,28 +49,33 @@ export function AssetsLoans() {
   )
 }
 
-function ItemForm({ kind, row, onClose, onSave }: { kind: Kind; row: any; onClose: () => void; onSave: (r: any) => Promise<void> }) {
+export function ItemForm({ kind, row, onClose, onSave }: { kind: Kind; row: any; onClose: () => void; onSave: (r: any) => Promise<void> }) {
   const isAsset = kind === 'asset'
   const [f, setF] = useState({ name: row?.name || '', category: row?.category || (isAsset ? 'epf' : 'homeLoan'), amount: String(isAsset ? row?.value ?? '' : row?.outstanding ?? ''), emi: String(row?.emi ?? ''), rate: String(row?.rate ?? ''), notes: row?.notes || '' })
   const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title={`${row ? 'Edit' : 'Add'} ${isAsset ? 'asset' : 'loan'}`}
+    <StepFormDialog open onOpenChange={(o) => !o && onClose()} title={`${row ? 'Edit' : 'Add'} ${isAsset ? 'asset' : 'loan'}`}
       onSubmit={async () => {
         const amount = Number(f.amount)
         if (!(amount >= 0)) throw new Error('Enter a valid amount')
         await onSave(isAsset
           ? { ...row, name: f.name.trim(), category: f.category, value: amount, updated: toISO(new Date()), notes: f.notes }
           : { ...row, name: f.name.trim(), category: f.category, outstanding: amount, emi: Number(f.emi) || 0, rate: Number(f.rate) || 0, updated: toISO(new Date()), notes: f.notes })
-      }}>
+      }}
+      steps={[
+        { title: isAsset ? 'The asset' : 'The loan', description: isAsset ? 'What it is called and what kind it is.' : 'What it is called and what kind of loan.', content: <>
       <Field label="Name">{(id) => <Input id={id} required value={f.name} onChange={set('name')} placeholder={isAsset ? 'e.g. EPF (Acme Technologies)' : 'e.g. Home loan - HDFC'} />}</Field>
       <Field label="Category">{(id) => (
         <Select id={id} value={f.category} onChange={set('category')}>
           {(isAsset ? MANUAL_ASSET_CATEGORIES : MANUAL_LIABILITY_CATEGORIES).map((c) => <option key={c} value={c}>{isAsset ? ASSET_LABELS[c as keyof typeof ASSET_LABELS] : LIABILITY_LABELS[c as keyof typeof LIABILITY_LABELS]}</option>)}
         </Select>)}</Field>
+        </> },
+        { title: isAsset ? 'Value' : 'Repayment', description: isAsset ? 'What it is worth today.' : 'What is still owed, the monthly EMI and the interest rate.', content: <>
       <Field label={isAsset ? 'Current value (₹)' : 'Outstanding (₹)'}>{(id) => <Input id={id} type="number" min="0" step="any" required value={f.amount} onChange={set('amount')} />}</Field>
       {!isAsset && <Field label="EMI (₹)">{(id) => <Input id={id} type="number" min="0" step="any" value={f.emi} onChange={set('emi')} />}</Field>}
       {!isAsset && <Field label="Interest rate (%)">{(id) => <Input id={id} type="number" min="0" step="any" value={f.rate} onChange={set('rate')} />}</Field>}
       <Field label="Notes" className="full">{(id) => <Input id={id} value={f.notes} onChange={set('notes')} />}</Field>
-    </FormDialog>
+        </> },
+      ]} />
   )
 }

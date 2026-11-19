@@ -19,6 +19,11 @@ import { cn } from '@/lib/utils'
 import { FieldSet } from '@/components/ui/layout'
 import { Checkbox } from '@/components/ui/checkbox'
 import { SubscriptionForm } from '@/components/wealth/budget/Subscriptions'
+import { AccountForm } from '@/components/wealth/AccountForm'
+import { AssetForm } from '@/components/wealth/AssetForm'
+import { ItemForm } from '@/components/wealth/AssetsLoans'
+import { FundForm } from '@/components/wealth/FundForms'
+import { addFund, save } from '@/lib/wealth/actions'
 
 const STEPS = ['Profile', 'Goals', 'Package', 'Features', 'Preferences', 'Quick setup'] as const
 const NEEDS = [{ v: 'personal', l: 'Personal finances' }, { v: 'family', l: 'Family finances' }, { v: 'investments', l: 'Investments' }, { v: 'complete', l: 'Complete wealth management' }]
@@ -188,13 +193,14 @@ export default function OnboardingPage() {
   )
 }
 
-const SETUP: Record<string, { label: string; action: string; href: string; done: (d: any) => boolean }> = {
+type FormKey = 'asset' | 'loan' | 'account' | 'fund' | 'subscription'
+const SETUP: Record<string, { label: string; action: string; href: string; form?: FormKey; done: (d: any) => boolean }> = {
   dashboard: { label: 'Dashboard & Net Worth', action: 'Ready', href: '/dashboard', done: () => true },
-  net_assets: { label: 'Assets (property, gold, EPF, stocks)', action: 'Add an asset', href: '/dashboard/net-worth/manage?add=asset', done: (d) => d.assets.length > 0 },
-  net_liabilities: { label: 'Loans and other liabilities', action: 'Add a loan', href: '/dashboard/net-worth/manage?add=liability', done: (d) => d.liabilities.length > 0 },
-  bank_accounts: { label: 'Bank Accounts', action: 'Add your first account', href: '/dashboard/bank-accounts?add=account', done: (d) => d.bankAccounts.length > 0 },
-  mutual_funds: { label: 'Mutual Funds & SIPs', action: 'Add your investments', href: '/dashboard/mutual-funds?add=fund', done: (d) => d.funds.length > 0 },
-  recurring: { label: 'Recurring payments (subscriptions, rent, SIPs)', action: 'Add a payment', href: '', done: (d) => d.sips.length > 0 || d.meta.some((m: any) => m.key === 'subscriptions' && m.value?.length > 0) },
+  net_assets: { label: 'Assets (property, gold, EPF, stocks)', action: 'Add an asset', href: '', form: 'asset', done: (d) => d.assets.length > 0 },
+  net_liabilities: { label: 'Loans and other liabilities', action: 'Add a loan', href: '', form: 'loan', done: (d) => d.liabilities.length > 0 },
+  bank_accounts: { label: 'Bank Accounts', action: 'Add your first account', href: '', form: 'account', done: (d) => d.bankAccounts.length > 0 },
+  mutual_funds: { label: 'Mutual Funds & SIPs', action: 'Add your investments', href: '', form: 'fund', done: (d) => d.funds.length > 0 },
+  recurring: { label: 'Recurring payments (subscriptions, rent, SIPs)', action: 'Add a payment', href: '', form: 'subscription', done: (d) => d.sips.length > 0 || d.meta.some((m: any) => m.key === 'subscriptions' && m.value?.length > 0) },
   credit_cards: { label: 'Cards', action: 'Add your cards', href: '/dashboard/credit-cards', done: (d) => d.cards.length > 0 },
   insurance: { label: 'Insurance', action: 'Add your policies', href: '/dashboard/insurance', done: (d) => d.policies.length > 0 },
   budget_expenses: { label: 'Budget & Expenses', action: 'Set your monthly budget', href: '/dashboard/budget', done: (d) => d.budgets.length > 0 },
@@ -207,7 +213,8 @@ const SETUP: Record<string, { label: string; action: string; href: string; done:
 }
 
 function QuickSetup({ selected, data, onOpen }: { selected: string[]; data: any; onOpen: () => void }) {
-  const [adding, setAdding] = useState(false)
+  const { db } = useWealth()
+  const [form, setForm] = useState<FormKey | null>(null)
   const keys = [...selected, ...(selected.includes('dashboard') ? ['net_assets', 'net_liabilities'] : []), ...(selected.includes('budget_expenses') || selected.includes('mutual_funds') ? ['recurring'] : [])]
   const rows = keys.map((k) => ({ k, ...SETUP[k] })).filter((r) => r.label)
   const doneCount = rows.filter((r) => r.done(data)).length
@@ -217,8 +224,13 @@ function QuickSetup({ selected, data, onOpen }: { selected: string[]; data: any;
       <div><div className="mb-1.5 flex justify-between text-xs text-muted-foreground"><span>Setup progress</span><span>{doneCount} of {rows.length} ready</span></div><div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(doneCount / Math.max(rows.length, 1)) * 100}%` }} /></div></div>
       <ul className="divide-y divide-border rounded-xl border border-border">{rows.map((r) => { const ok = r.done(data); return (
         <li key={r.k} className="flex items-center justify-between gap-3 px-4 py-3"><span className="flex items-center gap-2.5 text-sm font-medium"><span className={cn('flex h-5 w-5 items-center justify-center rounded-full', ok ? 'bg-primary text-primary-foreground' : 'border border-border')}>{ok && <Check className="h-3 w-3" />}</span>{r.label}</span>
-          {ok ? <span className="text-xs text-muted-foreground">Ready</span> : <span className="flex items-center gap-2">{r.href ? <Button asChild size="sm" variant="outline"><Link href={r.href}>{r.action}</Link></Button> : <Button size="sm" variant="outline" onClick={() => setAdding(true)}>{r.action}</Button>}<span className="hidden text-xs text-muted-foreground sm:inline">or skip for now</span></span>}</li>) })}</ul>
-      {adding && <SubscriptionForm onClose={() => setAdding(false)} />}
+          {ok ? <span className="text-xs text-muted-foreground">Ready</span> : <span className="flex items-center gap-2">{r.form ? <Button size="sm" variant="outline" onClick={() => setForm(r.form!)}>{r.action}</Button> : <Button asChild size="sm" variant="outline"><Link href={r.href}>{r.action}</Link></Button>}<span className="hidden text-xs text-muted-foreground sm:inline">or skip for now</span></span>}</li>) })}</ul>
+      {/* the same forms the app pages use, opened here so setup does not send you away */}
+      {form === 'subscription' && <SubscriptionForm onClose={() => setForm(null)} />}
+      {form === 'account' && <AccountForm onClose={() => setForm(null)} onSave={async (rec) => { await save(db, 'bankAccounts', rec); await db.balanceHistory.add({ id: `bh_${Date.now()}`, accountId: rec.id, date: rec.lastUpdated, balance: rec.currentBalance, note: 'Opening balance' }); toast.success('Account added') }} />}
+      {form === 'asset' && <AssetForm row={null} category="epf" onClose={() => setForm(null)} onSave={async (rec) => { await save(db, 'assets', rec); toast.success('Asset added') }} />}
+      {form === 'loan' && <ItemForm kind="liability" row={null} onClose={() => setForm(null)} onSave={async (rec) => { await save(db, 'liabilities', rec); toast.success('Loan added') }} />}
+      {form === 'fund' && <FundForm onClose={() => setForm(null)} onSave={async (rec) => { await addFund(db, rec); toast.success('Fund added') }} />}
       <p className="text-xs text-muted-foreground">SIPs are added under Investments, once you have a fund.</p>
       <Button size="lg" onClick={onOpen}>Open my dashboard<ArrowRight className="ml-2 h-4 w-4" /></Button>
     </section>
