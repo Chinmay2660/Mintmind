@@ -18,12 +18,13 @@ const PermissionsSchema = new mongoose.Schema(
 
 const MemberSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  email: { type: String, required: true, lowercase: true, trim: true },
+  email: { type: String, lowercase: true, trim: true, default: '' }, // empty for a member who joined with a code or link
   name: { type: String, required: true, trim: true },
   relation: { type: String, trim: true },
   role: { type: String, enum: ['admin', 'member', 'emergency_contact'], default: 'member' },
   status: { type: String, enum: ['invited', 'active'], default: 'invited' },
   inviteTokenHash: { type: String, select: false },
+  inviteOtpHash: { type: String, select: false },
   inviteExpires: { type: Date },
   permissions: { type: PermissionsSchema, default: () => ({}) },
   summary: { type: mongoose.Schema.Types.Mixed },

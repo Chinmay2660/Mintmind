@@ -58,8 +58,16 @@ export function AssistantChat({ compact = false }: { compact?: boolean }) {
   const [q, setQ] = useState('')
   const [busy, setBusy] = useState(false)
   const end = useRef<HTMLDivElement>(null)
+  const scroller = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  useEffect(() => { end.current?.scrollIntoView({ block: 'end', behavior: 'smooth' }) }, [msgs, busy])
+  // Stay at the top (the greeting and the suggested questions) until there is a conversation. Once there is one, follow it down,
+  // moving only the chat area and never the page around it.
+  useEffect(() => {
+    const el = scroller.current
+    if (!el) return
+    if (msgs.length === 0 && !busy) { el.scrollTop = 0; return }
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+  }, [msgs, busy])
 
   const ask = async (question: string) => {
     if (!facts || !question.trim() || busy) return
@@ -90,7 +98,7 @@ export function AssistantChat({ compact = false }: { compact?: boolean }) {
 
   return (
     <div className={cn('flex flex-col', compact ? 'h-full' : 'min-h-[24rem]')}>
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-2 pr-1" aria-live="polite">
+      <div ref={scroller} className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-2 pr-1" aria-live="polite">
         {msgs.length === 0 && (
           <div className="space-y-4 py-2">
             <div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"><Sparkles className="h-4 w-4" /></span>

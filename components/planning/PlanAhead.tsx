@@ -68,7 +68,7 @@ export function PlanAhead({ netWorth, monthlySave, age = 0, monthlyExpense = 0, 
             <Tooltip {...chartTooltipStyle} formatter={(v: number) => formatCompactINR(v)} />
             <Line dataKey="base" name="Today's path" stroke="hsl(var(--foreground) / 0.6)" strokeDasharray="5 4" strokeWidth={2} dot={false} isAnimationActive={false} />
             <Line dataKey="plan" name="With the changes" stroke={chartColor(1)} strokeWidth={3} dot={false} />
-            {shown.map((e) => { const r = rows[e.at]; return r ? (<g key={e.id}><ReferenceLine x={r.year} stroke={chartColor(2)} strokeDasharray="2 4" strokeOpacity={0.7} /><ReferenceDot x={r.year} y={r.plan} r={6} fill={chartColor(2)} stroke="hsl(var(--card))" strokeWidth={2} /></g>) : null })}
+            {shown.flatMap((e) => { const r = rows[e.at]; return r ? [<ReferenceLine key={`${e.id}-l`} x={r.year} stroke={chartColor(2)} strokeDasharray="2 4" strokeOpacity={0.7} />, <ReferenceDot key={`${e.id}-d`} x={r.year} y={r.plan} r={6} fill={chartColor(2)} stroke="hsl(var(--card))" strokeWidth={2} />] : [] })}
           </LineChart></ResponsiveContainer>
         </div>
         {shown.length > 0 && (

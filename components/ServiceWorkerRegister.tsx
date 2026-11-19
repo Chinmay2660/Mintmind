@@ -11,7 +11,12 @@ export default function ServiceWorkerRegister() {
 
   useEffect(() => {
     // The dev server serves constantly changing assets; an active worker there only causes stale pages.
-    if (process.env.NODE_ENV !== 'production') return
+    if (process.env.NODE_ENV !== 'production') {
+      // and a worker left over from an earlier visit is removed, with its caches, so old scripts are never served again
+      if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {})
+      if (typeof caches !== 'undefined') caches.keys().then((ks) => ks.filter((k) => k.startsWith('mintmind-')).forEach((k) => caches.delete(k))).catch(() => {})
+      return
+    }
     registerServiceWorker()
   }, [])
 

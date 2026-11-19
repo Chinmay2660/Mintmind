@@ -473,7 +473,7 @@ button > svg, a > svg, [role='tab'] > svg { flex-shrink: 0; }
 
   /* ── App surfaces ── */
   .finance-shell {
-    @apply relative min-h-screen bg-background text-foreground;
+    @apply relative min-h-dvh bg-background text-foreground;
   }
 
   .surface-card {
@@ -728,9 +728,16 @@ button > svg, a > svg, [role='tab'] > svg { flex-shrink: 0; }
 
 /* Print / Save as PDF: let the report flow across pages instead of the fixed app shell */
 @media print {
+  @page { margin: 10mm; }
   .app-shell { position: static !important; display: block !important; height: auto !important; }
   .app-main { overflow: visible !important; height: auto !important; padding-bottom: 0 !important; }
-  body { background: #fff !important; }
+  /* What is on the screen is what is printed: same theme, same colours, backgrounds included. */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* nothing that floats, pops up or navigates belongs on paper */
+  .fab, [data-sonner-toaster], [role='region'][aria-label='Cookie consent'], aside, nav[aria-label='Modules'] { display: none !important; }
+  /* a card or a row is never cut across two pages, but a whole group of cards may flow, so pages are not left half empty */
+  .surface-card, dl > div, li { break-inside: avoid; }
+  .surface-card { box-shadow: none !important; }
 }
 
 
@@ -787,6 +794,18 @@ html { -webkit-text-size-adjust: 100%; scroll-padding-top: 5rem; }
 /* On touch screens icon-only buttons reach a comfortable 44px target without changing how they look on a desktop */
 @media (pointer: coarse) {
   button[aria-label][class*='h-8'], button[aria-label][class*='h-9'] { min-width: 44px; min-height: 44px; }
+}
+
+/* Sidebar tree: each child hangs off the vertical line by a short horizontal branch that meets its row; the last one turns the corner. */
+.tree-item { position: relative; }
+.tree-item::before { content: ''; position: absolute; left: -0.625rem; top: -1px; width: 1px; height: calc(100% + 2px); background: hsl(var(--border)); }
+.tree-item:last-child::before { height: calc(50% + 1px); }
+.tree-item::after { content: ''; position: absolute; left: -0.625rem; top: 50%; width: 0.625rem; height: 1px; background: hsl(var(--border)); }
+
+/* Phones: fields at 16px so iOS does not zoom the page when one is tapped, and nothing can push the page sideways. */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']), select, textarea { font-size: 16px; }
+  html, body { overflow-x: clip; }
 }
 
 /* Landing product mockups. Plain CSS, so the layout does not depend on which utility classes were generated. */

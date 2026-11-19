@@ -30,7 +30,7 @@ function AuthErrorContent() {
   }, [searchParams])
 
   return (
-    <div className="min-h-screen flex items-center justify-center landing-bg aurora-bg text-foreground p-4 relative overflow-hidden">
+    <div className="min-h-dvh flex items-center justify-center landing-bg aurora-bg text-foreground p-4 relative overflow-hidden">
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -111,7 +111,7 @@ function AuthErrorContent() {
 export default function AuthErrorPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center landing-bg text-foreground">
+      <div className="min-h-dvh flex items-center justify-center landing-bg text-foreground">
         <div className="text-muted-foreground">Loading...</div>
       </div>
     }>

@@ -19,6 +19,7 @@ import { CHART_PALETTE, Empty, Field, FormDialog, LoadingBlock, PageHeader, Pane
 import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { Checkbox } from '@/components/ui/checkbox'
+import { InviteReady, JoinWithCode, demoInvite, type InviteInfo } from '@/components/family/InviteCodes'
 
 const ROLES = [{ v: 'admin', l: 'Admin' }, { v: 'member', l: 'Member' }, { v: 'emergency_contact', l: 'Emergency Contact' }]
 const PERMS: [string, string, string][] = [
@@ -35,7 +36,7 @@ export default function FamilyPage() {
   const { privacyMode } = usePrivacyMode()
   const [circle, setCircle] = useState<{ id: string; name: string; me: any; members: VM[] } | null | undefined>(undefined)
   const [dlg, setDlg] = useState<null | 'invite' | { del: VM }>(null)
-  const [link, setLink] = useState<string | null>(null)
+  const [invite, setInvite] = useState<InviteInfo | null>(null)
 
   const lastSent = useRef({ body: '', at: 0 })
   // my own shareable summary, computed locally from my data
@@ -90,7 +91,8 @@ export default function FamilyPage() {
   if (circle === null) {
     return (
       <div className="mx-auto max-w-lg"><Panel title="Create your Family Circle">
-        <Button onClick={() => api({ action: 'create', name: 'My Family' }, 'Circle created')}><UserPlus className="mr-2 h-4 w-4" />Create circle</Button></Panel></div>
+        <Button onClick={() => api({ action: 'create', name: 'My Family' }, 'Circle created')}><UserPlus className="mr-2 h-4 w-4" />Create circle</Button>
+        {!isDemo && <JoinWithCode onJoin={async (otp) => !!(await api({ action: 'accept-otp', otp }, 'You have joined the circle'))} />}</Panel></div>
     )
   }
 
@@ -114,7 +116,7 @@ export default function FamilyPage() {
     <div className="space-y-5">
       <PageHeader title={circle.name} primaryAction={admin ? { label: 'Invite member', onClick: () => setDlg('invite') } : undefined} />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 border-b border-border pb-5">
         <Stat label="Family net worth" value={<Money value={totals.netWorth} />} hint={hidden ? `${hidden} member${hidden > 1 ? 's' : ''} not shared` : undefined} />
         <Stat label="Total assets" value={<Money value={totals.assets} />} />
         <Stat label="Total liabilities" value={<Money value={totals.liabilities} />} />
@@ -142,6 +144,7 @@ export default function FamilyPage() {
                     <div className="flex items-center gap-1.5">
                       {admin && !m.self ? <Select aria-label={`Role for ${m.name}`} className="h-8 w-auto text-xs" value={m.role} onChange={(e) => setRole(m, e.target.value)}>{ROLES.map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}</Select> : <span className="rounded-md bg-muted px-2 py-1 text-xs">{roleLabel(m.role)}</span>}
                       {m.status === 'invited' && isDemo && <Button size="sm" variant="outline" onClick={() => db.members.update(m.id, { status: 'active' })}>Simulate accept</Button>}
+                      {(m.status === 'invited' || m.status === 'pending') && admin && <Button size="sm" variant="outline" onClick={async () => { if (isDemo) { setInvite(demoInvite(m.id, m.name)); return } const r = await api({ action: 'refresh-invite', memberId: m.id }); if (r?.invite) setInvite({ ...r.invite, name: m.name }) }}>Code and link</Button>}
                       {(admin && !m.self || (m.self && circle.members.length > 1)) && <Button size="icon" variant="ghost" className="h-8 w-8" aria-label={m.self ? 'Leave circle' : `Remove ${m.name}`} onClick={() => setDlg({ del: m })}><Trash2 className="h-3.5 w-3.5" /></Button>}
                     </div>
                   </div>
@@ -169,11 +172,11 @@ export default function FamilyPage() {
         </Panel>
       )}
 
-      {link && <Panel title="Invitation link" description="Email isn't configured, so share this link with the invitee yourself. It expires in 7 days."><div className="flex gap-2"><Input readOnly value={link} aria-label="Invitation link" /><Button variant="outline" onClick={() => { navigator.clipboard.writeText(link); toast.success('Copied') }}><Copy className="h-4 w-4" /></Button></div></Panel>}
+      {invite && <InviteReady info={invite} onClose={() => setInvite(null)} onRefresh={async () => { if (isDemo) { setInvite(demoInvite(invite.memberId, invite.name)); return } const r = await api({ action: 'refresh-invite', memberId: invite.memberId }); if (r?.invite) setInvite({ ...r.invite, name: invite.name }) }} />}
 
       {dlg === 'invite' && <InviteForm onClose={() => setDlg(null)} onSave={async (v) => {
-        if (isDemo) { await db.members.put({ id: uid('fm'), ...v, status: 'pending', permissions: { netWorth: false, overview: false, bank: false, mutualFunds: false, insurance: false, documents: false, emergencyOnly: false }, summary: null }); toast.success('Invitation created (demo: no email is sent)') }
-        else { const r = await api({ action: 'invite', ...v }); if (r) { setLink(r.inviteLink || null); toast.success(r.emailed ? 'Invitation emailed' : 'Invitation created') } else throw new Error('Could not invite') }
+        if (isDemo) { const id = uid('fm'); await db.members.put({ id, ...v, status: 'pending', permissions: { netWorth: false, overview: false, bank: false, mutualFunds: false, insurance: false, documents: false, emergencyOnly: false }, summary: null }); setInvite(demoInvite(id, v.name)); toast.success('Code and link created') }
+        else { const r = await api({ action: 'invite', ...v }); if (r) { if (r.invite) setInvite({ ...r.invite, name: v.name }); toast.success('Code and link created') } else throw new Error('Could not invite') }
       }} />}
       <ConfirmDialog open={typeof dlg === 'object' && dlg !== null} onOpenChange={(o) => !o && setDlg(null)} title={typeof dlg === 'object' && dlg?.del.self ? 'Leave this circle?' : `Remove ${typeof dlg === 'object' ? dlg?.del.name : ''}?`} description="They will no longer see or be seen in the circle." confirmLabel="Confirm" variant="destructive"
         onConfirm={async () => { const m = (dlg as { del: VM }).del; if (isDemo) await db.members.delete(m.id); else await api({ action: m.self ? 'leave' : 'remove-member', memberId: m.id }, 'Done'); setDlg(null); if (!isDemo && m.self) setCircle(null) }} />
@@ -181,14 +184,13 @@ export default function FamilyPage() {
   )
 }
 
-function InviteForm({ onClose, onSave }: { onClose: () => void; onSave: (v: { name: string; email: string; relation: string; role: string }) => Promise<void> }) {
-  const [f, setF] = useState({ name: '', email: '', relation: '', role: 'member' })
+function InviteForm({ onClose, onSave }: { onClose: () => void; onSave: (v: { name: string; relation: string; role: string }) => Promise<void> }) {
+  const [f, setF] = useState({ name: '', relation: '', role: 'member' })
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Invite a family member" submitLabel="Send invitation" onSubmit={() => onSave(f)}>
+    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Invite a family member" submitLabel="Create code and link" onSubmit={() => onSave(f)}>
       <Field label="Name">{(id) => <Input id={id} required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
-      <Field label="Email">{(id) => <Input id={id} type="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />}</Field>
       <Field label="Relationship">{(id) => <Input id={id} value={f.relation} onChange={(e) => setF({ ...f, relation: e.target.value })} placeholder="Spouse, Parent, Sibling…" />}</Field>
-      <Field label="Role">{(id) => <Select id={id} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })}>{ROLES.map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}</Select>}</Field>
+      <Field label="Role">{(id) => <Select id={id} value={f.role} onChange={(e) => setF({ ...f, role: e.target.value })}>{ROLES.filter((r) => r.v !== 'admin').map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}</Select>}</Field>
     </FormDialog>
   )
 }

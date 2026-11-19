@@ -6,7 +6,8 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { ArrowLeft, ChevronRight, CreditCard, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
-import { remove, save } from '@/lib/wealth/actions'
+import { addExpense, addIncome, remove, save } from '@/lib/wealth/actions'
+import { useCategories } from '@/lib/wealth/useCategories'
 import { availableBalance, toISO } from '@/lib/wealth/calc'
 import { formatCompactINR, formatDate, formatINR, modeLabel } from '@/lib/wealth/format'
 import { lastMonths, monthKey, monthLabel } from '@/lib/wealth/selectors'
@@ -19,6 +20,7 @@ import { Empty, Field, FormDialog, PageHeader, Panel, Select, Stat, chartAxis, c
 import { accountLabel, isCash } from './AccountForm'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { cn } from '@/lib/utils'
+import { DateInput } from '@/components/ui/pickers'
 
 const NETWORKS = ['Visa', 'Mastercard', 'RuPay', 'Maestro']
 
@@ -27,7 +29,7 @@ export function DebitCardsTab() {
   const { data, db } = useWealth()
   const { privacyMode } = usePrivacyMode()
   const [sel, setSel] = useState<string | null>(null)
-  const [dlg, setDlg] = useState<null | { row?: any; del?: boolean }>(null)
+  const [dlg, setDlg] = useState<null | { row?: any; del?: boolean; txn?: boolean }>(null)
   const banks = data.bankAccounts.filter((a: any) => !isCash(a))
   const cards: any[] = data.debitCards
   const card = sel ? cards.find((c) => c.id === sel) : undefined
@@ -45,8 +47,8 @@ export function DebitCardsTab() {
 
   return (
     <div className="space-y-5">
-      <PageHeader primaryAction={{ label: 'Add card', disabled: banks.length === 0, onClick: () => setDlg({}) }} />
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+      <PageHeader secondaryAction={{ label: 'Add transaction', disabled: cards.length === 0, onClick: () => setDlg({ txn: true, row: card }) }} primaryAction={{ label: 'Add card', disabled: banks.length === 0, onClick: () => setDlg({}) }} />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 border-b border-border pb-5">
         <Stat label="Debit cards" value={cards.length} />
         <Stat label="Spent this month" value={<Money value={monthSpend} />} />
         <Stat label="Linked account balance" value={<Money value={linkedBalance} />} hint="Across linked accounts" />
@@ -72,7 +74,7 @@ export function DebitCardsTab() {
               <button type="button" onClick={() => setSel(null)} className="mb-3 inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" aria-hidden />All debit cards</button>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-lg font-semibold">{card.bank} {card.cardName}</h2>
-                <div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => setDlg({ row: card })}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button><Button size="sm" variant="outline" onClick={() => setDlg({ row: card, del: true })}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button></div>
+                <div className="flex gap-2"><Button size="sm" onClick={() => setDlg({ txn: true, row: card })}>Add transaction</Button><Button size="sm" variant="outline" onClick={() => setDlg({ row: card })}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button><Button size="sm" variant="outline" onClick={() => setDlg({ row: card, del: true })}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button></div>
               </div>
               <Panel title="Card details">
                 <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
@@ -103,9 +105,49 @@ export function DebitCardsTab() {
           )}
         </>
       )}
-      {dlg && !dlg.del && <DebitForm row={dlg.row} accounts={banks} onClose={() => setDlg(null)} onSave={async (r) => { await save(db, 'debitCards', r); toast.success('Debit card saved') }} />}
+      {dlg?.txn && <DebitTxnForm cards={cards} card={dlg.row} accountOf={acc} onClose={() => setDlg(null)}
+        onSpend={async (p) => { await addExpense(db, { amount: p.amount, date: p.date, category: p.category, mode: 'debit', accountId: p.accountId, cardId: null, debitCardId: p.cardId, note: p.note }); toast.success('Spend recorded') }}
+        onRefund={async (p) => { await addIncome(db, { accountId: p.accountId, amount: p.amount, date: p.date, category: 'Refund', description: p.note || 'Refund to debit card' }); toast.success('Refund recorded') }} />}
+      {dlg && !dlg.del && !dlg.txn && <DebitForm row={dlg.row} accounts={banks} onClose={() => setDlg(null)} onSave={async (r) => { await save(db, 'debitCards', r); toast.success('Debit card saved') }} />}
       <ConfirmDialog open={!!dlg?.del} onOpenChange={(o) => !o && setDlg(null)} title="Delete this debit card?" description="Past expenses stay in your history." confirmLabel="Delete" variant="destructive" onConfirm={async () => { await remove(db, 'debitCards', dlg!.row.id); setSel(null); setDlg(null); toast.success('Debit card deleted') }} />
     </div>
+  )
+}
+
+/**
+ * Both directions on a debit card. A spend lowers the linked bank balance and counts as spending; a refund puts money back into
+ * that balance. The card you have open is chosen for you, or you pick one.
+ */
+function DebitTxnForm({ cards, card, accountOf, onClose, onSpend, onRefund }: { cards: any[]; card?: any; accountOf: (id: string) => any; onClose: () => void; onSpend: (p: { cardId: string; accountId: string; amount: number; category: string; date: string; note: string }) => Promise<void>; onRefund: (p: { accountId: string; amount: number; date: string; note: string }) => Promise<void> }) {
+  const cats = useCategories()
+  const [mode, setMode] = useState<'spend' | 'refund'>('spend')
+  const [f, setF] = useState({ cardId: (card ?? cards[0])?.id ?? '', amount: '', date: toISO(new Date()), note: '', category: cats.expense[0] || 'Other' })
+  const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
+  const cur = cards.find((x) => x.id === f.cardId)
+  const acct = cur ? accountOf(cur.accountId) : null
+  return (
+    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Add a debit card transaction" submitLabel={mode === 'spend' ? 'Record spend' : 'Record refund'}
+      onSubmit={async () => {
+        const a = Number(f.amount)
+        if (!cur || !acct) throw new Error('Choose a card')
+        if (!(a > 0)) throw new Error('Amount must be positive')
+        if (!f.date) throw new Error('Choose the date')
+        if (mode === 'spend') { if (a > availableBalance(acct)) throw new Error(`The linked account has only ${formatINR(availableBalance(acct))} available`); await onSpend({ cardId: cur.id, accountId: cur.accountId, amount: a, category: f.category, date: f.date, note: f.note }) }
+        else await onRefund({ accountId: cur.accountId, amount: a, date: f.date, note: f.note })
+      }}>
+      <div className="full">
+        <div role="radiogroup" aria-label="Type of transaction" className="grid grid-cols-2 rounded-xl border border-border bg-muted p-1">
+          {([['spend', 'Spend', 'Money leaves the account'], ['refund', 'Refund', 'Money comes back']] as const).map(([v, l, n]) => (
+            <button key={v} type="button" role="radio" aria-checked={mode === v} onClick={() => setMode(v)} className={cn('rounded-lg px-3 py-2 text-sm font-bold outline-none focus-visible:ring-2 focus-visible:ring-ring', mode === v ? 'bg-card shadow-card' : 'text-muted-foreground hover:text-foreground')}>{l}<span className="block text-[11px] font-normal text-muted-foreground">{n}</span></button>
+          ))}
+        </div>
+      </div>
+      <Field label="Card" className="full">{(id) => <Select id={id} value={f.cardId} onChange={set('cardId')}>{cards.map((x) => <option key={x.id} value={x.id}>{x.bank} {x.cardName} · •••• {String(x.cardNumber).slice(-4)}</option>)}</Select>}</Field>
+      <Field label="Amount (₹)">{(id) => <Input id={id} type="number" min="0.01" step="any" inputMode="decimal" required value={f.amount} onChange={set('amount')} />}</Field>
+      <Field label="Date">{(id) => <DateInput id={id} required value={f.date} onChange={set('date')} />}</Field>
+      {mode === 'spend' && <Field label="Category" className="full">{(id) => <Select id={id} value={f.category} onChange={set('category')}>{cats.expense.map((c: string) => <option key={c}>{c}</option>)}</Select>}</Field>}
+      <Field label="Note" className="full">{(id) => <Input id={id} value={f.note} onChange={set('note')} />}</Field>
+    </FormDialog>
   )
 }
 

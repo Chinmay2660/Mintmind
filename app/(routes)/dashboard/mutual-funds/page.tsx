@@ -17,17 +17,14 @@ import { usePagination } from '@/lib/hooks/usePagination'
 import { Delta, Empty, Metric, LoadingBlock, PageHeader, Panel, Select, Stat } from '@/components/wealth/kit'
 import { StatementImportButton } from '@/components/wealth/StatementImport'
 import { FundForm, NavForm, SipForm } from '@/components/wealth/FundForms'
-import { AssetForm } from '@/components/wealth/AssetForm'
 import { PdfStatementImport } from '@/components/wealth/PdfStatementImport'
+import { TabBar } from '@/components/ui/tab-bar'
+import { HoldingsTab } from '@/components/wealth/investments/HoldingsTab'
+import { PortfolioTab } from '@/components/wealth/investments/PortfolioTab'
 
-import { assetGain, assetValue } from '@/lib/wealth/holdings'
-import { ASSET_LABELS } from '@/lib/wealth/labels'
-
-const INVEST_CATS = ['fd', 'rd', 'epf', 'ppf', 'nps', 'etf', 'stocks', 'gold']
-
-export default function MutualFundsPage() {
+function MutualFundsTab() {
   const { ready, data, db } = useWealth()
-  const [dlg, setDlg] = useState<null | { kind: 'fund' | 'nav' | 'sip' | 'delSip' | 'asset' | 'delAsset'; row?: any }>(null)
+  const [dlg, setDlg] = useState<null | { kind: 'fund' | 'nav' | 'sip' | 'delSip'; row?: any }>(null)
   useAddParam((what) => { if (what === 'fund') setDlg({ kind: 'fund' }) })
   const today = useMemo(() => new Date(), [])
   const ranked = useMemo(() => data.funds.map((f: any) => ({ f, m: fundMetrics(f, data.fundTxns, today) })).filter((x: any) => x.m.invested > 0).sort((a: any, b: any) => b.m.absReturnPct - a.m.absReturnPct), [data.funds, data.fundTxns, today])
@@ -41,8 +38,6 @@ export default function MutualFundsPage() {
   }, [data.funds, data.fundTxns, fcat, sortBy, today])
   const pg = usePagination(visibleFunds, { pageSize: 10, resetKey: `${fcat}|${sortBy}` })
   const s = useMemo(() => portfolioSummary(data.funds, data.fundTxns, data.sips, today), [data.funds, data.fundTxns, data.sips, today])
-  const otherInv = useMemo(() => (data.assets as any[]).filter((a) => INVEST_CATS.includes(a.category)).map((a) => ({ a, label: ASSET_LABELS[a.category as keyof typeof ASSET_LABELS] ?? a.category, value: assetValue(a, today), gain: assetGain(a, today) })), [data.assets, today])
-  const otherTotal = otherInv.reduce((t, x) => t + x.value, 0)
   if (!ready) return <LoadingBlock className="h-64" />
 
   const sips = data.sips.map((x) => ({ ...x, fund: data.funds.find((f) => f.id === x.fundId), next: nextSipDate(x, today) }))
@@ -52,7 +47,7 @@ export default function MutualFundsPage() {
     <div className="space-y-5">
       <PageHeader actions={<><StatementImportButton /><PdfStatementImport /></>} primaryAction={{ label: 'Add fund', onClick: () => setDlg({ kind: 'fund' }) }} />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 border-b border-border pb-5">
         <Stat label="Invested" info="Total money you have put in across all funds, including lump sums and SIP instalments." value={<Money value={s.invested} />} />
         <Stat label="Current value" info="Units you hold multiplied by each fund's latest NAV." value={<Money value={s.value} />} />
         <Stat label="Absolute return" info="Gain or loss compared with what you invested. It ignores how long the money was invested, so use XIRR to compare over time." value={<Metric amount={s.absReturn} pct={s.absReturnPct} className="text-lg font-semibold sm:text-xl" />} />
@@ -126,22 +121,6 @@ export default function MutualFundsPage() {
         )}
       </Panel>
 
-      <Panel title="Other investments" description="Fixed deposits, recurring deposits, EPF, PPF, NPS, ETFs, stocks and gold. They count towards your net worth." action={<Button size="sm" variant="outline" onClick={() => setDlg({ kind: 'asset' })}><Plus className="mr-1 h-4 w-4" />Add investment</Button>}>
-        {otherInv.length === 0 ? <p className="text-sm text-muted-foreground">None yet. Add a fixed deposit, EPF, gold or any other investment.</p> : (
-          <>
-            <ul className="divide-y divide-border">
-              {otherInv.map(({ a, label, value, gain }) => (
-                <li key={a.id} className="flex items-center justify-between gap-3 py-2.5">
-                  <span className="min-w-0"><span className="block truncate text-sm font-medium">{a.name}</span><span className="block text-xs text-muted-foreground">{label}{gain ? ` · Invested ${formatINR(gain.invested)}` : ''}</span></span>
-                  <span className="flex items-center gap-2"><Money value={value} />{gain && <Delta pill amount={gain.gain} pct={gain.pct} />}<Button size="sm" variant="outline" aria-label={`Edit ${a.name}`} onClick={() => setDlg({ kind: 'asset', row: a })}>Edit</Button><Button size="sm" variant="ghost" aria-label={`Delete ${a.name}`} onClick={() => setDlg({ kind: 'delAsset', row: a })}>Delete</Button></span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-3 flex justify-between border-t border-border pt-3 text-sm font-bold"><span>Total, with mutual funds</span><Money value={otherTotal + s.value} /></p>
-          </>
-        )}
-      </Panel>
-
       <Panel title="SIPs" action={<Button size="sm" variant="outline" disabled={!data.funds.length} onClick={() => setDlg({ kind: 'sip' })}><Plus className="mr-1 h-4 w-4" />Add SIP</Button>}>
         {sips.length === 0 ? <Empty title="No SIPs" description={data.funds.length ? 'Add a SIP to track commitments.' : 'Add a fund first.'} /> : (
           <ul className="divide-y divide-border">
@@ -164,9 +143,30 @@ export default function MutualFundsPage() {
       {dlg?.kind === 'fund' && <FundForm row={dlg.row} onClose={() => setDlg(null)} onSave={async (r) => { dlg.row ? await save(db, 'funds', r) : await addFund(db, r); toast.success('Fund saved') }} />}
       {dlg?.kind === 'nav' && <NavForm fund={dlg.row} onClose={() => setDlg(null)} onSave={async (nav, date) => { await updateNav(db, dlg.row.id, nav, date); toast.success('NAV updated') }} />}
       {dlg?.kind === 'sip' && <SipForm row={dlg.row} funds={data.funds} onClose={() => setDlg(null)} onSave={async (r) => { await save(db, 'sips', r); toast.success('SIP saved') }} />}
-      {dlg?.kind === 'asset' && <AssetForm row={dlg.row} category={dlg.row ? undefined : 'fd'} onClose={() => setDlg(null)} onSave={async (rec) => { await save(db, 'assets', rec); toast.success('Saved') }} />}
-      <ConfirmDialog open={dlg?.kind === 'delAsset'} onOpenChange={(o) => !o && setDlg(null)} title="Delete this investment?" description="It is removed from your net worth too." confirmLabel="Delete" variant="destructive" onConfirm={async () => { await remove(db, 'assets', dlg!.row.id); setDlg(null); toast.success('Deleted') }} />
       <ConfirmDialog open={dlg?.kind === 'delSip'} onOpenChange={(o) => !o && setDlg(null)} title="Delete this SIP?" description="Past investments are kept." confirmLabel="Delete" variant="destructive" onConfirm={async () => { await remove(db, 'sips', dlg!.row.id); setDlg(null); toast.success('SIP deleted') }} />
+    </div>
+  )
+}
+
+type Tab = 'portfolio' | 'funds' | 'fd' | 'rd' | 'retirement' | 'market' | 'gold'
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'portfolio', label: 'Portfolio' }, { key: 'funds', label: 'Mutual funds' }, { key: 'fd', label: 'Fixed deposits' }, { key: 'rd', label: 'Recurring deposits' },
+  { key: 'retirement', label: 'EPF, PPF, NPS' }, { key: 'market', label: 'Stocks & ETFs' }, { key: 'gold', label: 'Gold' },
+]
+
+/** Investments: the whole portfolio, and a section for each kind of holding. Property, vehicles and loans live under Net worth. */
+export default function InvestmentsPage() {
+  const [tab, setTab] = useState<Tab>('portfolio')
+  // a link such as ?add=fund lands on the section that can add it
+  // the address is read after mount so the server and the browser draw the same first screen
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { if (new URLSearchParams(window.location.search).get('add') === 'fund') setTab('funds') }, [])
+  return (
+    <div className="space-y-5">
+      <TabBar label="Investment sections" tabs={TABS} value={tab} onChange={(k) => setTab(k as Tab)} />
+      {tab === 'portfolio' && <PortfolioTab onOpen={(key) => setTab((key === 'mutualFunds' ? 'funds' : key) as Tab)} />}
+      {tab === 'funds' && <MutualFundsTab />}
+      {(tab === 'fd' || tab === 'rd' || tab === 'retirement' || tab === 'market' || tab === 'gold') && <HoldingsTab key={tab} kind={tab} />}
     </div>
   )
 }

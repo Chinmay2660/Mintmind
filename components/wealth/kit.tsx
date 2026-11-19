@@ -36,7 +36,7 @@ export const chartTooltipStyle = {
 /** The page's one main "add" action: a labelled button from tablet width up, a floating round button within thumb reach on phones. */
 export interface PrimaryAction { label: string; onClick: () => void; disabled?: boolean }
 
-export function PageHeader({ title, description, actions, primaryAction }: { title?: string; description?: string; actions?: ReactNode; primaryAction?: PrimaryAction }) {
+export function PageHeader({ title, description, actions, primaryAction, secondaryAction }: { title?: string; description?: string; actions?: ReactNode; primaryAction?: PrimaryAction; /** a second floating button, stacked above the first */ secondaryAction?: PrimaryAction }) {
   // with no title here, the explanation goes to the top bar (beside the page name) instead of taking a row of its own
   usePageInfo(!title ? description : undefined)
   return (
@@ -52,6 +52,12 @@ export function PageHeader({ title, description, actions, primaryAction }: { tit
         <div className="flex flex-wrap items-center gap-2 max-md:w-full max-md:[&>*]:flex-1 md:ml-auto">
           {actions}
         </div>
+      )}
+      {secondaryAction && (
+        <button type="button" onClick={secondaryAction.onClick} disabled={secondaryAction.disabled} aria-label={secondaryAction.label}
+          className="fab fixed bottom-[calc(var(--mobile-fab-bottom)+8.5rem)] right-4 z-30 flex h-14 w-14 items-center justify-center gap-2 rounded-full border-2 border-primary bg-card text-foreground shadow-lg outline-none transition-transform hover:bg-muted active:scale-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 md:bottom-[8.75rem] md:h-12 md:w-auto md:px-5 md:text-sm md:font-semibold">
+          <Plus className="h-6 w-6 md:h-4 md:w-4" aria-hidden /><span className="hidden md:inline">{secondaryAction.label}</span>
+        </button>
       )}
       {primaryAction && (
         <button type="button" onClick={primaryAction.onClick} disabled={primaryAction.disabled} aria-label={primaryAction.label}
@@ -70,7 +76,7 @@ export function Panel({
   children,
   className,
   bodyClassName,
-  card = false,
+  flat = false,
 }: {
   title?: ReactNode
   description?: ReactNode
@@ -78,9 +84,10 @@ export function Panel({
   children: ReactNode
   className?: string
   bodyClassName?: string
-  /** Draw a box around the section. Off by default: most sections are a heading and a line, and boxes are kept for things that need to read as one object. */
-  card?: boolean
+  /** No box, just a heading and a line. For minor sections such as groups of settings; the main content sections keep their card. */
+  flat?: boolean
 }) {
+  const card = !flat
   return (
     <section className={cn('min-w-0', card && 'surface-card', className)}>
       {(title || action) && (

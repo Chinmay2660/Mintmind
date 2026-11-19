@@ -42,7 +42,7 @@ export default function InsurancePage() {
   return (
     <div className="space-y-5">
       <PageHeader description="Coverage is protection, not wealth. It is never counted in your net worth." primaryAction={{ label: 'Add policy', onClick: () => setDlg({ kind: 'edit' }) }} />
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 border-b border-border pb-5">
         <Stat label="Total coverage" value={<Money value={cover.total} compact />} hint={`${cover.activeCount} active`} />
         <Stat label="Annual premium" value={<Money value={annual} />} />
         {Object.entries(cover.byType).slice(0, 2).map(([k, v]) => <Stat key={k} label={`${typeLabel(k)} cover`} value={<Money value={v} compact />} />)}

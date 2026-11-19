@@ -60,7 +60,7 @@ export default function AiPage() {
       {tab === 'Report' && report && (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2 print:hidden">
-            <Button variant="outline" onClick={() => window.print()}><Printer className="mr-1.5 h-4 w-4" />Download PDF</Button>
+            <Button variant="outline" onClick={() => { const prev = document.title; document.title = `financial-summary-${report.period.replace(/s/g, '-')}`; window.addEventListener('afterprint', () => { document.title = prev }, { once: true }); window.print() }}><Printer className="mr-1.5 h-4 w-4" />Download PDF</Button>
             <Button variant="outline" onClick={download}><Download className="mr-1.5 h-4 w-4" />Export text</Button>
             <Button variant="outline" onClick={() => { navigator.clipboard.writeText(reportToText(report)).then(() => toast.success('Report copied'), () => toast.error('Could not copy')) }}><Copy className="mr-1.5 h-4 w-4" />Copy</Button>
             <Button variant="outline" onClick={() => setShare(true)}><Share2 className="mr-1.5 h-4 w-4" />Family summary</Button>
@@ -74,7 +74,7 @@ export default function AiPage() {
               <p className="mt-2 text-[11px] text-muted-foreground">{isDemo ? 'Demo: simulated from sample data. ' : ''}{report.source}. Educational summary, not financial advice.</p>
             </Panel>
             <div className="grid gap-4 md:grid-cols-2">{report.sections.map((s) => (
-              <Panel key={s.title} title={s.title}><dl className="divide-y divide-border">{s.rows.map(([k, v], i) => <div key={i} className="flex justify-between gap-3 py-1.5 text-sm"><dt className="min-w-0">{k}</dt><dd className="shrink-0 text-right text-muted-foreground">{v}</dd></div>)}</dl></Panel>))}</div>
+              <Panel key={s.title} title={s.title}><dl className="divide-y divide-border">{s.rows.map(([k, v], i) => <div key={i} className={`gap-x-3 gap-y-0.5 py-1.5 text-sm ${String(v).length > 34 ? 'block' : 'flex justify-between'}`}><dt className="min-w-0 font-medium">{k}</dt><dd className={`min-w-0 text-muted-foreground [overflow-wrap:anywhere] ${String(v).length > 34 ? 'mt-0.5' : 'shrink-0 text-right'}`}>{v}</dd></div>)}</dl></Panel>))}</div>
             {report.actions.length > 0 && <Panel title="Suggested actions"><ul className="list-disc space-y-1 pl-5 text-sm">{report.actions.map((a) => <li key={a}>{a}</li>)}</ul></Panel>}
           </article>
         </div>

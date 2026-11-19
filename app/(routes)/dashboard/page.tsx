@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ArrowRight, ChevronRight, CreditCard, Landmark, PieChart as PieIcon, ShieldCheck, Wallet, type LucideIcon } from 'lucide-react'
 import { SnapCarousel } from '@/components/ui/snap-carousel'
 import { TxnRow } from '@/components/wealth/budget/TxnRow'
+import { AchievementsPanel } from '@/components/wealth/AchievementsPanel'
 import { useMemo, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useWealth } from '@/lib/wealth/WealthContext'
@@ -319,6 +320,8 @@ export default function DashboardPage() {
 
 
 
+
+      <AchievementsPanel />
 
       <p className="text-center text-sm"><Link href="/dashboard/settings?tab=features" className="font-medium text-primary hover:underline">Explore more features</Link></p>
 

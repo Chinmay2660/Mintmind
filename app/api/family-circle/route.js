@@ -1,20 +1,28 @@
-import crypto from 'crypto'
 import { featureGate } from '@/lib/features/server'
 import { NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import FamilyCircle from '@/models/FamilyCircle'
 import { requireAuth, rateLimitOrRespond } from '@/lib/middleware/api'
-import { sendEmail } from '@/lib/email/resend'
 import { visibleSummary } from '@/lib/family/visibility'
 import { decryptJson, encryptJson } from '@/lib/utils/crypto'
+import { hashOtp, hashToken, inviteLive, isOtpShape, newInvite } from '@/lib/family/invite'
 
 // A member's shared figures are kept encrypted in the database. Older plain records are still read.
 const sealSummary = (obj) => ({ enc: encryptJson(obj) })
 const openSummary = (s) => (s && typeof s === 'object' && s.enc ? decryptJson(s.enc) : s)
 
 const ROLES = ['admin', 'member', 'emergency_contact']
+
+// a code is never reused while another live invitation holds it
+async function uniqueInvite() {
+  for (let i = 0; i < 6; i++) {
+    const inv = newInvite()
+    const clash = await FamilyCircle.exists({ members: { $elemMatch: { inviteOtpHash: inv.otpHash, status: 'invited', inviteExpires: { $gt: new Date() } } } })
+    if (!clash) return inv
+  }
+  return newInvite()
+}
 const PERM_KEYS = ['netWorth', 'overview', 'bank', 'mutualFunds', 'insurance', 'documents', 'emergencyOnly']
-const sha = (s) => crypto.createHash('sha256').update(s).digest('hex')
 const appUrl = () => (process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '')
 
 async function circleFor(user) {
@@ -73,31 +81,50 @@ export async function POST(request) {
       return NextResponse.json({ circle: present(circle, user) })
     }
     case 'invite': {
+      // No email is needed: the admin gets a 6 digit code and a link, both valid for 2 minutes, and hands them over in person or in a message.
       if (!circle || !isAdmin(circle, user)) return NextResponse.json({ error: 'Only admins can invite' }, { status: 403 })
-      const email = String(body.email || '').trim().toLowerCase()
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return NextResponse.json({ error: 'Enter a valid email' }, { status: 400 })
-      if (!ROLES.includes(body.role)) return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
-      if (circle.members.some((m) => m.email === email)) return NextResponse.json({ error: 'That person is already in the circle' }, { status: 409 })
-      const token = crypto.randomBytes(32).toString('base64url')
-      circle.members.push({ email, name: String(body.name || email.split('@')[0]).slice(0, 80), relation: String(body.relation || '').slice(0, 40), role: body.role, status: 'invited', inviteTokenHash: sha(token), inviteExpires: new Date(Date.now() + 7 * 86400000) })
+      const name = String(body.name || '').trim().slice(0, 80)
+      if (!name) return NextResponse.json({ error: 'Enter their name' }, { status: 400 })
+      // an invitation that anyone holding the code can use never grants admin, so a guessed code cannot take over a circle
+      if (!ROLES.includes(body.role) || body.role === 'admin') return NextResponse.json({ error: 'Choose Member or Emergency Contact. Admins are promoted after they join.' }, { status: 400 })
+      const inv = await uniqueInvite()
+      circle.members.push({ email: '', name, relation: String(body.relation || '').slice(0, 40), role: body.role, status: 'invited', inviteTokenHash: inv.tokenHash, inviteOtpHash: inv.otpHash, inviteExpires: inv.expiresAt })
       await circle.save()
-      const link = `${appUrl()}/family/accept?token=${token}`
-      let emailed = false
-      try {
-        const r = await sendEmail({ to: email, subject: `${user.name || 'Someone'} invited you to their Family Circle on Mintmind`, text: `Accept the invitation: ${link}\n\nThe link expires in 7 days. Accepting never gives anyone access to your data; you choose what to share.`, html: `<p>${user.name || 'Someone'} invited you to join their Family Circle on Mintmind.</p><p><a href="${link}">Accept invitation</a></p><p>The link expires in 7 days. Accepting never gives anyone access to your data; you choose what to share.</p>` })
-        emailed = !!r.sent
-      } catch { /* fall through to link sharing */ }
-      // Link is returned to the inviting admin only when email isn't configured, so they can share it themselves
-      return NextResponse.json({ circle: present(circle, user), emailed, inviteLink: emailed ? undefined : link })
+      const added = circle.members[circle.members.length - 1]
+      return NextResponse.json({ circle: present(circle, user), invite: { memberId: added._id.toString(), link: `${appUrl()}/family/accept?token=${inv.token}`, otp: inv.otp, expiresAt: inv.expiresAt } })
+    }
+    case 'refresh-invite': {
+      if (!circle || !isAdmin(circle, user)) return NextResponse.json({ error: 'Only admins can invite' }, { status: 403 })
+      const m = circle.members.id(body.memberId)
+      if (!m || m.status !== 'invited') return NextResponse.json({ error: 'That invitation is no longer pending' }, { status: 404 })
+      const inv = await uniqueInvite()
+      m.inviteTokenHash = inv.tokenHash; m.inviteOtpHash = inv.otpHash; m.inviteExpires = inv.expiresAt
+      await circle.save()
+      return NextResponse.json({ circle: present(circle, user), invite: { memberId: m._id.toString(), link: `${appUrl()}/family/accept?token=${inv.token}`, otp: inv.otp, expiresAt: inv.expiresAt } })
+    }
+    case 'accept-otp': {
+      // a six digit code can be guessed, so tries are limited per person as well as per address
+      const tries = rateLimitOrRespond(request, { name: `family-otp:${user._id}`, limit: 6, windowMs: 15 * 60_000 })
+      if (tries) return tries
+      if (!isOtpShape(body.otp)) return NextResponse.json({ error: 'Enter the 6 digit code' }, { status: 400 })
+      const email = String(user.email || '').toLowerCase()
+      const c = await FamilyCircle.findOne({ members: { $elemMatch: { inviteOtpHash: hashOtp(body.otp), status: 'invited' } } }).select('+members.inviteOtpHash +members.inviteTokenHash')
+      // an invitation sent to a particular email still only works for that email
+      const m = c?.members.find((x) => x.inviteOtpHash === hashOtp(body.otp) && x.status === 'invited' && inviteLive(x) && (!x.email || x.email === email))
+      if (!m || !inviteLive(m)) return NextResponse.json({ error: 'That code is wrong or has expired. Ask for a new one.' }, { status: 410 })
+      if (circle && !circle._id.equals(c._id)) return NextResponse.json({ error: 'Leave your current circle first' }, { status: 409 })
+      m.userId = user._id; m.status = 'active'; m.joinedAt = new Date(); m.inviteTokenHash = undefined; m.inviteOtpHash = undefined; m.inviteExpires = undefined
+      await c.save()
+      return NextResponse.json({ circle: present(c, user) })
     }
     case 'accept': {
-      const hash = sha(String(body.token || ''))
-      const c = await FamilyCircle.findOne({ 'members.inviteTokenHash': hash }).select('+members.inviteTokenHash')
+      const hash = hashToken(String(body.token || ''))
+      const c = await FamilyCircle.findOne({ 'members.inviteTokenHash': hash }).select('+members.inviteTokenHash +members.inviteOtpHash')
       const m = c?.members.find((x) => x.inviteTokenHash === hash)
-      if (!m || m.status !== 'invited' || (m.inviteExpires && m.inviteExpires < new Date())) return NextResponse.json({ error: 'Invitation is invalid or expired' }, { status: 410 })
-      if (m.email !== String(user.email || '').toLowerCase()) return NextResponse.json({ error: `This invitation was sent to a different email address.` }, { status: 403 })
+      if (!m || !inviteLive(m)) return NextResponse.json({ error: 'Invitation is invalid or expired' }, { status: 410 })
+      if (m.email && m.email !== String(user.email || '').toLowerCase()) return NextResponse.json({ error: `This invitation was sent to a different email address.` }, { status: 403 })
       if (circle && !circle._id.equals(c._id)) return NextResponse.json({ error: 'Leave your current circle first' }, { status: 409 })
-      m.userId = user._id; m.status = 'active'; m.joinedAt = new Date(); m.inviteTokenHash = undefined; m.inviteExpires = undefined
+      m.userId = user._id; m.status = 'active'; m.joinedAt = new Date(); m.inviteTokenHash = undefined; m.inviteOtpHash = undefined; m.inviteExpires = undefined
       await c.save()
       return NextResponse.json({ circle: present(c, user) })
     }

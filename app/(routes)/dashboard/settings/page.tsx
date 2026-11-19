@@ -32,7 +32,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 const TABS = ['Account', 'My App Features', 'Appearance', 'Preferences', 'Automation', 'AI', 'Integrations', 'Data'] as const
 type Tab = (typeof TABS)[number]
 
-const DEFAULT_PREFS = { currency: 'INR', dateFormat: 'DD MMM YYYY', hideBalances: false, notifications: { premiums: true, cardDues: true, sips: true, budget: true, lowBalance: true, navStale: true, staleValues: true, legacy: true, family: true }, autoLockMinutes: 5 }
+const DEFAULT_PREFS = { currency: 'INR', dateFormat: 'DD MMM YYYY', hideBalances: false, achievements: true, notifications: { premiums: true, cardDues: true, sips: true, budget: true, lowBalance: true, navStale: true, staleValues: true, legacy: true, family: true }, autoLockMinutes: 5 }
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>('Account')
@@ -93,7 +93,7 @@ function AccountTab() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Panel title="Profile" action={!editing ? <Button type="button" size="sm" variant="outline" onClick={() => { setF({ name: profile.name || '', phone: profile.phone || '', city: profile.city || '', monthlyIncome: String(profile.monthlyIncome ?? '') }); setEditing(true) }}><Pencil className="mr-1.5 h-3.5 w-3.5" />Edit</Button> : undefined}>
+      <Panel flat title="Profile" action={!editing ? <Button type="button" size="sm" variant="outline" onClick={() => { setF({ name: profile.name || '', phone: profile.phone || '', city: profile.city || '', monthlyIncome: String(profile.monthlyIncome ?? '') }); setEditing(true) }}><Pencil className="mr-1.5 h-3.5 w-3.5" />Edit</Button> : undefined}>
         {!editing ? (
           <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
             <div className="min-w-0"><dt className="text-xs text-muted-foreground">Full name</dt><dd className="mt-0.5 truncate text-sm font-medium">{profile.name || '-'}</dd></div>
@@ -114,7 +114,7 @@ function AccountTab() {
         )}
       </Panel>
 
-      <Panel title="Security">
+      <Panel flat title="Security">
         {isDemo ? <p className="text-sm text-muted-foreground">Security settings are disabled in Demo Mode. Sign up for an account to use passwords and MFA.</p> : !sec ? <LoadingBlock className="h-24" /> : (
           <div className="space-y-6">
             {!changingPw ? (
@@ -165,7 +165,7 @@ function AppearanceTab() {
   const [look, setLook] = useState('retro')
   useEffect(() => { try { setLook(normaliseStyle(localStorage.getItem(UI_STYLE_KEY))) } catch { /* default look */ } }, [])
   return (
-    <Panel title="Theme">
+    <Panel flat title="Theme">
       <div role="radiogroup" aria-label="Theme" className="grid gap-3 sm:grid-cols-3">
         {opts.map(({ v, l, i: Icon }) => {
           const on = mounted && theme === v
@@ -219,20 +219,21 @@ function PreferencesTab() {
   const toggles: [keyof typeof prefs.notifications, string][] = [['cardDues', 'Cards: payment dues, statements and high utilisation'], ['premiums', 'Insurance: premiums and expiries'], ['sips', 'Mutual funds: SIP debits and SIPs ending'], ['navStale', 'Mutual funds: outdated NAVs'], ['budget', 'Budget: pace, limits and missing budget'], ['lowBalance', 'Bank accounts: below minimum balance'], ['staleValues', 'Net worth: values not updated in 90 days'], ['legacy', 'Digital Legacy: confirmations and invitations'], ['family', 'Family Circle: pending invitations']]
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Panel title="Display">
+      <Panel flat title="Display">
         <div className="space-y-4">
           <Field label="Currency" hint="Currency is fixed for now.">{(id) => <Select id={id} disabled value="INR"><option value="INR">INR (₹)</option></Select>}</Field>
           <Field label="Date format">{(id) => <Select id={id} value={prefs.dateFormat} onChange={(e) => update({ dateFormat: e.target.value })}><option>DD MMM YYYY</option><option>DD/MM/YYYY</option><option>MM/DD/YYYY</option><option>YYYY-MM-DD</option></Select>}</Field>
           <label className="flex items-center gap-2 text-sm"><Checkbox checked={privacyMode} onChange={(e) => { setPrivacyMode(e.target.checked); update({ hideBalances: e.target.checked }) }} />Hide balances by default</label>
+          <label className="flex items-center gap-2 text-sm"><Checkbox checked={prefs.achievements !== false} onChange={(e) => update({ achievements: e.target.checked })} />Show streaks and milestones on the dashboard<InfoTip label="Streaks and milestones">Habits such as months under budget or goals reached, worked out from your own records. Off hides the panel.</InfoTip></label>
         </div>
       </Panel>
-      <Panel title="Notifications">
+      <Panel flat title="Notifications">
         <DeviceNotifyToggle />
         <ul className="space-y-3">{toggles.map(([k, l]) => (
           <li key={String(k)}><label className="flex items-center gap-2 text-sm"><Checkbox checked={prefs.notifications[k]} onChange={(e) => update({ notifications: { ...prefs.notifications, [k]: e.target.checked } })} />{l}</label></li>
         ))}</ul>
       </Panel>
-      <Panel title="Privacy & security">
+      <Panel flat title="Privacy & security">
         <Field label="Auto-lock the vault after" hint="Applies to My Vault.">{(id) => <Select id={id} value={prefs.autoLockMinutes} onChange={(e) => update({ autoLockMinutes: Number(e.target.value) })}>{[1, 2, 5, 10, 15, 30].map((m) => <option key={m} value={m}>{m} minute{m > 1 ? 's' : ''}</option>)}</Select>}</Field>
       </Panel>
     </div>
@@ -246,7 +247,7 @@ function IntegrationsTab() {
   useEffect(() => { if (!isDemo) load() }, [isDemo])
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Panel title="Google Drive">
+      <Panel flat title="Google Drive">
         {isDemo ? <p className="text-sm text-muted-foreground">Not available in Demo Mode (demo documents are kept in your browser).</p> : !st ? <LoadingBlock className="h-16" /> : !st.configured ? (
           <div className="space-y-2"><p className="text-sm text-muted-foreground">Google Drive connection isn’t available right now. Please try again later.</p><SetupHint vars={['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET']} extra="Enable the Google Drive API and add this redirect URI in Google Cloud:" uri="/api/drive/callback" /></div>
         ) : st.connected ? (
@@ -305,18 +306,18 @@ function DataTab() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Panel title="Export & backup" description="Restoring replaces current data. Vault items are not included in this file.">
+      <Panel flat title="Export & backup" description="Restoring replaces current data. Vault items are not included in this file.">
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={exportAll}><Download className="mr-2 h-4 w-4" />Export backup</Button>
           <Button variant="outline" onClick={() => fileRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Restore backup</Button>
           <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) restore(f); e.target.value = '' }} />
         </div>
       </Panel>
-      <Panel title="Session" description={isDemo ? 'You are exploring the sample family. Leaving ends the demo session.' : 'Sign out on this device. Your data stays saved.'}><Button variant="outline" onClick={async () => { forgetLocalExtras(); await signOut() }}><LogOut className="mr-2 h-4 w-4" />{isDemo ? 'Exit demo' : 'Sign out'}</Button></Panel>
+      <Panel flat title="Session" description={isDemo ? 'You are exploring the sample family. Leaving ends the demo session.' : 'Sign out on this device. Your data stays saved.'}><Button variant="outline" onClick={async () => { forgetLocalExtras(); await signOut() }}><LogOut className="mr-2 h-4 w-4" />{isDemo ? 'Exit demo' : 'Sign out'}</Button></Panel>
       {isDemo ? (
-        <Panel title="Demo data" description="Restore the original sample data. Your edits in demo are discarded."><Button variant="outline" onClick={() => setDlg('reset')}><RotateCcw className="mr-2 h-4 w-4" />Reset demo data</Button></Panel>
+        <Panel flat title="Demo data" description="Restore the original sample data. Your edits in demo are discarded."><Button variant="outline" onClick={() => setDlg('reset')}><RotateCcw className="mr-2 h-4 w-4" />Reset demo data</Button></Panel>
       ) : (
-        <Panel title="Account management">
+        <Panel flat title="Account management">
           <div className="space-y-3">
             <div className="flex items-center gap-2"><Button variant="outline" onClick={() => setDlg('wipe')}><Trash2 className="mr-2 h-4 w-4" />Erase my tracked data</Button><InfoTip label="Erase my tracked data">Clears banks, funds, cards, policies, budget and expenses from this browser.</InfoTip></div>
             <div className="flex items-center gap-2"><Button variant="destructive" onClick={() => setDlg('delete')}>Delete my account</Button><InfoTip label="Delete my account">Removes your login, Drive link and server-side records. Files already in your Google Drive are not deleted.</InfoTip></div>

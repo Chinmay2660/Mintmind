@@ -37,15 +37,15 @@ export function SummaryStrip({ list }: { list: Tx[] }) {
   const count = (k: Tx['kind']) => list.filter((t) => t.kind === k).length
   const saved = s.income > 0 ? Math.round((s.net / s.income) * 100) : null
   const cards = [
-    { key: 'income', label: 'Income', icon: ArrowDownLeft, value: <Money value={s.income} />, hint: `${count('income')} ${count('income') === 1 ? 'entry' : 'entries'} this month`, chip: 'bg-success/25 text-foreground', bar: 'bg-success/20 !border-success/50' },
-    { key: 'expense', label: 'Expenses', icon: ArrowUpRight, value: <Money value={s.expense} />, hint: `${count('expense')} ${count('expense') === 1 ? 'expense' : 'expenses'} this month`, chip: 'bg-destructive/25 text-foreground', bar: 'bg-destructive/20 !border-destructive/50' },
-    { key: 'net', label: s.net < 0 ? 'Overspent' : 'Saved', icon: Scale, value: <Money value={s.net} signed />, hint: saved === null ? 'No income recorded yet' : `${saved}% of income`, chip: s.net < 0 ? 'bg-destructive/25 text-foreground' : 'bg-primary/30 text-foreground', bar: s.net < 0 ? 'bg-destructive/20 !border-destructive/50' : 'bg-primary/20 !border-primary/50' },
+    { key: 'income', label: 'Income', icon: ArrowDownLeft, value: <Money value={s.income} />, hint: `${count('income')} ${count('income') === 1 ? 'entry' : 'entries'} this month`, chip: 'bg-success/25 text-foreground', tint: 'success', bar: '!border-success/60' },
+    { key: 'expense', label: 'Expenses', icon: ArrowUpRight, value: <Money value={s.expense} />, hint: `${count('expense')} ${count('expense') === 1 ? 'expense' : 'expenses'} this month`, chip: 'bg-destructive/25 text-foreground', tint: 'destructive', bar: '!border-destructive/60' },
+    { key: 'net', label: s.net < 0 ? 'Overspent' : 'Saved', icon: Scale, value: <Money value={s.net} signed />, hint: saved === null ? 'No income recorded yet' : `${saved}% of income`, chip: s.net < 0 ? 'bg-destructive/25 text-foreground' : 'bg-primary/30 text-foreground', tint: s.net < 0 ? 'destructive' : 'primary', bar: s.net < 0 ? '!border-destructive/60' : '!border-primary/60' },
   ]
   // Swipeable on phones, three across from tablet up. Every figure is the month's real total.
   return (
     <SnapCarousel label="Month summary" cols={3} itemWidth="w-[72%]">
       {cards.map((c) => (
-        <div key={c.key} className={cn('surface-card relative flex h-full flex-col justify-between overflow-hidden p-4', c.bar)}>
+        <div key={c.key} style={{ background: `color-mix(in srgb, hsl(var(--${c.tint})) 32%, hsl(var(--card)))` }} className={cn('surface-card relative flex h-full flex-col justify-between overflow-hidden p-4', c.bar)}>
           <div className="flex items-center gap-2">
             <span className={cn('flex h-8 w-8 items-center justify-center rounded-lg', c.chip)}><c.icon className="h-4 w-4" aria-hidden /></span>
             <p className="text-sm font-medium">{c.label}</p>

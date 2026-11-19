@@ -6,7 +6,8 @@ import { ArrowLeft, ChevronRight, CreditCard, Pencil, Plus, Trash2 } from 'lucid
 import { toast } from 'sonner'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useWealth } from '@/lib/wealth/WealthContext'
-import { deleteCard, payCard, save } from '@/lib/wealth/actions'
+import { addExpense, deleteCard, payCard, save } from '@/lib/wealth/actions'
+import { useCategories } from '@/lib/wealth/useCategories'
 import { cardUtilisation, toISO } from '@/lib/wealth/calc'
 import { cap, formatCompactINR, formatDate, formatINR } from '@/lib/wealth/format'
 import { upcomingCardDues, nextDayOfMonth } from '@/lib/wealth/reminders'
@@ -51,7 +52,8 @@ function CreditCardsTab() {
 
   return (
     <div className="space-y-5">
-      <PageHeader primaryAction={{ label: 'Add card', onClick: () => setDlg({ kind: 'card' }) }} />
+      <PageHeader secondaryAction={{ label: 'Add transaction', disabled: data.cards.length === 0, onClick: () => setDlg({ kind: 'pay', row: card }) }} primaryAction={{ label: 'Add card', onClick: () => setDlg({ kind: 'card' }) }} />
+      <section aria-label="Summary" className="space-y-3 border-b border-border pb-5">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Total limit" value={<Money value={t.limit} />} />
         <Stat label="Outstanding" value={<Money value={t.outstanding} />} />
@@ -59,6 +61,7 @@ function CreditCardsTab() {
         <Stat label="Utilisation" value={<UsagePct value={t.util} />} hint={<Progress value={t.util} tone={toneForPct(t.util)} label="Utilisation" />} />
       </div>
       <p className="text-xs text-muted-foreground">Card spend this month: <Money value={t.monthSpend} /></p>
+      </section>
 
       {data.cards.length === 0 ? <Empty title="No credit cards" action={<Button onClick={() => setDlg({ kind: 'card' })}>Add card</Button>} /> : (
         <>
@@ -85,7 +88,7 @@ function CreditCardsTab() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-lg font-semibold">{card.bank} {card.cardName}</h2>
                 <div className="flex flex-wrap gap-2">
-                  <Button size="sm" disabled={card.outstanding <= 0} onClick={() => setDlg({ kind: 'pay', row: card })}>Record payment</Button>
+                  <Button size="sm" onClick={() => setDlg({ kind: 'pay', row: card })}>Add transaction</Button>
                   <Button size="sm" variant="outline" onClick={() => setDlg({ kind: 'card', row: card })}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button>
                   <Button size="sm" variant="outline" onClick={() => setDlg({ kind: 'del', row: card })}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button>
                 </div>
@@ -119,7 +122,9 @@ function CreditCardsTab() {
       )}
 
       {dlg?.kind === 'card' && <CardForm row={dlg.row} onClose={() => setDlg(null)} onSave={async (r) => { await save(db, 'cards', r); toast.success('Card saved') }} />}
-      {dlg?.kind === 'pay' && <PayForm card={dlg.row} accounts={data.bankAccounts} onClose={() => setDlg(null)} onSave={async (p) => { await payCard(db, { cardId: dlg.row.id, ...p } as any); toast.success('Payment recorded') }} />}
+      {dlg?.kind === 'pay' && <CardTxnForm cards={data.cards} card={dlg.row} accounts={data.bankAccounts} onClose={() => setDlg(null)}
+        onPay={async (p) => { await payCard(db, p as any); toast.success('Payment recorded') }}
+        onCharge={async (p) => { await addExpense(db, { amount: p.amount, date: p.date, category: p.category, mode: 'card', accountId: null, cardId: p.cardId, debitCardId: null, note: p.note }); toast.success('Charge added to the card') }} />}
       <ConfirmDialog open={dlg?.kind === 'del'} onOpenChange={(o) => !o && setDlg(null)} title="Delete this card?" description="Its statements and payments are removed and net worth updates." confirmLabel="Delete" variant="destructive" onConfirm={async () => { await deleteCard(db, dlg!.row.id); setSel(null); setDlg(null); toast.success('Card deleted') }} />
     </div>
   )
@@ -167,15 +172,40 @@ function CardForm({ row, onClose, onSave }: { row?: any; onClose: () => void; on
   )
 }
 
-function PayForm({ card, accounts, onClose, onSave }: { card: any; accounts: any[]; onClose: () => void; onSave: (p: { amount: number; accountId?: string; date: string; note: string }) => Promise<void> }) {
-  const [f, setF] = useState({ amount: String(card.outstanding), accountId: '', date: toISO(new Date()), note: '' })
+/**
+ * One place for both directions on a card. A payment lowers what you owe (and, if you pick one, the bank balance that paid it);
+ * a charge raises what you owe and is recorded as spending. The card you have open is chosen for you, or you pick one.
+ */
+function CardTxnForm({ cards, card, accounts, onClose, onPay, onCharge }: { cards: any[]; card?: any; accounts: any[]; onClose: () => void; onPay: (p: { cardId: string; amount: number; accountId?: string; date: string; note: string }) => Promise<void>; onCharge: (p: { cardId: string; amount: number; category: string; date: string; note: string }) => Promise<void> }) {
+  const cats = useCategories()
+  const first = card ?? cards[0]
+  const [mode, setMode] = useState<'pay' | 'charge'>(card && card.outstanding > 0 ? 'pay' : 'charge')
+  const [f, setF] = useState({ cardId: first?.id ?? '', amount: card && card.outstanding > 0 ? String(card.outstanding) : '', accountId: '', date: toISO(new Date()), note: '', category: cats.expense[0] || 'Other' })
   const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
+  const cur = cards.find((x) => x.id === f.cardId)
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Record card payment"
-      onSubmit={async () => { const a = Number(f.amount); if (!(a > 0)) throw new Error('Amount must be positive'); if (a > card.outstanding) throw new Error('Payment exceeds the outstanding amount'); await onSave({ amount: a, accountId: f.accountId || undefined, date: f.date, note: f.note }) }}>
-      <Field label="Amount (₹)">{(id) => <Input id={id} type="number" min="0.01" step="any" required value={f.amount} onChange={set('amount')} />}</Field>
+    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Add a card transaction" submitLabel={mode === 'pay' ? 'Record payment' : 'Add charge'}
+      onSubmit={async () => {
+        const a = Number(f.amount)
+        if (!cur) throw new Error('Choose a card')
+        if (!(a > 0)) throw new Error('Amount must be positive')
+        if (!f.date) throw new Error('Choose the date')
+        if (mode === 'pay') { if (cur.outstanding <= 0) throw new Error('Nothing is owed on this card, so there is nothing to pay. Choose Charge to add a purchase first.'); if (a > cur.outstanding) throw new Error(`Payment exceeds the outstanding amount (${formatINR(cur.outstanding)})`); await onPay({ cardId: cur.id, amount: a, accountId: f.accountId || undefined, date: f.date, note: f.note }) }
+        else { if (a > cur.limit - cur.outstanding) throw new Error('This is more than the available credit on the card'); await onCharge({ cardId: cur.id, amount: a, category: f.category, date: f.date, note: f.note }) }
+      }}>
+      <div className="full">
+        <div role="radiogroup" aria-label="Type of transaction" className="grid grid-cols-2 rounded-xl border border-border bg-muted p-1">
+          {([['pay', 'Payment', 'Pay the card bill'], ['charge', 'Charge', 'A purchase on the card']] as const).map(([v, l, n]) => (
+            <button key={v} type="button" role="radio" aria-checked={mode === v} onClick={() => setMode(v)} className={cn('rounded-lg px-3 py-2 text-sm font-bold outline-none focus-visible:ring-2 focus-visible:ring-ring', mode === v ? 'bg-card shadow-card' : 'text-muted-foreground hover:text-foreground')}>{l}<span className="block text-[11px] font-normal text-muted-foreground">{n}</span></button>
+          ))}
+        </div>
+      </div>
+      <Field label="Card" className="full">{(id) => <Select id={id} value={f.cardId} onChange={(e) => { const next = cards.find((x) => x.id === e.target.value); setF((p) => ({ ...p, cardId: e.target.value, amount: mode === 'pay' && next ? String(next.outstanding) : p.amount })) }}>{cards.map((x) => <option key={x.id} value={x.id}>{x.bank} {x.cardName} · •••• {String(x.cardNumber).slice(-4)}</option>)}</Select>}</Field>
+      <Field label="Amount (₹)">{(id) => <Input id={id} type="number" min="0.01" step="any" inputMode="decimal" required value={f.amount} onChange={set('amount')} />}</Field>
       <Field label="Date">{(id) => <DateInput id={id} required value={f.date} onChange={set('date')} />}</Field>
-      <Field label="Paid from" className="full">{(id) => <Select id={id} value={f.accountId} onChange={set('accountId')}><option value="">Not linked to a bank account</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.nickname || a.bankName}</option>)}</Select>}</Field>
+      {mode === 'pay'
+        ? <Field label="Paid from" className="full">{(id) => <Select id={id} value={f.accountId} onChange={set('accountId')}><option value="">Not linked to a bank account</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.nickname || a.bankName}</option>)}</Select>}</Field>
+        : <Field label="Category" className="full">{(id) => <Select id={id} value={f.category} onChange={set('category')}>{cats.expense.map((c: string) => <option key={c}>{c}</option>)}</Select>}</Field>}
       <Field label="Note" className="full">{(id) => <Input id={id} value={f.note} onChange={set('note')} />}</Field>
     </FormDialog>
   )

@@ -105,7 +105,7 @@ function NetWorthOverview() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 border-b border-border pb-5">
         <Stat label="Net worth" value={<Money value={netWorth.netWorth} />} />
         <Stat label="Total assets" value={<Money value={netWorth.assets} />} />
         <Stat label="Total liabilities" value={<Money value={netWorth.liabilities} />} />
@@ -143,7 +143,8 @@ function NetWorthOverview() {
                 <Area type="monotone" dataKey="assets" name="Assets" stroke={chartColor(2)} fill={chartColor(2)} fillOpacity={0.08} strokeWidth={1.5} />
                 <Area type="monotone" dataKey="liabilities" name="Liabilities" stroke={chartColor(5)} fill={chartColor(5)} fillOpacity={0.08} strokeWidth={1.5} />
                 <Area type="monotone" dataKey="netWorth" name="Net worth" stroke={chartColor(1)} fill={chartColor(1)} fillOpacity={0.15} strokeWidth={2.5} />
-                {shownEvents.map((e) => { const pt = chart.find((c) => c.ym === e.ym); if (!pt) return null; const st = EVENT_STYLE[e.kind]; return (<g key={e.id}><ReferenceLine x={pt.label} stroke={st.color} strokeDasharray="2 4" strokeOpacity={0.6} /><ReferenceDot x={pt.label} y={pt.netWorth} r={6} fill={st.color} stroke="hsl(var(--card))" strokeWidth={2} /></g>) })}
+                {/* Recharts must see these as direct children of the chart, so they are a flat list and not wrapped in a group */}
+                {shownEvents.flatMap((e) => { const pt = chart.find((c) => c.ym === e.ym); if (!pt) return []; const st = EVENT_STYLE[e.kind]; return [<ReferenceLine key={`${e.id}-l`} x={pt.label} stroke={st.color} strokeDasharray="2 4" strokeOpacity={0.6} />, <ReferenceDot key={`${e.id}-d`} x={pt.label} y={pt.netWorth} r={6} fill={st.color} stroke="hsl(var(--card))" strokeWidth={2} />] })}
               </AreaChart>
             </ResponsiveContainer>
           </div>

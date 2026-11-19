@@ -82,13 +82,13 @@ export default function OnboardingPage() {
     setStep((s) => s + 1)
   }
 
-  if (!ready) return <div className="flex min-h-screen items-center justify-center bg-background"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+  if (!ready) return <div className="flex min-h-dvh items-center justify-center bg-background"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
 
   const nameOrEmail = user?.name || user?.email || ''
   const progress = ((step + 1) / STEPS.length) * 100
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden pb-8 bg-background text-foreground">
+    <div className="relative flex min-h-dvh flex-col overflow-hidden pb-8 bg-background text-foreground">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-0 [background-image:radial-gradient(hsl(var(--foreground)/0.12)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_30%,#000_30%,transparent_100%)]" />
       <div aria-hidden className="pointer-events-none absolute left-1/2 top-[-12rem] h-[28rem] w-[48rem] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
       <header className="relative border-b border-border/60 backdrop-blur"><div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4 sm:px-6">

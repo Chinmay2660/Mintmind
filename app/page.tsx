@@ -72,7 +72,7 @@ const FAQ: [string, string][] = [
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-dvh bg-background text-foreground">
       <a href="#content" className="sr-only z-[100] rounded-md bg-primary px-4 py-2 text-sm font-bold text-primary-foreground focus:not-sr-only focus:fixed focus:left-3 focus:top-3">Skip to main content</a>
       <MobileWelcome />
       <div className="sticky top-0 z-30 px-3 pt-3 sm:px-6">

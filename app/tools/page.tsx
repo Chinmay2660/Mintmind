@@ -100,7 +100,7 @@ export default function ToolsPage() {
   const [tool, setTool] = useState<Tool>('SIP')
   const Icon = META[tool].icon
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+    <div className="relative min-h-dvh overflow-hidden bg-background text-foreground">
       <div aria-hidden className="pointer-events-none absolute inset-0 [background-image:radial-gradient(hsl(var(--foreground)/0.12)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_70%_45%_at_50%_15%,#000_30%,transparent_100%)]" />
       <div aria-hidden className="pointer-events-none absolute left-1/2 top-[-12rem] h-[26rem] w-[46rem] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
       <header className="relative border-b border-border/60 backdrop-blur"><div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">

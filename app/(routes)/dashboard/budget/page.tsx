@@ -163,7 +163,7 @@ export default function BudgetPage() {
             </Select>
             {catFilter && catLimit === 0 && <span className="text-xs text-warning">No limit set for {catFilter}. Set one under Budget to see its daily pace.</span>}
           </div>
-          <div className="grid grid-cols-1 gap-3 min-[460px]:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 min-[460px]:grid-cols-2 lg:grid-cols-4 border-b border-border pb-5">
             <Stat label={catFilter ? `${catFilter} budget` : 'Monthly budget'} value={<Money value={scopeBudget} />} hint={!catFilter && carry > 0 ? `incl. ${formatINR(carry)} rolled over` : `${p.days} days`} />
             <Stat label="Spent" value={<Money value={p.spent} />} hint={<span className="flex flex-wrap items-center gap-x-2"><span><UsagePct value={p.utilisation} warnAt={70} highAt={90} /> used</span><Metric amount={p.spent - prevTotal} invertGood className="text-xs" hint="No spending last month" /></span>} />
             <Stat label="Remaining" value={<span className={p.remaining < 0 ? 'text-destructive' : ''}><Money value={p.remaining} /></span>} hint={p.remainingDays > 0 ? `${formatINR(p.safeDailySpend)}/day safe to spend` : undefined} />

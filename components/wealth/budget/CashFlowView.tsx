@@ -18,7 +18,7 @@ export function CashFlowView({ list, ym }: { list: any[]; ym: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 min-[460px]:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 min-[460px]:grid-cols-2 lg:grid-cols-4 border-b border-border pb-5">
         <Stat label="Money in" value={<Money value={r.totalIn} />} hint={`${months} months`} />
         <Stat label="Money out" value={<Money value={r.totalOut} />} hint={`${months} months`} />
         <Stat label="Kept" info="Money in minus money out over the period. Negative means you spent more than came in." value={<span className={cn(r.net < 0 && 'text-destructive')}><Money value={r.net} signed /></span>} hint={`${formatINR(r.avgNet)} a month on average`} />

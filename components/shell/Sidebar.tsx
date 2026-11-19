@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CheckCircle2, ChevronRight, FileText, Folder, Menu, PanelLeftClose, PanelLeftOpen, Sparkles, Wallet } from 'lucide-react'
+import { ChevronRight, Folder, Menu, PanelLeftClose, PanelLeftOpen, Sparkles, Wallet } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { DASHBOARD_NAV_ALL, APP_NAME, isDashboardNavActive, type DashboardNavItem } from '@/lib/constants/dashboardNav'
 import { cn } from '@/lib/utils'
@@ -59,18 +59,17 @@ function NavPanel({ collapsed = false, drawer = false, onNavigate, onToggleRail 
     3: data.bankAccounts.length > 0, 4: data.funds.length > 0, 5: data.cards.length > 0, 6: data.policies.length > 0,
     7: data.expenses.length > 0, 13: data.balanceHistory.length > 1, 8: data.members.length > 1, 9: data.meta.some((m: any) => m.key === 'vault'),
   }
-  const doneTotal = groups.reduce((n, g) => n + g.items.filter((i) => done[i.id]).length, 0)
   const aiOn = isEnabled('ai_assistant')
   const aiActive = isDashboardNavActive(pathname, '/dashboard/ai')
 
   const row = (item: DashboardNavItem, nested?: boolean) => {
     const active = isDashboardNavActive(pathname, item.path)
     const ready = !!done[item.id]
-    const Icon = nested ? (ready ? CheckCircle2 : FileText) : item.icon
+    const Icon = item.icon
     return (
       <Link href={item.path} onClick={onNavigate} aria-current={active ? 'page' : undefined} title={collapsed ? item.name : undefined}
-        className={cn('flex items-center gap-2.5 rounded-lg px-2.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', nested ? 'py-1.5' : 'py-2', active ? ACTIVE : IDLE, collapsed && 'mx-auto h-10 w-10 justify-center p-0')}>
-        <Icon className={cn('h-[16px] w-[16px] shrink-0', nested && ready && !active && 'text-success')} strokeWidth={1.9} aria-hidden />
+        className={cn('flex items-center gap-2.5 rounded-lg px-2.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', nested ? 'gap-[11px] px-2 py-1.5' : 'py-2', active ? ACTIVE : IDLE, collapsed && 'mx-auto h-10 w-10 justify-center p-0')}>
+        <Icon className="h-[16px] w-[16px] shrink-0" strokeWidth={1.9} aria-hidden />
         {!collapsed && <span className="min-w-0 flex-1 truncate">{item.name}</span>}
         {nested && !collapsed && <span className="sr-only">{ready ? ', set up' : ', nothing added yet'}</span>}
       </Link>
@@ -123,8 +122,8 @@ function NavPanel({ collapsed = false, drawer = false, onNavigate, onToggleRail 
                         <span className="text-xs tabular-nums text-muted-foreground" title="Modules set up">{g.items.filter((i) => done[i.id]).length}/{g.items.length}</span>
                       </button>
                       {expanded && (
-                        <ul className="ml-[1.1rem] mt-0.5 space-y-0.5 border-l border-border pl-2.5">
-                          {g.items.map((i) => <li key={i.id}>{row(i, true)}</li>)}
+                        <ul className="ml-4 mt-0.5 space-y-0.5 pl-2.5">
+                          {g.items.map((i) => <li key={i.id} className="tree-item">{row(i, true)}</li>)}
                         </ul>
                       )}
                     </li>
@@ -137,12 +136,6 @@ function NavPanel({ collapsed = false, drawer = false, onNavigate, onToggleRail 
       </nav>
 
       <div className="shrink-0 space-y-2 border-t border-border p-3">
-        {!collapsed && (
-          <Link href="/dashboard/settings?tab=features" onClick={onNavigate} className="flex items-center justify-between gap-2 rounded-xl border border-border bg-card px-3 py-2.5 text-sm outline-none transition-colors hover:border-primary/50 focus-visible:ring-2 focus-visible:ring-ring">
-            <span className="text-[11px] font-bold uppercase tracking-[0.1em]">Progress</span>
-            <span className="flex items-center gap-1 font-semibold tabular-nums">{doneTotal} / {moduleCount}<ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden /></span>
-          </Link>
-        )}
         {!drawer && onToggleRail && (
           <button type="button" onClick={onToggleRail} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed}
             className={cn('flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring', collapsed && 'mx-auto h-10 w-10 justify-center p-0')}>
