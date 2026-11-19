@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { Bell, Check, CheckCheck, Circle, RotateCcw, Settings, Trash2, X } from 'lucide-react'
+import { Bell, CheckCheck, RotateCcw, Settings, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useWealth } from '@/lib/wealth/WealthContext'
@@ -77,7 +77,7 @@ export function NotificationsMenu() {
         </div>
         <div role="tablist" aria-label="Filter notifications" className="flex gap-1 border-y border-border px-3 py-1.5">
           {(['all', 'unread'] as const).map((t) => (
-            <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={cn('rounded-md px-2.5 py-1 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', tab === t ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
+            <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={cn('rounded-full px-3 py-1.5 text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', tab === t ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
               {t === 'all' ? `All (${visible.length})` : `Unread (${unread.length})`}
             </button>
           ))}
@@ -90,19 +90,18 @@ export function NotificationsMenu() {
             {list.map((n: any) => {
               const isRead = !!state.read[n.key]
               return (
-                <li key={n.key} className={cn('group flex items-start gap-2 px-3 py-2.5 transition-colors hover:bg-muted/60', !isRead && 'bg-accent/50')}>
+                <li key={n.key} className={cn('group flex items-start gap-2 px-3 py-2.5 transition-colors hover:bg-muted/60', !isRead ? 'border-l-2 border-primary bg-primary/[0.07]' : 'border-l-2 border-transparent')}>
                   <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', dot[n.severity as keyof typeof dot])} aria-hidden />
                   <Link href={n.href} onClick={() => !isRead && mark(n.key, true)} className="min-w-0 flex-1 outline-none focus-visible:underline">
                     <span className="block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{n.module}</span>
                     <span className={cn('block truncate text-sm', isRead ? 'text-muted-foreground' : 'font-medium')}>{n.title}</span>
                     <span className="block text-xs text-muted-foreground">
-                      {n.date ? `${n.daysLeft < 0 ? 'Overdue since' : n.daysLeft === 0 ? 'Due today' : 'Due'} ${formatDate(n.date)}` : 'Review'}
+                      {n.date && formatDate(n.date) !== '-' ? `${n.daysLeft < 0 ? 'Overdue since' : n.daysLeft === 0 ? 'Due today' : 'Due'} ${formatDate(n.date)}` : n.daysLeft === 0 ? 'Due today' : 'Review'}
                       {n.amount ? <> · <Money value={n.amount} /></> : null}
                     </span>
                   </Link>
                   <div className="flex shrink-0 gap-0.5">
-                    <Button size="icon" variant="ghost" className={cn('h-7 w-7 transition-colors', isRead ? 'text-muted-foreground hover:bg-muted hover:text-foreground' : 'text-foreground hover:bg-muted')} aria-label={isRead ? 'Mark as unread' : 'Mark as read'} title={isRead ? 'Mark as unread' : 'Mark as read'} onClick={() => mark(n.key, !isRead)}>{isRead ? <Circle className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}</Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Dismiss" title="Dismiss" onClick={() => dismiss(n.key)}><X className="h-3.5 w-3.5" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground transition-opacity hover:bg-muted hover:text-foreground md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100" aria-label="Dismiss" title="Dismiss" onClick={() => dismiss(n.key)}><X className="h-3.5 w-3.5" /></Button>
                   </div>
                 </li>
               )

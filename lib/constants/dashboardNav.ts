@@ -12,6 +12,7 @@ import {
   FileText,
   HeartHandshake,
   Settings,
+  BookText,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -26,15 +27,16 @@ export interface DashboardNavItem {
 
 /** The 12 product modules — the only navigable top-level destinations. */
 export const DASHBOARD_NAV_ALL: DashboardNavItem[] = [
-  { id: 1, name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+  { id: 1, name: 'Overview', icon: LayoutDashboard, path: '/dashboard' },
   { id: 2, name: 'Net Worth', icon: TrendingUp, path: '/dashboard/net-worth' },
-  { id: 3, name: 'Bank Accounts', icon: Landmark, path: '/dashboard/bank-accounts' },
-  { id: 4, name: 'Mutual Funds', icon: PieChart, path: '/dashboard/mutual-funds' },
+  { id: 3, name: 'Accounts', icon: Landmark, path: '/dashboard/bank-accounts' },
+  { id: 4, name: 'Investments', icon: PieChart, path: '/dashboard/mutual-funds' },
   { id: 5, name: 'Cards', icon: CreditCard, path: '/dashboard/credit-cards' },
   { id: 6, name: 'Insurance', icon: Shield, path: '/dashboard/insurance' },
-  { id: 7, name: 'Budget & Expenses', icon: Wallet, path: '/dashboard/budget' },
+  { id: 7, name: 'Transactions & Budgets', icon: Wallet, path: '/dashboard/budget' },
   { id: 8, name: 'Family Circle', icon: Users, path: '/dashboard/family' },
   { id: 9, name: 'Vault', icon: KeyRound, path: '/dashboard/vault' },
+  { id: 13, name: 'Ledger', icon: BookText, path: '/dashboard/ledger' },
   { id: 12, name: 'Settings', icon: Settings, path: '/dashboard/settings' },
 ]
 

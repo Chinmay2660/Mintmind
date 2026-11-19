@@ -6,13 +6,14 @@ import { availableBalance, toISO } from '@/lib/wealth/calc'
 import { emergencyFund, loanPayoff, retirementCorpus, termCover } from '@/lib/calculators'
 import { formatINR } from '@/lib/wealth/format'
 import { Num, Result, ASSUME, num } from '@/components/tools/kit'
-import { LoadingBlock, PageHeader, Select } from '@/components/wealth/kit'
+import { LoadingBlock, PageHeader, Select, FootNote } from '@/components/wealth/kit'
 import { cn } from '@/lib/utils'
 import { moneyCheckup } from '@/lib/planning'
 import { AboutYou } from '@/components/planning/AboutYou'
 import { PlanAhead } from '@/components/planning/PlanAhead'
 import { CheckUp } from '@/components/planning/CheckUp'
 import { useProfileInputs } from '@/components/planning/useProfileInputs'
+import { TabBar } from '@/components/ui/tab-bar'
 
 const TABS = ['Plan ahead', 'Money check-up', 'Emergency fund', 'Loan payoff', 'Insurance cover', 'Retirement'] as const
 type Tab = (typeof TABS)[number]
@@ -25,20 +26,19 @@ export default function PlanningToolsPage() {
   const [tab, setTab] = useState<Tab>('Plan ahead')
   const { v, set, derived } = useProfileInputs(data)
   if (!ready) return <LoadingBlock className="h-72" />
+  const checkInputs = { takeHome: num(v.takeHome), spend: num(v.spend), essentials: num(v.essentials), liquid: derived.liquid, loans: derived.loans, termCover: derived.termCover, healthCover: derived.healthCover, age: num(v.age), retireAge: num(v.retireAge), monthlyInvest: derived.monthlyInvest, retirementSavings: derived.retirementSavings }
   return (
     <div className="space-y-5">
       <PageHeader title="Planning tools" description="Planners prefilled with your own numbers. Change any value to try a what-if. Nothing here is saved." />
-      <div role="tablist" aria-label="Planning tools" className="flex gap-1.5 overflow-x-auto pb-1">
-        {TABS.map((t) => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={cn('shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-colors', tab === t ? 'border-primary bg-accent text-accent-foreground' : 'border-border hover:bg-muted')}>{t}</button>)}
-      </div>
+      <TabBar label="Planning tools" tabs={TABS.map((t) => ({ key: t, label: t }))} value={tab} onChange={(k) => setTab(k as typeof tab)} />
       {(tab === 'Plan ahead' || tab === 'Money check-up') && <AboutYou v={v} set={set} />}
-      {tab === 'Plan ahead' && <PlanAhead netWorth={derived.netWorth} monthlySave={Math.max(num(v.takeHome) - num(v.spend), 0)} />}
-      {tab === 'Money check-up' && <CheckUp result={moneyCheckup({ takeHome: num(v.takeHome), spend: num(v.spend), essentials: num(v.essentials), liquid: derived.liquid, loans: derived.loans, termCover: derived.termCover, healthCover: derived.healthCover, age: num(v.age), retireAge: num(v.retireAge), monthlyInvest: derived.monthlyInvest, retirementSavings: derived.retirementSavings })} />}
+      {tab === 'Plan ahead' && <PlanAhead netWorth={derived.netWorth} monthlySave={Math.max(num(v.takeHome) - num(v.spend), 0)} age={num(v.age)} monthlyExpense={num(v.spend)} plannedRetireAge={num(v.retireAge)} checkInputs={checkInputs} />}
+      {tab === 'Money check-up' && <CheckUp result={moneyCheckup(checkInputs)} />}
       {tab === 'Emergency fund' && <Emergency data={data} />}
       {tab === 'Loan payoff' && <Payoff data={data} />}
       {tab === 'Insurance cover' && <Cover data={data} />}
       {tab === 'Retirement' && <Retire />}
-      <p className="text-xs text-muted-foreground">Educational what-if tools, not investment, tax or insurance advice.</p>
+      <FootNote>Educational what-if tools, not investment, tax or insurance advice.</FootNote>
     </div>
   )
 }
@@ -53,7 +53,7 @@ function Emergency({ data }: { data: any }) {
   return <div className="grid gap-5 md:grid-cols-2"><div className="grid gap-4 sm:grid-cols-2">
     <Num label="Monthly spending (₹)" value={exp} set={setExp} hint="Prefilled from this month's budget" /><Num label="Savings you could use (₹)" value={sav} set={setSav} hint="Bank balances above minimum balance" />
     <Num label="Months to cover" value={months} set={setMonths} /><Num label="You can add per month (₹)" value={save} set={setSave} /></div>
-    <Result rows={[['Covered today', `${o.coveredMonths.toFixed(1)} months`], ['Target fund', formatINR(o.target)], ['Still to build', formatINR(o.gap)], ['Ready in', o.gap === 0 ? 'Already there' : o.monthsToTarget == null ? '—' : `${o.monthsToTarget} months`]]} note="Keep this in an easy-access account. 3 to 6 months is a common starting point." /></div>
+    <Result rows={[['Covered today', `${o.coveredMonths.toFixed(1)} months`], ['Target fund', formatINR(o.target)], ['Still to build', formatINR(o.gap)], ['Ready in', o.gap === 0 ? 'Already there' : o.monthsToTarget == null ? '-' : `${o.monthsToTarget} months`]]} note="Keep this in an easy-access account. 3 to 6 months is a common starting point." /></div>
 }
 
 function Payoff({ data }: { data: any }) {

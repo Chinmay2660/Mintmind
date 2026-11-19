@@ -14,10 +14,11 @@ import { getVaultSession } from '@/lib/vault/session'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Select } from '@/components/wealth/kit'
+import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Select, FootNote } from '@/components/wealth/kit'
 import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
 import { cn } from '@/lib/utils'
 import { FieldSet } from '@/components/ui/layout'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const KINDS = [{ v: 'primary_nominee', l: 'Primary nominee' }, { v: 'secondary_nominee', l: 'Secondary nominee' }, { v: 'emergency_contact', l: 'Emergency contact' }, { v: 'trusted_family', l: 'Trusted family' }]
 const PRESETS = [30, 60, 90, 180]
@@ -74,7 +75,7 @@ export function LegacyView() {
         <p><strong>Important:</strong> Inactivity is not proof of death or incapacity. This feature only notifies people you trust and shares information you chose. It does not replace a will, bank nominations or inheritance law. Passwords are never emailed or texted.</p>
       </div>
 
-      <Panel title="Status" action={<label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={plan.enabled} onChange={(e) => patch({ enabled: e.target.checked })} />Enable monitoring</label>}>
+      <Panel title="Status" action={<label className="flex items-center gap-2 text-sm font-medium"><Checkbox checked={plan.enabled} onChange={(e) => patch({ enabled: e.target.checked })} />Enable monitoring</label>}>
         <dl className="grid gap-3 text-sm sm:grid-cols-4">
           <div><dt className="text-xs text-muted-foreground">Stage</dt><dd className="font-medium">{plan.enabled ? STATE_LABELS[plan.state as keyof typeof STATE_LABELS] ?? plan.state : 'Off'}</dd></div>
           <div><dt className="text-xs text-muted-foreground">Last active</dt><dd>{formatDate(plan.lastActiveAt?.slice(0, 10))}</dd></div>
@@ -96,13 +97,13 @@ export function LegacyView() {
                 <Field key={k} label={l} hint={unit}>{(id) => <Input id={id} type="number" min={lo} max={hi} defaultValue={plan[k]} onBlur={(e) => patch({ [k]: Math.min(hi, Math.max(lo, Number(e.target.value) || lo)) } as any)} />}</Field>))}
             </div>
             <FieldSet legend="Notify you by"><div className="flex flex-wrap gap-4">
-              {(['email', 'push', 'sms'] as const).map((c) => <label key={c} className="flex items-center gap-2 text-sm capitalize"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={plan.channels[c]} onChange={(e) => patch({ channels: { ...plan.channels, [c]: e.target.checked } })} />{c === 'sms' ? 'SMS' : c}</label>)}</div>
-              <p className="mt-1 text-xs text-muted-foreground">SMS and push only work if they are set up for this app. Email is always used as the fallback.</p></FieldSet>
+              {(['email', 'push', 'sms'] as const).map((c) => <label key={c} className="flex items-center gap-2 text-sm capitalize"><Checkbox checked={plan.channels[c]} onChange={(e) => patch({ channels: { ...plan.channels, [c]: e.target.checked } })} />{c === 'sms' ? 'SMS' : c}</label>)}</div>
+              <FootNote className="mt-1">SMS and push only work if they are set up for this app. Email is always used as the fallback.</FootNote></FieldSet>
           </div>
         </Panel>
         <Panel title="What happens, step by step">
           <ol className="space-y-3">{timeline.map((s, i) => <li key={i} className="flex gap-3 text-sm"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-accent-foreground">{i + 1}</span><span><span className="font-medium">Day {s.d}</span> · {s.t}</span></li>)}</ol>
-          <p className="mt-3 text-xs text-muted-foreground">Any activity in the app, or pressing “I&apos;m safe”, cancels the process at any point before release.</p>
+          <FootNote className="mt-3">Any activity in the app, or pressing “I&apos;m safe”, cancels the process at any point before release.</FootNote>
         </Panel>
       </div>
 
@@ -123,7 +124,7 @@ export function LegacyView() {
         <Panel title="Legacy information package">
           <div className="space-y-3">
             <textarea aria-label="Notes for your family" rows={5} defaultValue={plan.package.notes} onBlur={(e) => patch({ package: { ...plan.package, notes: e.target.value } })} placeholder="Where documents are kept, who your CA / advisor is, FD and insurance locations…" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40" />
-            <div className="flex flex-wrap gap-4">{([['netWorth', 'Net worth summary'], ['accounts', 'Bank & fund list'], ['insurance', 'Insurance policies'], ['documents', 'Document list']] as const).map(([k, l]) => <label key={k} className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={!!plan.package.include[k]} onChange={(e) => patch({ package: { ...plan.package, include: { ...plan.package.include, [k]: e.target.checked } } })} />{l}</label>)}</div>
+            <div className="flex flex-wrap gap-4">{([['netWorth', 'Net worth summary'], ['accounts', 'Bank & fund list'], ['insurance', 'Insurance policies'], ['documents', 'Document list']] as const).map(([k, l]) => <label key={k} className="flex items-center gap-2 text-sm"><Checkbox checked={!!plan.package.include[k]} onChange={(e) => patch({ package: { ...plan.package, include: { ...plan.package.include, [k]: e.target.checked } } })} />{l}</label>)}</div>
             <Button variant="outline" size="sm" onClick={() => patch({ package: { ...plan.package, snapshot: { generatedAt: new Date().toISOString(), netWorth: netWorth.netWorth, assets: netWorth.assets, liabilities: netWorth.liabilities, banks: data.bankAccounts.map((b: any) => ({ bank: b.bankName, nickname: b.nickname, accountNumber: b.accountNumber })), funds: data.funds.map((f: any) => ({ name: f.name, folio: f.folio })), policies: data.policies.map((p: any) => ({ company: p.company, name: p.policyName, number: p.policyNumber, nominee: p.nominee })) } } })}>Refresh snapshot from my data</Button>
             <p className="text-xs text-muted-foreground">{plan.package.snapshot ? `Snapshot taken ${formatDate(plan.package.snapshot.generatedAt?.slice(0, 10))}` : 'No snapshot yet.'}</p>
           </div>
@@ -134,7 +135,7 @@ export function LegacyView() {
             <div className="space-y-3 text-sm"><p>{plan.vaultBundle.itemCount} item(s) shared with {plan.vaultBundle.grantedContactIds?.length || 0} contact(s), updated {formatDate(plan.vaultBundle.updatedAt?.slice(0, 10))}.</p>
               <div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => setDlg('bundle')}>Replace</Button><Button variant="outline" size="sm" onClick={async () => { await post({ action: 'revoke-bundle' }); toast.success('Emergency access revoked') }}>Revoke</Button></div></div>
           ) : <Button variant="outline" onClick={() => setDlg('bundle')}><KeyRound className="mr-2 h-4 w-4" />Set up emergency vault access</Button>}
-          <p className="mt-3 text-xs text-muted-foreground">Contacts can only receive the encrypted bundle after the grace period and a one-time-code check, and can only read it with the Emergency Access Key. Family and admins never get automatic access.</p>
+          <FootNote className="mt-3">Contacts can only receive the encrypted bundle after the grace period and a one-time-code check, and can only read it with the Emergency Access Key. Family and admins never get automatic access.</FootNote>
         </Panel>
       </div>
 
@@ -187,8 +188,8 @@ function BundleForm({ plan, onClose, onKey, onSave }: { plan: Plan; onClose: () 
         await onSave(bundle, chosen.length, pickedContacts)
         onKey(accessKey)
       }}>
-      <FieldSet legend="Vault items" className="full">{items === null ? <p className="text-xs text-muted-foreground">Decrypting…</p> : items.length === 0 ? <p className="text-xs text-muted-foreground">Your vault is empty.</p> : items.map((i) => <label key={i.id} className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={pickedItems.includes(i.id)} onChange={() => toggle(pickedItems, setPickedItems, i.id)} />{i.name}<span className="text-xs text-muted-foreground">({i.category})</span></label>)}</FieldSet>
-      <FieldSet legend="Who may receive it" className="full">{plan.contacts.length === 0 ? <p className="text-xs text-muted-foreground">Add contacts first.</p> : plan.contacts.map((c) => <label key={c.id} className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={pickedContacts.includes(c.id)} onChange={() => toggle(pickedContacts, setPickedContacts, c.id)} />{c.name}</label>)}</FieldSet>
+      <FieldSet legend="Vault items" className="full">{items === null ? <p className="text-xs text-muted-foreground">Decrypting…</p> : items.length === 0 ? <p className="text-xs text-muted-foreground">Your vault is empty.</p> : items.map((i) => <label key={i.id} className="flex items-center gap-2 text-sm"><Checkbox checked={pickedItems.includes(i.id)} onChange={() => toggle(pickedItems, setPickedItems, i.id)} />{i.name}<span className="text-xs text-muted-foreground">({i.category})</span></label>)}</FieldSet>
+      <FieldSet legend="Who may receive it" className="full">{plan.contacts.length === 0 ? <p className="text-xs text-muted-foreground">Add contacts first.</p> : plan.contacts.map((c) => <label key={c.id} className="flex items-center gap-2 text-sm"><Checkbox checked={pickedContacts.includes(c.id)} onChange={() => toggle(pickedContacts, setPickedContacts, c.id)} />{c.name}</label>)}</FieldSet>
     </FormDialog>
   )
 }

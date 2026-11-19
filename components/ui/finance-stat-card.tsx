@@ -83,7 +83,7 @@ export function FinanceStatCard({
           className="truncate text-lg font-semibold tabular-nums tracking-tight text-foreground sm:text-xl md:text-2xl"
           title={loading ? undefined : displayValue}
         >
-          {loading ? '—' : displayValue}
+          {loading ? '-' : displayValue}
         </p>
         {(subtitle || trend != null) && (
           <div className="mt-1 flex items-center justify-between gap-2">

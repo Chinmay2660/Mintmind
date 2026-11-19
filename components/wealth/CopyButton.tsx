@@ -51,7 +51,7 @@ export function CopyButton({ value, label, className }: { value: string; label: 
 
 /** A value with a copy button next to it (text stays selectable). */
 export function CopyValue({ value, label, children, mono }: { value?: string | null; label: string; children?: ReactNode; mono?: boolean }) {
-  if (!value) return <span>—</span>
+  if (!value) return <span>-</span>
   return (
     <span className="inline-flex max-w-full items-center gap-1">
       <span className={cn('min-w-0 select-all break-all', mono && 'font-mono')}>{children ?? value}</span>

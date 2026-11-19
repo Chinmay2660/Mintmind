@@ -2,27 +2,28 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, X } from 'lucide-react'
+import { ArrowLeftRight, CreditCard, Landmark, PieChart, Scale, Search, Shield, Target, Wallet, X } from 'lucide-react'
 import {
   DASHBOARD_SEARCH_ALL,
   type SearchItem,
 } from '@/lib/constants/dashboardNav'
 import { useAppSearch } from '@/contexts/AppSearchContext'
+import { useWealth } from '@/lib/wealth/WealthContext'
+import { formatINR } from '@/lib/wealth/format'
+import { matchesAll } from '@/lib/search'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 
 function matchesQuery(item: SearchItem, query: string): boolean {
-  const q = query.trim().toLowerCase()
-  if (!q) return true
-
-  const haystack = [item.name, ...(item.keywords ?? [])].join(' ').toLowerCase()
-  return haystack.includes(q)
+  return matchesAll(query, item.name, ...(item.keywords ?? []))
 }
 
-function groupLabel(group: SearchItem['group']): string {
-  if (group === 'actions') return 'Quick actions'
-  return 'Pages'
-}
+type Found = { key: string; name: string; sub?: string; path: string; icon: SearchItem['icon']; group: string }
+const GROUP_LABEL: Record<string, string> = { pages: 'Pages', actions: 'Quick actions', transactions: 'Transactions', accounts: 'Accounts and cards', holdings: 'Investments, assets and loans', goals: 'Goals and cover' }
+const GROUP_ORDER = ['pages', 'actions', 'transactions', 'accounts', 'holdings', 'goals']
+// every word of the search has to appear somewhere in the record, in any order
+const has = (q: string, ...parts: unknown[]) => matchesAll(q, ...parts)
+const cap = <T,>(list: T[], n = 5) => list.slice(0, n)
 
 export default function AppSearch() {
   const router = useRouter()
@@ -32,19 +33,33 @@ export default function AppSearch() {
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
-  const results = useMemo(
-    () => DASHBOARD_SEARCH_ALL.filter((item) => matchesQuery(item, query)),
-    [query]
-  )
+  const { data } = useWealth()
 
-  const grouped = useMemo(() => {
-    const pages = results.filter((item) => item.group !== 'actions')
-    const actions = results.filter((item) => item.group === 'actions')
-    return [
-      ...(pages.length ? [{ key: 'pages' as const, items: pages }] : []),
-      ...(actions.length ? [{ key: 'actions' as const, items: actions }] : []),
+  const results = useMemo<Found[]>(() => {
+    const pages: Found[] = DASHBOARD_SEARCH_ALL.filter((item) => matchesQuery(item, query)).map((i) => ({ key: `${i.group}-${i.path}`, name: i.name, path: i.path, icon: i.icon, group: i.group === 'actions' ? 'actions' : 'pages' }))
+    const q = query.trim().toLowerCase()
+    if (q.length < 2) return pages
+    const tx: Found[] = [
+      ...data.expenses.filter((e: any) => has(q, e.note, e.category, e.amount, e.date)).map((e: any) => ({ key: 'e' + e.id, name: e.note || e.category, sub: `${e.category} · ${e.date} · ${formatINR(e.amount)}`, path: '/dashboard/budget', icon: ArrowLeftRight, group: 'transactions' })),
+      ...data.bankTxns.filter((t: any) => has(q, t.description, t.category, t.amount, t.date)).map((t: any) => ({ key: 't' + t.id, name: t.description || t.category || 'Transaction', sub: `${t.type} · ${t.date} · ${formatINR(t.amount)}`, path: '/dashboard/budget', icon: ArrowLeftRight, group: 'transactions' })),
     ]
-  }, [results])
+    const accounts: Found[] = [
+      ...data.bankAccounts.filter((a: any) => has(q, a.nickname, a.bankName, a.holderName)).map((a: any) => ({ key: 'a' + a.id, name: a.nickname || a.bankName, sub: `Account · ${formatINR(a.currentBalance)}`, path: `/dashboard/bank-accounts/${a.id}`, icon: Landmark, group: 'accounts' })),
+      ...data.cards.filter((x: any) => has(q, x.bank, x.cardName)).map((x: any) => ({ key: 'c' + x.id, name: `${x.bank} ${x.cardName}`, sub: `Credit card · outstanding ${formatINR(x.outstanding)}`, path: '/dashboard/credit-cards', icon: CreditCard, group: 'accounts' })),
+    ]
+    const holdings: Found[] = [
+      ...data.funds.filter((x: any) => has(q, x.name, x.fundHouse, x.category)).map((x: any) => ({ key: 'f' + x.id, name: x.name, sub: `Mutual fund · ${formatINR(x.currentValue)}`, path: `/dashboard/mutual-funds/${x.id}`, icon: PieChart, group: 'holdings' })),
+      ...data.assets.filter((x: any) => has(q, x.name, x.category)).map((x: any) => ({ key: 's' + x.id, name: x.name, sub: `Asset · ${x.category}`, path: '/dashboard/net-worth/manage', icon: Wallet, group: 'holdings' })),
+      ...data.liabilities.filter((x: any) => has(q, x.name, x.category)).map((x: any) => ({ key: 'l' + x.id, name: x.name, sub: `Loan · outstanding ${formatINR(Number(x.outstanding) || 0)}`, path: '/dashboard/net-worth/manage', icon: Scale, group: 'holdings' })),
+    ]
+    const more: Found[] = [
+      ...data.goals.filter((x: any) => has(q, x.name)).map((x: any) => ({ key: 'g' + x.id, name: x.name, sub: 'Goal', path: '/dashboard/net-worth', icon: Target, group: 'goals' })),
+      ...data.policies.filter((x: any) => has(q, x.name, x.insurer, x.type)).map((x: any) => ({ key: 'p' + x.id, name: x.name || x.insurer, sub: 'Insurance policy', path: '/dashboard/insurance', icon: Shield, group: 'goals' })),
+    ]
+    return [...pages, ...cap(tx), ...cap(accounts), ...cap(holdings), ...cap(more)]
+  }, [query, data])
+
+  const grouped = useMemo(() => GROUP_ORDER.map((key) => ({ key, items: results.filter((r) => r.group === key) })).filter((g) => g.items.length), [results])
 
   const flatResults = useMemo(
     () => grouped.flatMap((group) => group.items),
@@ -113,10 +128,11 @@ export default function AppSearch() {
             <input
               ref={inputRef}
               type="search"
+              aria-label="Search everything"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Search pages and actions..."
+              placeholder="Search transactions, accounts, funds, goals, pages..."
               className="h-11 w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               autoComplete="off"
               autoCorrect="off"
@@ -134,7 +150,7 @@ export default function AppSearch() {
           </div>
         </div>
 
-        <div ref={listRef} className="max-h-[min(60dvh,320px)] overflow-y-auto px-2 py-2">
+        <div ref={listRef} className="max-h-[min(60dvh,380px)] overflow-y-auto px-2 py-2">
           {flatResults.length === 0 ? (
             <p className="px-3 py-8 text-center text-sm text-muted-foreground">
               No results for &ldquo;{query}&rdquo;
@@ -143,7 +159,7 @@ export default function AppSearch() {
             grouped.map((group) => (
               <div key={group.key} className="mb-1 last:mb-0">
                 <p className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {groupLabel(group.key)}
+                  {GROUP_LABEL[group.key]}
                 </p>
                 <ul>
                   {group.items.map((item) => {
@@ -153,7 +169,7 @@ export default function AppSearch() {
                     const isActive = index === activeIndex
 
                     return (
-                      <li key={`${item.group}-${item.path}`}>
+                      <li key={item.key}>
                         <button
                           type="button"
                           data-active={isActive}
@@ -167,7 +183,7 @@ export default function AppSearch() {
                           onClick={() => navigate(item.path)}
                         >
                           <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                          <span className="truncate">{item.name}</span>
+                          <span className="min-w-0 flex-1"><span className="block truncate">{item.name}</span>{item.sub && <span className="block truncate text-xs text-muted-foreground">{item.sub}</span>}</span>
                         </button>
                       </li>
                     )

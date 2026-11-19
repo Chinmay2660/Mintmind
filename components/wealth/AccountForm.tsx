@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { toISO } from '@/lib/wealth/calc'
 import { Input } from '@/components/ui/input'
-import { Field, FormDialog, Select } from './kit'
+import { Field, FormDialog, Select, StepFormDialog } from './kit'
 
 export const ACCOUNT_TYPES = [
   { value: 'savings', label: 'Savings' },
@@ -23,7 +23,7 @@ export function AccountForm({ row, onClose, onSave }: { row?: any; onClose: () =
   const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
   const cash = f.type === 'cash'
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit account' : 'Add account'} wide
+    <StepFormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit account' : 'Add account'} wide
       description="Add bank accounts or a cash wallet. Expenses, income, transfers, card payments, SIPs and premiums all update these balances."
       onSubmit={async () => {
         const cur = Number(f.currentBalance)
@@ -35,20 +35,25 @@ export function AccountForm({ row, onClose, onSave }: { row?: any; onClose: () =
         }
         await onSave({
           ...row, ...f,
-          bankName: cash ? f.bankName || 'Cash' : f.bankName, holderName: cash ? f.holderName || '—' : f.holderName,
+          bankName: cash ? f.bankName || 'Cash' : f.bankName, holderName: cash ? f.holderName || '-' : f.holderName,
           accountNumber: cash ? '' : f.accountNumber, ifsc: cash ? '' : f.ifsc.toUpperCase(),
           currentBalance: cur, mab: cash ? 0 : Number(f.mab) || 0, lastUpdated: toISO(new Date()),
         })
-      }}>
+      }}
+      steps={[
+        { title: "Account", content: (<>
       <Field label="Account type" className="full">{(id) => <Select id={id} value={f.type} onChange={set('type')}>{ACCOUNT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</Select>}</Field>
       {!cash && <Field label="Bank name">{(id) => <Input id={id} required value={f.bankName} onChange={set('bankName')} />}</Field>}
       {!cash && <Field label="Account holder">{(id) => <Input id={id} required value={f.holderName} onChange={set('holderName')} />}</Field>}
       <Field label={cash ? 'Name' : 'Nickname'}>{(id) => <Input id={id} required={cash} value={f.nickname} onChange={set('nickname')} placeholder={cash ? 'Cash in hand' : ''} />}</Field>
+        </>) },
+        { title: "Balance", content: (<>
       {!cash && <Field label="Account number">{(id) => <Input id={id} required inputMode="numeric" value={f.accountNumber} onChange={set('accountNumber')} />}</Field>}
       {!cash && <Field label="IFSC (optional)">{(id) => <Input id={id} value={f.ifsc} onChange={set('ifsc')} />}</Field>}
       <Field label={cash ? 'Cash on hand (₹)' : 'Current balance (₹)'}>{(id) => <Input id={id} type="number" min="0" step="any" required value={f.currentBalance} onChange={set('currentBalance')} />}</Field>
       {!cash && <Field label="Minimum balance to maintain, MAB (₹)" hint={`Available balance = current balance − MAB${Number(f.currentBalance) ? ` = ₹${Math.max(0, Number(f.currentBalance) - (Number(f.mab) || 0)).toLocaleString('en-IN')}` : ''}`}>{(id) => <Input id={id} type="number" min="0" step="any" value={f.mab} onChange={set('mab')} />}</Field>}
       <Field label="Notes" className="full">{(id) => <Input id={id} value={f.notes} onChange={set('notes')} />}</Field>
-    </FormDialog>
+        </>) },
+      ]} />
   )
 }

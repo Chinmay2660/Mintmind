@@ -28,7 +28,7 @@ function Access() {
   const openVault = async () => { setErr(''); try { setItems(await openEmergencyBundle(result.vaultBundle, eak)) } catch { setErr('That Emergency Access Key is not correct.') } }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10 text-foreground">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4 py-10 text-foreground">
       <div className="surface-card w-full max-w-xl space-y-4 p-6">
         <h1 className="text-xl font-semibold">Digital Legacy: trusted contact</h1>
         {err && <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{err}</p>}

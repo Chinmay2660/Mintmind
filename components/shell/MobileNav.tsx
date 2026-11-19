@@ -9,6 +9,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { cn } from '@/lib/utils'
 import { useVisibleNav } from './FeatureGuard'
 
+// One short word per tab. "Budget & Expenses" reads as "Expenses" because that is what people look for.
+const tabLabel = (name: string) => (/transaction|expense/i.test(name) ? 'Spend' : name.split(' ')[0])
+
 export function MobileNav() {
   const pathname = usePathname()
   const { main: navMain, more: navMore } = useVisibleNav()
@@ -35,7 +38,7 @@ export function MobileNav() {
               )}
             >
               <Icon className="h-5 w-5" strokeWidth={active ? 2.25 : 1.75} />
-              <span className="w-full truncate text-center">{item.name.split(' ')[0]}</span>
+              <span className="w-full truncate text-center">{tabLabel(item.name)}</span>
             </Link>
           )
         })}

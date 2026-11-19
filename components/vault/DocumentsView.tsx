@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import axios from 'axios'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Cloud, Folder, RefreshCw, Upload } from 'lucide-react'
+import { Cloud, Folder, RefreshCw, Search, Upload } from 'lucide-react'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { uid } from '@/lib/wealth/db'
 import { toISO } from '@/lib/wealth/calc'
@@ -16,6 +16,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { DocumentCard } from '@/components/wealth/DocumentCard'
 import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Progress, Select } from '@/components/wealth/kit'
 import { cn } from '@/lib/utils'
+import { Pagination } from '@/components/ui/pagination'
+import { usePagination, useServerPagination } from '@/lib/hooks/usePagination'
+import { matchesAll } from '@/lib/search'
 
 const CATEGORIES = ['Personal', 'Identity', 'Bank', 'Investment', 'Insurance', 'Property', 'Family']
 const MAX = 25 * 1024 * 1024
@@ -31,6 +34,14 @@ export function DocumentsView() {
   const [remote, setRemote] = useState<Doc[] | null>(null)
   const [drive, setDrive] = useState<{ configured: boolean; connected: boolean; reason?: string } | null>(null)
   const [cat, setCat] = useState('All')
+  const [q, setQ] = useState('')
+  const [dq, setDq] = useState('') // the search, a moment after typing stops, so the server is not asked on every key
+  useEffect(() => { const t = setTimeout(() => setDq(q), 300); return () => clearTimeout(t) }, [q])
+  // Real accounts: the server returns one filtered page at a time. The demo has everything on the device, so it pages locally below.
+  const sp = useServerPagination<Doc>(async ({ page, pageSize }) => {
+    const r = await axios.get('/api/drive/files', { params: { page, limit: pageSize, category: cat === 'All' ? undefined : cat, q: dq || undefined } })
+    return { items: r.data.documents.map((d: Doc) => ({ ...d, hasFile: true })), total: r.data.total ?? r.data.documents.length }
+  }, { pageSize: 12, resetKey: `${cat}|${dq}`, enabled: ready && !isDemo && !!drive?.connected })
   const [pending, setPending] = useState<Pending[]>([])
   const [form, setForm] = useState<null | { file?: File; doc?: Doc }>(null)
   const [preview, setPreview] = useState<null | { doc: Doc; url: string }>(null)
@@ -42,9 +53,9 @@ export function DocumentsView() {
   const refresh = useCallback(async () => {
     if (isDemo) return
     try {
-      const [s, l] = await Promise.all([axios.get('/api/drive/status'), axios.get('/api/drive/files')])
-      setDrive(s.data)
-      setRemote(l.data.documents.map((d: Doc) => ({ ...d, hasFile: true })))
+      const st = await axios.get('/api/drive/status')
+      setDrive(st.data)
+      sp.refresh()
     } catch {
       setDrive({ configured: false, connected: false })
       setRemote([])
@@ -52,8 +63,11 @@ export function DocumentsView() {
   }, [isDemo])
   useEffect(() => { if (ready) refresh() }, [ready, refresh])
 
-  const docs: Doc[] = useMemo(() => (isDemo ? data.documents.map((d: any) => ({ id: d.id, name: d.name, fileName: d.fileName, category: d.category, mimeType: d.mimeType, size: d.size, notes: d.notes, uploaded: d.uploaded, hasFile: !!d.blob })) : remote ?? []), [isDemo, data.documents, remote])
-  const shown = docs.filter((d) => cat === 'All' || d.category === cat)
+  const docs: Doc[] = useMemo(() => (isDemo ? data.documents.map((d: any) => ({ id: d.id, name: d.name, fileName: d.fileName, category: d.category, mimeType: d.mimeType, size: d.size, notes: d.notes, uploaded: d.uploaded, hasFile: !!d.blob })) : sp.items), [isDemo, data.documents, sp.items])
+  const filtered = isDemo ? docs.filter((d) => (cat === 'All' || d.category === cat) && matchesAll(dq, d.name, d.fileName, d.category, d.notes)) : docs
+  const local = usePagination(filtered, { pageSize: 12, resetKey: `${cat}|${dq}` })
+  const shown = isDemo ? local.slice : sp.items
+  const pg = isDemo ? { ...local, loading: false } : { ...sp, loading: sp.loading }
 
   const authErr = (e: unknown) => (axios.isAxiosError(e) && e.response?.data?.code === 'DRIVE_AUTH' ? (refresh(), 'Google Drive needs to be reconnected (Settings → Integrations).') : axios.isAxiosError(e) && e.response?.data?.error ? String(e.response.data.error) : 'Upload failed')
 
@@ -126,6 +140,8 @@ export function DocumentsView() {
         </Panel>
       )}
 
+      <div className="relative max-w-sm"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden /><Input aria-label="Search documents" className="h-10 pl-9" placeholder="Search name, category, notes" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Category">
         {['All', ...CATEGORIES].map((c) => <button key={c} type="button" aria-pressed={cat === c} onClick={() => setCat(c)} className={cn('flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium', cat === c ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{c !== 'All' && <Folder className="h-3 w-3" />}{c}</button>)}
       </div>
@@ -139,7 +155,7 @@ export function DocumentsView() {
         </Panel>
       )}
 
-      {shown.length === 0 ? <Empty title="No documents" description={blocked ? 'Connect Google Drive to upload documents.' : 'Upload IDs, statements, policies and property papers.'} /> : (
+      {shown.length === 0 && !pg.loading ? <Empty title={dq || cat !== 'All' ? 'No matches' : 'No documents'} description={dq || cat !== 'All' ? 'Try a different word or category.' : blocked ? 'Connect Google Drive to upload documents.' : 'Upload IDs, statements, policies and property papers.'} /> : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {shown.map((d) => (
             <DocumentCard key={d.id} doc={d} sizeLabel={fmtSize(d.size)} replaceDisabled={blocked}
@@ -149,6 +165,7 @@ export function DocumentsView() {
           ))}
         </div>
       )}
+      <Pagination page={pg.page} pageCount={pg.pageCount} total={pg.total} from={pg.from} to={pg.to} pageSize={pg.pageSize} onPage={pg.setPage} onPageSize={pg.setPageSize} loading={pg.loading} label="Documents pages" />
 
       {form && <MetaForm init={form.doc ?? { name: form.file!.name.replace(/\.[^.]+$/, ''), category: 'Personal', notes: '' }} isEdit={!!form.doc} onClose={() => setForm(null)}
         onSave={async (v) => {

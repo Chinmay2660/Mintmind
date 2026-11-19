@@ -5,7 +5,7 @@ import Providers from "@/components/Providers"
 export const metadata = {
   title: {
     template: "%s | Mintmind",
-    default: "Mintmind — Net Worth, Vault & Legacy Handoff",
+    default: "Mintmind - Net Worth, Vault & Legacy Handoff",
   },
   description: "Track net worth, store passwords and identity documents, and give your nominee a secure handoff when it matters.",
   manifest: "/manifest.json",
@@ -32,15 +32,20 @@ export const metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: "#4F46E5",
+  themeColor: [{ media: "(prefers-color-scheme: light)", color: "#F6F0E9" }, { media: "(prefers-color-scheme: dark)", color: "#25231F" }],
   viewportFit: "cover",
 };
 
+import { BOOT_SCRIPT } from "@/lib/uiStyle";
+
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning data-style="paper" data-retro="true">
+      <head suppressHydrationWarning>
+        <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
+        <link rel="preload" href="/fonts/jetbrains-mono-400.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/jetbrains-mono-800.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+      </head>
       <body suppressHydrationWarning className="font-sans antialiased">
         <Providers>
           <Toaster />

@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { Landmark, Plus } from 'lucide-react'
+import { useAddParam } from '@/lib/hooks/useAddParam'
+import { ChevronRight, Landmark } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { save } from '@/lib/wealth/actions'
@@ -16,25 +17,27 @@ import { AccountForm } from '@/components/wealth/AccountForm'
 export default function BankAccountsPage() {
   const { ready, data, db } = useWealth()
   const [adding, setAdding] = useState(false)
+  useAddParam((what) => { if (what === 'account') setAdding(true) })
   if (!ready) return <LoadingBlock className="h-64" />
   const total = data.bankAccounts.reduce((s, b) => s + b.currentBalance, 0)
 
   return (
     <div className="space-y-5">
-      <PageHeader actions={<Button onClick={() => setAdding(true)}><Plus className="mr-1.5 h-4 w-4" />Add account</Button>} />
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+      <PageHeader primaryAction={{ label: 'Add account', onClick: () => setAdding(true) }} />
+      <section aria-label="Summary" className="grid grid-cols-2 gap-3 border-b border-border pb-5 lg:grid-cols-3">
         <Stat label="Total balance" value={<Money value={total} />} />
         <Stat label="Accounts" value={data.bankAccounts.length} />
-      </div>
+      </section>
       {data.bankAccounts.length === 0 ? (
         <Empty title="No bank accounts yet" description="Add your savings accounts to track balances and history." action={<Button onClick={() => setAdding(true)}>Add account</Button>} />
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {data.bankAccounts.map((b) => (
-            <Link key={b.id} href={`/dashboard/bank-accounts/${b.id}`} className="surface-card block p-4 outline-none transition-colors hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring">
+            <Link key={b.id} href={`/dashboard/bank-accounts/${b.id}`} aria-label={`${b.nickname || b.bankName}, open details`} className="surface-card block p-4 outline-none transition-all hover:border-primary/40 hover:shadow-elevated focus-visible:ring-2 focus-visible:ring-ring motion-safe:hover:-translate-y-0.5">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground"><Landmark className="h-5 w-5" /></span>
-                <div className="min-w-0"><p className="truncate font-medium">{b.nickname || b.bankName}</p><p className="truncate text-xs text-muted-foreground">{b.type === 'cash' ? 'Cash in hand' : `${b.bankName} · ${b.holderName}`}</p></div>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-highlight/30 text-[hsl(85_60%_26%)] dark:bg-highlight/20 dark:text-highlight"><Landmark className="h-5 w-5" /></span>
+                <div className="min-w-0 flex-1"><p className="truncate font-medium">{b.nickname || b.bankName}</p><p className="truncate text-xs text-muted-foreground">{b.type === 'cash' ? 'Cash in hand' : `${b.bankName} · ${b.holderName}`}</p></div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
               </div>
               <p className="mt-4 text-2xl font-semibold"><Money value={b.currentBalance} /></p>
               <p className="mt-1 text-xs text-muted-foreground">{b.type === 'cash' ? '' : <>Available <Money value={availableBalance(b)} />{mabShortfall(b) > 0 && <span className="text-warning"> (below MAB)</span>} · </>}updated {formatDate(b.lastUpdated)}</p>

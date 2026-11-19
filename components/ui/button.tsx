@@ -9,11 +9,11 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground hover:bg-primary/90',
+          'bg-primary text-primary-foreground hover:bg-primary/90 paper:border-[1.5px] paper:border-[hsl(var(--edge))] paper:shadow-[inset_0_1px_0_hsl(var(--hi)),1.5px_2.5px_0_0_hsl(var(--drop))] paper:font-bold paper:active:translate-x-px paper:active:translate-y-0.5 paper:active:shadow-none',
         destructive:
-          'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+          'bg-destructive text-destructive-foreground hover:bg-destructive/90 paper:border-[1.5px] paper:border-[hsl(var(--edge))] paper:shadow-[inset_0_1px_0_hsl(var(--hi)),1.5px_2.5px_0_0_hsl(var(--drop))] paper:font-bold paper:active:translate-x-px paper:active:translate-y-0.5 paper:active:shadow-none',
         outline:
-          'border border-border bg-card hover:bg-muted hover:text-foreground',
+          'border border-border bg-card hover:bg-muted hover:text-foreground paper:border-[1.5px] paper:border-[hsl(var(--edge))] paper:shadow-[inset_0_1px_0_hsl(var(--hi)),1.5px_2.5px_0_0_hsl(var(--drop))] paper:font-bold paper:active:translate-x-px paper:active:translate-y-0.5 paper:active:shadow-none',
         secondary:
           'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost: 'hover:bg-muted hover:text-foreground',

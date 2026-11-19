@@ -24,7 +24,9 @@ export function maskCurrency(amount?: number | string | null): string {
 
 export function formatDate(date: string | Date | null | undefined, pattern = 'MMM dd, yyyy'): string {
   if (!date) return ''
-  return formatDateFns(new Date(date), pattern)
+  const d = new Date(date)
+  if (Number.isNaN(d.getTime())) return ''
+  return formatDateFns(d, pattern)
 }
 
 export function formatNumber(num: number | null | undefined): string {

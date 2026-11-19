@@ -43,13 +43,13 @@ function Lump() {
   const [a, setA] = useState('500000'); const [r, setR] = useState('10'); const [y, setY] = useState('10')
   const o = useMemo(() => lumpsumFuture({ amount: num(a), annualReturnPct: num(r), years: num(y) }), [a, r, y])
   return <div className="grid gap-5 md:grid-cols-2"><div className="grid gap-4 sm:grid-cols-2"><Num label="Amount invested (₹)" value={a} set={setA} /><Num label="Assumed return (% a year)" value={r} set={setR} /><Num label="Years" value={y} set={setY} /></div>
-    <Result rows={[['Estimated value', formatINR(o.futureValue)], ['Estimated gain', formatINR(o.gain)], ['Doubles in about', o.doubleYears ? `${o.doubleYears.toFixed(1)} years` : '—']]} note={ASSUME} /></div>
+    <Result rows={[['Estimated value', formatINR(o.futureValue)], ['Estimated gain', formatINR(o.gain)], ['Doubles in about', o.doubleYears ? `${o.doubleYears.toFixed(1)} years` : '-']]} note={ASSUME} /></div>
 }
 function Growth() {
   const [s, setS] = useState('100000'); const [e, setE] = useState('250000'); const [y, setY] = useState('7')
   const g = useMemo(() => cagr({ start: num(s), end: num(e), years: num(y) }), [s, e, y])
   return <div className="grid gap-5 md:grid-cols-2"><div className="grid gap-4 sm:grid-cols-2"><Num label="Starting value (₹)" value={s} set={setS} /><Num label="Ending value (₹)" value={e} set={setE} /><Num label="Years held" value={y} set={setY} /></div>
-    <Result rows={[['Yearly growth rate', g == null ? '—' : `${g.toFixed(2)}%`]]} note="Turns a total gain into a steady yearly rate you can compare. Real returns bounce around year to year." /></div>
+    <Result rows={[['Yearly growth rate', g == null ? '-' : `${g.toFixed(2)}%`]]} note="Turns a total gain into a steady yearly rate you can compare. Real returns bounce around year to year." /></div>
 }
 function Split() {
   const [i, setI] = useState('80000'); const [n, setN] = useState('50'); const [w, setW] = useState('30')
@@ -79,7 +79,7 @@ function NetWorthCalc() {
         <FieldSet legend="What you own"><div className="grid gap-4 sm:grid-cols-2">{ASSET_FIELDS.map(([l, h]) => <Num key={l} label={l} hint={h} value={a[l] ?? ''} set={(v) => setA({ ...a, [l]: v })} />)}</div></FieldSet>
         <FieldSet legend="What you owe"><div className="grid gap-4 sm:grid-cols-2">{DEBT_FIELDS.map(([l, h]) => <Num key={l} label={l} hint={h} value={d[l] ?? ''} set={(v) => setD({ ...d, [l]: v })} />)}</div></FieldSet>
       </div>
-      <div className="lg:sticky lg:top-6 lg:self-start"><Result rows={any ? [['Total assets', formatINR(assets)], ['Total liabilities', formatINR(debts)], ['Your net worth', formatINR(assets - debts)]] : [['Your net worth', '—']]} note="Net worth is assets minus liabilities on one date. It is a position, not a score. Count each holding once and use current balances. Nothing you enter leaves this page." /></div>
+      <div className="lg:sticky lg:top-6 lg:self-start"><Result rows={any ? [['Total assets', formatINR(assets)], ['Total liabilities', formatINR(debts)], ['Your net worth', formatINR(assets - debts)]] : [['Your net worth', '-']]} note="Net worth is assets minus liabilities on one date. It is a position, not a score. Count each holding once and use current balances. Nothing you enter leaves this page." /></div>
     </div>
   )
 }
@@ -100,7 +100,7 @@ export default function ToolsPage() {
   const [tool, setTool] = useState<Tool>('SIP')
   const Icon = META[tool].icon
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+    <div className="relative min-h-dvh overflow-hidden bg-background text-foreground">
       <div aria-hidden className="pointer-events-none absolute inset-0 [background-image:radial-gradient(hsl(var(--foreground)/0.12)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_70%_45%_at_50%_15%,#000_30%,transparent_100%)]" />
       <div aria-hidden className="pointer-events-none absolute left-1/2 top-[-12rem] h-[26rem] w-[46rem] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
       <header className="relative border-b border-border/60 backdrop-blur"><div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
@@ -121,7 +121,7 @@ export default function ToolsPage() {
               </button>) })}
           </nav>
           <section role="tabpanel" className="rounded-2xl border border-border bg-card/80 p-5 shadow-[var(--shadow-elevated)] backdrop-blur sm:p-8">
-            <div className="mb-6 flex items-center gap-3 border-b border-border pb-5"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground"><Icon className="h-5 w-5" /></span><div><h2 className="text-xl font-semibold tracking-tight">{tool}</h2><p className="text-sm text-muted-foreground">{META[tool].text}</p></div></div>
+            <div className="mb-6 flex items-center gap-3 border-b border-border pb-5"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon className="h-5 w-5" /></span><div><h2 className="text-xl font-semibold tracking-tight">{tool}</h2><p className="text-sm text-muted-foreground">{META[tool].text}</p></div></div>
             {tool === 'Net worth' && <NetWorthCalc />}{tool === 'SIP' && <Sip />}{tool === 'Goal SIP' && <GoalSip />}{tool === 'Loan & prepayment' && <Loan />}{tool === 'Retirement' && <Retire />}{tool === 'Rent vs buy' && <Rvb />}{tool === 'Lumpsum' && <Lump />}{tool === 'Growth rate' && <Growth />}{tool === 'Budget split' && <Split />}
             <p className="mt-6 text-xs text-muted-foreground">Educational tools, not investment, tax or insurance advice.</p>
           </section>

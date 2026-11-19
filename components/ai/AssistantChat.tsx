@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import axios from 'axios'
-import { ArrowUp, Loader2, Sparkles } from 'lucide-react'
-import { answerQuestion, SUGGESTED_QUESTIONS } from '@/lib/ai/assistant'
+import { ArrowUp, ChevronRight, ListChecks, Loader2, PenLine, Sparkles } from 'lucide-react'
+import { answerQuestion, QUESTION_MENU, SUGGESTED_QUESTIONS } from '@/lib/ai/assistant'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { checkAnswer, checkQuestion } from '@/lib/ai/guardrails'
 import { useAi, useAiProvider } from './useAi'
 import { cn } from '@/lib/utils'
 
@@ -15,7 +17,7 @@ interface Msg {
 
 const TONE = { good: 'text-success', bad: 'text-destructive', neutral: 'text-foreground' } as const
 
-function AnswerCard({ m, onAsk }: { m: Msg; onAsk: (q: string) => void }) {
+function AnswerCard({ m, onAsk, onOther }: { m: Msg; onAsk: (q: string) => void; onOther: () => void }) {
   const structured = !!m.headline
   return (
     <div className="min-w-0 flex-1 space-y-3 rounded-2xl rounded-tl-sm border border-border bg-card px-4 py-3.5">
@@ -36,10 +38,11 @@ function AnswerCard({ m, onAsk }: { m: Msg; onAsk: (q: string) => void }) {
       {m.stats && m.stats.length > 0 && <dl className="divide-y divide-border border-t border-border text-sm">{m.stats.map(([k, v]) => <div key={k} className="flex items-baseline justify-between gap-3 py-1.5"><dt className="text-muted-foreground">{k}</dt><dd className="text-right font-medium tabular-nums">{v}</dd></div>)}</dl>}
       {m.rows && <dl className="divide-y divide-border border-t border-border text-sm">{m.rows.map(([k, v], j) => <div key={j} className="flex items-baseline justify-between gap-3 py-1.5"><dt className="min-w-0 truncate">{k}</dt><dd className="shrink-0 text-right text-muted-foreground">{v}</dd></div>)}</dl>}
       {m.detail && <details className="text-xs text-muted-foreground"><summary className="cursor-pointer select-none hover:text-foreground">How this is calculated</summary><p className="mt-1.5 leading-relaxed">{m.detail}</p></details>}
-      {(m.links?.length || m.followups?.length) ? (
-        <div className="flex flex-col items-start gap-1 border-t border-border pt-2.5 text-xs">
+      {!m.unavailable || m.followups?.length ? (
+        <div className="flex flex-col items-start gap-1.5 border-t border-border pt-2.5 text-xs">
           {m.links?.slice(0, 1).map((l) => <Link key={l.href} href={l.href} className="font-medium text-primary hover:underline">Open {l.label} →</Link>)}
-          {m.followups?.slice(0, 2).map((f) => <button key={f} type="button" onClick={() => onAsk(f)} className="text-left text-muted-foreground transition-colors hover:text-foreground">{f}</button>)}
+          {m.followups?.slice(0, 2).map((f) => <button key={f} type="button" onClick={() => onAsk(f)} className="flex w-full items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-left text-foreground outline-none transition-colors hover:border-primary/50 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"><span className="min-w-0">{f}</span><ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden /></button>)}
+          <button type="button" onClick={onOther} className="inline-flex items-center gap-1 text-left font-medium text-primary transition-colors hover:underline"><PenLine className="h-3 w-3" aria-hidden />Other: ask something else</button>
         </div>
       ) : null}
       <p className="text-[11px] text-muted-foreground/80">{[m.period ? `Data: ${m.period}` : '', m.source].filter(Boolean).join(' · ')}</p>
@@ -55,12 +58,28 @@ export function AssistantChat({ compact = false }: { compact?: boolean }) {
   const [q, setQ] = useState('')
   const [busy, setBusy] = useState(false)
   const end = useRef<HTMLDivElement>(null)
-  useEffect(() => { end.current?.scrollIntoView({ block: 'end', behavior: 'smooth' }) }, [msgs, busy])
+  const scroller = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  // Stay at the top (the greeting and the suggested questions) until there is a conversation. Once there is one, follow it down,
+  // moving only the chat area and never the page around it.
+  useEffect(() => {
+    const el = scroller.current
+    if (!el) return
+    if (msgs.length === 0 && !busy) { el.scrollTop = 0; return }
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+  }, [msgs, busy])
 
   const ask = async (question: string) => {
     if (!facts || !question.trim() || busy) return
     setQ('')
-    setMsgs((m) => [...m, { role: 'user', text: question }])
+    // Safety check first: identifiers are removed, and rule-breaking requests get a plain explanation instead of an answer.
+    const g = checkQuestion(question)
+    if (!g.ok) {
+      setMsgs((m) => [...m, { role: 'user', text: g.text || question }, { role: 'ai', text: g.message!, source: 'Safety check' }])
+      return
+    }
+    question = g.text
+    setMsgs((m) => [...m, { role: 'user', text: question }, ...g.warnings.map((w) => ({ role: 'ai' as const, text: w, source: 'Safety check' }))])
     const a: any = answerQuestion(question, facts, data)
     const base: Msg = { role: 'ai', text: a.text, rows: a.rows, links: a.links, period: a.period, unavailable: a.unavailable, headline: a.headline, lead: a.lead, stats: a.stats, bar: a.bar, detail: a.detail, followups: a.followups, source: isDemo ? 'Demo: simulated' : '' }
     if (provider.usable && !a.unavailable) {
@@ -68,7 +87,9 @@ export function AssistantChat({ compact = false }: { compact?: boolean }) {
       try {
         // Only pre-calculated aggregates are sent: no account/card numbers, documents, vault data or credentials.
         const { data: r } = await axios.post('/api/ai/chat', { question, draft: a.text, consent: true, facts: { asOf: facts.asOf, monthLabel: facts.monthLabel, netWorth: facts.netWorth, money: facts.money, budget: facts.budget, funds: { summary: facts.funds.summary, perFund: facts.funds.perFund, monthChange: facts.funds.monthChange }, cards: facts.cards, insurance: facts.insurance, banks: { total: facts.banks.total }, family: facts.family } })
-        if (r.text) { setMsgs((m) => [...m, { ...base, lead: r.text, source: 'AI-written' }]); setBusy(false); return }
+        // The provider's wording is checked too; anything unsafe is dropped and the built-in answer is used.
+        const safe = r.text ? checkAnswer(r.text) : null
+        if (safe?.ok) { setMsgs((m) => [...m, { ...base, lead: safe.text, source: 'AI-written' }]); setBusy(false); return }
       } catch { /* fall back to the built-in answer below */ }
       setBusy(false)
     }
@@ -77,24 +98,42 @@ export function AssistantChat({ compact = false }: { compact?: boolean }) {
 
   return (
     <div className={cn('flex flex-col', compact ? 'h-full' : 'min-h-[24rem]')}>
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-2 pr-1" aria-live="polite">
+      <div ref={scroller} className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-2 pr-1" aria-live="polite">
         {msgs.length === 0 && (
           <div className="space-y-4 py-2">
             <div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"><Sparkles className="h-4 w-4" /></span>
               <div><p className="font-semibold">Hi, I&apos;m My Wealth AI.</p><p className="mt-0.5 text-sm text-muted-foreground">Ask about your money in plain words. I use your real figures, tell you which period they cover, and say so when something is missing.</p></div></div>
-            <div className="grid gap-2 sm:grid-cols-2">{SUGGESTED_QUESTIONS.map((s) => <button key={s} type="button" onClick={() => ask(s)} disabled={!facts} className="rounded-xl border border-border px-3.5 py-2.5 text-left text-sm transition-colors hover:border-primary/40 hover:bg-muted disabled:opacity-50">{s}</button>)}</div>
+            <div className="grid gap-2 sm:grid-cols-2">{SUGGESTED_QUESTIONS.map((s) => <button key={s} type="button" onClick={() => ask(s)} disabled={!facts} className="rounded-xl border border-border px-3.5 py-2.5 text-left text-sm transition-colors hover:border-primary/40 hover:bg-muted disabled:opacity-50">{s}</button>)}
+              <button type="button" onClick={() => inputRef.current?.focus()} className="flex items-center gap-2 rounded-xl border border-dashed border-primary/50 px-3.5 py-2.5 text-left text-sm font-medium text-primary transition-colors hover:bg-primary/10"><PenLine className="h-4 w-4 shrink-0" aria-hidden />Other: ask your own question</button>
+            </div>
           </div>
         )}
         {msgs.map((m, i) => m.role === 'user' ? (
           <div key={i} className="ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-primary px-3.5 py-2 text-sm text-primary-foreground">{m.text}</div>
         ) : (
-          <div key={i} className="flex"><AnswerCard m={m} onAsk={ask} /></div>
+          <div key={i} className="flex"><AnswerCard m={m} onAsk={ask} onOther={() => inputRef.current?.focus()} /></div>
         ))}
         {busy && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" />Thinking…</div>}
         <div ref={end} />
       </div>
       <form className="mt-3 flex items-center gap-2 rounded-full border border-border bg-card py-1.5 pl-4 pr-1.5 focus-within:ring-2 focus-within:ring-ring/40" onSubmit={(e) => { e.preventDefault(); ask(q) }}>
-        <input aria-label="Ask My Wealth AI" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" placeholder="Ask about your finances…" value={q} maxLength={300} onChange={(e) => setQ(e.target.value)} />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button type="button" aria-label="Choose a question" className="flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 text-xs font-medium text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ListChecks className="h-3.5 w-3.5" aria-hidden /><span className="hidden sm:inline">Questions</span></button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" side="top" className="max-h-[min(24rem,60dvh)] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto">
+            {QUESTION_MENU.map((g, gi) => (
+              <div key={g.group}>
+                {gi > 0 && <DropdownMenuSeparator />}
+                <DropdownMenuLabel className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{g.group}</DropdownMenuLabel>
+                {g.items.map((it) => <DropdownMenuItem key={it} disabled={!facts || busy} onSelect={() => ask(it)} className="cursor-pointer whitespace-normal py-2 text-sm">{it}</DropdownMenuItem>)}
+              </div>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => setTimeout(() => inputRef.current?.focus(), 0)} className="cursor-pointer gap-2 text-sm font-medium text-primary"><PenLine className="h-3.5 w-3.5" aria-hidden />Type your own question</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <input ref={inputRef} aria-label="Ask My Wealth AI" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" placeholder="Ask about your finances…" value={q} maxLength={300} onChange={(e) => setQ(e.target.value)} />
         <button type="submit" aria-label="Send" disabled={!q.trim() || !facts || busy} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity disabled:opacity-40"><ArrowUp className="h-4 w-4" /></button>
       </form>
       <p className="mt-2 text-center text-[11px] text-muted-foreground">Educational information, not financial advice.</p>

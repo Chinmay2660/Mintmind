@@ -6,7 +6,7 @@ interface TagBadgeProps {
   className?: string
 }
 
-export function TagBadge({ name, color = '#6366f1', className }: TagBadgeProps) {
+export function TagBadge({ name, color = '#8e6fd8', className }: TagBadgeProps) {
   return (
     <span
       className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium', className)}

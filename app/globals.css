@@ -1,3 +1,10 @@
+
+
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/jetbrains-mono-400.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500; font-display: swap; src: url('/fonts/jetbrains-mono-500.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 700; font-display: swap; src: url('/fonts/jetbrains-mono-700.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 800; font-display: swap; src: url('/fonts/jetbrains-mono-800.woff2') format('woff2'); }
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,40 +15,42 @@
    Accent: blue — brand + primary actions */
 
 @layer base {
-  /* Light — bg #F7F8FA, card #FFF, text #1E293B / #64748B, border #E5E7EB. Emerald accent. */
+  /* Light — soft grey canvas, white cards, ink text. Purple primary, peach/cream highlight. */
   :root {
     --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    --background: 216 20% 98%;
-    --foreground: 217 33% 17%;
+    --background: 240 15% 97%;
+    --foreground: 250 30% 14%;
     --card: 0 0% 100%;
-    --card-foreground: 217 33% 17%;
+    --card-foreground: 250 30% 14%;
     --card-elevated: 0 0% 100%;
     --popover: 0 0% 100%;
-    --popover-foreground: 217 33% 17%;
+    --popover-foreground: 250 30% 14%;
     --sidebar: 0 0% 100%;
 
-    --primary: 245 58% 51%;
+    --primary: 277 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 217 33% 17%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 226 100% 97%;
-    --accent-foreground: 245 58% 40%;
+    --secondary: 250 14% 95%;
+    --secondary-foreground: 250 30% 14%;
+    --muted: 250 14% 95%;
+    --muted-foreground: 250 8% 44%;
+    --accent: 27 92% 94%;
+    --accent-foreground: 22 58% 26%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 72% 29%;
+    --success: 145 62% 29%;
     --success-foreground: 0 0% 100%;
-    --warning: 32 95% 44%;
+    --warning: 38 95% 44%;
     --warning-foreground: 0 0% 100%;
+    --highlight: 84 89% 58%;
+    --highlight-foreground: 85 55% 11%;
     --income: 142 72% 29%;
     --expense: 0 72% 51%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 245 58% 51%;
+    --border: 250 14% 91%;
+    --input: 250 14% 91%;
+    --ring: 277 100% 50%;
 
     --radius: 0.75rem;
     --radius-lg: 0.875rem;
@@ -51,13 +60,13 @@
     --shadow-elevated: 0 8px 24px hsl(217 33% 17% / 0.08);
     --shadow-inset: inset 0 1px 2px hsl(217 33% 17% / 0.04);
 
-    --chart-1: 245 58% 51%;
-    --chart-2: 221 83% 53%;
-    --chart-3: 32 95% 44%;
-    --chart-4: 262 52% 47%;
-    --chart-5: 0 72% 51%;
-    --chart-6: 190 90% 35%;
-    --chart-grid: 220 13% 91%;
+    --chart-1: 277 100% 50%;
+    --chart-2: 24 92% 56%;
+    --chart-3: 84 89% 50%;
+    --chart-4: 217 82% 55%;
+    --chart-5: 0 72% 54%;
+    --chart-6: 224 58% 24%;
+    --chart-grid: 250 14% 91%;
 
     --mobile-tab-bar-height: 4.25rem;
     --mobile-fab-height: 3.5rem;
@@ -72,53 +81,182 @@
 
   /* Dark — bg #0B1120, sidebar #111827, card #172033, elevated #1E293B, text #F8FAFC / #94A3B8, border #293548 */
   .dark {
-    --background: 222 49% 8%;
-    --foreground: 210 40% 98%;
-    --card: 220 38% 14%;
-    --card-foreground: 210 40% 98%;
-    --card-elevated: 217 33% 17%;
-    --popover: 217 33% 17%;
-    --popover-foreground: 210 40% 98%;
-    --sidebar: 221 39% 11%;
+    --background: 256 28% 8%;
+    --foreground: 260 30% 97%;
+    --card: 256 24% 12%;
+    --card-foreground: 260 30% 97%;
+    --card-elevated: 256 22% 16%;
+    --popover: 256 22% 15%;
+    --popover-foreground: 260 30% 97%;
+    --sidebar: 256 28% 10%;
 
-    --primary: 239 84% 67%;
+    --primary: 277 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 234 89% 82%;
+    --secondary: 256 20% 17%;
+    --secondary-foreground: 260 30% 97%;
+    --muted: 256 20% 17%;
+    --muted-foreground: 255 14% 67%;
+    --accent: 268 42% 21%;
+    --accent-foreground: 270 100% 88%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 222 49% 8%;
-    --success: 142 71% 45%;
+    --success: 145 62% 45%;
     --success-foreground: 222 49% 8%;
-    --warning: 38 92% 50%;
+    --warning: 40 96% 56%;
     --warning-foreground: 222 49% 8%;
+    --highlight: 84 89% 58%;
+    --highlight-foreground: 85 55% 11%;
     --income: 142 71% 45%;
     --expense: 0 84% 60%;
 
-    --border: 217 25% 22%;
-    --input: 217 25% 22%;
-    --ring: 239 84% 67%;
+    --border: 256 18% 23%;
+    --input: 256 18% 23%;
+    --ring: 277 100% 62%;
 
     --shadow-card: 0 0 0 1px hsl(var(--border));
     --shadow-elevated: 0 0 0 1px hsl(var(--border)), 0 8px 24px hsl(222 49% 4% / 0.4);
     --shadow-inset: none;
 
-    --chart-1: 239 84% 70%;
-    --chart-2: 213 94% 68%;
-    --chart-3: 38 92% 55%;
-    --chart-4: 262 83% 74%;
-    --chart-5: 0 84% 65%;
-    --chart-6: 187 85% 53%;
-    --chart-grid: 217 25% 22%;
+    --chart-1: 277 100% 66%;
+    --chart-2: 27 95% 62%;
+    --chart-3: 84 89% 58%;
+    --chart-4: 217 90% 66%;
+    --chart-5: 0 84% 66%;
+    --chart-6: 40 94% 58%;
+    --chart-grid: 256 18% 23%;
   }
 }
 
 @layer base {
+  /* The Retro look, taken value for value from the reference theme.
+       paper = page, card = panels, sheet = popovers, line = hairlines, line-strong = field and chip borders,
+       ink = text and button outlines, green = the soft green fill used for primary buttons and the selected item. */
+  [data-style='paper'] {
+    --font-sans: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --font-heading: var(--font-sans);
+    --font-figures: var(--font-sans);
+    --radius: 0.75rem;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
+  }
+  [data-style='paper']:not(.dark) {
+    color-scheme: light;
+    --background: 32.31 41.94% 93.92%; /* #F6F0E9 */
+    --foreground: 36 9% 10%;
+    --card: 35.00 46.15% 94.90%; /* #F8F3EC */
+    --card-foreground: 36 9% 10%;
+    --card-elevated: 35.00 46.15% 94.90%;
+    --popover: 35.00 46.15% 94.90%;
+    --popover-foreground: 36 9% 10%;
+    --sidebar: 35.00 46.15% 94.90%;
+
+    --primary: 84 47% 79%;
+    --primary-foreground: 36 9% 10%;
+    --highlight: 90 44% 70%;
+    --secondary: 35 31% 86%;
+    --secondary-foreground: 36 9% 10%;
+    --muted: 35 31% 86%;
+    --muted-foreground: 34 7% 41%;
+    --accent: 79 41% 89%;
+    --accent-foreground: 36 9% 10%;
+
+    --destructive: 6 63% 46%;
+    --success: 134 49% 32%;
+    --chart-up: 134 49% 32%;
+    --warning: 35 86% 35%;
+    --info: 208 68% 37%;
+    --income: 134 49% 32%;
+    --expense: 6 63% 46%;
+
+    --border: 35 26% 82%;
+    --input: 35 19% 73%;
+    --ring: 90 44% 40%;
+    --edge: 36 9% 10%;
+    --drop: 36 9% 10%;
+    --hi: 0 0% 100% / 0.55;
+
+    --shadow-card: inset 0 1px 0 hsl(0 0% 100% / 0.65), 0 1px 0 hsl(30 30% 25% / 0.06), 0 10px 22px -16px hsl(30 30% 25% / 0.35);
+    --shadow-elevated: 1.5px 2.5px 0 hsl(var(--drop));
+
+    --chart-1: 114 38% 48%;
+    --chart-2: 21 77% 55%;
+    --chart-3: 208 68% 45%;
+    --chart-4: 254 42% 55%;
+    --chart-5: 6 63% 52%;
+    --chart-6: 173 59% 36%;
+    --chart-grid: 35 26% 86%;
+  }
+  [data-style='paper'].dark {
+    color-scheme: dark;
+    --background: 40.00 8.82% 13.33%; /* #25231F */
+    --foreground: 38 44% 89%;
+    --card: 37.50 11.76% 13.33%; /* #26231E */
+    --card-foreground: 38 44% 89%;
+    --card-elevated: 37.50 11.76% 13.33%;
+    --popover: 37.50 11.76% 13.33%;
+    --popover-foreground: 38 44% 89%;
+    --sidebar: 37.50 11.76% 13.33%;
+
+    --primary: 84 28% 23%;
+    --primary-foreground: 38 44% 89%;
+    --highlight: 114 38% 62%;
+    --secondary: 33 14% 16%;
+    --secondary-foreground: 38 44% 89%;
+    --muted: 33 14% 16%;
+    --muted-foreground: 35 12% 59%;
+    --accent: 80 24% 29%;
+    --accent-foreground: 38 44% 89%;
+
+    --destructive: 3 75% 60%;
+    --success: 114 38% 62%;
+    --chart-up: 114 38% 62%;
+    --warning: 36 79% 57%;
+    --info: 208 56% 63%;
+    --income: 114 38% 62%;
+    --expense: 3 75% 60%;
+
+    --border: 35 12% 24%;
+    --input: 33 12% 33%;
+    --ring: 114 38% 62%;
+    --edge: 38 44% 89%;
+    --drop: 30 25% 2%;
+    --hi: 38 100% 93% / 0.04;
+
+    --shadow-card: inset 0 1px 0 hsl(38 100% 93% / 0.04), 0 1px 0 hsl(0 0% 0% / 0.1), 0 10px 22px -16px hsl(0 0% 0% / 0.64);
+    --shadow-elevated: 1.5px 2.5px 0 hsl(var(--drop));
+
+    --chart-1: 114 38% 62%;
+    --chart-2: 21 77% 61%;
+    --chart-3: 208 56% 63%;
+    --chart-4: 259 60% 78%;
+    --chart-5: 3 75% 60%;
+    --chart-6: 173 45% 60%;
+    --chart-grid: 35 13% 22%;
+  }
+  /* primary is a soft fill, so where it is used as text or an icon colour it needs a readable green */
+  [data-style='paper']:not(.dark) .text-primary { color: hsl(134 49% 28%); }
+  [data-style='paper'].dark .text-primary { color: hsl(114 38% 62%); }
+  /* the type scale of the reference: a 13px body, small caps labels, a heavy title, ligatures off */
+  html[data-retro] { font-size: 87.5%; }
+  [data-style='paper'] body { font-size: 13px; line-height: 1.4; font-feature-settings: 'calt' 0, 'liga' 0; letter-spacing: 0; }
+  [data-style='paper'] h1, [data-style='paper'] h2, [data-style='paper'] h3, [data-style='paper'] h4 { font-family: var(--font-heading); letter-spacing: -0.015em; }
+  [data-style='paper'] svg.lucide { stroke-width: 1.75; }
+  /* Layout stability: the scrollbar gutter is always reserved so content changes never shift the page sideways, and
+   long rows skip layout and paint until they are near the screen (the size is remembered once seen). */
+.app-main { scrollbar-gutter: stable; overflow-anchor: auto; }
+/* icons never squash or sit off centre inside buttons, chips and rows */
+button > svg, a > svg, [role='tab'] > svg { flex-shrink: 0; }
+@media (max-width: 767px) {
+  .fab { transition: transform 200ms ease, opacity 200ms ease; }
+  [data-fab-hidden] .fab { transform: translateY(calc(100% + 6rem)); opacity: 0; pointer-events: none; }
+}
+@media (prefers-reduced-motion: reduce) { .fab { transition: none; } }
+.cv-auto { content-visibility: auto; contain-intrinsic-size: auto 4.5rem; }
+
+[data-style='paper'] .surface-card { border: 1px solid hsl(var(--input)); border-radius: 12px; box-shadow: var(--shadow-card); }
+
   * {
     @apply border-border;
   }
@@ -177,37 +315,6 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid hsl(var(--border));
-  }
-
-  .gradient-text {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(217 91% 60%) 50%, hsl(217 80% 45%) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    background-size: 200% 200%;
-    animation: gradient 3s ease infinite;
-  }
-
-  .gradient-text-blue-teal {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(217 80% 45%) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .gradient-bg {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(217 80% 42%) 100%);
-    background-size: 200% 200%;
-    animation: gradient 8s ease infinite;
-  }
-
-  .gradient-bg-blue,
-  .gradient-bg-teal {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(217 80% 42%) 100%);
-  }
-
-  .gradient-bg-green {
-    background: linear-gradient(135deg, hsl(var(--success)) 0%, hsl(152 55% 48%) 100%);
   }
 
   .hover-lift {
@@ -296,36 +403,6 @@
     position: relative;
   }
 
-  .glow-border::before {
-    content: "";
-    position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(135deg, hsl(var(--primary) / 0.4), hsl(var(--primary) / 0.15));
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-  }
-
-  .text-shine {
-    background: linear-gradient(
-      90deg,
-      hsl(var(--foreground)) 0%,
-      hsl(var(--foreground)) 40%,
-      hsl(var(--primary)) 50%,
-      hsl(var(--foreground)) 60%,
-      hsl(var(--foreground)) 100%
-    );
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: text-shine 4s linear infinite;
-  }
-
   .animate-marquee {
     animation: marquee 30s linear infinite;
   }
@@ -334,19 +411,8 @@
     animation-play-state: paused;
   }
 
-  .landing-bg {
-    background:
-      radial-gradient(ellipse 90% 60% at 50% -20%, hsl(var(--primary) / 0.08), transparent 55%),
-      radial-gradient(ellipse 50% 40% at 100% 40%, hsl(var(--primary) / 0.04), transparent 50%),
-      hsl(var(--background));
-  }
+  .landing-bg { background: hsl(var(--background)); }
 
-  .dark .landing-bg {
-    background:
-      radial-gradient(ellipse 90% 60% at 50% -20%, hsl(var(--primary) / 0.12), transparent 55%),
-      radial-gradient(ellipse 50% 40% at 100% 40%, hsl(var(--primary) / 0.06), transparent 50%),
-      hsl(var(--background));
-  }
 
   .liquid-orb {
     position: absolute;
@@ -382,31 +448,6 @@
     border: 1px solid hsl(var(--border));
   }
 
-  .liquid-glass-border::after {
-    content: "";
-    position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(135deg, hsl(var(--primary) / 0.35), hsl(var(--primary) / 0.1));
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-  }
-
-  .liquid-gradient-text {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(217 91% 60%) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .liquid-gradient-bg {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(217 80% 42%) 100%);
-  }
-
   .liquid-btn {
     background: hsl(var(--primary));
     box-shadow: 0 2px 12px hsl(var(--primary) / 0.25);
@@ -432,7 +473,7 @@
 
   /* ── App surfaces ── */
   .finance-shell {
-    @apply relative min-h-screen bg-background text-foreground;
+    @apply relative min-h-dvh bg-background text-foreground;
   }
 
   .surface-card {
@@ -687,8 +728,94 @@
 
 /* Print / Save as PDF: let the report flow across pages instead of the fixed app shell */
 @media print {
+  @page { margin: 10mm; }
   .app-shell { position: static !important; display: block !important; height: auto !important; }
   .app-main { overflow: visible !important; height: auto !important; padding-bottom: 0 !important; }
-  body { background: #fff !important; }
+  /* What is on the screen is what is printed: same theme, same colours, backgrounds included. */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* nothing that floats, pops up or navigates belongs on paper */
+  .fab, [data-sonner-toaster], [role='region'][aria-label='Cookie consent'], aside, nav[aria-label='Modules'] { display: none !important; }
+  /* a card or a row is never cut across two pages, but a whole group of cards may flow, so pages are not left half empty */
+  .surface-card, dl > div, li { break-inside: avoid; }
+  .surface-card { box-shadow: none !important; }
 }
 
+
+/* Brand purple (#9D00FF) is 3.5:1 as text on the dark canvas; a lighter tint of the same hue passes AA (5+:1). Fills keep the exact brand colour. */
+.dark:not([data-style='paper']) .text-primary,
+.dark:not([data-style='paper']) .hover\:text-primary:hover,
+.dark:not([data-style='paper']) .group:hover .group-hover\:text-primary { color: hsl(277 100% 74%); }
+
+/* Welcome screen orbits */
+@keyframes mm-orbit { to { transform: rotate(360deg); } }
+@keyframes mm-orbit-rev { to { transform: rotate(-360deg); } }
+@keyframes mm-pulse-ring { 0%, 100% { opacity: .35; } 50% { opacity: .7; } }
+.mm-orbit { animation: mm-orbit var(--mm-orbit-s, 40s) linear infinite; }
+.mm-orbit-rev { animation: mm-orbit-rev var(--mm-orbit-s, 40s) linear infinite; }
+.mm-ring-pulse { animation: mm-pulse-ring 5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .mm-orbit, .mm-orbit-rev, .mm-ring-pulse { animation: none; }
+}
+
+/* Landing cards: a soft glow that follows the pointer (set by StaggerList) */
+.fx-spot { position: relative; overflow: hidden; }
+.fx-spot::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s;
+  background: hsl(var(--primary) / 0.08);
+}
+.fx-spot:hover::after { opacity: 1; }
+@media (hover: none) { .fx-spot::after { display: none; } }
+
+/* Isometric hero: cards float above the platform */
+.iso-float { transform: translateZ(var(--z, 40px)); }
+@media (prefers-reduced-motion: reduce) { .iso-float { animation: none; } }
+
+
+/* ───────── Retro layer (html[data-retro]) ─────────
+   The reference look: warm paper, soft green, thin warm borders, pressed buttons with a small hard shadow, mono type. */
+[data-retro] aside, [data-retro] header { border-color: hsl(var(--border)); }
+[data-retro] .retro-title { font-size: 30px; font-weight: 800; line-height: 1.12; letter-spacing: -0.015em; }
+.retro-dots { display: none !important; }
+
+
+/* Accessibility baseline */
+/* Anything focusable shows where the keyboard is, even where a component forgot its own ring. Component rings still win. */
+:where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex='-1'])):focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+/* People who ask their device for less motion get almost none: no looping, no sliding, no smooth scrolling */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+/* Text selection and forced colours keep working */
+@media (forced-colors: active) { .surface-card { border: 1px solid CanvasText; } }
+
+/* Touch and reading comfort */
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 5rem; }
+:where(a, button, [role='button'], [role='tab'], summary, label[for]) { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+/* On touch screens icon-only buttons reach a comfortable 44px target without changing how they look on a desktop */
+@media (pointer: coarse) {
+  button[aria-label][class*='h-8'], button[aria-label][class*='h-9'] { min-width: 44px; min-height: 44px; }
+}
+
+/* Sidebar tree: each child hangs off the vertical line by a short horizontal branch that meets its row; the last one turns the corner. */
+.tree-item { position: relative; }
+.tree-item::before { content: ''; position: absolute; left: -0.625rem; top: -1px; width: 1px; height: calc(100% + 2px); background: hsl(var(--border)); }
+.tree-item:last-child::before { height: calc(50% + 1px); }
+.tree-item::after { content: ''; position: absolute; left: -0.625rem; top: 50%; width: 0.625rem; height: 1px; background: hsl(var(--border)); }
+
+/* Phones: fields at 16px so iOS does not zoom the page when one is tapped, and nothing can push the page sideways. */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']), select, textarea { font-size: 16px; }
+  html, body { overflow-x: clip; }
+}
+
+/* Landing product mockups. Plain CSS, so the layout does not depend on which utility classes were generated. */
+.mock-wrap { position: relative; margin: 0 auto; max-width: 56rem; padding-bottom: 1.5rem; }
+.mock-window { display: block; }
+.mock-nav { display: none; flex-direction: column; }
+.mock-phone { width: 13.5rem; margin: 1.5rem auto 0; }
+@media (min-width: 768px) {
+  .mock-wrap { padding-bottom: 0; padding-right: 6rem; }
+  .mock-window { display: grid; grid-template-columns: 3.25rem minmax(0, 1fr); }
+  .mock-nav { display: flex; }
+  .mock-phone { position: absolute; right: 0; bottom: -1.5rem; margin: 0; }
+}

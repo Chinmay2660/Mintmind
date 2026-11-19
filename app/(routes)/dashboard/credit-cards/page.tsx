@@ -1,11 +1,13 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { CreditCard, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useDetailCrumb } from '@/components/shell/DetailCrumb'
+import { ArrowLeft, ChevronRight, CreditCard, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useWealth } from '@/lib/wealth/WealthContext'
-import { deleteCard, payCard, save } from '@/lib/wealth/actions'
+import { addExpense, deleteCard, payCard, save } from '@/lib/wealth/actions'
+import { useCategories } from '@/lib/wealth/useCategories'
 import { cardUtilisation, toISO } from '@/lib/wealth/calc'
 import { cap, formatCompactINR, formatDate, formatINR } from '@/lib/wealth/format'
 import { upcomingCardDues, nextDayOfMonth } from '@/lib/wealth/reminders'
@@ -14,11 +16,13 @@ import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, StepFormDialog, LoadingBlock, PageHeader, Panel, Progress, Select, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForPct } from '@/components/wealth/kit'
+import { Empty, Field, FormDialog, StepFormDialog, LoadingBlock, PageHeader, Panel, Progress, Select, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForPct, UsagePct } from '@/components/wealth/kit'
 import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
 import { DebitCardsTab } from '@/components/wealth/DebitCards'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { cn } from '@/lib/utils'
+import { DateInput } from '@/components/ui/pickers'
+import { TabBar } from '@/components/ui/tab-bar'
 
 const NETWORKS = ['Visa', 'Mastercard', 'RuPay', 'American Express', 'Diners Club']
 
@@ -35,9 +39,11 @@ function CreditCardsTab() {
     const monthSpend = data.expenses.filter((e) => e.mode === 'card' && monthKey(e.date) === ym).reduce((s, e) => s + e.amount, 0)
     return { limit, outstanding, available: limit - outstanding, util: cardUtilisation(limit, outstanding), monthSpend }
   }, [data.cards, data.expenses, today])
+  const openCard = sel ? data.cards.find((c) => c.id === sel) : undefined
+  useDetailCrumb(openCard ? `${openCard.bank} ${openCard.cardName}` : null, () => setSel(null))
   if (!ready) return <LoadingBlock className="h-64" />
 
-  const card = data.cards.find((c) => c.id === sel) ?? data.cards[0]
+  const card = sel ? data.cards.find((c) => c.id === sel) : undefined
   const dues = upcomingCardDues(data.cards, today)
   const cardTxns = card ? data.expenses.filter((e) => e.mode === 'card' && e.cardId === card.id).sort((a, b) => b.date.localeCompare(a.date)) : []
   const statements = card ? data.cardStatements.filter((s) => s.cardId === card.id).sort((a, b) => b.statementDate.localeCompare(a.statementDate)) : []
@@ -46,39 +52,43 @@ function CreditCardsTab() {
 
   return (
     <div className="space-y-5">
-      <PageHeader actions={<Button onClick={() => setDlg({ kind: 'card' })}><Plus className="mr-1.5 h-4 w-4" />Add card</Button>} />
+      <PageHeader secondaryAction={{ label: 'Add transaction', disabled: data.cards.length === 0, onClick: () => setDlg({ kind: 'pay', row: card }) }} primaryAction={{ label: 'Add card', onClick: () => setDlg({ kind: 'card' }) }} />
+      <section aria-label="Summary" className="space-y-3 border-b border-border pb-5">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Total limit" value={<Money value={t.limit} />} />
         <Stat label="Outstanding" value={<Money value={t.outstanding} />} />
         <Stat label="Available credit" value={<Money value={t.available} />} />
-        <Stat label="Utilisation" value={`${t.util}%`} hint={<Progress value={t.util} tone={toneForPct(t.util)} label="Utilisation" />} />
+        <Stat label="Utilisation" value={<UsagePct value={t.util} />} hint={<Progress value={t.util} tone={toneForPct(t.util)} label="Utilisation" />} />
       </div>
       <p className="text-xs text-muted-foreground">Card spend this month: <Money value={t.monthSpend} /></p>
+      </section>
 
       {data.cards.length === 0 ? <Empty title="No credit cards" action={<Button onClick={() => setDlg({ kind: 'card' })}>Add card</Button>} /> : (
         <>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {!card && <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {data.cards.map((c) => {
               const u = cardUtilisation(c.limit, c.outstanding)
               return (
-                <button key={c.id} type="button" onClick={() => setSel(c.id)} aria-pressed={card?.id === c.id}
-                  className={cn('surface-card block w-full p-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', card?.id === c.id ? 'border-primary' : 'hover:border-primary/40')}>
-                  <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground"><CreditCard className="h-5 w-5" /></span>
-                    <div className="min-w-0"><p className="truncate font-medium">{c.bank} {c.cardName}</p><p className="text-xs text-muted-foreground">{c.network} · {c.cardNumber.replace(/(\d{4})(?=\d)/g, '$1 ')}</p></div></div>
+                <button key={c.id} type="button" onClick={() => setSel(c.id)} aria-label={`${c.bank} ${c.cardName}, open details`}
+                  className={cn('surface-card block w-full p-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', 'hover:border-primary/40')}>
+                  <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/15 text-destructive"><CreditCard className="h-5 w-5" /></span>
+                    <div className="min-w-0"><p className="truncate font-medium">{c.bank} {c.cardName}</p><p className="text-xs text-muted-foreground">{c.network} · •••• {String(c.cardNumber).slice(-4)}</p></div>
+                    <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" aria-hidden /></div>
                   <div className="mt-4 flex items-end justify-between"><div><p className="text-xs text-muted-foreground">Outstanding</p><p className="text-xl font-semibold"><Money value={c.outstanding} /></p></div><p className="text-sm text-muted-foreground">{u}% of <Money value={c.limit} compact /></p></div>
                   <div className="mt-2"><Progress value={u} tone={toneForPct(u)} label={`${c.cardName} utilisation`} /></div>
-                  <p className="mt-2 text-xs text-muted-foreground">{c.outstanding > 0 ? `Due ${formatDate(nextDayOfMonth(c.dueDay, today))}` : 'No dues'} · Statement day {c.statementDay}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">{c.outstanding > 0 ? `Due ${formatDate(nextDayOfMonth(c.dueDay, today))}` : 'No dues'}</p>
                 </button>
               )
             })}
-          </div>
+          </div>}
 
           {card && (
             <>
+              <button type="button" onClick={() => setSel(null)} className="mb-3 inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" aria-hidden />All cards</button>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-lg font-semibold">{card.bank} {card.cardName}</h2>
                 <div className="flex flex-wrap gap-2">
-                  <Button size="sm" disabled={card.outstanding <= 0} onClick={() => setDlg({ kind: 'pay', row: card })}>Record payment</Button>
+                  <Button size="sm" onClick={() => setDlg({ kind: 'pay', row: card })}>Add transaction</Button>
                   <Button size="sm" variant="outline" onClick={() => setDlg({ kind: 'card', row: card })}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button>
                   <Button size="sm" variant="outline" onClick={() => setDlg({ kind: 'del', row: card })}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button>
                 </div>
@@ -112,7 +122,9 @@ function CreditCardsTab() {
       )}
 
       {dlg?.kind === 'card' && <CardForm row={dlg.row} onClose={() => setDlg(null)} onSave={async (r) => { await save(db, 'cards', r); toast.success('Card saved') }} />}
-      {dlg?.kind === 'pay' && <PayForm card={dlg.row} accounts={data.bankAccounts} onClose={() => setDlg(null)} onSave={async (p) => { await payCard(db, { cardId: dlg.row.id, ...p } as any); toast.success('Payment recorded') }} />}
+      {dlg?.kind === 'pay' && <CardTxnForm cards={data.cards} card={dlg.row} accounts={data.bankAccounts} onClose={() => setDlg(null)}
+        onPay={async (p) => { await payCard(db, p as any); toast.success('Payment recorded') }}
+        onCharge={async (p) => { await addExpense(db, { amount: p.amount, date: p.date, category: p.category, mode: 'card', accountId: null, cardId: p.cardId, debitCardId: null, note: p.note }); toast.success('Charge added to the card') }} />}
       <ConfirmDialog open={dlg?.kind === 'del'} onOpenChange={(o) => !o && setDlg(null)} title="Delete this card?" description="Its statements and payments are removed and net worth updates." confirmLabel="Delete" variant="destructive" onConfirm={async () => { await deleteCard(db, dlg!.row.id); setSel(null); setDlg(null); toast.success('Card deleted') }} />
     </div>
   )
@@ -160,15 +172,40 @@ function CardForm({ row, onClose, onSave }: { row?: any; onClose: () => void; on
   )
 }
 
-function PayForm({ card, accounts, onClose, onSave }: { card: any; accounts: any[]; onClose: () => void; onSave: (p: { amount: number; accountId?: string; date: string; note: string }) => Promise<void> }) {
-  const [f, setF] = useState({ amount: String(card.outstanding), accountId: '', date: toISO(new Date()), note: '' })
+/**
+ * One place for both directions on a card. A payment lowers what you owe (and, if you pick one, the bank balance that paid it);
+ * a charge raises what you owe and is recorded as spending. The card you have open is chosen for you, or you pick one.
+ */
+function CardTxnForm({ cards, card, accounts, onClose, onPay, onCharge }: { cards: any[]; card?: any; accounts: any[]; onClose: () => void; onPay: (p: { cardId: string; amount: number; accountId?: string; date: string; note: string }) => Promise<void>; onCharge: (p: { cardId: string; amount: number; category: string; date: string; note: string }) => Promise<void> }) {
+  const cats = useCategories()
+  const first = card ?? cards[0]
+  const [mode, setMode] = useState<'pay' | 'charge'>(card && card.outstanding > 0 ? 'pay' : 'charge')
+  const [f, setF] = useState({ cardId: first?.id ?? '', amount: card && card.outstanding > 0 ? String(card.outstanding) : '', accountId: '', date: toISO(new Date()), note: '', category: cats.expense[0] || 'Other' })
   const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
+  const cur = cards.find((x) => x.id === f.cardId)
   return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Record card payment"
-      onSubmit={async () => { const a = Number(f.amount); if (!(a > 0)) throw new Error('Amount must be positive'); if (a > card.outstanding) throw new Error('Payment exceeds the outstanding amount'); await onSave({ amount: a, accountId: f.accountId || undefined, date: f.date, note: f.note }) }}>
-      <Field label="Amount (₹)">{(id) => <Input id={id} type="number" min="0.01" step="any" required value={f.amount} onChange={set('amount')} />}</Field>
-      <Field label="Date">{(id) => <Input id={id} type="date" required value={f.date} onChange={set('date')} />}</Field>
-      <Field label="Paid from" className="full">{(id) => <Select id={id} value={f.accountId} onChange={set('accountId')}><option value="">Not linked to a bank account</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.nickname || a.bankName}</option>)}</Select>}</Field>
+    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Add a card transaction" submitLabel={mode === 'pay' ? 'Record payment' : 'Add charge'}
+      onSubmit={async () => {
+        const a = Number(f.amount)
+        if (!cur) throw new Error('Choose a card')
+        if (!(a > 0)) throw new Error('Amount must be positive')
+        if (!f.date) throw new Error('Choose the date')
+        if (mode === 'pay') { if (cur.outstanding <= 0) throw new Error('Nothing is owed on this card, so there is nothing to pay. Choose Charge to add a purchase first.'); if (a > cur.outstanding) throw new Error(`Payment exceeds the outstanding amount (${formatINR(cur.outstanding)})`); await onPay({ cardId: cur.id, amount: a, accountId: f.accountId || undefined, date: f.date, note: f.note }) }
+        else { if (a > cur.limit - cur.outstanding) throw new Error('This is more than the available credit on the card'); await onCharge({ cardId: cur.id, amount: a, category: f.category, date: f.date, note: f.note }) }
+      }}>
+      <div className="full">
+        <div role="radiogroup" aria-label="Type of transaction" className="grid grid-cols-2 rounded-xl border border-border bg-muted p-1">
+          {([['pay', 'Payment', 'Pay the card bill'], ['charge', 'Charge', 'A purchase on the card']] as const).map(([v, l, n]) => (
+            <button key={v} type="button" role="radio" aria-checked={mode === v} onClick={() => setMode(v)} className={cn('rounded-lg px-3 py-2 text-sm font-bold outline-none focus-visible:ring-2 focus-visible:ring-ring', mode === v ? 'bg-card shadow-card' : 'text-muted-foreground hover:text-foreground')}>{l}<span className="block text-[11px] font-normal text-muted-foreground">{n}</span></button>
+          ))}
+        </div>
+      </div>
+      <Field label="Card" className="full">{(id) => <Select id={id} value={f.cardId} onChange={(e) => { const next = cards.find((x) => x.id === e.target.value); setF((p) => ({ ...p, cardId: e.target.value, amount: mode === 'pay' && next ? String(next.outstanding) : p.amount })) }}>{cards.map((x) => <option key={x.id} value={x.id}>{x.bank} {x.cardName} · •••• {String(x.cardNumber).slice(-4)}</option>)}</Select>}</Field>
+      <Field label="Amount (₹)">{(id) => <Input id={id} type="number" min="0.01" step="any" inputMode="decimal" required value={f.amount} onChange={set('amount')} />}</Field>
+      <Field label="Date">{(id) => <DateInput id={id} required value={f.date} onChange={set('date')} />}</Field>
+      {mode === 'pay'
+        ? <Field label="Paid from" className="full">{(id) => <Select id={id} value={f.accountId} onChange={set('accountId')}><option value="">Not linked to a bank account</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.nickname || a.bankName}</option>)}</Select>}</Field>
+        : <Field label="Category" className="full">{(id) => <Select id={id} value={f.category} onChange={set('category')}>{cats.expense.map((c: string) => <option key={c}>{c}</option>)}</Select>}</Field>}
       <Field label="Note" className="full">{(id) => <Input id={id} value={f.note} onChange={set('note')} />}</Field>
     </FormDialog>
   )
@@ -178,9 +215,7 @@ export default function CardsPage() {
   const [tab, setTab] = useState<'Credit cards' | 'Debit cards'>('Credit cards')
   return (
     <div className="space-y-5">
-      <div role="tablist" aria-label="Card type" className="flex gap-1 border-b border-border">
-        {(['Credit cards', 'Debit cards'] as const).map((t) => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={cn('border-b-2 px-3 py-2 text-sm font-medium outline-none focus-visible:bg-muted', tab === t ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}>{t}</button>)}
-      </div>
+      <TabBar label="Card type" tabs={[{ key: 'Credit cards', label: 'Credit cards' }, { key: 'Debit cards', label: 'Debit cards' }]} value={tab} onChange={(k) => setTab(k as typeof tab)} />
       {tab === 'Credit cards' ? <CreditCardsTab /> : <DebitCardsTab />}
     </div>
   )

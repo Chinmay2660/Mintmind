@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, useRef, useCallback } f
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import { clearCachedUser, getCachedUser, setCachedUser } from '@/lib/offline/session'
+import { clearPrivateCaches } from '@/lib/pwa'
 import type { AuthContextValue, AuthProviderProps } from '@/types/auth'
 import type { User } from '@/types/user'
 
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (response.status === 401 || !response.data.user) {
         clearCachedUser()
+        clearPrivateCaches()
         setUser(null)
         return
       }
@@ -82,6 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     clearCachedUser()
+    await clearPrivateCaches()
 
     if (mountedRef.current) {
       setUser(null)

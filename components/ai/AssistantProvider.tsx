@@ -4,7 +4,12 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from 're
 import { Sparkles } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { useIsMobile } from '@/lib/hooks/useIsMobile'
-import { AssistantChat } from './AssistantChat'
+import dynamic from 'next/dynamic'
+
+const QuickAdd = dynamic(() => import('./QuickAdd').then((m) => m.QuickAdd), { ssr: false })
+
+// the chat, and everything it pulls in, is fetched the first time the panel opens
+const AssistantChat = dynamic(() => import('./AssistantChat').then((m) => m.AssistantChat), { ssr: false, loading: () => <p className="p-4 text-sm text-muted-foreground">Loading…</p> })
 import { useFeatures } from '@/lib/features/FeaturesContext'
 
 const Ctx = createContext<{ open: () => void } | null>(null)
@@ -12,6 +17,7 @@ const Ctx = createContext<{ open: () => void } | null>(null)
 /** Floating "Wealth AI" button + slide-over assistant available on every dashboard screen. */
 export function AssistantProvider({ children }: { children: ReactNode }) {
   const [isOpen, setOpen] = useState(false)
+  const [mode, setMode] = useState<'ask' | 'add'>('ask')
   const mobile = useIsMobile()
   const { isEnabled } = useFeatures()
   const aiOn = isEnabled('ai_assistant')
@@ -20,13 +26,16 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={value}>
       {children}
       {aiOn && <button type="button" onClick={() => setOpen(true)} aria-label="Ask My Wealth AI"
-        className="fixed right-4 z-40 flex h-12 items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-elevated outline-none transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bottom-[calc(var(--mobile-tab-bar-height)+var(--mobile-safe-bottom)+0.75rem)] md:bottom-6 print:hidden">
+        className="fab fixed right-4 z-40 flex h-12 w-12 items-center justify-center gap-2 rounded-full bg-primary p-0 text-sm sm:w-auto sm:px-4 font-semibold text-primary-foreground shadow-elevated outline-none transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bottom-[calc(var(--mobile-tab-bar-height)+var(--mobile-safe-bottom)+0.75rem)] md:bottom-6 paper:border paper:border-[hsl(var(--edge))] paper:shadow-[1.5px_3px_0_0_hsl(var(--drop))] print:hidden">
         <Sparkles className="h-4 w-4" /><span className="hidden sm:inline">Wealth AI</span>
       </button>}
       <Sheet open={isOpen && aiOn} onOpenChange={setOpen}>
-        <SheetContent side={mobile ? 'bottom' : 'right'} className={mobile ? 'flex h-[88dvh] flex-col rounded-t-2xl border-t border-border bg-card pb-4' : 'flex w-full max-w-md flex-col bg-card'}>
+        <SheetContent side={mobile ? 'bottom' : 'right'} className={mobile ? 'flex h-[88dvh] flex-col rounded-t-2xl border-t border-border bg-card pb-4' : 'flex w-full flex-col bg-card sm:max-w-xl lg:max-w-2xl'}>
           <SheetHeader className="text-left"><SheetTitle className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" />My Wealth AI</SheetTitle></SheetHeader>
-          <div className="mt-3 min-h-0 flex-1"><AssistantChat compact /></div>
+          <div role="tablist" aria-label="Wealth AI" className="mt-3 grid grid-cols-2 rounded-lg border border-border bg-muted p-0.5 text-sm font-bold">
+            {([['ask', 'Ask'], ['add', 'Quick add']] as const).map(([k, l]) => <button key={k} role="tab" type="button" aria-selected={mode === k} onClick={() => setMode(k)} className={`rounded-md py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring ${mode === k ? 'bg-card shadow-card' : 'text-muted-foreground hover:text-foreground'}`}>{l}</button>)}
+          </div>
+          <div className="mt-3 min-h-0 flex-1 overflow-y-auto">{mode === 'ask' ? <AssistantChat compact /> : <QuickAdd />}</div>
         </SheetContent>
       </Sheet>
     </Ctx.Provider>

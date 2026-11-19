@@ -40,11 +40,28 @@ interface SheetContentProps extends React.ComponentPropsWithoutRef<typeof Dialog
 const SheetContent = React.forwardRef<
   React.ComponentRef<typeof DialogPrimitive.Content>,
   SheetContentProps
->(({ side = 'right', className, children, ...props }, ref) => (
+
+>(({ side = 'right', className, children, ...props }, ref) => {
+  const own = React.useRef<HTMLDivElement | null>(null)
+  const closer = React.useRef<HTMLButtonElement | null>(null)
+  const drag = React.useRef<{ y: number; dy: number } | null>(null)
+  const setRef = (node: HTMLDivElement | null) => { own.current = node; if (typeof ref === 'function') ref(node); else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node }
+  // Drag the handle at the top of a bottom sheet downwards to close it. Let go early and it springs back.
+  const onDown = (e: React.PointerEvent) => { drag.current = { y: e.clientY, dy: 0 }; e.currentTarget.setPointerCapture(e.pointerId); if (own.current) own.current.style.transition = 'none' }
+  const onMove = (e: React.PointerEvent) => { const d = drag.current; if (!d || !own.current) return; d.dy = Math.max(0, e.clientY - d.y); own.current.style.transform = `translateY(${d.dy}px)` }
+  const onUp = () => {
+    const d = drag.current; drag.current = null
+    const el = own.current
+    if (!d || !el) return
+    el.style.transition = 'transform 180ms ease-out'
+    if (d.dy > 110) closer.current?.click()
+    el.style.transform = ''
+  }
+  return (
   <SheetPortal>
     <SheetOverlay />
     <DialogPrimitive.Content
-      ref={ref}
+      ref={setRef}
       className={cn(
         'fixed z-50 gap-4 bg-background border border-border p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500',
         side === 'right' &&
@@ -59,14 +76,20 @@ const SheetContent = React.forwardRef<
       )}
       {...props}
     >
+      {side === 'bottom' && (
+        <div onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} role="presentation" style={{ touchAction: 'none' }} className="absolute left-0 right-12 top-0 z-10 flex h-7 cursor-grab justify-center pt-2 active:cursor-grabbing">
+          <span aria-hidden className="h-1.5 w-12 rounded-full bg-border" />
+        </div>
+      )}
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
+      <DialogPrimitive.Close ref={closer} className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </SheetPortal>
-))
+  )
+})
 SheetContent.displayName = DialogPrimitive.Content.displayName
 
 const SheetHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (

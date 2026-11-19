@@ -16,9 +16,12 @@ import { setVaultSession } from '@/lib/vault/session'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Select } from '@/components/wealth/kit'
+import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Select, FootNote } from '@/components/wealth/kit'
 import { formatDate } from '@/lib/wealth/format'
 import { cn } from '@/lib/utils'
+import { Slider } from '@/components/ui/slider'
+import { TabBar } from '@/components/ui/tab-bar'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const CATEGORIES = ['Banking', 'Email', 'Social', 'Shopping', 'Work', 'Entertainment', 'Government', 'Other']
 /** Extra sign-in step a login needs besides the password. Only the type of step is recorded; never store an authenticator secret here. */
@@ -57,7 +60,7 @@ function StrengthMeter({ value }: { value: string }) {
   )
 }
 
-function PasswordsView() {
+function PasswordsView({ onLockChange }: { onLockChange?: (unlocked: boolean) => void }) {
   const { ready, db, isDemo, data } = useWealth()
   const [meta, setMeta] = useState<any>(undefined)
   const [session, setSession] = useState<null | { key: CryptoKey; bits: ArrayBuffer }>(null)
@@ -65,6 +68,8 @@ function PasswordsView() {
   const [bioOk, setBioOk] = useState(false)
   const autoLock = (data.meta.find((m: any) => m.key === 'prefs')?.value?.autoLockMinutes ?? 5) as number
 
+  // tell the Vault hub whether the vault is open, so Documents and Digital Legacy stay behind the same lock
+  useEffect(() => { onLockChange?.(!!session) }, [session, onLockChange])
   useEffect(() => { biometricSupported().then(setBioOk) }, [])
   useEffect(() => { if (ready) db.meta.get('vault').then((m: any) => setMeta(m?.value ?? null)) }, [ready, db])
 
@@ -227,9 +232,8 @@ function Unlocked({ items, session, meta, bioOk, onLock, onSave, onDelete, db, o
       <PageHeader actions={<>
         <Button variant="outline" onClick={() => setGen(true)}><Wand2 className="mr-1.5 h-4 w-4" />Generator</Button>
         <Button variant="outline" onClick={() => setEdit({ type: 'note' })}>Secure note</Button>
-        <Button onClick={() => setEdit({ type: 'login' })}><Plus className="mr-1.5 h-4 w-4" />Add item</Button>
         <Button variant="outline" onClick={onLock}><Lock className="mr-1.5 h-4 w-4" />Lock</Button>
-      </>} />
+      </>} primaryAction={{ label: 'Add item', onClick: () => setEdit({ type: 'login' }) }} />
       <dl className="grid grid-cols-3 gap-3">
         {[['Items', items.length], ['Favourites', items.filter((x) => x.favourite).length], ['Extra sign-in step', items.filter((x) => x.authMethod && x.authMethod !== 'None').length]].map(([k, v]) => (
           <div key={k as string} className="surface-card px-4 py-3"><dt className="text-xs text-muted-foreground">{k}</dt><dd className="mt-0.5 text-2xl font-semibold tabular-nums">{v}</dd></div>
@@ -260,7 +264,7 @@ function Unlocked({ items, session, meta, bioOk, onLock, onSave, onDelete, db, o
           <Button variant="outline" onClick={() => fileRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import encrypted</Button>
           <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) importEnc(f); e.target.value = '' }} />
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">Vault data stays on this device and is never sent to our servers. Use the encrypted export to move it to another device.</p>
+        <FootNote className="mt-3">Vault data stays on this device and is never sent to our servers. Use the encrypted export to move it to another device.</FootNote>
       </Panel>
 
       {edit && <ItemForm row={edit.row} type={edit.type} members={members} onClose={() => setEdit(null)} onSave={async (v) => { await onSave({ ...edit.row, ...v, type: edit.type }); toast.success('Saved') }} />}
@@ -290,7 +294,7 @@ function ItemForm({ row, type, members, onClose, onSave }: { row?: Item; type: '
         {PHONE_METHODS.includes(f.authMethod) ? <Field label="Phone number that receives it" hint="Include the country code">{(id) => <Input id={id} type="tel" inputMode="tel" autoComplete="off" maxLength={20} value={f.authPhone} onChange={set('authPhone')} placeholder="+91 …" />}</Field> : <div className="hidden sm:block" />}
         {f.authMethod !== 'None' && <Field label="Details (optional)" className="full" hint="e.g. which authenticator app, where backup codes are kept, which email gets the code">{(id) => <Input id={id} value={f.authNote} onChange={set('authNote')} autoComplete="off" />}</Field>}
       </>}
-      <Field label="Family member">{(id) => <Select id={id} value={f.member} onChange={set('member')}><option value="">—</option>{members.map((m) => <option key={m}>{m}</option>)}</Select>}</Field>
+      <Field label="Family member">{(id) => <Select id={id} value={f.member} onChange={set('member')}><option value="">-</option>{members.map((m) => <option key={m}>{m}</option>)}</Select>}</Field>
       <Field label={type === 'note' ? 'Note' : 'Notes'} className="full">{(id) => <textarea id={id} rows={type === 'note' ? 6 : 3} required={type === 'note'} value={f.notes} onChange={set('notes')} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40" />}</Field>
     </FormDialog>
   )
@@ -304,8 +308,8 @@ function GeneratorDialog({ onClose, onCopy }: { onClose: () => void; onCopy: (p:
     <FormDialog open onOpenChange={(x) => !x && onClose()} title="Password generator" submitLabel="Copy and close" onSubmit={async () => onCopy(pw)}>
       <div className="full space-y-3"><code className="block break-all rounded-lg bg-muted p-3 font-mono text-base">{pw}</code><StrengthMeter value={pw} />
         <Button type="button" variant="outline" size="sm" onClick={() => setPw(generatePassword(o))}><RefreshCw className="mr-1.5 h-3.5 w-3.5" />Regenerate</Button></div>
-      <Field label={`Length: ${o.length}`} className="full">{(id) => <input id={id} type="range" min={8} max={64} value={o.length} onChange={(e) => setO({ ...o, length: Number(e.target.value) })} className="w-full accent-[hsl(var(--primary))]" />}</Field>
-      {(['lower', 'upper', 'digits', 'symbols'] as const).map((k) => <label key={k} className="flex items-center gap-2 text-sm capitalize"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={o[k]} onChange={(e) => setO({ ...o, [k]: e.target.checked })} />{k === 'lower' ? 'Lowercase' : k === 'upper' ? 'Uppercase' : k}</label>)}
+      <Field label={`Length: ${o.length}`} className="full">{(id) => <Slider id={id} aria-label="Password length" min={8} max={64} value={o.length} onChange={(v) => setO({ ...o, length: v })} />}</Field>
+      {(['lower', 'upper', 'digits', 'symbols'] as const).map((k) => <label key={k} className="flex items-center gap-2 text-sm capitalize"><Checkbox checked={o[k]} onChange={(e) => setO({ ...o, [k]: e.target.checked })} />{k === 'lower' ? 'Lowercase' : k === 'upper' ? 'Uppercase' : k}</label>)}
     </FormDialog>
   )
 }
@@ -321,6 +325,10 @@ export default function VaultPage() {
   const tabs = (['passwords', 'documents', 'legacy'] as VaultTab[]).filter((t) => t === 'passwords' ? isEnabled('vault') : t === 'documents' ? isEnabled('documents') : isEnabled('digital_legacy'))
   const [tab, setTab] = useState<VaultTab>('passwords')
   const [opened, setOpened] = useState<Record<string, boolean>>({ passwords: true })
+  // The master password lock covers every tab. Without the Passwords feature there is no vault to unlock, so nothing is gated.
+  const vaultOn = tabs.includes('passwords')
+  const [unlocked, setUnlocked] = useState(false)
+  const open = !vaultOn || unlocked
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get('tab') as VaultTab | null
     if (q && ['passwords', 'documents', 'legacy'].includes(q)) { setTab(q); setOpened((o) => ({ ...o, [q]: true })) }
@@ -331,14 +339,11 @@ export default function VaultPage() {
   return (
     <div className="space-y-5">
       {tabs.length > 1 && (
-        <div role="tablist" aria-label="Vault sections" className="flex gap-1 overflow-x-auto border-b border-border">
-          {tabs.map((t) => { const Icon = TAB_ICON[t]; return (
-            <button key={t} role="tab" aria-selected={active === t} onClick={() => go(t)} className={cn('flex shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-medium outline-none transition-colors focus-visible:bg-muted', active === t ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}><Icon className="h-4 w-4" />{TAB_LABEL[t]}</button>) })}
-        </div>
+        <TabBar label="Vault sections" tabs={tabs.map((t) => ({ key: t, label: TAB_LABEL[t], icon: TAB_ICON[t] }))} value={active} onChange={(k) => go(k as typeof active)} />
       )}
-      {show('passwords') && <div hidden={active !== 'passwords'}><PasswordsView /></div>}
-      {show('documents') && <div hidden={active !== 'documents'}><DocumentsView /></div>}
-      {show('legacy') && <div hidden={active !== 'legacy'}><LegacyView /></div>}
+      {vaultOn && <div hidden={open && active !== 'passwords'}><PasswordsView onLockChange={setUnlocked} /></div>}
+      {open && show('documents') && <div hidden={active !== 'documents'}><DocumentsView /></div>}
+      {open && show('legacy') && <div hidden={active !== 'legacy'}><LegacyView /></div>}
     </div>
   )
 }

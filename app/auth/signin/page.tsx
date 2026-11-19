@@ -123,7 +123,7 @@ function SignInContent() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10 text-foreground">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4 py-10 text-foreground">
       <div className="w-full max-w-md">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">

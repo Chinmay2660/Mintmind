@@ -16,7 +16,7 @@ import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, LoadingBlock, Panel, Select, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle } from '@/components/wealth/kit'
+import { Empty, Field, FormDialog, LoadingBlock, Metric, Panel, Select, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle } from '@/components/wealth/kit'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
 import { AccountForm, ACCOUNT_TYPES } from '@/components/wealth/AccountForm'
@@ -42,6 +42,11 @@ export default function BankAccountDetail() {
     const upto = history.filter((h) => monthKey(h.date) <= k)
     return { label: monthLabel(k), balance: upto.length ? upto[upto.length - 1].balance : null }
   }), [history])
+  // balance after each transaction, worked back from today's balance (newest first)
+  const withBalance = useMemo(() => {
+    let running = acc?.currentBalance ?? 0
+    return txns.map((t) => { const after = running; running -= t.amount; return { ...t, after } })
+  }, [txns, acc?.currentBalance])
   const flow = useMemo(() => lastMonths(6).map((k) => ({ label: monthLabel(k), In: txns.filter((t) => monthKey(t.date) === k && t.amount > 0).reduce((s, t) => s + t.amount, 0), Out: txns.filter((t) => monthKey(t.date) === k && t.amount < 0).reduce((s, t) => s - t.amount, 0) })), [txns])
 
   if (!ready) return <LoadingBlock className="h-64" />
@@ -74,7 +79,7 @@ export default function BankAccountDetail() {
           <div><dt className="text-xs text-muted-foreground">Account holder</dt><dd><CopyValue value={acc.holderName} label="Account holder" /></dd></div>
           <div><dt className="text-xs text-muted-foreground">Account number</dt><dd><CopyValue value={acc.accountNumber} label="Account number" mono /></dd></div>
           <div><dt className="text-xs text-muted-foreground">IFSC</dt><dd><CopyValue value={acc.ifsc} label="IFSC" mono /></dd></div>
-          <div className="sm:col-span-2 lg:col-span-4"><dt className="text-xs text-muted-foreground">Notes</dt><dd>{acc.notes || '—'}</dd></div>
+          <div className="sm:col-span-2 lg:col-span-4"><dt className="text-xs text-muted-foreground">Notes</dt><dd>{acc.notes || '-'}</dd></div>
         </dl>
       </Panel>}
 
@@ -103,10 +108,10 @@ export default function BankAccountDetail() {
         <Panel title="Transactions">
           {txns.length === 0 ? <Empty title="No transactions" /> : (
             <ul className="max-h-96 divide-y divide-border overflow-y-auto">
-              {txns.map((t) => (
+              {withBalance.map((t) => (
                 <li key={t.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                   <span className="min-w-0"><span className="block truncate font-medium">{t.desc}</span><span className="text-xs text-muted-foreground">{cap(t.kind)} · {formatDate(t.date)}</span></span>
-                  <Money value={t.amount} signed className="shrink-0 font-medium" />
+                  <span className="flex shrink-0 flex-col items-end"><Money value={t.amount} signed className="font-medium" /><span className="text-xs text-muted-foreground">Balance <Money value={t.after} /></span></span>
                 </li>
               ))}
             </ul>
@@ -115,8 +120,11 @@ export default function BankAccountDetail() {
         <Panel title="Balance history">
           {history.length === 0 ? <Empty title="No history" /> : (
             <ul className="max-h-96 divide-y divide-border overflow-y-auto">
-              {[...history].reverse().map((h) => (
-                <li key={h.id} className="flex items-center justify-between gap-3 py-2.5 text-sm"><span><span className="block">{formatDate(h.date)}</span><span className="text-xs text-muted-foreground">{h.note}</span></span><Money value={h.balance} className="font-medium" /></li>
+              {history.map((h, i) => ({ h, prev: i > 0 ? history[i - 1].balance : null })).reverse().map(({ h, prev }) => (
+                <li key={h.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                  <span className="min-w-0"><span className="block">{formatDate(h.date)}</span><span className="block truncate text-xs text-muted-foreground">{h.note}</span></span>
+                  <span className="flex shrink-0 flex-col items-end gap-0.5"><Money value={h.balance} className="font-medium" />{prev == null ? <span className="text-xs text-muted-foreground">Opening balance</span> : <Metric amount={h.balance - prev} pct={prev > 0 ? ((h.balance - prev) / prev) * 100 : null} />}</span>
+                </li>
               ))}
             </ul>
           )}

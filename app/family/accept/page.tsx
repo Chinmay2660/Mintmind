@@ -24,7 +24,7 @@ function Accept() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4 text-foreground">
       <div className="surface-card w-full max-w-md space-y-4 p-6">
         <h1 className="text-xl font-semibold">Family Circle invitation</h1>
         {!token ? <p className="text-sm text-destructive">This invitation link is incomplete.</p> : state === 'done' ? (

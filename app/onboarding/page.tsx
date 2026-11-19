@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
@@ -14,9 +14,16 @@ import { iconFor } from '@/components/onboarding/icons'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Field } from '@/components/wealth/kit'
+import { Field, InfoTip } from '@/components/wealth/kit'
 import { cn } from '@/lib/utils'
 import { FieldSet } from '@/components/ui/layout'
+import { Checkbox } from '@/components/ui/checkbox'
+import { SubscriptionForm } from '@/components/wealth/budget/Subscriptions'
+import { AccountForm } from '@/components/wealth/AccountForm'
+import { AssetForm } from '@/components/wealth/AssetForm'
+import { ItemForm } from '@/components/wealth/AssetsLoans'
+import { FundForm } from '@/components/wealth/FundForms'
+import { addFund, save } from '@/lib/wealth/actions'
 
 const STEPS = ['Profile', 'Goals', 'Package', 'Features', 'Preferences', 'Quick setup'] as const
 const NEEDS = [{ v: 'personal', l: 'Personal finances' }, { v: 'family', l: 'Family finances' }, { v: 'investments', l: 'Investments' }, { v: 'complete', l: 'Complete wealth management' }]
@@ -42,6 +49,9 @@ export default function OnboardingPage() {
   const [freq, setFreq] = useState('important')
   const [learn, setLearn] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+  const finishing = useRef(false)
+  // Setup is shown once. Coming back to it after it was finished goes to the dashboard; the same choices live in Settings.
+  useEffect(() => { if (ready && onboardingCompleted && !finishing.current && !done) router.replace('/dashboard') }, [ready, onboardingCompleted, done, router])
 
   const recommended = useMemo(() => new Set(recommendedFor(goals)), [goals])
   const toggle = (k: string) => { if (k === 'dashboard') return; setPkg(null); setSelected((s) => (s.includes(k) ? s.filter((x) => x !== k) : [...s, k])) }
@@ -53,11 +63,13 @@ export default function OnboardingPage() {
     const mo = validateMobile(mobile)
     if (!mo.ok) { setStep(0); setMobileError(mo.error); return }
     setBusy(true)
+    finishing.current = true
     try {
       await completeOnboarding({ selection: selected, goals, package: pkg, needs, age: a.value, mobile: mo.value, theme: theme || 'system', notifications: freq })
       setDone(true)
       setStep(5)
     } catch (e: any) {
+      finishing.current = false
       toast.error(e?.response?.data?.error || 'Could not save your choices. Please try again.')
     } finally { setBusy(false) }
   }
@@ -75,13 +87,13 @@ export default function OnboardingPage() {
     setStep((s) => s + 1)
   }
 
-  if (!ready) return <div className="flex min-h-screen items-center justify-center bg-background"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+  if (!ready) return <div className="flex min-h-dvh items-center justify-center bg-background"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
 
   const nameOrEmail = user?.name || user?.email || ''
   const progress = ((step + 1) / STEPS.length) * 100
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden pb-8 bg-background text-foreground">
+    <div className="relative flex min-h-dvh flex-col overflow-hidden pb-8 bg-background text-foreground">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-0 [background-image:radial-gradient(hsl(var(--foreground)/0.12)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_30%,#000_30%,transparent_100%)]" />
       <div aria-hidden className="pointer-events-none absolute left-1/2 top-[-12rem] h-[28rem] w-[48rem] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
       <header className="relative border-b border-border/60 backdrop-blur"><div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4 sm:px-6">
@@ -137,7 +149,7 @@ export default function OnboardingPage() {
                 <div className="flex items-start gap-3">
                   <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', on ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}><Icon className="h-4 w-4" /></span>
                   <div className="min-w-0 flex-1"><p className="flex flex-wrap items-center gap-2 font-semibold">{f.name}{recommended.has(f.key) && <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-primary">Recommended</span>}{f.core && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">Always on</span>}</p><p className="mt-0.5 text-sm text-muted-foreground">{f.description}</p></div>
-                  <label className="flex shrink-0 items-center"><span className="sr-only">Include {f.name}</span><input type="checkbox" className="h-5 w-5 accent-[hsl(var(--primary))]" checked={on} disabled={f.core} onChange={() => toggle(f.key)} /></label>
+                  <label className="flex shrink-0 items-center"><span className="sr-only">Include {f.name}</span><Checkbox checked={on} disabled={f.core} onChange={() => toggle(f.key)} /></label>
                 </div>
                 <ul className="mt-3 space-y-1 text-xs text-muted-foreground">{f.benefits.slice(0, 3).map((b) => <li key={b} className="flex gap-1.5"><Check className="mt-0.5 h-3 w-3 shrink-0 text-primary" />{b}</li>)}</ul>
                 {f.sensitive && <p className="mt-2 text-[11px] text-muted-foreground">Needs its own security setup before use.</p>}
@@ -171,7 +183,7 @@ export default function OnboardingPage() {
 
       <Dialog open={!!learn} onOpenChange={(o) => !o && setLearn(null)}>
         <DialogContent>{learn && (() => { const f = featureByKey(learn)!; return (<>
-          <DialogHeader><DialogTitle>{f.name}</DialogTitle><DialogDescription>{f.description}</DialogDescription></DialogHeader>
+          <DialogHeader><div className="flex items-center gap-2"><DialogTitle>{f.name}</DialogTitle><InfoTip label="Details">{f.description}</InfoTip></div><DialogDescription className="sr-only">{f.description}</DialogDescription></DialogHeader>
           <ul className="space-y-1.5 text-sm">{f.benefits.map((b) => <li key={b} className="flex gap-2"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />{b}</li>)}</ul>
           <p className="rounded-lg bg-muted px-3 py-2 text-sm"><strong>What you need:</strong> {f.needs}</p>
           <Button onClick={() => { if (!selected.includes(f.key)) toggle(f.key); setLearn(null) }} disabled={f.core}>{selected.includes(f.key) ? 'Included' : 'Include this feature'}</Button>
@@ -181,10 +193,14 @@ export default function OnboardingPage() {
   )
 }
 
-const SETUP: Record<string, { label: string; action: string; href: string; done: (d: any) => boolean }> = {
+type FormKey = 'asset' | 'loan' | 'account' | 'fund' | 'subscription'
+const SETUP: Record<string, { label: string; action: string; href: string; form?: FormKey; done: (d: any) => boolean }> = {
   dashboard: { label: 'Dashboard & Net Worth', action: 'Ready', href: '/dashboard', done: () => true },
-  bank_accounts: { label: 'Bank Accounts', action: 'Add your first account', href: '/dashboard/bank-accounts', done: (d) => d.bankAccounts.length > 0 },
-  mutual_funds: { label: 'Mutual Funds & SIPs', action: 'Add your investments', href: '/dashboard/mutual-funds', done: (d) => d.funds.length > 0 },
+  net_assets: { label: 'Assets (property, gold, EPF, stocks)', action: 'Add an asset', href: '', form: 'asset', done: (d) => d.assets.length > 0 },
+  net_liabilities: { label: 'Loans and other liabilities', action: 'Add a loan', href: '', form: 'loan', done: (d) => d.liabilities.length > 0 },
+  bank_accounts: { label: 'Bank Accounts', action: 'Add your first account', href: '', form: 'account', done: (d) => d.bankAccounts.length > 0 },
+  mutual_funds: { label: 'Mutual Funds & SIPs', action: 'Add your investments', href: '', form: 'fund', done: (d) => d.funds.length > 0 },
+  recurring: { label: 'Recurring payments (subscriptions, rent, SIPs)', action: 'Add a payment', href: '', form: 'subscription', done: (d) => d.sips.length > 0 || d.meta.some((m: any) => m.key === 'subscriptions' && m.value?.length > 0) },
   credit_cards: { label: 'Cards', action: 'Add your cards', href: '/dashboard/credit-cards', done: (d) => d.cards.length > 0 },
   insurance: { label: 'Insurance', action: 'Add your policies', href: '/dashboard/insurance', done: (d) => d.policies.length > 0 },
   budget_expenses: { label: 'Budget & Expenses', action: 'Set your monthly budget', href: '/dashboard/budget', done: (d) => d.budgets.length > 0 },
@@ -197,7 +213,10 @@ const SETUP: Record<string, { label: string; action: string; href: string; done:
 }
 
 function QuickSetup({ selected, data, onOpen }: { selected: string[]; data: any; onOpen: () => void }) {
-  const rows = selected.map((k) => ({ k, ...SETUP[k] })).filter((r) => r.label)
+  const { db } = useWealth()
+  const [form, setForm] = useState<FormKey | null>(null)
+  const keys = [...selected, ...(selected.includes('dashboard') ? ['net_assets', 'net_liabilities'] : []), ...(selected.includes('budget_expenses') || selected.includes('mutual_funds') ? ['recurring'] : [])]
+  const rows = keys.map((k) => ({ k, ...SETUP[k] })).filter((r) => r.label)
   const doneCount = rows.filter((r) => r.done(data)).length
   return (
     <section className="space-y-6">
@@ -205,7 +224,14 @@ function QuickSetup({ selected, data, onOpen }: { selected: string[]; data: any;
       <div><div className="mb-1.5 flex justify-between text-xs text-muted-foreground"><span>Setup progress</span><span>{doneCount} of {rows.length} ready</span></div><div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(doneCount / Math.max(rows.length, 1)) * 100}%` }} /></div></div>
       <ul className="divide-y divide-border rounded-xl border border-border">{rows.map((r) => { const ok = r.done(data); return (
         <li key={r.k} className="flex items-center justify-between gap-3 px-4 py-3"><span className="flex items-center gap-2.5 text-sm font-medium"><span className={cn('flex h-5 w-5 items-center justify-center rounded-full', ok ? 'bg-primary text-primary-foreground' : 'border border-border')}>{ok && <Check className="h-3 w-3" />}</span>{r.label}</span>
-          {ok ? <span className="text-xs text-muted-foreground">Ready</span> : <span className="flex items-center gap-2"><Button asChild size="sm" variant="outline"><Link href={r.href}>{r.action}</Link></Button><span className="hidden text-xs text-muted-foreground sm:inline">or skip for now</span></span>}</li>) })}</ul>
+          {ok ? <span className="text-xs text-muted-foreground">Ready</span> : <span className="flex items-center gap-2">{r.form ? <Button size="sm" variant="outline" onClick={() => setForm(r.form!)}>{r.action}</Button> : <Button asChild size="sm" variant="outline"><Link href={r.href}>{r.action}</Link></Button>}<span className="hidden text-xs text-muted-foreground sm:inline">or skip for now</span></span>}</li>) })}</ul>
+      {/* the same forms the app pages use, opened here so setup does not send you away */}
+      {form === 'subscription' && <SubscriptionForm onClose={() => setForm(null)} />}
+      {form === 'account' && <AccountForm onClose={() => setForm(null)} onSave={async (rec) => { await save(db, 'bankAccounts', rec); await db.balanceHistory.add({ id: `bh_${Date.now()}`, accountId: rec.id, date: rec.lastUpdated, balance: rec.currentBalance, note: 'Opening balance' }); toast.success('Account added') }} />}
+      {form === 'asset' && <AssetForm row={null} category="epf" onClose={() => setForm(null)} onSave={async (rec) => { await save(db, 'assets', rec); toast.success('Asset added') }} />}
+      {form === 'loan' && <ItemForm kind="liability" row={null} onClose={() => setForm(null)} onSave={async (rec) => { await save(db, 'liabilities', rec); toast.success('Loan added') }} />}
+      {form === 'fund' && <FundForm onClose={() => setForm(null)} onSave={async (rec) => { await addFund(db, rec); toast.success('Fund added') }} />}
+      <p className="text-xs text-muted-foreground">SIPs are added under Investments, once you have a fund.</p>
       <Button size="lg" onClick={onOpen}>Open my dashboard<ArrowRight className="ml-2 h-4 w-4" /></Button>
     </section>
   )

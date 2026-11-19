@@ -47,6 +47,13 @@ export function ErrorFallback({ error, reset, fullPage = false }: ErrorFallbackP
           <p className="text-muted-foreground text-base leading-relaxed">
             {error?.message || 'An unexpected error occurred. Please try again.'}
           </p>
+          {error?.stack && (
+            <details className="text-left text-xs text-muted-foreground">
+              <summary className="cursor-pointer select-none text-center hover:text-foreground">Technical details</summary>
+              <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-3 font-mono text-[11px]">{error.stack.split('\n').slice(0, 12).join('\n')}</pre>
+              <button type="button" className="mt-2 rounded px-1 text-primary underline outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => navigator.clipboard?.writeText(`${error.message}\n${error.stack}`)}>Copy details</button>
+            </details>
+          )}
         </motion.div>
 
         <motion.div

@@ -60,11 +60,17 @@ module.exports = {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
         },
+        info: { DEFAULT: "hsl(var(--info, 217 82% 52%))" },
+        "chart-up": "hsl(var(--chart-up, var(--success)))",
         warning: {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
         sidebar: "hsl(var(--sidebar))",
+        highlight: {
+          DEFAULT: "hsl(var(--highlight))",
+          foreground: "hsl(var(--highlight-foreground))",
+        },
         income: "hsl(var(--income))",
         expense: "hsl(var(--expense))",
         chart: {
@@ -121,6 +127,17 @@ module.exports = {
           "0%": { opacity: "0", transform: "scale(0.96)" },
           "100%": { opacity: "1", transform: "scale(1)" },
         },
+        "marquee": {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-100%)" },
+        },
+        "beam": {
+          to: { transform: "rotate(360deg)" },
+        },
+        "sheen": {
+          "0%": { transform: "translateX(0) skewX(-12deg)" },
+          "60%, 100%": { transform: "translateX(420%) skewX(-12deg)" },
+        },
         "blob": {
           "0%": { transform: "translate(0px, 0px) scale(1)" },
           "33%": { transform: "translate(30px, -50px) scale(1.1)" },
@@ -137,11 +154,20 @@ module.exports = {
         "slide-up": "slide-up 0.5s ease-out",
         "scale-in": "scale-in 0.35s ease-out",
         "blob": "blob 7s infinite",
+        "marquee": "marquee 38s linear infinite",
+        "beam": "beam 7s linear infinite",
+        "sheen": "sheen 3.4s ease-in-out infinite",
       },
       backgroundSize: {
         "300%": "300%",
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    // `paper:` applies a class only in the Paper style (data-style="paper" on <html>), in light and dark
+    ({ addVariant }) => addVariant('paper', '[data-style="paper"] &'),
+    // `retro:` applies only in the Retro style
+    ({ addVariant }) => addVariant('retro', '[data-retro] &'),
+  ],
 }

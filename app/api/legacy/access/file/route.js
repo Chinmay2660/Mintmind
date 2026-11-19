@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import LegacyPlan from '@/models/LegacyPlan';
 import Document from '@/models/Document';
 import { readUserFile } from '@/lib/storage';
+import { hashToken } from '@/lib/utils/crypto';
 
 export async function GET(request) {
   try {
@@ -14,7 +15,7 @@ export async function GET(request) {
     }
 
     await connectDB();
-    const plan = await LegacyPlan.findOne({ accessToken: token, released: true });
+    const plan = await LegacyPlan.findOne({ accessToken: { $in: [hashToken(token), token] }, released: true });
     if (!plan) {
       return NextResponse.json({ error: 'Invalid access' }, { status: 404 });
     }

@@ -50,8 +50,9 @@ export default function UserProfile({
 
   const profileTrigger = (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Tooltip content={fullName} side="right" disabled={!tooltip}>
+      {/* the tooltip wraps the trigger, not the other way round: the trigger must hand its click to the real button */}
+      <Tooltip content={fullName} side="right" disabled={!tooltip}>
+        <DropdownMenuTrigger asChild>
           <button
             type="button"
             className={cn(
@@ -91,8 +92,8 @@ export default function UserProfile({
             {displayName}
           </span>
           </button>
-        </Tooltip>
-      </DropdownMenuTrigger>
+        </DropdownMenuTrigger>
+      </Tooltip>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
@@ -108,7 +109,7 @@ export default function UserProfile({
           <Settings className="mr-2 h-4 w-4" />
           Settings
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push('/dashboard/settings')} className="cursor-pointer"><UserCog className="mr-2 h-4 w-4" />Profile & account</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push('/dashboard/settings?tab=account')} className="cursor-pointer"><UserCog className="mr-2 h-4 w-4" />Profile & account</DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push('/dashboard/settings?tab=integrations')} className="cursor-pointer"><Plug className="mr-2 h-4 w-4" />Integrations</DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push('/dashboard/tools')} className="cursor-pointer"><Calculator className="mr-2 h-4 w-4" />Planning tools</DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push('/dashboard/settings?tab=data')} className="cursor-pointer"><Database className="mr-2 h-4 w-4" />Backup & data</DropdownMenuItem>

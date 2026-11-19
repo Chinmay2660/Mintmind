@@ -8,7 +8,7 @@ export default function AppleIcon() {
     (
       <div
         style={{
-          background: '#2563eb',
+          background: '#A9C987',
           width: '100%',
           height: '100%',
           display: 'flex',
@@ -22,7 +22,7 @@ export default function AppleIcon() {
           height="96"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="white"
+          stroke="#141613"
           strokeWidth="2.25"
           strokeLinecap="round"
           strokeLinejoin="round"

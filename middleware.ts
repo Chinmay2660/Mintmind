@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { checkRateLimit, getClientIp } from '@/lib/middleware/rateLimit'
+import { isForgedOrigin } from '@/lib/middleware/origin'
+import { isRetiredApi } from '@/lib/middleware/legacyApi'
 
 function applySecurityHeaders(response: NextResponse, frameable = false) {
   response.headers.set('X-Content-Type-Options', 'nosniff')
@@ -14,6 +16,10 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   if (pathname.startsWith('/api')) {
+    if (isRetiredApi(pathname)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (isForgedOrigin(request.method, request.headers.get('origin'), request.headers.get('host'))) {
+      return NextResponse.json({ error: 'Cross-site request refused.' }, { status: 403 })
+    }
     const ip = getClientIp(request)
     const result = checkRateLimit(`api:${ip}`, { limit: 120, windowMs: 60_000 })
     if (result.limited) {
