@@ -115,7 +115,8 @@ async function networkFirstNavigation(event) {
 async function staleWhileRevalidate(event) {
   const { request } = event
   const cached = await caches.match(request)
-  const refresh = fetch(request).then((res) => put(RUNTIME_CACHE, request, res)).catch(() => cached)
+  // offline and nothing saved: answer with a network error, never undefined (respondWith needs a Response)
+  const refresh = fetch(request).then((res) => put(RUNTIME_CACHE, request, res)).catch(() => cached || Response.error())
   if (cached) {
     event.waitUntil(refresh)
     return cached
