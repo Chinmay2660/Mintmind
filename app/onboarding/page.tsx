@@ -65,7 +65,7 @@ export default function OnboardingPage() {
     setBusy(true)
     finishing.current = true
     try {
-      await completeOnboarding({ selection: selected, goals, package: pkg, needs, age: a.value, mobile: mo.value, theme: theme || 'system', notifications: freq })
+      await completeOnboarding({ selection: selected, goals, package: pkg, needs, age: a.value, mobile: mo.value, theme: theme || 'light', notifications: freq })
       setDone(true)
       setStep(5)
     } catch (e: any) {

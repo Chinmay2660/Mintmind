@@ -766,17 +766,6 @@ button > svg, a > svg, [role='tab'] > svg { flex-shrink: 0; }
 .dark:not([data-style='paper']) .hover\:text-primary:hover,
 .dark:not([data-style='paper']) .group:hover .group-hover\:text-primary { color: hsl(277 100% 74%); }
 
-/* Welcome screen orbits */
-@keyframes mm-orbit { to { transform: rotate(360deg); } }
-@keyframes mm-orbit-rev { to { transform: rotate(-360deg); } }
-@keyframes mm-pulse-ring { 0%, 100% { opacity: .35; } 50% { opacity: .7; } }
-.mm-orbit { animation: mm-orbit var(--mm-orbit-s, 40s) linear infinite; }
-.mm-orbit-rev { animation: mm-orbit-rev var(--mm-orbit-s, 40s) linear infinite; }
-.mm-ring-pulse { animation: mm-pulse-ring 5s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) {
-  .mm-orbit, .mm-orbit-rev, .mm-ring-pulse { animation: none; }
-}
-
 /* Landing cards: a soft glow that follows the pointer (set by StaggerList) */
 .fx-spot { position: relative; overflow: hidden; }
 .fx-spot::after {

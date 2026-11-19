@@ -23,6 +23,7 @@ const IDLE = 'text-muted-foreground hover:bg-muted hover:text-foreground'
 const GROUPS: { key: string; label: string; tone: string; ids: number[] }[] = [
   { key: 'banking', label: 'Banking', tone: 'text-[hsl(208_68%_46%)]', ids: [3, 5] },
   { key: 'invest', label: 'Investing', tone: 'text-[hsl(254_42%_56%)]', ids: [4, 6] },
+  { key: 'holdings', label: 'Assets & loans', tone: 'text-[hsl(134_49%_32%)]', ids: [14, 15] },
   { key: 'spending', label: 'Spending', tone: 'text-[hsl(21_77%_55%)]', ids: [7, 13] },
   { key: 'people', label: 'People', tone: 'text-[hsl(173_59%_38%)]', ids: [8, 9] },
 ]
@@ -56,7 +57,7 @@ function NavPanel({ collapsed = false, drawer = false, onNavigate, onToggleRail 
 
   // how much of the app has something in it: real counts, nothing assumed
   const done: Record<number, boolean> = {
-    3: data.bankAccounts.length > 0, 4: data.funds.length > 0, 5: data.cards.length > 0, 6: data.policies.length > 0,
+    14: data.assets.length > 0, 15: data.liabilities.length > 0, 3: data.bankAccounts.length > 0, 4: data.funds.length > 0, 5: data.cards.length > 0, 6: data.policies.length > 0,
     7: data.expenses.length > 0, 13: data.balanceHistory.length > 1, 8: data.members.length > 1, 9: data.meta.some((m: any) => m.key === 'vault'),
   }
   const aiOn = isEnabled('ai_assistant')

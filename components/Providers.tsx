@@ -23,7 +23,7 @@ export default function Providers({ children }: ProvidersProps) {
   return (
     <ThemeProvider
       attribute="class"
-      defaultTheme="system"
+      defaultTheme="light"
       storageKey="mm-theme"
       enableSystem
       scriptProps={themeScriptProps}

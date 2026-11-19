@@ -15,7 +15,6 @@ const BentoGrid = dynamic(() => import('@/components/landing/BentoGrid').then((m
 import { ProductMockups } from '@/components/landing/ProductMockups'
 import { CookieSettingsButton } from '@/components/landing/CookieSettingsButton'
 import { AppEntryButton } from '@/components/landing/AppEntryButton'
-import { MobileWelcome } from '@/components/landing/MobileWelcome'
 import { GradientText, Marquee, NumberTicker, Reveal, ShimmerCta, StaggerList } from '@/components/landing/fx'
 import { Button } from '@/components/ui/button'
 
@@ -74,7 +73,6 @@ export default function Home() {
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <a href="#content" className="sr-only z-[100] rounded-md bg-primary px-4 py-2 text-sm font-bold text-primary-foreground focus:not-sr-only focus:fixed focus:left-3 focus:top-3">Skip to main content</a>
-      <MobileWelcome />
       <div className="sticky top-0 z-30 px-3 pt-3 sm:px-6">
         <header className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 rounded-full border border-border bg-card/95 px-3 shadow-card backdrop-blur sm:px-4">
           <Link href="/" className="flex items-center gap-2" aria-label="Mintmind home"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Wallet className="h-4 w-4" /></span><span className="font-semibold tracking-tight">Mintmind</span></Link>

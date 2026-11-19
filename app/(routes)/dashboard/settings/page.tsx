@@ -28,6 +28,7 @@ import { toISO } from '@/lib/wealth/calc'
 import { TabBar } from '@/components/ui/tab-bar'
 import { UI_STYLES, UI_STYLE_KEY, applyStyle, normaliseStyle } from '@/lib/uiStyle'
 import { Checkbox } from '@/components/ui/checkbox'
+import { InstallApp } from '@/components/shell/InstallApp'
 
 const TABS = ['Account', 'My App Features', 'Appearance', 'Preferences', 'Automation', 'AI', 'Integrations', 'Data'] as const
 type Tab = (typeof TABS)[number]
@@ -248,6 +249,9 @@ function PreferencesTab() {
         <ul className="space-y-3">{toggles.map(([k, l]) => (
           <li key={String(k)}><label className="flex items-center gap-2 text-sm"><Checkbox checked={prefs.notifications[k]} onChange={(e) => update({ notifications: { ...prefs.notifications, [k]: e.target.checked } })} />{l}</label></li>
         ))}</ul>
+      </Panel>
+      <Panel flat title="Install app" description="Use Mintmind like an app on your phone or computer.">
+        <InstallApp />
       </Panel>
       <Panel flat title="Privacy & security">
         <Field label="Auto-lock the vault after" hint="Applies to My Vault.">{(id) => <Select id={id} value={prefs.autoLockMinutes} onChange={(e) => update({ autoLockMinutes: Number(e.target.value) })}>{[1, 2, 5, 10, 15, 30].map((m) => <option key={m} value={m}>{m} minute{m > 1 ? 's' : ''}</option>)}</Select>}</Field>

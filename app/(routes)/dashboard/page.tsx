@@ -1,5 +1,6 @@
 'use client'
 
+import { InstallBanner } from '@/components/shell/InstallApp'
 import Link from 'next/link'
 import { ArrowRight, ChevronRight, CreditCard, Landmark, PieChart as PieIcon, ShieldCheck, Wallet, type LucideIcon } from 'lucide-react'
 import { SnapCarousel } from '@/components/ui/snap-carousel'
@@ -273,6 +274,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-5">
+      <InstallBanner />
       <section className="surface-card relative overflow-hidden p-5 sm:p-6" aria-label="Net worth summary">
         <div className="relative flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0">

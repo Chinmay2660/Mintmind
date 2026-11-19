@@ -68,7 +68,7 @@ export function FeaturesProvider({ children }: { children: ReactNode }) {
     const selection = normaliseSelection(p.selection)
     if (isDemo) {
       await db.meta.put({ key: 'features', value: { enabled: selection } })
-      await db.meta.put({ key: 'onboarding', value: { completed: true, profile: { age: p.age ?? null, mobile: p.mobile ?? '', preferredTheme: (p.theme as any) || 'system', notificationPreference: (p.notifications as any) || 'important', selectedGoals: p.goals, selectedPackage: p.package ?? null, trackingNeeds: p.needs ?? null } } })
+      await db.meta.put({ key: 'onboarding', value: { completed: true, profile: { age: p.age ?? null, mobile: p.mobile ?? '', preferredTheme: (p.theme as any) || 'light', notificationPreference: (p.notifications as any) || 'important', selectedGoals: p.goals, selectedPackage: p.package ?? null, trackingNeeds: p.needs ?? null } } })
     } else {
       const r = await axios.post('/api/features', { action: 'complete-onboarding', ...p, selection })
       setRemote(r.data)
@@ -77,7 +77,7 @@ export function FeaturesProvider({ children }: { children: ReactNode }) {
 
   const updateProfile = useCallback(async (p: Partial<{ age: number | null; mobile: string; theme: string; notifications: string }>) => {
     if (isDemo) {
-      const cur = demoOnboarding ?? { completed: false, profile: { age: null, mobile: '', preferredTheme: 'system', notificationPreference: 'important', selectedGoals: [], selectedPackage: null, trackingNeeds: null } }
+      const cur = demoOnboarding ?? { completed: false, profile: { age: null, mobile: '', preferredTheme: 'light', notificationPreference: 'important', selectedGoals: [], selectedPackage: null, trackingNeeds: null } }
       await db.meta.put({ key: 'onboarding', value: { ...cur, profile: { ...cur.profile, ...('age' in p ? { age: p.age ?? null } : {}), ...(p.mobile != null ? { mobile: p.mobile } : {}), ...(p.theme ? { preferredTheme: p.theme } : {}), ...(p.notifications ? { notificationPreference: p.notifications } : {}) } } })
     } else {
       const r = await axios.post('/api/features', { action: 'update-profile', ...p })

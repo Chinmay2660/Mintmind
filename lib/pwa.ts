@@ -7,6 +7,7 @@ export const OFFLINE_ROUTES = [
   '/dashboard',
   '/dashboard/net-worth',
   '/dashboard/net-worth/manage',
+  '/dashboard/net-worth/loans',
   '/dashboard/bank-accounts',
   '/dashboard/credit-cards',
   '/dashboard/mutual-funds',

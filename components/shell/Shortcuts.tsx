@@ -69,7 +69,7 @@ export function Shortcuts() {
       else if (k === 'c') { e.preventDefault(); quick('account') }
       else if (k === 'n') { e.preventDefault(); router.push('/dashboard/net-worth/manage?add=asset') }
       else if (k === 'i') { e.preventDefault(); router.push('/dashboard/mutual-funds?add=fund') }
-      else if (k === 'l') { e.preventDefault(); router.push('/dashboard/net-worth/manage?add=liability') }
+      else if (k === 'l') { e.preventDefault(); router.push('/dashboard/net-worth/loans?add=liability') }
       else if (k === 'o') { e.preventDefault(); router.push('/dashboard/net-worth?add=goal') }
       else if (k === 'w') { e.preventDefault(); openAssistant() }
       else if (k === 'p') { e.preventDefault(); togglePrivacyMode() }
