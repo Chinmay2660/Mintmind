@@ -28,7 +28,7 @@ export function PortfolioTab({ onOpen }: { onOpen: (key: string) => void }) {
       </section>
       {rows.length === 0 ? <Empty title="No investments yet" description="Add a mutual fund, a fixed deposit or any other investment from its section." /> : (
         <Panel title="Where it is">
-          <div className="flex h-3 overflow-hidden rounded-full border border-border" role="img" aria-label={`Portfolio split: ${rows.map((r) => `${r.label} ${r.share} percent`).join(', ')}`}>
+          <div className="flex h-3 overflow-hidden rounded-full border border-border">
             {rows.map((r, i) => <span key={r.key} style={{ width: `${r.share}%`, background: chartColor(slot(i)) }} />)}
           </div>
           <ul className="mt-3 divide-y divide-border">
@@ -38,7 +38,7 @@ export function PortfolioTab({ onOpen }: { onOpen: (key: string) => void }) {
                   <i className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: chartColor(slot(i)) }} aria-hidden />
                   <span className="min-w-0 flex-1"><span className="block text-sm font-medium">{r.label}</span><span className="block text-xs text-muted-foreground">{r.count} {r.count === 1 ? 'holding' : 'holdings'} · {r.share}% of portfolio</span></span>
                   <span className="shrink-0 text-right"><span className="block text-sm font-semibold tabular-nums"><Money value={r.value} /></span>{r.gain != null && <Metric amount={r.gain} pct={r.gainPct} className="text-xs" />}</span>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                 </button>
               </li>
             ))}

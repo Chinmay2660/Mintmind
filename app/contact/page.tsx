@@ -12,7 +12,7 @@ export default function ContactPage() {
     <LegalPage title="Contact">
       <p>For questions about the app, a problem you ran into, or a request about your data, write to us.</p>
       {EMAIL ? (
-        <p><a className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 font-medium text-foreground hover:bg-muted" href={`mailto:${EMAIL}`}><Mail className="h-4 w-4" aria-hidden />{EMAIL}</a></p>
+        <p><a className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 font-medium text-foreground hover:bg-muted" href={`mailto:${EMAIL}`}><Mail className="h-4 w-4" />{EMAIL}</a></p>
       ) : (
         <p className="rounded-lg border border-border bg-card px-4 py-3">A contact address has not been set up for this copy of the app yet. The person who runs it can add one by setting <strong>NEXT_PUBLIC_CONTACT_EMAIL</strong>.</p>
       )}

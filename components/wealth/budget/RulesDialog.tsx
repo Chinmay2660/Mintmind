@@ -75,7 +75,7 @@ export function RulesDialog({ open, onOpenChange }: { open: boolean; onOpenChang
           <div className="space-y-2 rounded-xl border border-border bg-muted/40 p-3">
             <label className="flex items-center gap-2.5 text-sm"><Checkbox checked={onlyOther} onChange={(e) => setOnlyOther(e.target.checked)} aria-label="Only change expenses still in Other" />Only change expenses still in &ldquo;Other&rdquo;</label>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm" aria-live="polite">{preview.length === 0 ? 'Nothing in your past expenses would change.' : `${preview.length} past expense${preview.length === 1 ? '' : 's'} would change category.`}</p>
+              <p className="text-sm">{preview.length === 0 ? 'Nothing in your past expenses would change.' : `${preview.length} past expense${preview.length === 1 ? '' : 's'} would change category.`}</p>
               <Button type="button" variant="outline" size="sm" disabled={!preview.length} onClick={async () => { const n = await applyRuleChanges(db, preview); toast.success(`Updated ${n} expense${n === 1 ? '' : 's'}`) }}><Wand2 className="mr-1.5 h-4 w-4" />Apply to past expenses</Button>
             </div>
             <p className="text-xs text-muted-foreground">Only the category label changes. Amounts, dates and balances stay as they are.</p>

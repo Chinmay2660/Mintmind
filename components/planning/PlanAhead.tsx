@@ -60,7 +60,7 @@ export function PlanAhead({ netWorth, monthlySave, age = 0, monthlyExpense = 0, 
       <div className="surface-card p-4 sm:p-5">
         {scores && scores.now.score != null && (
           <div className="mb-4 border-b border-border pb-4">
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1" role="group" aria-label="Money check-up score">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <span className="text-xs text-muted-foreground">Your score</span>
               {events.length > 0 && scores.next.score !== scores.now.score && <span className="text-2xl font-semibold tabular-nums text-muted-foreground line-through" aria-label={`was ${scores.now.score}`}>{scores.now.score}</span>}
               <span className="text-4xl font-bold tabular-nums">{events.length > 0 ? scores.next.score : scores.now.score}</span>
@@ -81,9 +81,9 @@ export function PlanAhead({ netWorth, monthlySave, age = 0, monthlyExpense = 0, 
         </dl>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
           <div className="flex gap-3 text-xs text-muted-foreground"><span className="flex items-center gap-1.5"><span className="h-0 w-4 border-t-2 border-dashed border-foreground/60" />Today&apos;s path</span><span className="flex items-center gap-1.5"><span className="h-0 w-4 border-t-[3px]" style={{ borderColor: chartColor(1) }} />With the changes</span></div>
-          <div role="group" aria-label="Years shown" className="flex gap-1">{HORIZONS.map((h) => <button key={h} type="button" onClick={() => setYears(h)} aria-pressed={years === h} className={cn('rounded-full border px-2.5 py-1 text-xs', years === h ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{h === 25 ? 'All' : `${h}y`}</button>)}</div>
+          <div className="flex gap-1">{HORIZONS.map((h) => <button key={h} type="button" onClick={() => setYears(h)} aria-pressed={years === h} className={cn('rounded-full border px-2.5 py-1 text-xs', years === h ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{h === 25 ? 'All' : `${h}y`}</button>)}</div>
         </div>
-        <div className="mt-2 h-72" role="img" aria-label="Projected net worth, today's path versus with your changes">
+        <div className="mt-2 h-72">
           <ResponsiveContainer width="100%" height="100%"><LineChart data={rows} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid stroke={chartGrid} strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="year" {...chartAxis} interval="preserveStartEnd" /><YAxis {...chartAxis} width={64} tickFormatter={(v) => formatCompactINR(v)} />

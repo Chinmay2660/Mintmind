@@ -58,13 +58,13 @@ function GoalCard({ g, p, onOpen }: { g: any; p: any; onOpen: () => void }) {
     <button type="button" onClick={onOpen} aria-haspopup="dialog" aria-label={`${g.name}, ${p.achieved ? 'reached' : `${Math.round(p.pct)} percent`}. Open details`}
       className="surface-card block w-full p-4 text-left outline-none transition-all hover:border-primary/40 hover:shadow-elevated focus-visible:ring-2 focus-visible:ring-ring motion-safe:hover:-translate-y-0.5">
       <span className="flex items-center gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Target className="h-5 w-5" aria-hidden /></span>
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Target className="h-5 w-5" /></span>
         <span className="min-w-0 flex-1">
           <span className="block truncate font-medium">{g.name}</span>
           <span className="block truncate text-xs text-muted-foreground">{g.targetDate ? `By ${formatDate(g.targetDate)}` : 'No target date'}</span>
         </span>
         <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums', p.achieved ? 'bg-highlight/30 text-[hsl(85_60%_22%)] dark:bg-highlight/20 dark:text-highlight' : 'bg-muted')}>{p.achieved ? 'Done' : `${Math.round(p.pct)}%`}</span>
-        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
       </span>
       <span className="mt-4 block"><Progress value={p.pct} tone={p.achieved ? 'primary' : p.pct < 40 ? 'warning' : 'primary'} label={`${g.name} progress`} /></span>
       <span className="mt-2 block text-sm tabular-nums"><Money value={p.current} /> <span className="text-muted-foreground">of <Money value={p.target} /></span></span>
@@ -77,7 +77,7 @@ function GoalDetail({ g, p, onClose, onEdit, onDelete }: { g: any; p: any; onClo
   const [tab, setTab] = useState<'overview' | 'linked'>('overview')
   return (
     <section className="space-y-3">
-      <button type="button" onClick={onClose} className="inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" aria-hidden />All goals</button>
+      <button type="button" onClick={onClose} className="inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" />All goals</button>
       <div className="surface-card space-y-4 p-5">
         <div><h3 className="text-xl font-semibold">{g.name}</h3><p className="text-sm text-muted-foreground">{g.targetDate ? `Target date ${formatDate(g.targetDate)}` : 'No target date'}</p></div>
         <div>
@@ -134,7 +134,7 @@ function GoalForm({ row, suggested, onClose, onSave }: { row?: any; suggested: n
       steps={[
         { title: "The goal", description: "What you are saving for, how much, and by when.", content: <>
       <Field label="Goal">{(id) => <Input id={id} required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
-      <div className="full -mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Goal suggestions">{GOAL_PRESETS.filter((p) => p !== f.name).slice(0, 8).map((p) => <button key={p} type="button" onClick={() => setF({ ...f, name: p })} className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground">{p}</button>)}</div>
+      <div className="full -mt-2 flex flex-wrap gap-1.5">{GOAL_PRESETS.filter((p) => p !== f.name).slice(0, 8).map((p) => <button key={p} type="button" onClick={() => setF({ ...f, name: p })} className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground">{p}</button>)}</div>
       <Field label="Target amount (₹)" hint={/emergency/i.test(f.name) && suggested ? `Suggested: ${formatINR(suggested)} (6 months of spending)` : undefined}>{(id) => <Input id={id} type="number" min="1" step="any" required value={f.target} onChange={(e) => setF({ ...f, target: e.target.value })} />}</Field>
       <Field label="Target date (optional)">{(id) => <DateInput id={id} value={f.targetDate} onChange={(e) => setF({ ...f, targetDate: e.target.value })} />}</Field>
         </> },

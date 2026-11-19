@@ -100,7 +100,7 @@ export function SampleSimulator() {
 
           <div className="surface-card p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3"><h3 className="font-semibold">{sc.title}</h3><span className="text-xs text-muted-foreground">Sample family</span></div>
-            <p className={cn('mt-3 rounded-lg px-3 py-2 text-sm font-medium', after.room < 0 ? 'bg-destructive/10 text-destructive' : good ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning')} aria-live="polite">{verdict}</p>
+            <p className={cn('mt-3 rounded-lg px-3 py-2 text-sm font-medium', after.room < 0 ? 'bg-destructive/10 text-destructive' : good ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning')}>{verdict}</p>
             <dl className="mt-4 grid gap-3 sm:grid-cols-3">
               {stats.map((s) => (
                 <div key={s.label} className="rounded-lg bg-muted/60 p-3">
@@ -113,7 +113,7 @@ export function SampleSimulator() {
               ))}
             </dl>
             <div className="mt-4 flex gap-4 text-xs text-muted-foreground"><span className="flex items-center gap-1.5"><span className="h-0 w-4 border-t-2 border-dashed border-foreground/60" />Current path</span><span className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded bg-primary" />After this</span></div>
-            <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Projected net worth over ${YEARS} years, current path versus after ${sc.title.toLowerCase()}`} className="mt-2 h-auto w-full">
+            <svg viewBox={`0 0 ${W} ${H}`} className="mt-2 h-auto w-full">
               {[0, 1, 2, 3].map((i) => <line key={i} x1={PAD} x2={W - PAD} y1={PAD + (i * (H - PAD * 2)) / 3} y2={PAD + (i * (H - PAD * 2)) / 3} stroke="hsl(var(--border))" strokeDasharray="2 4" />)}
               <path d={path(base.pts)} fill="none" stroke="hsl(var(--foreground) / 0.6)" strokeWidth="2" strokeDasharray="5 4" />
               <path d={path(after.pts)} fill="none" stroke="hsl(var(--primary))" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'd 0.3s' }} />

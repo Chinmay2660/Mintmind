@@ -70,7 +70,7 @@ export function LegacyView() {
   return (
     <div className="space-y-5">
       <PageHeader />
-      <div role="note" className="flex gap-3 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
+      <div className="flex gap-3 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
         <p><strong>Important:</strong> Inactivity is not proof of death or incapacity. This feature only notifies people you trust and shares information you chose. It does not replace a will, bank nominations or inheritance law. Passwords are never emailed or texted.</p>
       </div>
@@ -88,7 +88,7 @@ export function LegacyView() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="Inactivity rules">
           <div className="space-y-4">
-            <div><p className="mb-1.5 text-sm font-medium">Notify after</p><div className="flex flex-wrap gap-1.5" role="group" aria-label="Inactivity period">
+            <div><p className="mb-1.5 text-sm font-medium">Notify after</p><div className="flex flex-wrap gap-1.5">
               {PRESETS.map((d) => <button key={d} type="button" aria-pressed={!custom && plan.inactivityDays === d} onClick={() => { setCustom(false); patch({ inactivityDays: d }) }} className={cn('rounded-full border px-3 py-1 text-xs font-medium', !custom && plan.inactivityDays === d ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground')}>{d} days</button>)}
               <button type="button" aria-pressed={custom || !PRESETS.includes(plan.inactivityDays)} onClick={() => setCustom(true)} className={cn('rounded-full border px-3 py-1 text-xs font-medium', custom || !PRESETS.includes(plan.inactivityDays) ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground')}>Custom</button></div>
               {(custom || !PRESETS.includes(plan.inactivityDays)) && <Input aria-label="Custom inactivity days" type="number" min={7} max={730} className="mt-2 w-32" defaultValue={plan.inactivityDays} onBlur={(e) => patch({ inactivityDays: Math.min(730, Math.max(7, Number(e.target.value) || 90)) })} />}</div>

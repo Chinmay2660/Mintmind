@@ -85,7 +85,7 @@ export default function BankAccountDetail() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="Balance trend (12 months)">
-          <div className="h-56" role="img" aria-label="Balance trend chart">
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%"><AreaChart data={trend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid stroke={chartGrid} vertical={false} /><XAxis dataKey="label" {...chartAxis} minTickGap={20} /><YAxis {...chartAxis} width={48} tickFormatter={ax} />
               <Tooltip {...chartTooltipStyle} formatter={(v: number) => (privacyMode ? '••••' : formatINR(v))} />
@@ -94,7 +94,7 @@ export default function BankAccountDetail() {
           </div>
         </Panel>
         <Panel title="Money in vs out (6 months)">
-          <div className="h-56" role="img" aria-label="Monthly money in versus out">
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%"><BarChart data={flow} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid stroke={chartGrid} vertical={false} /><XAxis dataKey="label" {...chartAxis} /><YAxis {...chartAxis} width={48} tickFormatter={ax} />
               <Tooltip {...chartTooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => (privacyMode ? '••••' : formatINR(v))} />

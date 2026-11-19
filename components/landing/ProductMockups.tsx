@@ -32,12 +32,12 @@ function Screen({ tab, compact }: { tab: Tab; compact?: boolean }) {
     return (
       <div className="space-y-3">
         <div><Label>Net worth · now</Label><p className={cn('font-mono font-semibold tabular-nums', compact ? 'text-xl' : 'text-3xl')}>₹90,32,418</p><p className="text-[11px] font-medium text-success">+₹6.19 L (+7.4%) <span className="text-muted-foreground">vs last month</span></p></div>
-        <svg viewBox="0 0 100 60" preserveAspectRatio="none" className={cn('w-full', compact ? 'h-24' : 'h-40')} role="img" aria-label="Sample net worth rising over fifteen months">
+        <svg viewBox="0 0 100 60" preserveAspectRatio="none" className={cn('w-full', compact ? 'h-24' : 'h-40')}>
           <path d={`${d} L100,60 L0,60 Z`} fill="hsl(var(--primary))" fillOpacity="0.22" />
           <path d={d} fill="none" stroke="hsl(var(--primary))" strokeWidth="1.8" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
         </svg>
         <div><Label>Where it sits</Label>
-          <div className="mt-1.5 flex h-2.5 overflow-hidden rounded-full border border-border" role="img" aria-label="Sample split: funds 41 percent, cash 24, property 22, gold 13">
+          <div className="mt-1.5 flex h-2.5 overflow-hidden rounded-full border border-border">
             {[['chart-1', 41], ['chart-2', 24], ['chart-4', 22], ['chart-6', 13]].map(([c, w]) => <span key={c as string} style={{ width: `${w}%`, background: `hsl(var(--${c}))` }} />)}
           </div>
           <p className="mt-1 text-[10px] text-muted-foreground">Funds 41% · Cash 24% · Property 22% · Gold 13%</p>
@@ -50,7 +50,7 @@ function Screen({ tab, compact }: { tab: Tab; compact?: boolean }) {
     return (
       <div className="space-y-3">
         <div><Label>Spent · last month</Label><p className={cn('font-mono font-semibold tabular-nums', compact ? 'text-xl' : 'text-3xl')}>₹42,093</p><p className="text-[11px] font-medium text-destructive">+₹3,760 (+8.1%) <span className="text-muted-foreground">from the month before</span></p></div>
-        <div className={cn('flex items-end gap-[3px]', compact ? 'h-24' : 'h-40')} role="img" aria-label="Sample daily spending bars">
+        <div className={cn('flex items-end gap-[3px]', compact ? 'h-24' : 'h-40')}>
           {SPEND.map((v, i) => <span key={i} className="flex-1 rounded-t-sm bg-chart-3" style={{ height: `${(v / max) * 100}%`, opacity: v === max ? 1 : 0.7 }} />)}
         </div>
         {!compact && (
@@ -68,7 +68,7 @@ function Screen({ tab, compact }: { tab: Tab; compact?: boolean }) {
     return (
       <div className="space-y-3">
         <div><Label>Portfolio · now</Label><p className={cn('font-mono font-semibold tabular-nums', compact ? 'text-xl' : 'text-3xl')}>₹18,55,478</p><p className="text-[11px] font-medium text-success">+₹5,00,482 (+36.9%) <span className="text-muted-foreground">XIRR 17.0%</span></p></div>
-        <svg viewBox="0 0 100 60" preserveAspectRatio="none" className={cn('w-full', compact ? 'h-20' : 'h-32')} role="img" aria-label="Sample portfolio value rising">
+        <svg viewBox="0 0 100 60" preserveAspectRatio="none" className={cn('w-full', compact ? 'h-20' : 'h-32')}>
           <path d={d} fill="none" stroke="hsl(var(--chart-4))" strokeWidth="1.8" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
         </svg>
         <ul className="divide-y divide-border text-[11px]">

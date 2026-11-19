@@ -45,7 +45,7 @@ export function RecurringView({ expenses }: Props) {
       </div>
 
       <Panel title="Coming up" description="Sorted by the next expected date. The date is when it usually falls, not a promise from the bank."
-        action={<div role="group" aria-label="Show cost per" className="inline-flex rounded-lg border border-border bg-muted p-0.5">{[false, true].map((y) => <button key={String(y)} type="button" aria-pressed={yearly === y} onClick={() => setYearly(y)} className={cn('rounded-md px-2.5 py-1 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', yearly === y ? 'bg-card shadow-card' : 'text-muted-foreground hover:text-foreground')}>{y ? 'Yearly' : 'Monthly'}</button>)}</div>}>
+        action={<div className="inline-flex rounded-lg border border-border bg-muted p-0.5">{[false, true].map((y) => <button key={String(y)} type="button" aria-pressed={yearly === y} onClick={() => setYearly(y)} className={cn('rounded-md px-2.5 py-1 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', yearly === y ? 'bg-card shadow-card' : 'text-muted-foreground hover:text-foreground')}>{y ? 'Yearly' : 'Monthly'}</button>)}</div>}>
         <ul className="divide-y divide-border">
           {rows.map((r: any) => {
             const days = Math.round((+r.next - +new Date(today.getFullYear(), today.getMonth(), today.getDate())) / 86400000)

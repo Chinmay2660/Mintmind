@@ -181,7 +181,7 @@ export default function Home() {
             <h2 className="text-2xl font-semibold tracking-tight">Clear about the limits</h2>
             <ul className="mt-6 grid gap-x-10 gap-y-3 text-sm text-muted-foreground sm:grid-cols-2">
               <li>Balances come from what you enter or choose to sync. Nothing refreshes from your bank automatically.</li>
-              <li>Your records live in this browser. Moving devices means exporting and importing a backup.</li>
+              <li>Your records are saved to your account, so the same data shows up on your phone and your laptop.</li>
               <li>It is a record and planning tool. It does not give investment, tax or insurance advice, and AI only explains figures the app calculated.</li>
               <li>Missing months stay empty. There is no streak to keep up.</li>
             </ul>

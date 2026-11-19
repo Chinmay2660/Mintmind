@@ -25,12 +25,12 @@ export function CashFlowView({ list, ym }: { list: any[]; ym: string }) {
         <Stat label="Net this month vs last" info="The month's money in minus money out, compared with the month before." value={<Metric amount={cur ? cur.net - (prev?.net ?? 0) : null} className="text-lg font-semibold sm:text-xl" hint="Needs two months" />} hint={cur?.savingsRate != null ? `${cur.savingsRate}% of income kept` : 'No income recorded'} />
       </div>
 
-      <Panel title="Month by month" description="Bars use a square-root scale, so a very large month does not shrink the others to nothing. Compare the lengths within a month, and use the figure on the right for the exact amount kept." action={<div role="group" aria-label="Months shown" className="inline-flex rounded-lg border border-border bg-muted p-0.5">{([6, 12] as const).map((n) => <button key={n} type="button" aria-pressed={months === n} onClick={() => setMonths(n)} className={cn('rounded-md px-3 py-1 text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-ring', months === n ? 'bg-card shadow-card' : 'text-muted-foreground')}>{n} months</button>)}</div>}>
+      <Panel title="Month by month" description="Bars use a square-root scale, so a very large month does not shrink the others to nothing. Compare the lengths within a month, and use the figure on the right for the exact amount kept." action={<div className="inline-flex rounded-lg border border-border bg-muted p-0.5">{([6, 12] as const).map((n) => <button key={n} type="button" aria-pressed={months === n} onClick={() => setMonths(n)} className={cn('rounded-md px-3 py-1 text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-ring', months === n ? 'bg-card shadow-card' : 'text-muted-foreground')}>{n} months</button>)}</div>}>
         <ul className="space-y-3">
           {r.series.map((m) => (
             <li key={m.ym} style={{ display: 'grid', gridTemplateColumns: '2.75rem minmax(0, 1fr) auto', alignItems: 'center', columnGap: 12 }} className="text-xs">
               <span className="font-bold uppercase text-muted-foreground">{label(m.ym)}</span>
-              <span className="space-y-1" role="img" aria-label={`${label(m.ym)}: in ${formatINR(m.income)}, out ${formatINR(m.expense)}`}>
+              <span className="space-y-1">
                 <span className="block h-2 rounded-full bg-success" style={{ width: `${Math.sqrt(m.income / max) * 100}%`, minWidth: m.income ? 4 : 0 }} />
                 <span className="block h-2 rounded-full bg-destructive" style={{ width: `${Math.sqrt(m.expense / max) * 100}%`, minWidth: m.expense ? 4 : 0 }} />
               </span>

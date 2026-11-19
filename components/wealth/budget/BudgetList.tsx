@@ -53,7 +53,7 @@ export function BudgetList({ budget, prevBudget, expenses, ym, today, onEdit }: 
                   </div>
                   {r.limit > 0 ? (
                     <>
-                      <div style={{ position: 'relative', marginTop: 4, paddingTop: now ? 26 : 4, paddingBottom: now ? 6 : 0 }} role="img" aria-label={`${r.category}: ${r.usedPct} percent used. Pace for today is ${r.pacePct} percent, ${formatINR(r.allowedToDate)}. ${WORDS[r.status]}.`}>
+                      <div style={{ position: 'relative', marginTop: 4, paddingTop: now ? 26 : 4, paddingBottom: now ? 6 : 0 }}>
                         <div style={{ position: 'relative', height: 12, borderRadius: 9999, overflow: 'hidden' }} className="border border-border bg-muted">
                           <div className={cn('h-full', BAR[r.status])} style={{ width: `${used}%` }} />
                         </div>

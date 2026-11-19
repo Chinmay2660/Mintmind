@@ -37,7 +37,7 @@ export function Breadcrumbs() {
             {trail.map((t) => (
               <li key={t.href + t.name} className="flex items-center gap-1">
                 <Link href={t.href} onClick={t.onClick ? (e) => { e.preventDefault(); t.onClick!() } : undefined} className="rounded outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{t.name}</Link>
-                <ChevronRight className="h-3 w-3" aria-hidden />
+                <ChevronRight className="h-3 w-3" />
               </li>
             ))}
           </ol>

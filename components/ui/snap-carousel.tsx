@@ -62,7 +62,7 @@ export function SnapCarousel({ label, children, cols = 3, itemWidth = 'w-[78%]',
         ))}
       </div>
       {items.length > 1 && (
-        <div className="mt-2 flex justify-center gap-1.5 md:hidden" role="group" aria-label={`${label} pages`}>
+        <div className="mt-2 flex justify-center gap-1.5 md:hidden">
           {items.map((_, i) => (
             <button key={i} type="button" onClick={() => go(i)} aria-label={`Show card ${i + 1} of ${items.length}`} aria-current={i === active}
               className="flex h-6 w-4 items-center justify-center outline-none">

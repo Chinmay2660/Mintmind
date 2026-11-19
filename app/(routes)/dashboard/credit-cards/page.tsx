@@ -73,7 +73,7 @@ function CreditCardsTab() {
                   className={cn('surface-card block w-full p-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', 'hover:border-primary/40')}>
                   <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/15 text-destructive"><CreditCard className="h-5 w-5" /></span>
                     <div className="min-w-0"><p className="truncate font-medium">{c.bank} {c.cardName}</p><p className="text-xs text-muted-foreground">{c.network} · •••• {String(c.cardNumber).slice(-4)}</p></div>
-                    <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" aria-hidden /></div>
+                    <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" /></div>
                   <div className="mt-4 flex items-end justify-between"><div><p className="text-xs text-muted-foreground">Outstanding</p><p className="text-xl font-semibold"><Money value={c.outstanding} /></p></div><p className="text-sm text-muted-foreground">{u}% of <Money value={c.limit} compact /></p></div>
                   <div className="mt-2"><Progress value={u} tone={toneForPct(u)} label={`${c.cardName} utilisation`} /></div>
                   <p className="mt-2 text-xs text-muted-foreground">{c.outstanding > 0 ? `Due ${formatDate(nextDayOfMonth(c.dueDay, today))}` : 'No dues'}</p>
@@ -84,7 +84,7 @@ function CreditCardsTab() {
 
           {card && (
             <>
-              <button type="button" onClick={() => setSel(null)} className="mb-3 inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" aria-hidden />All cards</button>
+              <button type="button" onClick={() => setSel(null)} className="mb-3 inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" />All cards</button>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-lg font-semibold">{card.bank} {card.cardName}</h2>
                 <div className="flex flex-wrap gap-2">
@@ -102,7 +102,7 @@ function CreditCardsTab() {
               </Panel>
               <div className="grid gap-4 lg:grid-cols-2">
                 <Panel title="Monthly card spend">
-                  <div className="h-52" role="img" aria-label="Monthly card spend chart"><ResponsiveContainer width="100%" height="100%"><BarChart data={spendTrend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <div className="h-52"><ResponsiveContainer width="100%" height="100%"><BarChart data={spendTrend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid stroke={chartGrid} vertical={false} /><XAxis dataKey="label" {...chartAxis} /><YAxis {...chartAxis} width={44} tickFormatter={(v) => (privacyMode ? '••' : formatCompactINR(v).replace('₹', ''))} />
                     <Tooltip {...chartTooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => (privacyMode ? '••••' : formatINR(v))} /><Bar dataKey="Spend" fill={chartColor(2)} radius={[4, 4, 0, 0]} />
                   </BarChart></ResponsiveContainer></div>

@@ -242,7 +242,7 @@ export function DateInput({ id, value = '', onChange, min, max, required, disabl
         <div className="w-full select-none p-1.5 sm:w-72">
           <div className="mb-2 flex items-center justify-between">
             <button type="button" onClick={() => (mode === 'days' ? go(-1) : setView((v) => ({ ...v, y: v.y - 1 })))} aria-label={mode === 'days' ? 'Previous month' : 'Previous year'} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><ChevronLeft className="h-4 w-4" /></button>
-            <button type="button" onClick={() => setMode(mode === 'days' ? 'months' : 'days')} className="rounded-lg px-3 py-1.5 text-sm font-semibold hover:bg-muted" aria-live="polite">{mode === 'days' ? `${MONTHS[view.m]} ${view.y}` : view.y}</button>
+            <button type="button" onClick={() => setMode(mode === 'days' ? 'months' : 'days')} className="rounded-lg px-3 py-1.5 text-sm font-semibold hover:bg-muted">{mode === 'days' ? `${MONTHS[view.m]} ${view.y}` : view.y}</button>
             <button type="button" onClick={() => (mode === 'days' ? go(1) : setView((v) => ({ ...v, y: v.y + 1 })))} aria-label={mode === 'days' ? 'Next month' : 'Next year'} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><ChevronRight className="h-4 w-4" /></button>
           </div>
 
@@ -323,7 +323,7 @@ export function MultiSelect({ id, options, selected, onToggle, placeholder = 'Ch
       {options.length > 8 && (
         <div className="sticky top-0 z-10 -mx-1.5 -mt-1.5 mb-1 border-b border-border bg-popover p-2">
           <div className="flex h-9 items-center gap-2 rounded-lg bg-muted px-2.5">
-            <Search className="h-4 w-4 text-muted-foreground" aria-hidden />
+            <Search className="h-4 w-4 text-muted-foreground" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" aria-label="Search options" className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
           </div>
         </div>

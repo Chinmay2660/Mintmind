@@ -16,7 +16,7 @@ export default function TermsPage() {
 
       <h2>Your data</h2>
       <ul>
-        <li>Your records are stored on your own device, in your browser. Clearing site data or switching devices without exporting a backup can remove them.</li>
+        <li>Your records are saved to your account on our server, and each signed-in device keeps a local copy. Vault items are encrypted on your device first, so we cannot read them. Keep your master password and recovery key safe, because we cannot recover a vault without them.</li>
         <li>Keep your own backups using the export options in Settings.</li>
         <li>You are responsible for the accuracy of what you enter and for keeping your master password and sign-in details safe.</li>
       </ul>

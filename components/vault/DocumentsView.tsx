@@ -140,9 +140,9 @@ export function DocumentsView() {
         </Panel>
       )}
 
-      <div className="relative max-w-sm"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden /><Input aria-label="Search documents" className="h-10 pl-9" placeholder="Search name, category, notes" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+      <div className="relative max-w-sm"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input aria-label="Search documents" className="h-10 pl-9" placeholder="Search name, category, notes" value={q} onChange={(e) => setQ(e.target.value)} /></div>
 
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Category">
+      <div className="flex flex-wrap gap-1.5">
         {['All', ...CATEGORIES].map((c) => <button key={c} type="button" aria-pressed={cat === c} onClick={() => setCat(c)} className={cn('flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium', cat === c ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{c !== 'All' && <Folder className="h-3 w-3" />}{c}</button>)}
       </div>
 

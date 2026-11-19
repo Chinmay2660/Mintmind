@@ -41,8 +41,8 @@ function AnswerCard({ m, onAsk, onOther }: { m: Msg; onAsk: (q: string) => void;
       {!m.unavailable || m.followups?.length ? (
         <div className="flex flex-col items-start gap-1.5 border-t border-border pt-2.5 text-xs">
           {m.links?.slice(0, 1).map((l) => <Link key={l.href} href={l.href} className="font-medium text-primary hover:underline">Open {l.label} →</Link>)}
-          {m.followups?.slice(0, 2).map((f) => <button key={f} type="button" onClick={() => onAsk(f)} className="flex w-full items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-left text-foreground outline-none transition-colors hover:border-primary/50 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"><span className="min-w-0">{f}</span><ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden /></button>)}
-          <button type="button" onClick={onOther} className="inline-flex items-center gap-1 text-left font-medium text-primary transition-colors hover:underline"><PenLine className="h-3 w-3" aria-hidden />Other: ask something else</button>
+          {m.followups?.slice(0, 2).map((f) => <button key={f} type="button" onClick={() => onAsk(f)} className="flex w-full items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-left text-foreground outline-none transition-colors hover:border-primary/50 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"><span className="min-w-0">{f}</span><ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /></button>)}
+          <button type="button" onClick={onOther} className="inline-flex items-center gap-1 text-left font-medium text-primary transition-colors hover:underline"><PenLine className="h-3 w-3" />Other: ask something else</button>
         </div>
       ) : null}
       <p className="text-[11px] text-muted-foreground/80">{[m.period ? `Data: ${m.period}` : '', m.source].filter(Boolean).join(' · ')}</p>
@@ -98,13 +98,13 @@ export function AssistantChat({ compact = false }: { compact?: boolean }) {
 
   return (
     <div className={cn('flex flex-col', compact ? 'h-full' : 'min-h-[24rem]')}>
-      <div ref={scroller} className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-2 pr-1" aria-live="polite">
+      <div ref={scroller} className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-2 pr-1">
         {msgs.length === 0 && (
           <div className="space-y-4 py-2">
             <div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"><Sparkles className="h-4 w-4" /></span>
               <div><p className="font-semibold">Hi, I&apos;m My Wealth AI.</p><p className="mt-0.5 text-sm text-muted-foreground">Ask about your money in plain words. I use your real figures, tell you which period they cover, and say so when something is missing.</p></div></div>
             <div className="grid gap-2 sm:grid-cols-2">{SUGGESTED_QUESTIONS.map((s) => <button key={s} type="button" onClick={() => ask(s)} disabled={!facts} className="rounded-xl border border-border px-3.5 py-2.5 text-left text-sm transition-colors hover:border-primary/40 hover:bg-muted disabled:opacity-50">{s}</button>)}
-              <button type="button" onClick={() => inputRef.current?.focus()} className="flex items-center gap-2 rounded-xl border border-dashed border-primary/50 px-3.5 py-2.5 text-left text-sm font-medium text-primary transition-colors hover:bg-primary/10"><PenLine className="h-4 w-4 shrink-0" aria-hidden />Other: ask your own question</button>
+              <button type="button" onClick={() => inputRef.current?.focus()} className="flex items-center gap-2 rounded-xl border border-dashed border-primary/50 px-3.5 py-2.5 text-left text-sm font-medium text-primary transition-colors hover:bg-primary/10"><PenLine className="h-4 w-4 shrink-0" />Other: ask your own question</button>
             </div>
           </div>
         )}
@@ -119,7 +119,7 @@ export function AssistantChat({ compact = false }: { compact?: boolean }) {
       <form className="mt-3 flex items-center gap-2 rounded-full border border-border bg-card py-1.5 pl-4 pr-1.5 focus-within:ring-2 focus-within:ring-ring/40" onSubmit={(e) => { e.preventDefault(); ask(q) }}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button type="button" aria-label="Choose a question" className="flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 text-xs font-medium text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ListChecks className="h-3.5 w-3.5" aria-hidden /><span className="hidden sm:inline">Questions</span></button>
+            <button type="button" aria-label="Choose a question" className="flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 text-xs font-medium text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ListChecks className="h-3.5 w-3.5" /><span className="hidden sm:inline">Questions</span></button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" side="top" className="max-h-[min(24rem,60dvh)] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto">
             {QUESTION_MENU.map((g, gi) => (
@@ -130,7 +130,7 @@ export function AssistantChat({ compact = false }: { compact?: boolean }) {
               </div>
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => setTimeout(() => inputRef.current?.focus(), 0)} className="cursor-pointer gap-2 text-sm font-medium text-primary"><PenLine className="h-3.5 w-3.5" aria-hidden />Type your own question</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setTimeout(() => inputRef.current?.focus(), 0)} className="cursor-pointer gap-2 text-sm font-medium text-primary"><PenLine className="h-3.5 w-3.5" />Type your own question</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         <input ref={inputRef} aria-label="Ask My Wealth AI" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" placeholder="Ask about your finances…" value={q} maxLength={300} onChange={(e) => setQ(e.target.value)} />

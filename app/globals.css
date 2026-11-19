@@ -37,16 +37,16 @@
     --accent: 27 92% 94%;
     --accent-foreground: 22 58% 26%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 72% 46%;
     --destructive-foreground: 0 0% 100%;
     --success: 145 62% 29%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 95% 44%;
+    --warning: 32 90% 30%;
     --warning-foreground: 0 0% 100%;
     --highlight: 84 89% 58%;
     --highlight-foreground: 85 55% 11%;
-    --income: 142 72% 29%;
-    --expense: 0 72% 51%;
+    --income: 142 72% 26%;
+    --expense: 0 72% 46%;
 
     --border: 250 14% 91%;
     --input: 250 14% 91%;
@@ -61,8 +61,8 @@
     --shadow-inset: inset 0 1px 2px hsl(217 33% 17% / 0.04);
 
     --chart-1: 277 100% 50%;
-    --chart-2: 24 92% 56%;
-    --chart-3: 84 89% 50%;
+    --chart-2: 24 92% 45%;
+    --chart-3: 84 80% 30%;
     --chart-4: 217 82% 55%;
     --chart-5: 0 72% 54%;
     --chart-6: 224 58% 24%;
@@ -100,7 +100,7 @@
     --accent: 268 42% 21%;
     --accent-foreground: 270 100% 88%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 84% 66%;
     --destructive-foreground: 222 49% 8%;
     --success: 145 62% 45%;
     --success-foreground: 222 49% 8%;
@@ -109,7 +109,7 @@
     --highlight: 84 89% 58%;
     --highlight-foreground: 85 55% 11%;
     --income: 142 71% 45%;
-    --expense: 0 84% 60%;
+    --expense: 0 84% 66%;
 
     --border: 256 18% 23%;
     --input: 256 18% 23%;
@@ -158,17 +158,17 @@
     --secondary: 35 31% 86%;
     --secondary-foreground: 36 9% 10%;
     --muted: 35 31% 86%;
-    --muted-foreground: 34 7% 41%;
+    --muted-foreground: 34 7% 36%;
     --accent: 79 41% 89%;
     --accent-foreground: 36 9% 10%;
 
-    --destructive: 6 63% 46%;
-    --success: 134 49% 32%;
-    --chart-up: 134 49% 32%;
-    --warning: 35 86% 35%;
+    --destructive: 6 63% 41%;
+    --success: 134 49% 28%;
+    --chart-up: 134 49% 28%;
+    --warning: 35 86% 30%;
     --info: 208 68% 37%;
-    --income: 134 49% 32%;
-    --expense: 6 63% 46%;
+    --income: 134 49% 28%;
+    --expense: 6 63% 41%;
 
     --border: 35 26% 82%;
     --input: 35 19% 73%;
@@ -180,8 +180,8 @@
     --shadow-card: inset 0 1px 0 hsl(0 0% 100% / 0.65), 0 1px 0 hsl(30 30% 25% / 0.06), 0 10px 22px -16px hsl(30 30% 25% / 0.35);
     --shadow-elevated: 1.5px 2.5px 0 hsl(var(--drop));
 
-    --chart-1: 114 38% 48%;
-    --chart-2: 21 77% 55%;
+    --chart-1: 114 40% 40%;
+    --chart-2: 21 80% 47%;
     --chart-3: 208 68% 45%;
     --chart-4: 254 42% 55%;
     --chart-5: 6 63% 52%;
@@ -206,16 +206,16 @@
     --secondary-foreground: 38 44% 89%;
     --muted: 33 14% 16%;
     --muted-foreground: 35 12% 59%;
-    --accent: 80 24% 29%;
+    --accent: 80 24% 23%;
     --accent-foreground: 38 44% 89%;
 
-    --destructive: 3 75% 60%;
+    --destructive: 3 75% 65%;
     --success: 114 38% 62%;
     --chart-up: 114 38% 62%;
     --warning: 36 79% 57%;
     --info: 208 56% 63%;
     --income: 114 38% 62%;
-    --expense: 3 75% 60%;
+    --expense: 3 75% 65%;
 
     --border: 35 12% 24%;
     --input: 33 12% 33%;
@@ -731,8 +731,28 @@ button > svg, a > svg, [role='tab'] > svg { flex-shrink: 0; }
   @page { margin: 10mm; }
   .app-shell { position: static !important; display: block !important; height: auto !important; }
   .app-main { overflow: visible !important; height: auto !important; padding-bottom: 0 !important; }
-  /* What is on the screen is what is printed: same theme, same colours, backgrounds included. */
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* A printed or saved PDF is black text on white paper, whichever theme and look the app is in.
+     Status colours use their dark, light-theme shades so they stay readable on white. */
+  /* triple :root so it outranks every theme selector, light or dark, Clean or Retro */
+  /* next-themes sets color-scheme inline on <html>, and a dark scheme paints a dark page margin, so this one is !important */
+  html:root:root:root {
+    color-scheme: light !important;
+    --background: 0 0% 100%; --foreground: 0 0% 0%;
+    --card: 0 0% 100%; --card-foreground: 0 0% 0%; --card-elevated: 0 0% 100%;
+    --popover: 0 0% 100%; --popover-foreground: 0 0% 0%;
+    --muted: 0 0% 95%; --muted-foreground: 0 0% 20%;
+    --secondary: 0 0% 95%; --secondary-foreground: 0 0% 0%;
+    --accent: 0 0% 93%; --accent-foreground: 0 0% 0%;
+    --border: 0 0% 72%; --input: 0 0% 72%; --chart-grid: 0 0% 86%;
+    --success: 134 49% 28%; --chart-up: 134 49% 28%; --income: 134 49% 28%;
+    --destructive: 6 63% 41%; --expense: 6 63% 41%;
+    --warning: 35 86% 30%; --info: 208 68% 37%;
+    --chart-1: 114 40% 40%; --chart-2: 21 80% 47%; --chart-3: 208 68% 45%; --chart-4: 254 42% 55%; --chart-5: 6 63% 52%; --chart-6: 173 59% 36%;
+    --shadow-card: none;
+  }
+  html, body { background: #fff !important; color: #000 !important; color-scheme: light !important; }
+  .text-primary { color: #000 !important; }
   /* nothing that floats, pops up or navigates belongs on paper */
   .fab, [data-sonner-toaster], [role='region'][aria-label='Cookie consent'], aside, nav[aria-label='Modules'] { display: none !important; }
   /* a card or a row is never cut across two pages, but a whole group of cards may flow, so pages are not left half empty */
@@ -781,6 +801,8 @@ button > svg, a > svg, [role='tab'] > svg { flex-shrink: 0; }
 /* Accessibility baseline */
 /* Anything focusable shows where the keyboard is, even where a component forgot its own ring. Component rings still win. */
 :where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex='-1'])):focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+/* Charts take focus as a whole and the search box sits inside its own pill, so a second box around them is just noise. */
+.recharts-wrapper:focus-visible, .recharts-wrapper *:focus-visible, .recharts-surface:focus-visible, input[type='search']:focus-visible { outline: none; }
 /* People who ask their device for less motion get almost none: no looping, no sliding, no smooth scrolling */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }

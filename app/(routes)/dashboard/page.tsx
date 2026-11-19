@@ -44,7 +44,7 @@ function Spark({ points, label, lowerIsBetter }: { points?: number[]; label: str
   const rising = points[points.length - 1] >= points[0]
   const good = lowerIsBetter ? !rising : rising
   return (
-    <svg viewBox="0 0 100 26" preserveAspectRatio="none" className="mt-2 h-6 w-full" role="img" aria-label={`${label} trend over ${points.length} saved months, ${rising ? 'up' : 'down'}`}>
+    <svg viewBox="0 0 100 26" preserveAspectRatio="none" className="mt-2 h-6 w-full">
       <path d={d} fill="none" stroke={good ? 'hsl(var(--chart-up, var(--success)))' : 'hsl(var(--destructive))'} strokeWidth="1.6" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
@@ -55,7 +55,7 @@ function Widget({ title, href, icon: Icon, tint, children, spark }: { title: str
     <Link href={href} className="group surface-card flex flex-col p-4 outline-none transition-all motion-safe:hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-elevated focus-visible:ring-2 focus-visible:ring-ring">
       <div className="flex items-center justify-between gap-2">
         <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${TINTS[tint]}`}><Icon className="h-5 w-5" aria-hidden /></span>
-        <ChevronRight className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden />
+        <ChevronRight className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
       </div>
       <p className="mt-3 text-xs font-medium text-muted-foreground">{title}</p>
       {children}
@@ -167,7 +167,7 @@ export default function DashboardPage() {
           {m.series.length < 2 ? (
             <Empty title="Not enough history yet" description="Net worth snapshots build up automatically as your data changes." />
           ) : (
-            <div className="h-64" role="img" aria-label="Net worth line chart">
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={m.series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid stroke={chartGrid} vertical={false} />
@@ -209,7 +209,7 @@ export default function DashboardPage() {
     spending: (
       <div className="grid gap-4 lg:grid-cols-2">
         {isEnabled('budget_expenses') && <Panel title="Income vs expenses">
-          <div className="h-60" role="img" aria-label="Income versus expenses bar chart">
+          <div className="h-60">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={m.cashflow} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke={chartGrid} vertical={false} />
@@ -277,7 +277,7 @@ export default function DashboardPage() {
         <div className="relative flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary"><Wallet className="h-5 w-5" aria-hidden /></span>
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary"><Wallet className="h-5 w-5" /></span>
               <p className="flex items-center gap-1 text-sm font-medium text-muted-foreground">Net worth<InfoTip label="net worth"><p className="font-medium">How net worth is calculated</p><p className="mt-1">Your total assets minus your total liabilities, from the balances and values you entered. Bank balances, funds at their latest NAV, other assets, then less loans and card outstanding.</p><p className="mt-1 text-muted-foreground">{m.lastSnapshot ? `Last snapshot saved on ${formatDate(m.lastSnapshot)}.` : 'No snapshot saved yet.'}</p></InfoTip></p>
             </div>
             <p className="mt-3 text-4xl font-semibold tracking-tight tabular-nums md:text-5xl"><Money value={netWorth.netWorth} /></p>
@@ -286,7 +286,7 @@ export default function DashboardPage() {
               const label = cmpMonths === 1 ? 'last month' : cmpMonths === 3 ? 'three months ago' : 'a year ago'
               return (
                 <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-                  <div role="group" aria-label="Compare with" className="inline-flex rounded-lg border border-border bg-muted p-0.5">
+                  <div className="inline-flex rounded-lg border border-border bg-muted p-0.5">
                     {([[1, 'Month'], [3, 'Quarter'], [12, 'Year']] as const).map(([v, l]) => (
                       <button key={v} type="button" aria-pressed={cmpMonths === v} onClick={() => setCmpMonths(v)} className={cn('rounded-md px-2.5 py-1 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', cmpMonths === v ? 'bg-card text-foreground shadow-card' : 'text-muted-foreground hover:text-foreground')}>{l}</button>
                     ))}
@@ -340,7 +340,7 @@ function Donut({ data, total, privacy, offset = 0, holdings }: { data: { key: st
   return (
     <div>
       <div className="flex flex-col items-center gap-4 sm:flex-row">
-        <div className="relative h-48 w-48 shrink-0" role="img" aria-label="Donut chart. Choose a slice or a legend row to see what is in it.">
+        <div className="relative h-48 w-48 shrink-0">
           <div className="relative z-10 h-full w-full"><ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie data={data} dataKey="value" nameKey="name" innerRadius={58} outerRadius={84} paddingAngle={2} stroke="hsl(var(--card))" strokeWidth={2} onClick={(d: any) => d?.key && pick(d.key)} className="cursor-pointer">
@@ -366,7 +366,7 @@ function Donut({ data, total, privacy, offset = 0, holdings }: { data: { key: st
         </ul>
       </div>
       {chosen && (
-        <div className="mt-4 rounded-xl border border-border bg-muted/40 p-3" aria-live="polite">
+        <div className="mt-4 rounded-xl border border-border bg-muted/40 p-3">
           <div className="mb-1.5 flex items-center justify-between gap-2">
             <p className="text-xs font-medium">{chosen.name}: what is in it</p>
             <button type="button" onClick={() => setSel(null)} className="rounded px-1.5 text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">Clear</button>

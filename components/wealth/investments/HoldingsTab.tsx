@@ -48,7 +48,7 @@ export function HoldingsTab({ kind }: { kind: Kind }) {
             <span className="block text-sm font-semibold tabular-nums"><Money value={v} /></span>
             {extra?.interest != null ? <span className="block text-xs text-success tabular-nums">+{formatINR(extra.interest)} interest</span> : g ? <Metric amount={g.gain} pct={g.pct} className="text-xs" /> : null}
           </span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
         </button>
       </li>
     )

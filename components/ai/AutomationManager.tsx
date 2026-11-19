@@ -50,7 +50,7 @@ export function AutomationManager() {
 
   return (
     <div className="space-y-4">
-      <div role="note" className="rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">Automations only <strong className="text-foreground">notify</strong> you. They never move money, place investment orders or change your records. They are checked while the app is open{isDemo ? ' (demo: sample rules and history)' : ''}; email and SMS copies are sent at that time.</div>
+      <div className="rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">Automations only <strong className="text-foreground">notify</strong> you. They never move money, place investment orders or change your records. They are checked while the app is open{isDemo ? ' (demo: sample rules and history)' : ''}; email and SMS copies are sent at that time.</div>
       <Panel title="Your automations" action={<div className="flex gap-2"><Button size="sm" variant="outline" onClick={runNow} disabled={!rules.length}><Play className="mr-1 h-4 w-4" />Run now</Button><Button size="sm" onClick={() => setPicker(true)}><Plus className="mr-1 h-4 w-4" />Add</Button></div>}>
         {rules.length === 0 ? <Empty title="No automations" description="Start from a template, e.g. “Card payment due reminder”." /> : (
           <ul className="divide-y divide-border">{rules.map((r) => (

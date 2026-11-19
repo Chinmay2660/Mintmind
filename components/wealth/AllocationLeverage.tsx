@@ -57,7 +57,7 @@ export function AllocationLeverage() {
           <h4 className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">Allocation</h4>
           {alloc.length === 0 ? <Empty title="No assets yet" /> : (
             <>
-              <div className="flex h-3 overflow-hidden rounded-full border border-border" role="img" aria-label={`Allocation: ${alloc.map((a) => `${nameOf(a.key)} ${a.pct} percent`).join(', ')}`}>
+              <div className="flex h-3 overflow-hidden rounded-full border border-border">
                 {alloc.map((a, i) => <span key={a.key} style={{ width: `${a.pct}%`, background: chartColor(slot(i)) }} />)}
               </div>
               <ul className="mt-3 divide-y divide-border">

@@ -55,7 +55,7 @@ export function SplitDialog({ expense, onClose }: { expense: any; onClose: () =>
         </ul>
         <div className="flex items-center justify-between gap-2 text-sm">
           <Button type="button" variant="outline" size="sm" onClick={() => setRows((p) => [...p, { id: Math.max(...p.map((x) => x.id)) + 1, category: 'Other', amount: left > 0 ? String(left) : '' }])}><Plus className="mr-1 h-4 w-4" />Add a part</Button>
-          <span role="status" aria-live="polite" className={left === 0 ? 'text-muted-foreground' : 'font-semibold text-destructive'}>{left === 0 ? 'Fully assigned' : left > 0 ? `${formatINR(left)} left to assign` : `${formatINR(-left)} too much`}</span>
+          <span role="status" className={left === 0 ? 'text-muted-foreground' : 'font-semibold text-destructive'}>{left === 0 ? 'Fully assigned' : left > 0 ? `${formatINR(left)} left to assign` : `${formatINR(-left)} too much`}</span>
         </div>
         <div className="flex flex-wrap justify-between gap-2">
           {already ? <Button type="button" variant="ghost" onClick={async () => { await unsplitExpense(db, expense.id); toast.success('Back to one category'); onClose() }}>Remove split</Button> : <span />}

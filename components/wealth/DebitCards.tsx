@@ -62,7 +62,7 @@ export function DebitCardsTab() {
               return (
                 <button key={c.id} type="button" aria-label={`${c.bank} ${c.cardName}, open details`} onClick={() => setSel(c.id)} className={cn('surface-card block w-full p-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', 'hover:border-primary/40')}>
                   <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-4/15 text-chart-4"><CreditCard className="h-5 w-5" /></span><div className="min-w-0"><p className="truncate font-medium">{c.bank} {c.cardName}</p><p className="text-xs text-muted-foreground">{c.network} · ···· {String(c.cardNumber).slice(-4)}</p></div>
-                    <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" aria-hidden /></div>
+                    <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" /></div>
                   <div className="mt-4 flex items-end justify-between"><div className="min-w-0"><p className="text-xs text-muted-foreground">Linked account</p><p className="truncate text-sm font-medium">{a ? accountLabel(a) : 'Not linked'}</p></div><div className="text-right"><p className="text-xs text-muted-foreground">Balance</p><p className="font-semibold">{a ? <Money value={a.currentBalance} /> : '-'}</p></div></div>
                 </button>
               )
@@ -71,7 +71,7 @@ export function DebitCardsTab() {
 
           {card && (
             <>
-              <button type="button" onClick={() => setSel(null)} className="mb-3 inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" aria-hidden />All debit cards</button>
+              <button type="button" onClick={() => setSel(null)} className="mb-3 inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" />All debit cards</button>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-lg font-semibold">{card.bank} {card.cardName}</h2>
                 <div className="flex gap-2"><Button size="sm" onClick={() => setDlg({ txn: true, row: card })}>Add transaction</Button><Button size="sm" variant="outline" onClick={() => setDlg({ row: card })}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button><Button size="sm" variant="outline" onClick={() => setDlg({ row: card, del: true })}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button></div>
@@ -90,7 +90,7 @@ export function DebitCardsTab() {
               </Panel>
               <div className="grid gap-4 lg:grid-cols-2">
                 <Panel title="Monthly spend">
-                  <div className="h-52" role="img" aria-label="Monthly debit card spend"><ResponsiveContainer width="100%" height="100%"><BarChart data={trend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <div className="h-52"><ResponsiveContainer width="100%" height="100%"><BarChart data={trend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid stroke={chartGrid} vertical={false} /><XAxis dataKey="label" {...chartAxis} /><YAxis {...chartAxis} width={44} tickFormatter={(v) => (privacyMode ? '••' : formatCompactINR(v).replace('₹', ''))} />
                     <Tooltip {...chartTooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => (privacyMode ? '••••' : formatINR(v))} /><Bar dataKey="Spend" fill={chartColor(1)} radius={[4, 4, 0, 0]} />
                   </BarChart></ResponsiveContainer></div>

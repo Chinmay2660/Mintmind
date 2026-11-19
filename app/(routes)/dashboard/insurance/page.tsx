@@ -48,7 +48,7 @@ export default function InsurancePage() {
         {Object.entries(cover.byType).slice(0, 2).map(([k, v]) => <Stat key={k} label={`${typeLabel(k)} cover`} value={<Money value={v} compact />} />)}
       </div>
 
-      {!detail && <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by type">
+      {!detail && <div className="flex flex-wrap gap-1.5">
         {[{ value: 'all', label: 'All' }, ...POLICY_TYPES].map((t) => (
           <button key={t.value} type="button" aria-pressed={filter === t.value} onClick={() => setFilter(t.value)} className={cn('rounded-full border px-3 py-1 text-xs font-medium', filter === t.value ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{t.label}</button>
         ))}
@@ -93,12 +93,12 @@ function PolicyCard({ p, today, onOpen }: { p: any; today: Date; onOpen: () => v
     <button type="button" onClick={onOpen} aria-haspopup="dialog" aria-label={`${p.policyName}, ${p.company}. Open details`}
       className="surface-card block w-full p-4 text-left outline-none transition-all hover:border-primary/40 hover:shadow-elevated focus-visible:ring-2 focus-visible:ring-ring motion-safe:hover:-translate-y-0.5">
       <span className="flex items-center gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-4/15 text-chart-4"><ShieldCheck className="h-5 w-5" aria-hidden /></span>
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-4/15 text-chart-4"><ShieldCheck className="h-5 w-5" /></span>
         <span className="min-w-0 flex-1">
           <span className="block truncate font-medium">{p.policyName}</span>
           <span className="block truncate text-xs text-muted-foreground">{p.company} · {typeLabel(p.type)}</span>
         </span>
-        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
       </span>
       <span className="mt-4 flex items-end justify-between gap-3">
         <span><span className="block text-xs text-muted-foreground">Sum assured</span><span className="block text-lg font-semibold tabular-nums"><Money value={p.sumAssured} /></span></span>
@@ -118,7 +118,7 @@ function PolicyDetail({ p, today, doc, history, onClose, onPaid, onEdit, onDelet
   const row = (k: string, children: React.ReactNode) => <div key={k} className="flex items-start justify-between gap-4 py-2.5 text-sm"><dt className="shrink-0 text-muted-foreground">{k}</dt><dd className="min-w-0 text-right font-medium">{children}</dd></div>
   return (
     <section className="space-y-3">
-      <button type="button" onClick={onClose} className="inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" aria-hidden />All policies</button>
+      <button type="button" onClick={onClose} className="inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" />All policies</button>
       <div className="surface-card space-y-4 p-5">
         <div><h3 className="text-xl font-semibold">{p.policyName}</h3><p className="text-sm text-muted-foreground">{p.company} · {typeLabel(p.type)}</p></div>
         <div className="flex items-end justify-between gap-3">
@@ -149,7 +149,7 @@ function PolicyDetail({ p, today, doc, history, onClose, onPaid, onEdit, onDelet
         </div>
         {p.frequency !== 'single' && (can.ok
           ? <Button className="h-11" disabled={busy} onClick={async () => { setBusy(true); try { await onPaid() } finally { setBusy(false) } }}>Mark premium paid</Button>
-          : <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm"><span className="flex items-center gap-2 font-medium"><Check className="h-4 w-4 text-success" aria-hidden />{p.endDate && p.endDate < toISO(today) ? 'Policy ended' : 'Paid for this period'}</span><InfoTip label="Premium status">{can.reason}</InfoTip></div>)}
+          : <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm"><span className="flex items-center gap-2 font-medium"><Check className="h-4 w-4 text-success" />{p.endDate && p.endDate < toISO(today) ? 'Policy ended' : 'Paid for this period'}</span><InfoTip label="Premium status">{can.reason}</InfoTip></div>)}
         <div className="grid grid-cols-2 gap-2">
           <Button variant="outline" className="h-11" onClick={onEdit}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button>
           <Button variant="destructive" className="h-11" onClick={onDelete}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button>

@@ -52,7 +52,7 @@ export default function SettingsPage() {
       <PageHeader />
       <div className="md:grid md:grid-cols-[13rem_minmax(0,1fr)] md:gap-8">
         {/* a list down the left on a wide screen, the usual tab strip on a phone */}
-        <nav aria-label="Settings sections" className="mb-5 hidden md:sticky md:top-20 md:mb-0 md:block md:self-start">
+        <nav aria-label="Settings sections" className="mb-5 hidden md:sticky md:top-4 md:mb-0 md:block md:self-start">
           <ul className="space-y-0.5">
             {sections.map((t) => (
               <li key={t}>
@@ -294,8 +294,7 @@ function SetupHint({ vars, extra, uri }: { vars: string[]; extra: string; uri: s
   )
 }
 
-const PLAN_KEY = 'mm-plan-inputs'
-const forgetLocalExtras = () => { try { localStorage.removeItem(PLAN_KEY) } catch { /* ignore */ } }
+const forgetLocalExtras = () => { /* planning inputs now live in the synced data, nothing extra is kept on this device */ }
 
 function DataTab() {
   const { db, isDemo, resetDemo } = useWealth()
@@ -335,7 +334,7 @@ function DataTab() {
       ) : (
         <Panel flat title="Account management">
           <div className="space-y-3">
-            <div className="flex items-center gap-2"><Button variant="outline" onClick={() => setDlg('wipe')}><Trash2 className="mr-2 h-4 w-4" />Erase my tracked data</Button><InfoTip label="Erase my tracked data">Clears banks, funds, cards, policies, budget and expenses from this browser.</InfoTip></div>
+            <div className="flex items-center gap-2"><Button variant="outline" onClick={() => setDlg('wipe')}><Trash2 className="mr-2 h-4 w-4" />Erase my tracked data</Button><InfoTip label="Erase my tracked data">Clears banks, funds, cards, policies, budget and expenses from your account, on every device.</InfoTip></div>
             <div className="flex items-center gap-2"><Button variant="destructive" onClick={() => setDlg('delete')}>Delete my account</Button><InfoTip label="Delete my account">Removes your login, Drive link and server-side records. Files already in your Google Drive are not deleted.</InfoTip></div>
           </div>
         </Panel>

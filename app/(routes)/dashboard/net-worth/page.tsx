@@ -135,7 +135,7 @@ function NetWorthOverview() {
         }
       >
         {chart.length < 2 ? <Empty title="Not enough snapshots for this range" /> : (
-          <div className="h-72" role="img" aria-label="Net worth history chart">
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke={chartGrid} vertical={false} />
@@ -166,7 +166,7 @@ function NetWorthOverview() {
       <Panel title="By account type" description="Your assets grouped by the kind of account they sit in. Liabilities are not netted off here.">
         {byType.length === 0 ? <Empty title="No assets yet" /> : (
           <>
-            <div className="flex h-3 overflow-hidden rounded-full border border-border" role="img" aria-label={`Split: ${byType.map((r) => `${r.label} ${r.pct} percent`).join(', ')}`}>
+            <div className="flex h-3 overflow-hidden rounded-full border border-border">
               {byType.map((r, i) => <span key={r.key} style={{ width: `${r.pct}%`, background: chartColor((((i % 6) + 1)) as 1 | 2 | 3 | 4 | 5 | 6) }} />)}
             </div>
             <ul className="mt-3 divide-y divide-border">
