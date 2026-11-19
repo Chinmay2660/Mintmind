@@ -19,6 +19,8 @@ import { NetWorthJournal } from '@/components/wealth/NetWorthJournal'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { assetValue } from '@/lib/wealth/holdings'
+import { DateInput } from '@/components/ui/pickers'
+import { TabBar } from '@/components/ui/tab-bar'
 
 const VIEWS = ['Monthly', 'Yearly'] as const
 type Kind = 'asset' | 'liability'
@@ -104,8 +106,8 @@ function NetWorthOverview() {
         action={
           <div className="flex flex-wrap items-center gap-2">
             <RangeTabs value={view} onChange={setView} options={VIEWS as readonly (typeof VIEWS)[number][]} label="Granularity" />
-            <Input type="date" aria-label="From date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-8 w-36 text-xs" />
-            <Input type="date" aria-label="To date" value={to} onChange={(e) => setTo(e.target.value)} className="h-8 w-36 text-xs" />
+            <DateInput aria-label="From date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-8 w-36 text-xs" />
+            <DateInput aria-label="To date" value={to} onChange={(e) => setTo(e.target.value)} className="h-8 w-36 text-xs" />
             {(from || to) && <Button size="sm" variant="ghost" onClick={() => { setFrom(''); setTo('') }}>Clear</Button>}
           </div>
         }
@@ -170,9 +172,7 @@ export default function NetWorthPage() {
   const [tab, setTab] = useState<'Overview' | 'Goals'>('Overview')
   return (
     <div className="space-y-5">
-      <div role="tablist" aria-label="Net worth views" className="flex gap-1 border-b border-border">
-        {(['Overview', 'Goals'] as const).map((t) => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={cn('border-b-2 px-3 py-2 text-sm font-medium outline-none focus-visible:bg-muted', tab === t ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}>{t}</button>)}
-      </div>
+      <TabBar label="Net worth views" tabs={[{ key: 'Overview', label: 'Overview' }, { key: 'Goals', label: 'Goals' }]} value={tab} onChange={(k) => setTab(k as typeof tab)} />
       {tab === 'Overview' ? <NetWorthOverview /> : <GoalsPanel />}
     </div>
   )

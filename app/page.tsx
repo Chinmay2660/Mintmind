@@ -9,6 +9,8 @@ import { DemoButton } from '@/components/landing/DemoButton'
 import { HeroScoreCard } from '@/components/landing/HeroScoreCard'
 import { SampleSimulator } from '@/components/landing/SampleSimulator'
 import { AppEntryButton } from '@/components/landing/AppEntryButton'
+import { MobileWelcome } from '@/components/landing/MobileWelcome'
+import { Aurora, BorderBeam, GradientText, Marquee, NumberTicker, Reveal, ShimmerCta, StaggerList } from '@/components/landing/fx'
 import { Button } from '@/components/ui/button'
 
 export const metadata: Metadata = {
@@ -56,6 +58,7 @@ const PRIVACY: { icon: LucideIcon; title: string; text: string }[] = [
 export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <MobileWelcome />
       <div className="sticky top-0 z-30 px-3 pt-3 sm:px-6">
         <header className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 rounded-full border border-border bg-card/95 px-3 shadow-card backdrop-blur sm:px-4">
           <Link href="/" className="flex items-center gap-2" aria-label="Mintmind home"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Wallet className="h-4 w-4" /></span><span className="font-semibold tracking-tight">Mintmind</span></Link>
@@ -67,13 +70,14 @@ export default function Home() {
       </div>
 
       <main>
-        <section className="dot-grid relative">
-          <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 md:py-20 lg:grid-cols-[1.1fr_1fr]">
+        <section className="dot-grid relative overflow-hidden">
+          <Aurora />
+          <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 md:py-20 lg:grid-cols-[1.1fr_1fr]">
             <div>
-              <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">Is your family&apos;s money on track?<span className="block text-primary">See it clearly in minutes.</span></h1>
+              <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">Is your family&apos;s money on track?<GradientText className="block">See it clearly in minutes.</GradientText></h1>
               <p className="mt-5 max-w-xl text-lg text-muted-foreground">Add rough numbers, see what to fix first, then plan goals, track the budget and protect what matters.</p>
               <div className="mt-8 flex flex-wrap items-start gap-3">
-                <Button asChild size="lg"><Link href="/auth/signin?mode=signup">Check my money <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+                <ShimmerCta href="/auth/signin?mode=signup">Check my money <ArrowRight className="ml-2 h-4 w-4" /></ShimmerCta>
                 <DemoButton size="lg" label="See a sample family" />
               </div>
               <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
@@ -81,8 +85,19 @@ export default function Home() {
                 <li className="flex items-center gap-1.5"><Lock className="h-4 w-4" />Vault encrypted on your device</li>
               </ul>
             </div>
-            <div className="flex justify-center lg:justify-end"><HeroScoreCard /></div>
+            <Reveal delay={150} className="flex justify-center lg:justify-end"><BorderBeam className="w-full max-w-md"><HeroScoreCard /></BorderBeam></Reveal>
           </div>
+        </section>
+
+        <section aria-label="At a glance" className="border-y border-border bg-card/40 py-6">
+          <div className="mx-auto grid max-w-6xl grid-cols-3 gap-4 px-4 text-center sm:px-6">
+            {[[MODULES.length, 'modules in one app'], [CALCS.length, 'free calculators'], [STEPS.length, 'steps to your first score']].map(([n, l]) => (
+              <div key={l as string}><p className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl"><NumberTicker value={n as number} /></p><p className="mt-1 text-xs text-muted-foreground sm:text-sm">{l}</p></div>
+            ))}
+          </div>
+          <Marquee className="mt-6" label="Modules">
+            {MODULES.map(({ icon: Icon, name }) => <span key={name} className="inline-flex shrink-0 items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm"><Icon className="h-4 w-4 text-primary" aria-hidden />{name}</span>)}
+          </Marquee>
         </section>
 
         <SampleSimulator />
@@ -90,8 +105,8 @@ export default function Home() {
         <section aria-labelledby="how" className="border-t border-border">
           <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
             <h2 id="how" className="text-2xl font-semibold tracking-tight">How does it work?</h2>
-            <ol className="mt-8 grid gap-4 md:grid-cols-3">{STEPS.map(({ icon: Icon, n, title, text }) => (
-              <li key={n} className="surface-card p-4 sm:p-5"><div className="flex items-center justify-between text-xs text-muted-foreground"><span>{n}</span><Icon className="h-4 w-4" /></div><h3 className="mt-3 font-semibold">{title}</h3><p className="mt-1 text-sm text-muted-foreground">{text}</p></li>))}</ol>
+            <StaggerList as="ol" className="mt-8 grid gap-4 md:grid-cols-3">{STEPS.map(({ icon: Icon, n, title, text }) => (
+              <li key={n} className="surface-card p-4 sm:p-5"><div className="flex items-center justify-between text-xs text-muted-foreground"><span>{n}</span><Icon className="h-4 w-4" /></div><h3 className="mt-3 font-semibold">{title}</h3><p className="mt-1 text-sm text-muted-foreground">{text}</p></li>))}</StaggerList>
           </div>
         </section>
 
@@ -100,8 +115,8 @@ export default function Home() {
             <p className="text-sm font-medium text-primary">Everything in one place</p>
             <h2 className="mt-1 text-2xl font-semibold tracking-tight">Every penny, tracked and explained.</h2>
             <p className="mt-1 max-w-2xl text-muted-foreground">Each module does one job and they update each other, so one transaction shows up everywhere it should.</p>
-            <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{MODULES.map(({ icon: Icon, name, text }) => (
-              <li key={name} className="surface-card p-4 sm:p-5 transition-colors hover:border-primary/40"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground"><Icon className="h-[18px] w-[18px]" /></span><h3 className="mt-3 font-semibold">{name}</h3><p className="mt-1 text-sm text-muted-foreground">{text}</p></li>))}</ul>
+            <StaggerList className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{MODULES.map(({ icon: Icon, name, text }) => (
+              <li key={name} className="surface-card p-4 sm:p-5 transition-colors hover:border-primary/40"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon className="h-[18px] w-[18px]" /></span><h3 className="mt-3 font-semibold">{name}</h3><p className="mt-1 text-sm text-muted-foreground">{text}</p></li>))}</StaggerList>
           </div>
         </section>
 
@@ -110,8 +125,8 @@ export default function Home() {
             <p className="text-sm font-medium text-primary">Free, no sign-up</p>
             <h2 className="mt-1 text-2xl font-semibold tracking-tight">Quick calculators</h2>
             <p className="mt-1 max-w-2xl text-muted-foreground">Basic what-if tools you can use right now. Sign in to get planners prefilled with your own accounts and loans.</p>
-            <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{CALCS.map(({ name, text }) => (
-              <li key={name}><Link href="/tools" className="surface-card flex h-full items-start gap-3 p-4 transition-colors hover:border-primary/40"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground"><Calculator className="h-[18px] w-[18px]" /></span><span><span className="block font-semibold">{name}</span><span className="mt-1 block text-sm text-muted-foreground">{text}</span></span></Link></li>))}</ul>
+            <StaggerList className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{CALCS.map(({ name, text }) => (
+              <li key={name}><Link href="/tools" className="surface-card flex h-full items-start gap-3 p-4 transition-colors hover:border-primary/40"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Calculator className="h-[18px] w-[18px]" /></span><span><span className="block font-semibold">{name}</span><span className="mt-1 block text-sm text-muted-foreground">{text}</span></span></Link></li>))}</StaggerList>
             <p className="mt-6 text-sm text-muted-foreground">After sign-in: <strong className="font-medium text-foreground">Planning tools</strong> for emergency fund runway, loan payoff order, insurance cover and retirement, using your own numbers.</p>
             <Button asChild variant="outline" size="lg" className="mt-4"><Link href="/tools">Open all calculators <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
           </div>
@@ -121,7 +136,7 @@ export default function Home() {
           <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
             <h2 className="text-2xl font-semibold tracking-tight">Private by design</h2>
             <ul className="mt-8 grid gap-6 sm:grid-cols-2">{PRIVACY.map(({ icon: Icon, title, text }) => (
-              <li key={title} className="flex gap-4"><span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground"><Icon className="h-[18px] w-[18px]" /></span><div><h3 className="font-semibold">{title}</h3><p className="mt-1 text-sm text-muted-foreground">{text}</p></div></li>))}</ul>
+              <li key={title} className="flex gap-4"><span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon className="h-[18px] w-[18px]" /></span><div><h3 className="font-semibold">{title}</h3><p className="mt-1 text-sm text-muted-foreground">{text}</p></div></li>))}</ul>
           </div>
         </section>
 

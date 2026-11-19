@@ -35,7 +35,7 @@ export function AccountForm({ row, onClose, onSave }: { row?: any; onClose: () =
         }
         await onSave({
           ...row, ...f,
-          bankName: cash ? f.bankName || 'Cash' : f.bankName, holderName: cash ? f.holderName || '—' : f.holderName,
+          bankName: cash ? f.bankName || 'Cash' : f.bankName, holderName: cash ? f.holderName || '-' : f.holderName,
           accountNumber: cash ? '' : f.accountNumber, ifsc: cash ? '' : f.ifsc.toUpperCase(),
           currentBalance: cur, mab: cash ? 0 : Number(f.mab) || 0, lastUpdated: toISO(new Date()),
         })

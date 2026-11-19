@@ -54,7 +54,7 @@ export async function GET(request) {
         const categoryId = item.categoryId?._id?.toString() || 'uncategorized'
         const categoryName = item.categoryId?.name || 'Uncategorized'
         const categoryIcon = item.categoryId?.icon || '📁'
-        const categoryColor = item.categoryId?.color || '#2563eb'
+        const categoryColor = item.categoryId?.color || '#9d00ff'
 
         if (!acc[categoryId]) {
           acc[categoryId] = {

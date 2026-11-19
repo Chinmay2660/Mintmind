@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Field } from '@/components/wealth/kit'
 import { cn } from '@/lib/utils'
 import { FieldSet } from '@/components/ui/layout'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const STEPS = ['Profile', 'Goals', 'Package', 'Features', 'Preferences', 'Quick setup'] as const
 const NEEDS = [{ v: 'personal', l: 'Personal finances' }, { v: 'family', l: 'Family finances' }, { v: 'investments', l: 'Investments' }, { v: 'complete', l: 'Complete wealth management' }]
@@ -137,7 +138,7 @@ export default function OnboardingPage() {
                 <div className="flex items-start gap-3">
                   <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', on ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}><Icon className="h-4 w-4" /></span>
                   <div className="min-w-0 flex-1"><p className="flex flex-wrap items-center gap-2 font-semibold">{f.name}{recommended.has(f.key) && <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-primary">Recommended</span>}{f.core && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">Always on</span>}</p><p className="mt-0.5 text-sm text-muted-foreground">{f.description}</p></div>
-                  <label className="flex shrink-0 items-center"><span className="sr-only">Include {f.name}</span><input type="checkbox" className="h-5 w-5 accent-[hsl(var(--primary))]" checked={on} disabled={f.core} onChange={() => toggle(f.key)} /></label>
+                  <label className="flex shrink-0 items-center"><span className="sr-only">Include {f.name}</span><Checkbox checked={on} disabled={f.core} onChange={() => toggle(f.key)} /></label>
                 </div>
                 <ul className="mt-3 space-y-1 text-xs text-muted-foreground">{f.benefits.slice(0, 3).map((b) => <li key={b} className="flex gap-1.5"><Check className="mt-0.5 h-3 w-3 shrink-0 text-primary" />{b}</li>)}</ul>
                 {f.sensitive && <p className="mt-2 text-[11px] text-muted-foreground">Needs its own security setup before use.</p>}

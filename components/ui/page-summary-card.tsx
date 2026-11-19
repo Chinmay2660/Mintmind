@@ -19,7 +19,7 @@ export function PageSummaryCard({
   return (
     <section className={cn('surface-card-elevated px-5 py-5 md:px-8 md:py-6', className)}>
       <p className="mm-stat-label">{label}</p>
-      <p className="mm-stat-value-lg mt-2">{loading ? '—' : value}</p>
+      <p className="mm-stat-value-lg mt-2">{loading ? '-' : value}</p>
       {hint && !loading && (
         <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">{hint}</div>
       )}

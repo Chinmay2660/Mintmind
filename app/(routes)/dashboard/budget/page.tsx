@@ -1,26 +1,28 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, Plus, Settings2, Tags, TriangleAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useWealth } from '@/lib/wealth/WealthContext'
-import { deleteExpense, deleteIncome, deleteTransfer, save } from '@/lib/wealth/actions'
+import { deleteExpense, deleteIncome, deleteTransfer, save, setBookmarks } from '@/lib/wealth/actions'
 import { addMonths, availableBalance, budgetPacing, round2, toISO } from '@/lib/wealth/calc'
 import { useCategories } from '@/lib/wealth/useCategories'
 import { buildTransactions, inMonth } from '@/lib/wealth/transactions'
 import { TxnEntryDialog, type TxnType } from '@/components/wealth/budget/TxnEntryDialog'
-import { CalendarView, CategoryManager, StatsView, SummaryStrip, TransactionsView, type Tx } from '@/components/wealth/budget/Views'
+import { CalendarView, CategoryManager, MonthlyView, StatsView, SummaryStrip, SummaryView, TransactionsView, type Tx } from '@/components/wealth/budget/Views'
+import { MonthPicker } from '@/components/ui/pickers'
 import { categoryTotals, monthKey, monthTotal } from '@/lib/wealth/selectors'
 import { formatCompactINR, formatDate, formatINR } from '@/lib/wealth/format'
 import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Progress, Select, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForPct } from '@/components/wealth/kit'
+import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Progress, Select, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForPct, UsagePct } from '@/components/wealth/kit'
 import { cn } from '@/lib/utils'
-import { SmartBudget } from '@/components/ai/SmartBudget'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
+import { TabBar } from '@/components/ui/tab-bar'
+import { Checkbox } from '@/components/ui/checkbox'
 
 export default function BudgetPage() {
   const { ready, data, db } = useWealth()
@@ -28,8 +30,8 @@ export default function BudgetPage() {
   const today = useMemo(() => new Date(), [])
   const curYm = toISO(today).slice(0, 7)
   const [ym, setYm] = useState(curYm)
-  const [dlg, setDlg] = useState<null | { kind: 'budget' | 'categories' | 'txn' | 'del'; row?: any; type?: TxnType; tx?: Tx }>(null)
-  const [tab, setTab] = useState<'overview' | 'transactions' | 'calendar' | 'stats'>('overview')
+  const [dlg, setDlg] = useState<null | { kind: 'budget' | 'categories' | 'txn' | 'del' | 'delmany'; row?: any; draft?: any; type?: TxnType; tx?: Tx; txs?: Tx[] }>(null)
+  const [tab, setTab] = useState<'overview' | 'transactions' | 'calendar' | 'monthly' | 'summary' | 'stats'>('overview')
   const { expense: EXPENSE_CATEGORIES } = useCategories()
   const [catFilter, setCatFilter] = useState('')
 
@@ -63,6 +65,11 @@ export default function BudgetPage() {
   const allTx = useMemo(() => buildTransactions({ expenses: data.expenses, bankTxns: data.bankTxns, transfers: data.transfers, bankAccounts: data.bankAccounts, cards: data.cards }) as unknown as Tx[], [data.expenses, data.bankTxns, data.transfers, data.bankAccounts, data.cards])
   const monthTx = useMemo(() => inMonth(allTx as any, ym) as unknown as Tx[], [allTx, ym])
   const edit = (t: Tx) => setDlg({ kind: 'txn', row: t.raw })
+  // Duplicate: opens the entry sheet pre-filled with this expense (today's date) so a repeat purchase is two taps.
+  const duplicate = (t: Tx) => setDlg({ kind: 'txn', type: 'expense', draft: { ...t.raw, date: undefined } })
+  const bookmark = (items: Tx[], on: boolean) => setBookmarks(db, items.map((t) => ({ kind: t.kind, id: t.id, legacy: t.legacy })), on).then(() => toast.success(on ? 'Bookmarked' : 'Bookmark removed')).catch(() => toast.error('Could not update bookmarks'))
+  const swipe = useRef<{ x: number; y: number } | null>(null)
+  const step = (by: number) => setYm((cur) => { const next = addMonths(`${cur}-01`, by).slice(0, 7); return next > curYm ? cur : next })
   const askDelete = (t: Tx) => setDlg({ kind: 'del', tx: t })
   if (!ready) return <LoadingBlock className="h-64" />
 
@@ -83,14 +90,14 @@ export default function BudgetPage() {
           <>
             <div className="flex items-center gap-1">
               <Button variant="outline" size="icon" aria-label="Previous month" onClick={() => setYm(prevYm)}><ChevronLeft className="h-4 w-4" /></Button>
-              <span className="min-w-32 text-center text-sm font-medium">{monthName}</span>
+              <MonthPicker value={ym} max={curYm} onChange={setYm} className="min-w-32 justify-center" />
               <Button variant="outline" size="icon" aria-label="Next month" disabled={ym >= curYm} onClick={() => setYm(addMonths(`${ym}-01`, 1).slice(0, 7))}><ChevronRight className="h-4 w-4" /></Button>
             </div>
             <Button variant="outline" onClick={() => setDlg({ kind: 'categories' })}><Tags className="mr-1.5 h-4 w-4" />Categories</Button>
             <Button variant="outline" onClick={() => setDlg({ kind: 'budget' })}><Settings2 className="mr-1.5 h-4 w-4" />Budget</Button>
-            <Button onClick={() => setDlg({ kind: 'txn', type: 'expense' })}><Plus className="mr-1.5 h-4 w-4" />Add transaction</Button>
           </>
         }
+        primaryAction={{ label: 'Add transaction', onClick: () => setDlg({ kind: 'txn', type: 'expense' }) }}
       />
 
       {alerts.length > 0 && (
@@ -99,21 +106,29 @@ export default function BudgetPage() {
         </div>
       )}
 
-      <div role="tablist" aria-label="Budget views" className="flex gap-1 overflow-x-auto border-b border-border">
-        {([['overview', 'Overview'], ['transactions', 'Transactions'], ['calendar', 'Calendar'], ['stats', 'Stats']] as const).map(([k, l]) => (
-          <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={cn('shrink-0 border-b-2 px-3 py-2 text-sm font-medium outline-none focus-visible:bg-muted', tab === k ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}>{l}</button>
-        ))}
-      </div>
+      <TabBar label="Budget views" tabs={[{ key: 'overview', label: 'Overview' }, { key: 'transactions', label: 'Transactions' }, { key: 'calendar', label: 'Calendar' }, { key: 'monthly', label: 'Monthly' }, { key: 'summary', label: 'Summary' }, { key: 'stats', label: 'Stats' }]} value={tab} onChange={(k) => setTab(k as typeof tab)} />
 
-      {tab === 'transactions' && <TransactionsView list={monthTx} ym={ym} onEdit={edit} onDelete={askDelete} onAdd={() => setDlg({ kind: 'txn', type: 'expense' })} />}
-      {tab === 'calendar' && <CalendarView list={monthTx} ym={ym} onEdit={edit} onDelete={askDelete} />}
+      {/* Swipe sideways to move between months, like a paper ledger. Scrollers, sliders and fields keep their own gestures. */}
+      <div className="space-y-5"
+        onTouchStart={(e) => { const t = e.touches[0]; swipe.current = { x: t.clientX, y: t.clientY } }}
+        onTouchEnd={(e) => {
+          const st = swipe.current; swipe.current = null
+          if (!st || tab === 'monthly' || tab === 'overview') return
+          if ((e.target as HTMLElement).closest('[role="region"], [role="tablist"], [role="slider"], input, textarea')) return
+          const t = e.changedTouches[0]; const dx = t.clientX - st.x; const dy = t.clientY - st.y
+          if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 2) step(dx < 0 ? 1 : -1)
+        }}>
+      {tab === 'transactions' && <TransactionsView list={monthTx} ym={ym} onEdit={edit} onDelete={askDelete} onDuplicate={duplicate} onBookmark={bookmark} onBulkDelete={(txs) => setDlg({ kind: 'delmany', txs })} onAdd={() => setDlg({ kind: 'txn', type: 'expense' })} />}
+      {tab === 'calendar' && <CalendarView list={monthTx} ym={ym} onEdit={edit} onDelete={askDelete} onDuplicate={duplicate} onBookmark={bookmark} />}
+      {tab === 'monthly' && <MonthlyView all={allTx} ym={ym} curYm={curYm} onPick={(k) => { setYm(k); setTab('transactions') }} />}
+      {tab === 'summary' && <SummaryView list={monthTx} ym={ym} />}
       {tab === 'stats' && <StatsView list={monthTx} />}
+      </div>
 
       {tab === 'overview' && (!budget || !p ? (
         <Empty title={`No budget for ${monthName}`} description="Set a monthly budget to see daily pacing and projections." action={<Button onClick={() => setDlg({ kind: 'budget' })}>Set budget</Button>} />
       ) : (
         <>
-          <SmartBudget />
           <div className="flex flex-wrap items-center gap-2">
             <label htmlFor="budget-scope" className="text-sm font-medium">Showing</label>
             <Select id="budget-scope" className="w-auto" value={catFilter} onChange={(e) => setCatFilter(e.target.value)}>
@@ -124,7 +139,7 @@ export default function BudgetPage() {
           </div>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <Stat label={catFilter ? `${catFilter} budget` : 'Monthly budget'} value={<Money value={scopeBudget} />} hint={!catFilter && carry > 0 ? `incl. ${formatINR(carry)} rolled over` : `${p.days} days`} />
-            <Stat label="Spent" value={<Money value={p.spent} />} hint={`${p.utilisation}% used`} />
+            <Stat label="Spent" value={<Money value={p.spent} />} hint={<><UsagePct value={p.utilisation} warnAt={70} highAt={90} /> used</>} />
             <Stat label="Remaining" value={<span className={p.remaining < 0 ? 'text-destructive' : ''}><Money value={p.remaining} /></span>} hint={p.remainingDays > 0 ? `${formatINR(p.safeDailySpend)}/day safe to spend` : undefined} />
             <Stat label={catFilter ? `${catFilter} daily budget` : 'Daily budget'} value={<Money value={p.dailyBudget} decimals />} hint={catFilter ? 'category limit ÷ days in month' : 'budget ÷ days in month'} />
             <Stat label={`Expected by ${ym === curYm ? 'today' : 'month end'}`} value={<Money value={p.expectedTillToday} />} hint="Pace line, not remaining" />
@@ -174,7 +189,15 @@ export default function BudgetPage() {
 
       {dlg?.kind === 'budget' && <BudgetForm ym={ym} row={budget} onClose={() => setDlg(null)} onSave={async (r) => { await save(db, 'budgets', r); toast.success('Budget saved') }} />}
       {dlg?.kind === 'categories' && <CategoryManager onClose={() => setDlg(null)} />}
-      {dlg?.kind === 'txn' && <TxnEntryDialog initialType={dlg.type} row={dlg.row} defaultMonth={ym} onClose={() => setDlg(null)} />}
+      {dlg?.kind === 'txn' && <TxnEntryDialog initialType={dlg.type} row={dlg.row} draft={dlg.draft} defaultMonth={ym} onClose={() => setDlg(null)} />}
+      <ConfirmDialog open={dlg?.kind === 'delmany'} onOpenChange={(o) => !o && setDlg(null)} title={`Delete ${dlg?.txs?.length ?? 0} transactions?`}
+        description="Linked bank balances and card outstanding are restored for each one. This cannot be undone." confirmLabel="Delete all" variant="destructive"
+        onConfirm={async () => {
+          const items = dlg?.txs ?? []; let done = 0
+          try { for (const t of items) { t.kind === 'expense' ? await deleteExpense(db, t.id) : t.kind === 'income' ? await deleteIncome(db, t.id) : await deleteTransfer(db, t.id); done++ } toast.success(`Deleted ${done}`) }
+          catch (e) { toast.error(`${e instanceof Error ? e.message : 'Could not delete'}. ${done} deleted before it stopped.`) }
+          setDlg(null)
+        }} />
       <ConfirmDialog open={dlg?.kind === 'del'} onOpenChange={(o) => !o && setDlg(null)} title={`Delete this ${dlg?.tx?.kind ?? 'transaction'}?`}
         description={dlg?.tx?.kind === 'transfer' ? 'Both balances are restored.' : dlg?.tx?.kind === 'income' ? 'The account balance is reduced by this amount again.' : 'The linked bank balance or card outstanding is restored.'} confirmLabel="Delete" variant="destructive"
         onConfirm={async () => { const t = dlg!.tx!; try { t.kind === 'expense' ? await deleteExpense(db, t.id) : t.kind === 'income' ? await deleteIncome(db, t.id) : await deleteTransfer(db, t.id); toast.success('Deleted') } catch (e) { toast.error(e instanceof Error ? e.message : 'Could not delete') } setDlg(null) }} />
@@ -194,7 +217,7 @@ function BudgetForm({ ym, row, onClose, onSave }: { ym: string; row?: any; onClo
       <Field label="Monthly budget (₹)" className="full">{(id) => <Input id={id} type="number" min="1" step="any" required value={total} onChange={(e) => setTotal(e.target.value)} />}</Field>
       {EXPENSE_CATEGORIES.map((c) => <Field key={c} label={c}>{(id) => <Input id={id} type="number" min="0" step="any" value={cats[c]} onChange={(e) => setCats((p) => ({ ...p, [c]: e.target.value }))} />}</Field>)}
       <p className="full text-xs text-muted-foreground">Category limits total {formatINR(sum)}{Number(total) ? ` (${formatINR(Number(total) - sum)} unallocated)` : ''}.</p>
-      <label className="full flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={rollover} onChange={(e) => setRollover(e.target.checked)} />Roll over unspent budget from the previous month</label>
+      <label className="full flex items-center gap-2 text-sm"><Checkbox checked={rollover} onChange={(e) => setRollover(e.target.checked)} />Roll over unspent budget from the previous month</label>
     </FormDialog>
   )
 }

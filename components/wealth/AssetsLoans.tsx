@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Empty, Field, FormDialog, Panel, Select } from './kit'
+import { PdfStatementImport } from '@/components/wealth/PdfStatementImport'
 
 type Kind = 'asset' | 'liability'
 
@@ -25,7 +26,7 @@ export function AssetsLoans() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Panel title="Assets" action={<Button size="sm" onClick={() => setEdit({ kind: 'asset', row: null })}><Plus className="mr-1 h-4 w-4" />Add asset</Button>}>
+      <Panel title="Assets" action={<div className="flex flex-wrap items-center justify-end gap-2"><PdfStatementImport label="Import PDF" /><Button size="sm" onClick={() => setEdit({ kind: 'asset', row: null })}><Plus className="mr-1 h-4 w-4" />Add asset</Button></div>}>
         {data.assets.length === 0 ? <Empty title="No assets added" description="Bank accounts and mutual funds are added in their own tabs." /> : (
           <ul className="divide-y divide-border">{data.assets.map((a: any) => (
             <li key={a.id} className="flex items-center justify-between gap-3 py-2.5">

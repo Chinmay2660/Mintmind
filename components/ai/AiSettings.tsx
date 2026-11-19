@@ -3,6 +3,7 @@
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { LoadingBlock, Panel } from '@/components/wealth/kit'
 import { useAiProvider } from './useAi'
+import { Checkbox } from '@/components/ui/checkbox'
 
 /** Consent, provider status and usage. The built-in analysis works without any of this. */
 export function AiSettings() {
@@ -14,7 +15,7 @@ export function AiSettings() {
         {isDemo ? <p className="text-sm text-muted-foreground">Demo mode never uses an AI service. Answers are simulated from sample data by built-in rules and are labelled as such.</p> : !status ? <LoadingBlock className="h-16" /> : (
           <div className="space-y-3 text-sm">
             <p>{status.configured ? <>An AI provider (<strong>{status.provider}</strong>) is available. It can make answers read more naturally.</> : 'No AI provider is configured on this server, so built-in answers are used.'}</p>
-            <label className="flex items-start gap-2"><input type="checkbox" className="mt-0.5 h-4 w-4 accent-[hsl(var(--primary))]" disabled={!status.configured} checked={consent && status.configured} onChange={(e) => setConsent(e.target.checked)} /><span><span className="block font-medium">Let My Wealth AI use an AI provider</span><span className="text-xs text-muted-foreground">Off by default. When on, only the calculated figures needed for your question are sent from our server to the provider.</span></span></label>
+            <label className="flex items-start gap-2"><Checkbox className="mt-0.5" disabled={!status.configured} checked={consent && status.configured} onChange={(e) => setConsent(e.target.checked)} /><span><span className="block font-medium">Let My Wealth AI use an AI provider</span><span className="text-xs text-muted-foreground">Off by default. When on, only the calculated figures needed for your question are sent from our server to the provider.</span></span></label>
           </div>
         )}
       </Panel>

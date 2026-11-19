@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Banknote, TrendingUp, Baby, Car, Home, HandCoins, ArrowUpRight, ArrowDownRight, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Slider } from '@/components/ui/slider'
 
 type Key = 'lumpsum' | 'raise' | 'child' | 'car' | 'home' | 'loan'
 const SCENARIOS: { key: Key; label: string; icon: LucideIcon; title: string; unit: string; min: number; max: number; step: number; def: number; note: string }[] = [
@@ -91,7 +92,7 @@ export function SampleSimulator() {
             <div className="surface-card mt-4 p-4">
               <label htmlFor="sim-amt" className="flex items-baseline justify-between text-sm"><span className="font-medium">{sc.title}</span><span className="text-xs text-muted-foreground">{sc.unit}</span></label>
               <p className="mt-1 text-2xl font-semibold tabular-nums">{fmt(amt)}</p>
-              <input id="sim-amt" type="range" min={sc.min} max={sc.max} step={sc.step} value={amt} onChange={(e) => setAmts((a) => ({ ...a, [key]: Number(e.target.value) }))} className="mt-3 w-full accent-[hsl(var(--primary))]" />
+              <Slider id="sim-amt" aria-label="Amount" min={sc.min} max={sc.max} step={sc.step} value={amt} onChange={(v) => setAmts((a) => ({ ...a, [key]: v }))} className="mt-3" />
               <p className="mt-2 text-xs text-muted-foreground">{sc.note}</p>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">Sample family: ₹15L net worth, ₹40K saved a month, 9% yearly growth. Illustration only, not advice.</p>

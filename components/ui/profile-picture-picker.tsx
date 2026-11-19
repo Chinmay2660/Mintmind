@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/sheet'
 import { useIsMobile } from '@/lib/hooks/useIsMobile'
 import { cn } from '@/lib/utils'
+import { Slider } from '@/components/ui/slider'
 import {
   CROP_OUTPUT_SIZE,
   CROP_VIEW_SIZE,
@@ -180,16 +181,7 @@ function ImageCropContent({
 
       <div className="flex items-center gap-3 px-1">
         <ZoomIn className="h-4 w-4 shrink-0 text-muted-foreground" />
-        <input
-          type="range"
-          min={1}
-          max={3}
-          step={0.05}
-          value={zoom}
-          onChange={(e) => setZoom(Number(e.target.value))}
-          className="h-2 w-full accent-primary"
-          aria-label="Zoom"
-        />
+        <Slider min={1} max={3} step={0.05} value={zoom} onChange={setZoom} aria-label="Zoom" />
       </div>
       <p className="text-center text-xs text-muted-foreground">{hint}</p>
 

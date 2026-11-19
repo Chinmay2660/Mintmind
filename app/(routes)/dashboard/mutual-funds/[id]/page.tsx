@@ -13,7 +13,7 @@ import { cap, formatDate, formatINR, formatPct } from '@/lib/wealth/format'
 import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Delta, Empty, LoadingBlock, Panel, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle } from '@/components/wealth/kit'
+import { Delta, Empty, Metric, LoadingBlock, Panel, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle } from '@/components/wealth/kit'
 import { FundForm, InvestmentForm, NavForm } from '@/components/wealth/FundForms'
 import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
@@ -49,9 +49,9 @@ export default function FundDetail() {
       <Link href="/dashboard/mutual-funds" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Mutual funds</Link>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0"><h2 className="text-xl font-semibold">{f.name}</h2><p className="flex flex-wrap items-center gap-x-1 text-sm text-muted-foreground">Folio <CopyValue value={f.folio} label="Folio number" mono /></p></div>
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" onClick={() => setDlg('nav')}><RefreshCw className="mr-1.5 h-4 w-4" />Update NAV</Button>
-          <Button size="sm" variant="outline" onClick={() => setDlg('inv')}><Plus className="mr-1.5 h-4 w-4" />Add investment</Button>
+        <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+          <Button size="sm" className="max-sm:h-10" onClick={() => setDlg('nav')}><RefreshCw className="mr-1.5 h-4 w-4" />Update NAV</Button>
+          <Button size="sm" variant="outline" className="hidden sm:inline-flex" onClick={() => setDlg('inv')}><Plus className="mr-1.5 h-4 w-4" />Add investment</Button>
           <Button size="sm" variant="outline" onClick={() => setDlg('edit')}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button>
           <Button size="sm" variant="outline" onClick={() => setDlg('del')}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button>
         </div>
@@ -59,12 +59,12 @@ export default function FundDetail() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Invested" value={<Money value={m.invested} />} />
         <Stat label="Current value" value={<Money value={m.value} />} />
-        <Stat label="Return" value={<Delta amount={m.absReturn} pct={m.absReturnPct} className="text-base" />} />
-        <Stat label="XIRR" value={m.xirrPct == null ? '—' : formatPct(m.xirrPct, 1)} />
+        <Stat label="Return" value={<Metric amount={m.absReturn} pct={m.absReturnPct} className="text-base" />} />
+        <Stat label="XIRR" value={<Metric pct={m.xirrPct} hint="Needs at least two dated cashflows" className="text-xl font-semibold" />} />
         <Stat label="Units" value={f.units} />
         <Stat label="Average NAV" value={`₹${m.avgNav}`} />
         <Stat label="Current NAV" value={`₹${f.currentNav}`} hint={`as of ${formatDate(f.navDate)} (${f.navSource})`} />
-        <Stat label="Day change" value={f.prevNav > 0 ? <Money value={(f.currentNav - f.prevNav) * f.units} signed decimals /> : '—'} hint={f.prevNav > 0 ? `prev NAV ₹${f.prevNav}` : 'Needs previous NAV'} />
+        <Stat label="Day change" value={<Metric amount={f.prevNav > 0 ? (f.currentNav - f.prevNav) * f.units : null} compact={false} decimals hint="Needs previous NAV" className="text-xl font-semibold" />} hint={f.prevNav > 0 ? `prev NAV ₹${f.prevNav}` : 'Needs previous NAV'} />
       </div>
       <Panel title="Performance">
         {perf.length < 2 ? <Empty title="Not enough history" /> : (

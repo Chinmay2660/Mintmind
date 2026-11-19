@@ -14,6 +14,8 @@ import { Empty, Field, FormDialog, Panel, Select } from '@/components/wealth/kit
 import { cn } from '@/lib/utils'
 import { useAi } from './useAi'
 import { FieldSet } from '@/components/ui/layout'
+import { DateInput } from '@/components/ui/pickers'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const GROUPS = ['Budget', 'Cards', 'Insurance', 'Mutual Funds', 'Bank Accounts', 'Family']
 
@@ -44,7 +46,7 @@ export function AutomationManager() {
           <ul className="divide-y divide-border">{rules.map((r) => (
             <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
               <div className="min-w-0 flex-1"><p className="flex items-center gap-2 font-medium"><Zap className={cn('h-3.5 w-3.5', r.enabled ? 'text-primary' : 'text-muted-foreground')} />{r.name}{!r.enabled && <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">Paused</span>}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">{TEMPLATES[r.templateId]?.group} · {cap(r.frequency)} · {Object.keys(r.channels).filter((c) => r.channels[c]).map(humanize).join(', ') || 'No channel'} · Last run {r.lastRunAt ? formatDate(r.lastRunAt.slice(0, 10)) : 'never'} · Next {r.enabled ? formatDate(r.nextRunAt) : '—'}</p></div>
+                <p className="mt-0.5 text-xs text-muted-foreground">{TEMPLATES[r.templateId]?.group} · {cap(r.frequency)} · {Object.keys(r.channels).filter((c) => r.channels[c]).map(humanize).join(', ') || 'No channel'} · Last run {r.lastRunAt ? formatDate(r.lastRunAt.slice(0, 10)) : 'never'} · Next {r.enabled ? formatDate(r.nextRunAt) : '-'}</p></div>
               <div className="flex shrink-0 gap-1">
                 <Button size="icon" variant="ghost" className="h-8 w-8" aria-label={r.enabled ? `Pause ${r.name}` : `Resume ${r.name}`} title={r.enabled ? 'Pause' : 'Resume'} onClick={() => save(db, 'automations', { ...r, enabled: !r.enabled })}>{r.enabled ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}</Button>
                 <Button size="icon" variant="ghost" className="h-8 w-8" aria-label={`Edit ${r.name}`} onClick={() => setDlg({ rule: r, isNew: false })}><Pencil className="h-3.5 w-3.5" /></Button>
@@ -93,14 +95,14 @@ function RuleForm({ rule, isNew, onClose, onSave }: { rule: any; isNew: boolean;
       <Field label="Name" className="full">{(id) => <Input id={id} required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />}</Field>
       {Object.entries(tpl.params).map(([k, p]: [string, any]) => <Field key={k} label={`${p.label} (${p.unit})`}>{(id) => <Input id={id} type="number" min="1" step="any" value={params[k] ?? p.default} onChange={(e) => setParams({ ...params, [k]: Number(e.target.value) })} />}</Field>)}
       <Field label="How often">{(id) => <Select id={id} value={f.frequency} onChange={(e) => setF({ ...f, frequency: e.target.value })}>{FREQUENCIES.map((x) => <option key={x.v} value={x.v}>{x.l}</option>)}</Select>}</Field>
-      <Field label="Start date">{(id) => <Input id={id} type="date" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} />}</Field>
-      <Field label="End date (optional)">{(id) => <Input id={id} type="date" value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} />}</Field>
+      <Field label="Start date">{(id) => <DateInput id={id} value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} />}</Field>
+      <Field label="End date (optional)">{(id) => <DateInput id={id} value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} />}</Field>
       <FieldSet legend="Notify me by" className="full">
         <div className="flex flex-wrap gap-4">{CHANNELS.map((c) => {
           const unavailable = c.v === 'push' || (isDemo && (c.v === 'email' || c.v === 'sms'))
-          return <label key={c.v} className={cn('flex items-center gap-2 text-sm', unavailable && 'opacity-50')}><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" disabled={unavailable} checked={!!channels[c.v] && !unavailable} onChange={(e) => setChannels({ ...channels, [c.v]: e.target.checked })} />{c.l}{c.v === 'push' ? ' (not set up)' : isDemo && c.v !== 'inApp' ? ' (not in demo)' : ''}</label>
+          return <label key={c.v} className={cn('flex items-center gap-2 text-sm', unavailable && 'opacity-50')}><Checkbox disabled={unavailable} checked={!!channels[c.v] && !unavailable} onChange={(e) => setChannels({ ...channels, [c.v]: e.target.checked })} />{c.l}{c.v === 'push' ? ' (not set up)' : isDemo && c.v !== 'inApp' ? ' (not in demo)' : ''}</label>
         })}</div></FieldSet>
-      <label className="full flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={f.enabled} onChange={(e) => setF({ ...f, enabled: e.target.checked })} />Enabled</label>
+      <label className="full flex items-center gap-2 text-sm"><Checkbox checked={f.enabled} onChange={(e) => setF({ ...f, enabled: e.target.checked })} />Enabled</label>
     </FormDialog>
   )
 }

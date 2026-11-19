@@ -6,15 +6,14 @@ import { toast } from 'sonner'
 import { reportToText } from '@/lib/ai/report'
 import { AssistantChat } from '@/components/ai/AssistantChat'
 import { QuickAdd } from '@/components/ai/QuickAdd'
-import { UnusualSpending } from '@/components/ai/UnusualSpending'
-import { InsightsList } from '@/components/ai/InsightsList'
 import { useAi } from '@/components/ai/useAi'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { LoadingBlock, PageHeader, Panel, Progress } from '@/components/wealth/kit'
 import { cn } from '@/lib/utils'
+import { TabBar } from '@/components/ui/tab-bar'
 
-const TABS = ['Ask', 'Quick add', 'Insights', 'Health score', 'Report'] as const
+const TABS = ['Ask', 'Quick add', 'Health score', 'Report'] as const
 
 export default function AiPage() {
   const [tab, setTab] = useState<(typeof TABS)[number]>('Ask')
@@ -32,18 +31,15 @@ export default function AiPage() {
   return (
     <div className="space-y-5">
       <PageHeader title="My Wealth AI" />
-      <div role="tablist" aria-label="Wealth AI" className="flex gap-1 overflow-x-auto border-b border-border print:hidden">
-        {TABS.map((t) => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={cn('shrink-0 border-b-2 px-3 py-2 text-sm font-medium outline-none focus-visible:bg-muted', tab === t ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}>{t}</button>)}
-      </div>
+      <TabBar label="Wealth AI" className="print:hidden" tabs={TABS.map((t) => ({ key: t, label: t }))} value={tab} onChange={(k) => setTab(k as typeof tab)} />
 
       {tab === 'Ask' && <Panel bodyClassName="p-4"><div className="h-[60dvh] min-h-[22rem]"><AssistantChat compact /></div></Panel>}
       {tab === 'Quick add' && <Panel bodyClassName="p-4"><QuickAdd /></Panel>}
-      {tab === 'Insights' && <div className="space-y-4"><Panel title="Insights"><InsightsList /></Panel><Panel bodyClassName="p-4"><UnusualSpending /></Panel></div>}
 
       {tab === 'Health score' && health && (
         <div className="space-y-4">
           <Panel>
-            <div className="flex flex-wrap items-end gap-3"><span className="text-5xl font-semibold">{health.score ?? '—'}</span><span className="pb-1 text-muted-foreground">/ 100 · {health.label}</span></div>
+            <div className="flex flex-wrap items-end gap-3"><span className="text-5xl font-semibold">{health.score ?? '-'}</span><span className="pb-1 text-muted-foreground">/ 100 · {health.label}</span></div>
             <p className="mt-2 text-xs text-muted-foreground">{health.disclaimer}</p>
             <div className="mt-4 grid gap-4 md:grid-cols-3">
               <div><h3 className="mb-1.5 text-sm font-semibold">Strengths</h3>{health.strengths.length ? <ul className="list-disc space-y-1 pl-5 text-sm">{health.strengths.map((s) => <li key={s}>{s}</li>)}</ul> : <p className="text-sm text-muted-foreground">None yet.</p>}</div>

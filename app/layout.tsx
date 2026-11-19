@@ -5,7 +5,7 @@ import Providers from "@/components/Providers"
 export const metadata = {
   title: {
     template: "%s | Mintmind",
-    default: "Mintmind — Net Worth, Vault & Legacy Handoff",
+    default: "Mintmind - Net Worth, Vault & Legacy Handoff",
   },
   description: "Track net worth, store passwords and identity documents, and give your nominee a secure handoff when it matters.",
   manifest: "/manifest.json",
@@ -34,7 +34,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#4F46E5",
+  themeColor: "#9d00ff",
   viewportFit: "cover",
 };
 

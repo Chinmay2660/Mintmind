@@ -21,6 +21,8 @@ import { MyAppFeatures } from '@/components/onboarding/MyAppFeatures'
 import { useFeatures } from '@/lib/features/FeaturesContext'
 import { cn } from '@/lib/utils'
 import { toISO } from '@/lib/wealth/calc'
+import { TabBar } from '@/components/ui/tab-bar'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const TABS = ['Account', 'My App Features', 'Appearance', 'Preferences', 'Automation', 'AI', 'Integrations', 'Data'] as const
 type Tab = (typeof TABS)[number]
@@ -42,11 +44,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-5">
       <PageHeader />
-      <div role="tablist" aria-label="Settings sections" className="flex gap-1 overflow-x-auto border-b border-border">
-        {TABS.filter((t) => (t === 'Automation' ? isEnabled('automation') : t === 'AI' ? isEnabled('ai_assistant') : true)).map((t) => (
-          <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={cn('shrink-0 border-b-2 px-3 py-2 text-sm font-medium outline-none focus-visible:bg-muted', tab === t ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}>{t}</button>
-        ))}
-      </div>
+      <TabBar label="Settings sections" tabs={TABS.filter((t) => (t === 'Automation' ? isEnabled('automation') : t === 'AI' ? isEnabled('ai_assistant') : true)).map((t) => ({ key: t, label: t }))} value={tab} onChange={(k) => setTab(k as typeof tab)} />
       {tab === 'Account' && <AccountTab />}
       {tab === 'My App Features' && <MyAppFeatures />}
       {tab === 'Appearance' && <AppearanceTab />}
@@ -168,7 +166,7 @@ function DeviceNotifyToggle() {
   }
   return (
     <div className="mb-4 rounded-lg border border-border p-3">
-      <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={on} disabled={!supported} onChange={(e) => flip(e.target.checked)} />Show urgent reminders as device notifications</label>
+      <label className="flex items-center gap-2 text-sm font-medium"><Checkbox checked={on} disabled={!supported} onChange={(e) => flip(e.target.checked)} />Show urgent reminders as device notifications</label>
       <p className="mt-1 text-xs text-muted-foreground">{supported ? 'Dues and expiries appear on your device while Mintmind is open or installed. Reminders are worked out on this device and never sent to a server. Alerts while the app is fully closed are not available yet.' : 'Not supported in this browser.'}</p>
     </div>
   )
@@ -184,13 +182,13 @@ function PreferencesTab() {
         <div className="space-y-4">
           <Field label="Currency" hint="Currency is fixed for now.">{(id) => <Select id={id} disabled value="INR"><option value="INR">INR (₹)</option></Select>}</Field>
           <Field label="Date format">{(id) => <Select id={id} value={prefs.dateFormat} onChange={(e) => update({ dateFormat: e.target.value })}><option>DD MMM YYYY</option><option>DD/MM/YYYY</option><option>MM/DD/YYYY</option><option>YYYY-MM-DD</option></Select>}</Field>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={privacyMode} onChange={(e) => { setPrivacyMode(e.target.checked); update({ hideBalances: e.target.checked }) }} />Hide balances by default</label>
+          <label className="flex items-center gap-2 text-sm"><Checkbox checked={privacyMode} onChange={(e) => { setPrivacyMode(e.target.checked); update({ hideBalances: e.target.checked }) }} />Hide balances by default</label>
         </div>
       </Panel>
       <Panel title="Notifications">
         <DeviceNotifyToggle />
         <ul className="space-y-3">{toggles.map(([k, l]) => (
-          <li key={String(k)}><label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={prefs.notifications[k]} onChange={(e) => update({ notifications: { ...prefs.notifications, [k]: e.target.checked } })} />{l}</label></li>
+          <li key={String(k)}><label className="flex items-center gap-2 text-sm"><Checkbox checked={prefs.notifications[k]} onChange={(e) => update({ notifications: { ...prefs.notifications, [k]: e.target.checked } })} />{l}</label></li>
         ))}</ul>
       </Panel>
       <Panel title="Privacy & security">

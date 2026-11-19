@@ -35,7 +35,7 @@ export function VaultItemCard({ item: i, revealed, onReveal, onCopy, onFavourite
   return (
     <li className="surface-card flex min-w-0 flex-col p-4 transition-colors hover:border-primary/40 sm:p-5">
       <div className="flex items-start gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground"><Icon className="h-5 w-5" /></span>
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon className="h-5 w-5" /></span>
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold leading-tight" title={i.name}>{i.name}</p>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -60,7 +60,7 @@ export function VaultItemCard({ item: i, revealed, onReveal, onCopy, onFavourite
         {i.type === 'login' ? (
           <>
             {i.url && <Row label="Website" actions={safeUrl && <a href={safeUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open ${i.name}`} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"><ExternalLink className="h-4 w-4" /></a>}><span className="text-primary">{i.url.replace(/^https?:\/\//, '')}</span></Row>}
-            <Row label="Username" actions={i.username && <IconBtn label="Copy username" onClick={() => onCopy(i.username, 'Username')}><Copy className="h-4 w-4" /></IconBtn>}>{i.username || '—'}</Row>
+            <Row label="Username" actions={i.username && <IconBtn label="Copy username" onClick={() => onCopy(i.username, 'Username')}><Copy className="h-4 w-4" /></IconBtn>}>{i.username || '-'}</Row>
             <Row label="Password" actions={<><IconBtn label={revealed ? 'Hide password' : 'Show password'} onClick={onReveal}>{revealed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</IconBtn><IconBtn label="Copy password" onClick={() => onCopy(i.password, 'Password')}><Copy className="h-4 w-4" /></IconBtn></>}><span className="font-mono">{revealed ? i.password : '••••••••••'}</span></Row>
             {hasAuth && (
               <div className="flex items-start gap-2 rounded-lg border border-border px-3 py-2">

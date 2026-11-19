@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { CreditCard, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ChevronRight, CreditCard, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { remove, save } from '@/lib/wealth/actions'
@@ -43,7 +43,7 @@ export function DebitCardsTab() {
 
   return (
     <div className="space-y-5">
-      <PageHeader actions={<Button disabled={banks.length === 0} onClick={() => setDlg({})}><Plus className="mr-1.5 h-4 w-4" />Add card</Button>} />
+      <PageHeader primaryAction={{ label: 'Add card', disabled: banks.length === 0, onClick: () => setDlg({}) }} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <Stat label="Debit cards" value={cards.length} />
         <Stat label="Spent this month" value={<Money value={monthSpend} />} />
@@ -57,8 +57,9 @@ export function DebitCardsTab() {
               const a = acc(c.accountId)
               return (
                 <button key={c.id} type="button" aria-pressed={card?.id === c.id} onClick={() => setSel(c.id)} className={cn('surface-card block w-full p-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', card?.id === c.id ? 'border-primary' : 'hover:border-primary/40')}>
-                  <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground"><CreditCard className="h-5 w-5" /></span><div className="min-w-0"><p className="truncate font-medium">{c.bank} {c.cardName}</p><p className="text-xs text-muted-foreground">{c.network} · ···· {String(c.cardNumber).slice(-4)}</p></div></div>
-                  <div className="mt-4 flex items-end justify-between"><div className="min-w-0"><p className="text-xs text-muted-foreground">Linked account</p><p className="truncate text-sm font-medium">{a ? accountLabel(a) : 'Not linked'}</p></div><div className="text-right"><p className="text-xs text-muted-foreground">Balance</p><p className="font-semibold">{a ? <Money value={a.currentBalance} /> : '—'}</p></div></div>
+                  <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-4/15 text-chart-4"><CreditCard className="h-5 w-5" /></span><div className="min-w-0"><p className="truncate font-medium">{c.bank} {c.cardName}</p><p className="text-xs text-muted-foreground">{c.network} · ···· {String(c.cardNumber).slice(-4)}</p></div>
+                    <ChevronRight className={cn('ml-auto h-4 w-4 shrink-0 transition-transform', card?.id === c.id ? 'rotate-90 text-primary' : 'text-muted-foreground')} aria-hidden /></div>
+                  <div className="mt-4 flex items-end justify-between"><div className="min-w-0"><p className="text-xs text-muted-foreground">Linked account</p><p className="truncate text-sm font-medium">{a ? accountLabel(a) : 'Not linked'}</p></div><div className="text-right"><p className="text-xs text-muted-foreground">Balance</p><p className="font-semibold">{a ? <Money value={a.currentBalance} /> : '-'}</p></div></div>
                 </button>
               )
             })}
@@ -75,11 +76,11 @@ export function DebitCardsTab() {
                   <div><dt className="text-xs text-muted-foreground">Card number</dt><dd><CopyValue value={card.cardNumber} label="Card number" mono>{String(card.cardNumber).replace(/(\d{4})(?=\d)/g, '$1 ')}</CopyValue></dd></div>
                   <div><dt className="text-xs text-muted-foreground">Card holder</dt><dd><CopyValue value={card.holder} label="Card holder" /></dd></div>
                   <div><dt className="text-xs text-muted-foreground">Network</dt><dd>{card.network}</dd></div>
-                  <div><dt className="text-xs text-muted-foreground">Linked account</dt><dd>{cardAcc ? accountLabel(cardAcc) : '—'}</dd></div>
-                  <div><dt className="text-xs text-muted-foreground">Account balance</dt><dd>{cardAcc ? <Money value={cardAcc.currentBalance} /> : '—'}</dd></div>
-                  <div><dt className="text-xs text-muted-foreground">Available to spend</dt><dd>{cardAcc ? <Money value={availableBalance(cardAcc)} /> : '—'}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Linked account</dt><dd>{cardAcc ? accountLabel(cardAcc) : '-'}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Account balance</dt><dd>{cardAcc ? <Money value={cardAcc.currentBalance} /> : '-'}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Available to spend</dt><dd>{cardAcc ? <Money value={availableBalance(cardAcc)} /> : '-'}</dd></div>
                   <div><dt className="text-xs text-muted-foreground">Spent this month</dt><dd><Money value={txns.filter((e: any) => monthKey(e.date) === ym).reduce((s: number, e: any) => s + e.amount, 0)} /></dd></div>
-                  <div><dt className="text-xs text-muted-foreground">Last used</dt><dd>{txns[0] ? formatDate(txns[0].date) : '—'}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Last used</dt><dd>{txns[0] ? formatDate(txns[0].date) : '-'}</dd></div>
                 </dl>
               </Panel>
               <div className="grid gap-4 lg:grid-cols-2">

@@ -8,6 +8,7 @@ import { formatCompactINR } from '@/lib/wealth/format'
 import { chartAxis, chartColor, chartGrid, chartTooltipStyle } from '@/components/wealth/kit'
 import { cn } from '@/lib/utils'
 import { num } from '@/components/tools/kit'
+import { Slider } from '@/components/ui/slider'
 
 type Ev = { id: number; type: keyof typeof EVENT_TYPES; amount: number }
 const HORIZONS = [5, 10, 20, 25] as const
@@ -34,7 +35,7 @@ export function PlanAhead({ netWorth, monthlySave }: { netWorth: number; monthly
           <li key={e.id} className="rounded-lg border border-border p-3">
             <div className="flex items-center justify-between text-sm"><span className="font-medium">{c.title}</span><button aria-label={`Remove ${c.title}`} onClick={() => setEvents((x) => x.filter((y) => y.id !== e.id))} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button></div>
             <p className="mt-1 text-lg font-semibold tabular-nums">{formatCompactINR(e.amount)} <span className="text-xs font-normal text-muted-foreground">{c.unit}</span></p>
-            <input type="range" aria-label={`${c.title} ${c.unit}`} min={c.min} max={c.max} step={c.step} value={e.amount} onChange={(ev) => setEvents((x) => x.map((y) => (y.id === e.id ? { ...y, amount: num(ev.target.value) } : y)))} className="mt-2 w-full accent-[hsl(var(--primary))]" />
+            <Slider aria-label={`${c.title} ${c.unit}`} min={c.min} max={c.max} step={c.step} value={e.amount} onChange={(v) => setEvents((x) => x.map((y) => (y.id === e.id ? { ...y, amount: v } : y)))} className="mt-2" />
             <p className="text-xs text-muted-foreground">{c.note}</p></li>) })}</ul>
       </div>
       <div className="surface-card p-4 sm:p-5">

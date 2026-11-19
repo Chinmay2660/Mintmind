@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { PrivacyProvider } from '@/contexts/PrivacyContext'
-import { IdleTimeoutProvider } from '@/contexts/IdleTimeoutContext'
+import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
 
 interface ProvidersProps {
   children: ReactNode
@@ -28,9 +28,8 @@ export default function Providers({ children }: ProvidersProps) {
     >
       <AuthProvider>
         <PrivacyProvider>
-          <IdleTimeoutProvider>
-            <ErrorBoundary>{children}</ErrorBoundary>
-          </IdleTimeoutProvider>
+          <ServiceWorkerRegister />
+          <ErrorBoundary>{children}</ErrorBoundary>
         </PrivacyProvider>
       </AuthProvider>
     </ThemeProvider>

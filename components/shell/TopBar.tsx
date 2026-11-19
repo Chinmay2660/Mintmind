@@ -21,14 +21,14 @@ export function TopBar() {
 
   return (
     <header className="print:hidden sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-4 backdrop-blur safe-area-inset-top md:px-6">
-      <Link href="/dashboard" className="mr-1 flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground md:hidden" aria-label="Mintmind home">
+      <Link href="/dashboard" className={`mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground md:hidden ${isDemo ? 'max-[420px]:hidden' : ''}`} aria-label="Mintmind home">
         <Wallet className="h-4 w-4" />
       </Link>
       <h1 className="min-w-0 truncate text-base font-semibold md:text-lg">{getDashboardPageTitle(pathname)}</h1>
 
       {isDemo && (
         <div className="ml-2 flex items-center gap-1.5">
-          <span className="rounded-md bg-warning/15 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-warning">Demo mode</span>
+          <span className="shrink-0 whitespace-nowrap rounded-md bg-warning/15 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-warning"><span className="sm:hidden">Demo</span><span className="max-sm:hidden">Demo mode</span></span>
           <Button
             variant="ghost"
             size="sm"

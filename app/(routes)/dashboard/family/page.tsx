@@ -18,6 +18,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { CHART_PALETTE, Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Select, Stat, chartAxis, chartGrid, chartTooltipStyle } from '@/components/wealth/kit'
 import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const ROLES = [{ v: 'admin', l: 'Admin' }, { v: 'member', l: 'Member' }, { v: 'emergency_contact', l: 'Emergency Contact' }]
 const PERMS: [string, string, string][] = [
@@ -111,13 +112,13 @@ export default function FamilyPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title={circle.name} actions={admin ? <Button onClick={() => setDlg('invite')}><Plus className="mr-1.5 h-4 w-4" />Invite member</Button> : undefined} />
+      <PageHeader title={circle.name} primaryAction={admin ? { label: 'Invite member', onClick: () => setDlg('invite') } : undefined} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Family net worth" value={<Money value={totals.netWorth} />} hint={hidden ? `${hidden} member${hidden > 1 ? 's' : ''} not shared` : undefined} />
         <Stat label="Total assets" value={<Money value={totals.assets} />} />
         <Stat label="Total liabilities" value={<Money value={totals.liabilities} />} />
-        <Stat label="Growth this month" value={growth == null ? '—' : formatPct(growth, 1)} hint="Weighted by net worth" />
+        <Stat label="Growth this month" value={growth == null ? '-' : formatPct(growth, 1)} hint="Weighted by net worth" />
       </div>
       {totals.jointDeduplicated > 0 && <p className="text-xs text-muted-foreground">Includes {formatINR(totals.jointDeduplicated)} of jointly owned assets counted only once.</p>}
 
@@ -163,7 +164,7 @@ export default function FamilyPage() {
       {self?.permissions && (
         <Panel title="My sharing">
           <ul className="grid gap-3 sm:grid-cols-2">{PERMS.map(([k, l, d]) => (
-            <li key={k}><label className="flex items-start gap-2.5 text-sm"><input type="checkbox" className="mt-0.5 h-4 w-4 accent-[hsl(var(--primary))]" checked={!!self.permissions![k]} onChange={(e) => setSharing(k, e.target.checked)} /><span><span className="block font-medium">{l}</span><span className="text-xs text-muted-foreground">{d}</span></span></label></li>
+            <li key={k}><label className="flex items-start gap-2.5 text-sm"><Checkbox className="mt-0.5" checked={!!self.permissions![k]} onChange={(e) => setSharing(k, e.target.checked)} /><span><span className="block font-medium">{l}</span><span className="text-xs text-muted-foreground">{d}</span></span></label></li>
           ))}</ul>
         </Panel>
       )}

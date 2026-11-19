@@ -22,7 +22,7 @@ export function DocumentCard({ doc, sizeLabel, replaceDisabled, onPreview, onDow
   return (
     <div className="surface-card flex min-w-0 flex-col p-4 transition-colors hover:border-primary/40 sm:p-5">
       <div className="flex items-start gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground"><Icon className="h-5 w-5" /></span>
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon className="h-5 w-5" /></span>
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold leading-tight" title={doc.name}>{doc.name}</p>
           <p className="mt-1 truncate text-xs text-muted-foreground">{sizeLabel}{doc.uploaded ? ` · ${formatDate(doc.uploaded.slice(0, 10))}` : ''}</p>

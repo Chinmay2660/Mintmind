@@ -4,6 +4,7 @@ import connectDB from '@/lib/mongodb'
 import AiUsage from '@/models/AiUsage'
 import { requireAuth, rateLimitOrRespond } from '@/lib/middleware/api'
 import { aiConfig, complete, redact } from '@/lib/ai/provider'
+import { checkAnswer, checkQuestion } from '@/lib/ai/guardrails'
 
 const day = () => new Date().toISOString().slice(0, 10)
 
@@ -26,7 +27,10 @@ export async function POST(request) {
   let body
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid request' }, { status: 400 }) }
   if (body.consent !== true) return NextResponse.json({ error: 'Consent is required to use an AI provider', fallback: true, reason: 'no_consent' }, { status: 403 })
-  const question = String(body.question || '').slice(0, 500)
+  // The browser already checks, but the server never trusts it: rule-breaking questions never reach a provider.
+  const guard = checkQuestion(body.question)
+  if (!guard.ok) return NextResponse.json({ fallback: true, reason: 'guardrail', kind: guard.kind })
+  const question = guard.text
   const draft = String(body.draft || '').slice(0, 2500)
   const factsJson = JSON.stringify(body.facts || {})
   if (!question) return NextResponse.json({ error: 'Question is required' }, { status: 400 })
@@ -40,7 +44,10 @@ export async function POST(request) {
   try {
     const out = await complete({ user: `QUESTION: ${redact(question)}\n\nFACTS (calculated by the app):\n${factsJson}\n\nBUILT-IN ANSWER (for reference):\n${draft}` })
     await AiUsage.updateOne({ userId: user._id, day: today }, { $inc: { requests: 1, inputTokens: out.inputTokens, outputTokens: out.outputTokens } }, { upsert: true })
-    return NextResponse.json({ text: out.text, provider: out.provider, model: out.model })
+    // Provider wording is checked before it is returned (no buy/sell calls, predictions, injected instructions or identifiers).
+    const safe = checkAnswer(out.text)
+    if (!safe.ok) return NextResponse.json({ fallback: true, reason: 'unsafe_output' })
+    return NextResponse.json({ text: safe.text, provider: out.provider, model: out.model })
   } catch (e) {
     await AiUsage.updateOne({ userId: user._id, day: today }, { $inc: { requests: 1, failures: 1 } }, { upsert: true }).catch(() => {})
     // log the error class only, never the prompt or the data

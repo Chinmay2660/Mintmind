@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { CreditCard, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ChevronRight, CreditCard, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useWealth } from '@/lib/wealth/WealthContext'
@@ -14,11 +14,13 @@ import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, StepFormDialog, LoadingBlock, PageHeader, Panel, Progress, Select, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForPct } from '@/components/wealth/kit'
+import { Empty, Field, FormDialog, StepFormDialog, LoadingBlock, PageHeader, Panel, Progress, Select, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForPct, UsagePct } from '@/components/wealth/kit'
 import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
 import { DebitCardsTab } from '@/components/wealth/DebitCards'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { cn } from '@/lib/utils'
+import { DateInput } from '@/components/ui/pickers'
+import { TabBar } from '@/components/ui/tab-bar'
 
 const NETWORKS = ['Visa', 'Mastercard', 'RuPay', 'American Express', 'Diners Club']
 
@@ -46,12 +48,12 @@ function CreditCardsTab() {
 
   return (
     <div className="space-y-5">
-      <PageHeader actions={<Button onClick={() => setDlg({ kind: 'card' })}><Plus className="mr-1.5 h-4 w-4" />Add card</Button>} />
+      <PageHeader primaryAction={{ label: 'Add card', onClick: () => setDlg({ kind: 'card' }) }} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Total limit" value={<Money value={t.limit} />} />
         <Stat label="Outstanding" value={<Money value={t.outstanding} />} />
         <Stat label="Available credit" value={<Money value={t.available} />} />
-        <Stat label="Utilisation" value={`${t.util}%`} hint={<Progress value={t.util} tone={toneForPct(t.util)} label="Utilisation" />} />
+        <Stat label="Utilisation" value={<UsagePct value={t.util} />} hint={<Progress value={t.util} tone={toneForPct(t.util)} label="Utilisation" />} />
       </div>
       <p className="text-xs text-muted-foreground">Card spend this month: <Money value={t.monthSpend} /></p>
 
@@ -63,11 +65,12 @@ function CreditCardsTab() {
               return (
                 <button key={c.id} type="button" onClick={() => setSel(c.id)} aria-pressed={card?.id === c.id}
                   className={cn('surface-card block w-full p-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', card?.id === c.id ? 'border-primary' : 'hover:border-primary/40')}>
-                  <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground"><CreditCard className="h-5 w-5" /></span>
-                    <div className="min-w-0"><p className="truncate font-medium">{c.bank} {c.cardName}</p><p className="text-xs text-muted-foreground">{c.network} · {c.cardNumber.replace(/(\d{4})(?=\d)/g, '$1 ')}</p></div></div>
+                  <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/15 text-destructive"><CreditCard className="h-5 w-5" /></span>
+                    <div className="min-w-0"><p className="truncate font-medium">{c.bank} {c.cardName}</p><p className="text-xs text-muted-foreground">{c.network} · •••• {String(c.cardNumber).slice(-4)}</p></div>
+                    <ChevronRight className={cn('ml-auto h-4 w-4 shrink-0 transition-transform', card?.id === c.id ? 'rotate-90 text-primary' : 'text-muted-foreground')} aria-hidden /></div>
                   <div className="mt-4 flex items-end justify-between"><div><p className="text-xs text-muted-foreground">Outstanding</p><p className="text-xl font-semibold"><Money value={c.outstanding} /></p></div><p className="text-sm text-muted-foreground">{u}% of <Money value={c.limit} compact /></p></div>
                   <div className="mt-2"><Progress value={u} tone={toneForPct(u)} label={`${c.cardName} utilisation`} /></div>
-                  <p className="mt-2 text-xs text-muted-foreground">{c.outstanding > 0 ? `Due ${formatDate(nextDayOfMonth(c.dueDay, today))}` : 'No dues'} · Statement day {c.statementDay}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">{c.outstanding > 0 ? `Due ${formatDate(nextDayOfMonth(c.dueDay, today))}` : 'No dues'}</p>
                 </button>
               )
             })}
@@ -167,7 +170,7 @@ function PayForm({ card, accounts, onClose, onSave }: { card: any; accounts: any
     <FormDialog open onOpenChange={(o) => !o && onClose()} title="Record card payment"
       onSubmit={async () => { const a = Number(f.amount); if (!(a > 0)) throw new Error('Amount must be positive'); if (a > card.outstanding) throw new Error('Payment exceeds the outstanding amount'); await onSave({ amount: a, accountId: f.accountId || undefined, date: f.date, note: f.note }) }}>
       <Field label="Amount (₹)">{(id) => <Input id={id} type="number" min="0.01" step="any" required value={f.amount} onChange={set('amount')} />}</Field>
-      <Field label="Date">{(id) => <Input id={id} type="date" required value={f.date} onChange={set('date')} />}</Field>
+      <Field label="Date">{(id) => <DateInput id={id} required value={f.date} onChange={set('date')} />}</Field>
       <Field label="Paid from" className="full">{(id) => <Select id={id} value={f.accountId} onChange={set('accountId')}><option value="">Not linked to a bank account</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.nickname || a.bankName}</option>)}</Select>}</Field>
       <Field label="Note" className="full">{(id) => <Input id={id} value={f.note} onChange={set('note')} />}</Field>
     </FormDialog>
@@ -178,9 +181,7 @@ export default function CardsPage() {
   const [tab, setTab] = useState<'Credit cards' | 'Debit cards'>('Credit cards')
   return (
     <div className="space-y-5">
-      <div role="tablist" aria-label="Card type" className="flex gap-1 border-b border-border">
-        {(['Credit cards', 'Debit cards'] as const).map((t) => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={cn('border-b-2 px-3 py-2 text-sm font-medium outline-none focus-visible:bg-muted', tab === t ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}>{t}</button>)}
-      </div>
+      <TabBar label="Card type" tabs={[{ key: 'Credit cards', label: 'Credit cards' }, { key: 'Debit cards', label: 'Debit cards' }]} value={tab} onChange={(k) => setTab(k as typeof tab)} />
       {tab === 'Credit cards' ? <CreditCardsTab /> : <DebitCardsTab />}
     </div>
   )

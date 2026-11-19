@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, RefreshCw } from 'lucide-react'
+import { Plus, RefreshCw, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { addFund, recordSipInstalment, save, remove, updateNav } from '@/lib/wealth/actions'
@@ -11,9 +11,10 @@ import { cap, formatDate, formatPct } from '@/lib/wealth/format'
 import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Delta, Empty, LoadingBlock, PageHeader, Panel, Stat } from '@/components/wealth/kit'
+import { Delta, Empty, Metric, LoadingBlock, PageHeader, Panel, Stat } from '@/components/wealth/kit'
 import { StatementImportButton } from '@/components/wealth/StatementImport'
 import { FundForm, NavForm, SipForm } from '@/components/wealth/FundForms'
+import { PdfStatementImport } from '@/components/wealth/PdfStatementImport'
 
 export default function MutualFundsPage() {
   const { ready, data, db } = useWealth()
@@ -27,22 +28,40 @@ export default function MutualFundsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader actions={<><StatementImportButton /><Button onClick={() => setDlg({ kind: 'fund' })}><Plus className="mr-1.5 h-4 w-4" />Add fund</Button></>} />
+      <PageHeader actions={<><StatementImportButton /><PdfStatementImport /></>} primaryAction={{ label: 'Add fund', onClick: () => setDlg({ kind: 'fund' }) }} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Invested" value={<Money value={s.invested} />} />
-        <Stat label="Current value" value={<Money value={s.value} />} />
-        <Stat label="Absolute return" value={<span className={s.absReturn >= 0 ? 'text-success' : 'text-destructive'}><Money value={s.absReturn} /></span>} hint={formatPct(s.absReturnPct)} />
-        <Stat label="XIRR" value={s.xirrPct == null ? '—' : formatPct(s.xirrPct)} hint="Annualised, dated cashflows" />
-        <Stat label="Today's gain / loss" value={s.todayGain == null ? '—' : <Money value={s.todayGain} signed />} hint={s.todayGain == null ? 'Needs previous NAV' : undefined} />
-        <Stat label="Funds" value={s.fundCount} />
-        <Stat label="Active SIPs" value={s.activeSips} />
-        <Stat label="Monthly SIP commitment" value={<Money value={s.monthlySipCommitment} />} />
+        <Stat label="Invested" info="Total money you have put in across all funds, including lump sums and SIP instalments." value={<Money value={s.invested} />} />
+        <Stat label="Current value" info="Units you hold multiplied by each fund's latest NAV." value={<Money value={s.value} />} />
+        <Stat label="Absolute return" info="Gain or loss compared with what you invested. It ignores how long the money was invested, so use XIRR to compare over time." value={<Metric amount={s.absReturn} pct={s.absReturnPct} className="text-lg font-semibold sm:text-xl" />} />
+        <Stat label="XIRR" info="Your annualised return, taking into account when each rupee went in. It describes the past and does not predict future returns. Needs at least two dated cashflows." value={<Metric pct={s.xirrPct} digits={2} hint="Needs at least two dated cashflows" className="text-lg font-semibold sm:text-xl" />} />
+        <Stat label="Today's gain / loss" info="Change in value since the previous NAV. Shows a dash until a previous NAV is known." value={<Metric amount={s.todayGain} compact={false} hint="Needs previous NAV" className="text-lg font-semibold sm:text-xl" />} />
+        <Stat label="Funds" info="Number of mutual fund holdings you track." value={s.fundCount} />
+        <Stat label="Active SIPs" info="SIPs that are running now and will debit on their next due date." value={s.activeSips} />
+        <Stat label="Monthly SIP commitment" info="Total of all active SIP instalments in a month." value={<Money value={s.monthlySipCommitment} />} />
       </div>
 
       <Panel title="Holdings">
         {data.funds.length === 0 ? <Empty title="No mutual funds yet" description="Add a fund manually from your statement." action={<Button onClick={() => setDlg({ kind: 'fund' })}>Add fund</Button>} /> : (
-          <div className="overflow-x-auto">
+          <>
+          <ul className="space-y-2 md:hidden">
+            {data.funds.map((f) => {
+              const m = fundMetrics(f, data.fundTxns, today)
+              return (
+                <li key={f.id}>
+                  <Link href={`/dashboard/mutual-funds/${f.id}`} className="surface-card flex items-center gap-3 p-4 outline-none transition-colors hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium">{f.name}</span>
+                      <span className="mt-1 block text-lg font-semibold tabular-nums"><Money value={m.value} /></span>
+                    </span>
+                    <Delta pill amount={m.absReturn} pct={m.absReturnPct} />
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[720px] text-sm">
               <thead><tr className="border-b border-border text-left text-xs text-muted-foreground"><th className="py-2 pr-3 font-medium">Fund</th><th className="px-3 text-right font-medium">Invested</th><th className="px-3 text-right font-medium">Value</th><th className="px-3 text-right font-medium">Return</th><th className="px-3 text-right font-medium">XIRR</th><th className="px-3 text-right font-medium">NAV</th><th className="pl-3" /></tr></thead>
               <tbody className="divide-y divide-border">
@@ -54,7 +73,7 @@ export default function MutualFundsPage() {
                       <td className="px-3 text-right"><Money value={m.invested} /></td>
                       <td className="px-3 text-right"><Money value={m.value} /></td>
                       <td className="px-3 text-right"><Delta amount={m.absReturn} pct={m.absReturnPct} /></td>
-                      <td className="px-3 text-right">{m.xirrPct == null ? '—' : formatPct(m.xirrPct, 1)}</td>
+                      <td className="px-3 text-right"><Metric pct={m.xirrPct} hint="Needs at least two dated cashflows" /></td>
                       <td className="px-3 text-right tabular-nums">{f.currentNav}<span className="block text-xs text-muted-foreground">{formatDate(f.navDate)}</span></td>
                       <td className="pl-3 text-right"><Button size="sm" variant="outline" onClick={() => setDlg({ kind: 'nav', row: f })}><RefreshCw className="mr-1 h-3.5 w-3.5" />NAV</Button></td>
                     </tr>
@@ -63,6 +82,7 @@ export default function MutualFundsPage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </Panel>
 

@@ -19,6 +19,9 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Select } from '@/components/wealth/kit'
 import { formatDate } from '@/lib/wealth/format'
 import { cn } from '@/lib/utils'
+import { Slider } from '@/components/ui/slider'
+import { TabBar } from '@/components/ui/tab-bar'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const CATEGORIES = ['Banking', 'Email', 'Social', 'Shopping', 'Work', 'Entertainment', 'Government', 'Other']
 /** Extra sign-in step a login needs besides the password. Only the type of step is recorded; never store an authenticator secret here. */
@@ -227,9 +230,8 @@ function Unlocked({ items, session, meta, bioOk, onLock, onSave, onDelete, db, o
       <PageHeader actions={<>
         <Button variant="outline" onClick={() => setGen(true)}><Wand2 className="mr-1.5 h-4 w-4" />Generator</Button>
         <Button variant="outline" onClick={() => setEdit({ type: 'note' })}>Secure note</Button>
-        <Button onClick={() => setEdit({ type: 'login' })}><Plus className="mr-1.5 h-4 w-4" />Add item</Button>
         <Button variant="outline" onClick={onLock}><Lock className="mr-1.5 h-4 w-4" />Lock</Button>
-      </>} />
+      </>} primaryAction={{ label: 'Add item', onClick: () => setEdit({ type: 'login' }) }} />
       <dl className="grid grid-cols-3 gap-3">
         {[['Items', items.length], ['Favourites', items.filter((x) => x.favourite).length], ['Extra sign-in step', items.filter((x) => x.authMethod && x.authMethod !== 'None').length]].map(([k, v]) => (
           <div key={k as string} className="surface-card px-4 py-3"><dt className="text-xs text-muted-foreground">{k}</dt><dd className="mt-0.5 text-2xl font-semibold tabular-nums">{v}</dd></div>
@@ -290,7 +292,7 @@ function ItemForm({ row, type, members, onClose, onSave }: { row?: Item; type: '
         {PHONE_METHODS.includes(f.authMethod) ? <Field label="Phone number that receives it" hint="Include the country code">{(id) => <Input id={id} type="tel" inputMode="tel" autoComplete="off" maxLength={20} value={f.authPhone} onChange={set('authPhone')} placeholder="+91 …" />}</Field> : <div className="hidden sm:block" />}
         {f.authMethod !== 'None' && <Field label="Details (optional)" className="full" hint="e.g. which authenticator app, where backup codes are kept, which email gets the code">{(id) => <Input id={id} value={f.authNote} onChange={set('authNote')} autoComplete="off" />}</Field>}
       </>}
-      <Field label="Family member">{(id) => <Select id={id} value={f.member} onChange={set('member')}><option value="">—</option>{members.map((m) => <option key={m}>{m}</option>)}</Select>}</Field>
+      <Field label="Family member">{(id) => <Select id={id} value={f.member} onChange={set('member')}><option value="">-</option>{members.map((m) => <option key={m}>{m}</option>)}</Select>}</Field>
       <Field label={type === 'note' ? 'Note' : 'Notes'} className="full">{(id) => <textarea id={id} rows={type === 'note' ? 6 : 3} required={type === 'note'} value={f.notes} onChange={set('notes')} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40" />}</Field>
     </FormDialog>
   )
@@ -304,8 +306,8 @@ function GeneratorDialog({ onClose, onCopy }: { onClose: () => void; onCopy: (p:
     <FormDialog open onOpenChange={(x) => !x && onClose()} title="Password generator" submitLabel="Copy and close" onSubmit={async () => onCopy(pw)}>
       <div className="full space-y-3"><code className="block break-all rounded-lg bg-muted p-3 font-mono text-base">{pw}</code><StrengthMeter value={pw} />
         <Button type="button" variant="outline" size="sm" onClick={() => setPw(generatePassword(o))}><RefreshCw className="mr-1.5 h-3.5 w-3.5" />Regenerate</Button></div>
-      <Field label={`Length: ${o.length}`} className="full">{(id) => <input id={id} type="range" min={8} max={64} value={o.length} onChange={(e) => setO({ ...o, length: Number(e.target.value) })} className="w-full accent-[hsl(var(--primary))]" />}</Field>
-      {(['lower', 'upper', 'digits', 'symbols'] as const).map((k) => <label key={k} className="flex items-center gap-2 text-sm capitalize"><input type="checkbox" className="h-4 w-4 accent-[hsl(var(--primary))]" checked={o[k]} onChange={(e) => setO({ ...o, [k]: e.target.checked })} />{k === 'lower' ? 'Lowercase' : k === 'upper' ? 'Uppercase' : k}</label>)}
+      <Field label={`Length: ${o.length}`} className="full">{(id) => <Slider id={id} aria-label="Password length" min={8} max={64} value={o.length} onChange={(v) => setO({ ...o, length: v })} />}</Field>
+      {(['lower', 'upper', 'digits', 'symbols'] as const).map((k) => <label key={k} className="flex items-center gap-2 text-sm capitalize"><Checkbox checked={o[k]} onChange={(e) => setO({ ...o, [k]: e.target.checked })} />{k === 'lower' ? 'Lowercase' : k === 'upper' ? 'Uppercase' : k}</label>)}
     </FormDialog>
   )
 }
@@ -331,10 +333,7 @@ export default function VaultPage() {
   return (
     <div className="space-y-5">
       {tabs.length > 1 && (
-        <div role="tablist" aria-label="Vault sections" className="flex gap-1 overflow-x-auto border-b border-border">
-          {tabs.map((t) => { const Icon = TAB_ICON[t]; return (
-            <button key={t} role="tab" aria-selected={active === t} onClick={() => go(t)} className={cn('flex shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-medium outline-none transition-colors focus-visible:bg-muted', active === t ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}><Icon className="h-4 w-4" />{TAB_LABEL[t]}</button>) })}
-        </div>
+        <TabBar label="Vault sections" tabs={tabs.map((t) => ({ key: t, label: TAB_LABEL[t], icon: TAB_ICON[t] }))} value={active} onChange={(k) => go(k as typeof active)} />
       )}
       {show('passwords') && <div hidden={active !== 'passwords'}><PasswordsView /></div>}
       {show('documents') && <div hidden={active !== 'documents'}><DocumentsView /></div>}
