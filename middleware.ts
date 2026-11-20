@@ -31,8 +31,14 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.next(), pathname.startsWith('/api/drive/files/'))
   }
 
-  // '/' is always the public landing page; signed-in users reach the app via the "Go to dashboard" button.
-  if (pathname === '/') return applySecurityHeaders(NextResponse.next())
+  // '/' is the public landing page. On a phone, someone who is already signed in goes straight to Spend (transactions and budgets);
+  // "Landing page" in the profile menu links to /?home=1 to still reach it. Everyone else sees the landing page.
+  if (pathname === '/') {
+    const phone = /Android|iPhone|iPad|iPod|Mobile/i.test(request.headers.get('user-agent') || '')
+    const signedIn = request.cookies.get('auth-token') || request.cookies.get('mm-demo')
+    if (phone && signedIn && !request.nextUrl.searchParams.has('home')) return NextResponse.redirect(new URL('/dashboard/budget', request.url))
+    return applySecurityHeaders(NextResponse.next())
+  }
 
   if (
     pathname.startsWith('/auth') ||

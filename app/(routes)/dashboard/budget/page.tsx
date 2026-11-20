@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronDown, ChevronLeft, ChevronRight, FileUp, MoreHorizontal, Plus, Settings2, Tags, TriangleAlert, Wand2 } from 'lucide-react'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { ChevronDown, ChevronLeft, ChevronRight, FileUp, Plus, Settings2, Tags, TriangleAlert, Wand2 } from 'lucide-react'
 import { useAddParam } from '@/lib/hooks/useAddParam'
 import { useKeys } from '@/lib/hooks/useKeys'
 import { RecurringView } from '@/components/wealth/budget/RecurringView'
@@ -115,24 +114,18 @@ export default function BudgetPage() {
       <PageHeader
         actions={
           <>
-            <div className="flex w-full items-center justify-center gap-1 sm:w-auto sm:justify-start">
+            <div className="flex w-full items-center justify-center gap-1 max-md:!basis-full sm:w-auto sm:justify-start">
               <Button variant="outline" size="icon" aria-label="Previous month" onClick={() => setYm(prevYm)}><ChevronLeft className="h-4 w-4" /></Button>
               <MonthPicker value={ym} max={curYm} onChange={setYm} className="min-w-32 justify-center" />
               <Button variant="outline" size="icon" aria-label="Next month" disabled={ym >= curYm} onClick={() => setYm(addMonths(`${ym}-01`, 1).slice(0, 7))}><ChevronRight className="h-4 w-4" /></Button>
             </div>
-            {/* desktop keeps the full toolbar; a phone gets Budget plus a small tools menu */}
-            <Button variant="outline" className="max-md:hidden" onClick={() => setDlg({ kind: 'categories' })}><Tags className="mr-1.5 h-4 w-4" />Categories</Button>
-            <Button variant="outline" className="max-md:hidden" onClick={() => setRulesOpen(true)}><Wand2 className="mr-1.5 h-4 w-4" />Rules</Button>
-            <Button variant="outline" className="max-md:hidden" onClick={() => setImportOpen(true)}><FileUp className="mr-1.5 h-4 w-4" />Import CSV</Button>
-            <Button variant="outline" onClick={() => setDlg({ kind: 'budget' })}><Settings2 className="mr-1.5 h-4 w-4" />Budget</Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild><Button variant="outline" size="icon" className="md:hidden max-md:!flex-none" aria-label="More tools"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setDlg({ kind: 'categories' })}><Tags className="mr-2 h-4 w-4" />Categories</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setRulesOpen(true)}><Wand2 className="mr-2 h-4 w-4" />Rules</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setImportOpen(true)}><FileUp className="mr-2 h-4 w-4" />Import CSV</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* phone: four labelled buttons in a tidy 2 x 2 grid; wider screens keep them in one row */}
+            <div className="grid w-full grid-cols-2 gap-2 max-md:!basis-full md:contents">
+              <Button variant="outline" onClick={() => setDlg({ kind: 'categories' })}><Tags className="mr-1.5 h-4 w-4" />Categories</Button>
+              <Button variant="outline" onClick={() => setRulesOpen(true)}><Wand2 className="mr-1.5 h-4 w-4" />Rules</Button>
+              <Button variant="outline" onClick={() => setImportOpen(true)}><FileUp className="mr-1.5 h-4 w-4" />Import CSV</Button>
+              <Button variant="outline" onClick={() => setDlg({ kind: 'budget' })}><Settings2 className="mr-1.5 h-4 w-4" />Budget</Button>
+            </div>
           </>
         }
         primaryAction={{ label: 'Add transaction', onClick: () => setDlg({ kind: 'txn', type: 'expense' }) }}

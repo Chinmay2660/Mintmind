@@ -3,7 +3,9 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useAddParam } from '@/lib/hooks/useAddParam'
-import { Plus, RefreshCw, ChevronRight } from 'lucide-react'
+import { Plus, RefreshCw, ChevronRight, Loader2 } from 'lucide-react'
+import axios from 'axios'
+import { refreshNavs } from '@/lib/market/client'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { addFund, recordSipInstalment, save, remove, updateNav } from '@/lib/wealth/actions'
@@ -28,6 +30,7 @@ function MutualFundsTab() {
   useAddParam((what) => { if (what === 'fund') setDlg({ kind: 'fund' }) })
   const today = useMemo(() => new Date(), [])
   const ranked = useMemo(() => data.funds.map((f: any) => ({ f, m: fundMetrics(f, data.fundTxns, today) })).filter((x: any) => x.m.invested > 0).sort((a: any, b: any) => b.m.absReturnPct - a.m.absReturnPct), [data.funds, data.fundTxns, today])
+  const [syncing, setSyncing] = useState(false)
   const [fcat, setFcat] = useState('')
   const [sortBy, setSortBy] = useState<'name' | 'value' | 'return' | 'pct'>('name')
   const fundCats = useMemo(() => [...new Set<string>(data.funds.map((f: any) => f.category).filter(Boolean))], [data.funds])
@@ -45,7 +48,7 @@ function MutualFundsTab() {
 
   return (
     <div className="space-y-5">
-      <PageHeader actions={<><StatementImportButton /><PdfStatementImport /></>} primaryAction={{ label: 'Add fund', onClick: () => setDlg({ kind: 'fund' }) }} />
+      <PageHeader actions={<><Button variant="outline" disabled={syncing || data.funds.length === 0} onClick={async () => { setSyncing(true); try { const n = await refreshNavs(db, data.funds); toast.success(n ? `${n} ${n === 1 ? 'NAV' : 'NAVs'} updated` : 'NAVs are already up to date') } catch (e) { toast.error(axios.isAxiosError(e) && e.response?.data?.error ? String(e.response.data.error) : 'Could not refresh NAVs. Try again later.') } finally { setSyncing(false) } }}>{syncing ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}Refresh NAVs</Button><StatementImportButton /><PdfStatementImport /></>} primaryAction={{ label: 'Add fund', onClick: () => setDlg({ kind: 'fund' }) }} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 border-b border-border pb-5">
         <Stat label="Invested" info="Total money you have put in across all funds, including lump sums and SIP instalments." value={<Money value={s.invested} />} />
