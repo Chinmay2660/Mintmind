@@ -8,6 +8,7 @@ import { PrivacyProvider } from '@/contexts/PrivacyContext'
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
 import TruncationTitles from '@/components/TruncationTitles'
 import CookieConsent from '@/components/CookieConsent'
+import { SplashScreen } from '@/components/shell/SplashScreen'
 
 interface ProvidersProps {
   children: ReactNode
@@ -30,6 +31,7 @@ export default function Providers({ children }: ProvidersProps) {
     >
       <AuthProvider>
         <PrivacyProvider>
+          <SplashScreen />
           <ServiceWorkerRegister />
           <TruncationTitles />
           <CookieConsent />
