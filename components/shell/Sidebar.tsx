@@ -2,32 +2,29 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChevronRight, Folder, Menu, PanelLeftClose, PanelLeftOpen, Sparkles, Wallet } from 'lucide-react'
+import { Menu, PanelLeftClose, PanelLeftOpen, Sparkles, Wallet } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { DASHBOARD_NAV_ALL, APP_NAME, isDashboardNavActive, type DashboardNavItem } from '@/lib/constants/dashboardNav'
 import { cn } from '@/lib/utils'
 import { useFeatures } from '@/lib/features/FeaturesContext'
-import { useWealth } from '@/lib/wealth/WealthContext'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { useVisibleNav } from './FeatureGuard'
 import { canStorePreferences } from '@/lib/consent'
 
 const COLLAPSE_KEY = 'mm-sidebar-collapsed'
-const OPEN_KEY = 'mm-sidebar-open'
 
 // the selected item: soft brand fill in the default style; the pressed lime pill (thin edge, small hard shadow) in Paper
-const ACTIVE = 'bg-accent text-accent-foreground paper:bg-primary paper:text-primary-foreground paper:border-[1.5px] paper:border-[hsl(var(--edge))] paper:shadow-[inset_0_1px_0_hsl(var(--hi)),1.5px_2.5px_0_0_hsl(var(--drop))] paper:font-bold'
-const IDLE = 'text-muted-foreground hover:bg-muted hover:text-foreground'
+const ACTIVE = 'bg-primary/10 font-semibold text-foreground paper:bg-primary paper:text-primary-foreground paper:border-[1.5px] paper:border-[hsl(var(--edge))] paper:shadow-[inset_0_1px_0_hsl(var(--hi)),1.5px_2.5px_0_0_hsl(var(--drop))] paper:font-bold'
+const IDLE = 'text-foreground/80 hover:bg-muted hover:text-foreground'
 
-/** Folders for the module tree. Short names, so nothing is cut off. Each takes a semantic colour from the chart palette. */
-const GROUPS: { key: string; label: string; tone: string; ids: number[] }[] = [
-  { key: 'banking', label: 'Banking', tone: 'text-[hsl(208_68%_46%)]', ids: [3, 5] },
-  { key: 'invest', label: 'Investing', tone: 'text-[hsl(254_42%_56%)]', ids: [4, 6] },
-  { key: 'holdings', label: 'Assets & loans', tone: 'text-[hsl(134_49%_32%)]', ids: [14, 15] },
-  { key: 'spending', label: 'Spending', tone: 'text-[hsl(21_77%_55%)]', ids: [7, 13] },
-  { key: 'people', label: 'People', tone: 'text-[hsl(173_59%_38%)]', ids: [8, 9] },
+/** One flat list, most-used first. Section labels are plain text (nothing collapses), Settings sits at the bottom. */
+const SECTIONS: { label?: string; ids: number[] }[] = [
+  { ids: [1, 7] },
+  { label: 'Money', ids: [3, 5] },
+  { label: 'Wealth', ids: [4, 2, 14, 15] },
+  { label: 'More', ids: [6, 8, 9, 13] },
 ]
-const TOP_IDS = [1, 2, 12]
+const SETTINGS_ID = 12
 
 /**
  * The navigation itself. On a wide screen it sits in the sidebar (and can shrink to an icon rail);
@@ -37,42 +34,20 @@ function NavPanel({ collapsed = false, drawer = false, onNavigate, onToggleRail 
   const pathname = usePathname()
   const { all } = useVisibleNav()
   const { isEnabled } = useFeatures()
-  const { data } = useWealth()
-  const [open, setOpen] = useState<Record<string, boolean> | null>(null)
-
-  useEffect(() => { try { setOpen(JSON.parse(localStorage.getItem(OPEN_KEY) || 'null') || {}) } catch { setOpen({}) } }, [])
-
   const byId = useMemo(() => new Map(all.map((i) => [i.id, i])), [all])
-  const top = TOP_IDS.map((id) => byId.get(id)).filter(Boolean) as DashboardNavItem[]
-  const groups = GROUPS.map((g) => ({ ...g, items: g.ids.map((id) => byId.get(id)).filter(Boolean) as DashboardNavItem[] })).filter((g) => g.items.length)
-  const moduleCount = groups.reduce((n, g) => n + g.items.length, 0)
-
-  // a folder is open if the user opened it, or if it holds the page they are on
-  const isOpen = (g: (typeof groups)[number]) => (open?.[g.key] ?? false) || g.items.some((i) => isDashboardNavActive(pathname, i.path))
-  const setFolder = (g: (typeof groups)[number], v: boolean) => setOpen((o) => {
-    const next = { ...(o ?? {}), [g.key]: v }
-    try { if (canStorePreferences()) localStorage.setItem(OPEN_KEY, JSON.stringify(next)) } catch { /* ignore */ }
-    return next
-  })
-
-  // how much of the app has something in it: real counts, nothing assumed
-  const done: Record<number, boolean> = {
-    14: data.assets.length > 0, 15: data.liabilities.length > 0, 3: data.bankAccounts.length > 0, 4: data.funds.length > 0, 5: data.cards.length > 0, 6: data.policies.length > 0,
-    7: data.expenses.length > 0, 13: data.balanceHistory.length > 1, 8: data.members.length > 1, 9: data.meta.some((m: any) => m.key === 'vault'),
-  }
+  const sections = SECTIONS.map((sec) => ({ ...sec, items: sec.ids.map((id) => byId.get(id)).filter(Boolean) as DashboardNavItem[] })).filter((sec) => sec.items.length)
+  const settings = byId.get(SETTINGS_ID)
   const aiOn = isEnabled('ai_assistant')
   const aiActive = isDashboardNavActive(pathname, '/dashboard/ai')
 
-  const row = (item: DashboardNavItem, nested?: boolean) => {
+  const row = (item: DashboardNavItem) => {
     const active = isDashboardNavActive(pathname, item.path)
-    const ready = !!done[item.id]
     const Icon = item.icon
     return (
       <Link href={item.path} onClick={onNavigate} aria-current={active ? 'page' : undefined} title={collapsed ? item.name : undefined}
-        className={cn('flex items-center gap-2.5 rounded-lg px-2.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', nested ? 'gap-[11px] px-2 py-1.5' : 'py-2', active ? ACTIVE : IDLE, collapsed && 'mx-auto h-10 w-10 justify-center p-0')}>
+        className={cn('flex items-center gap-2.5 rounded-lg px-2.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', 'py-2', active ? ACTIVE : IDLE, collapsed && 'mx-auto h-10 w-10 justify-center p-0')}>
         <Icon className="h-[16px] w-[16px] shrink-0" strokeWidth={1.9} aria-hidden />
         {!collapsed && <span className="min-w-0 flex-1 truncate">{item.name}</span>}
-        {nested && !collapsed && <span className="sr-only">{ready ? ', set up' : ', nothing added yet'}</span>}
       </Link>
     )
   }
@@ -90,53 +65,32 @@ function NavPanel({ collapsed = false, drawer = false, onNavigate, onToggleRail 
         {collapsed ? (
           // icon rail: every destination, flat
           <div className="space-y-1">
-            {[...top, ...groups.flatMap((g) => g.items)].map((i) => <Fragment key={i.id}>{row(i)}</Fragment>)}
+            {sections.flatMap((x) => x.items).map((i) => <Fragment key={i.id}>{row(i)}</Fragment>)}
             {aiOn && <Link href="/dashboard/ai" title="My Wealth AI" aria-label="My Wealth AI" className={cn('mx-auto flex h-10 w-10 items-center justify-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring', aiActive ? ACTIVE : IDLE)}><Sparkles className="h-[17px] w-[17px]" /></Link>}
           </div>
         ) : (
           <>
-            {/* the main places: one per line, full names */}
-            <div className="space-y-1">
-              {top.map((i) => <Fragment key={i.id}>{row(i)}</Fragment>)}
-              {aiOn && (
-                <Link href="/dashboard/ai" onClick={onNavigate} aria-current={aiActive ? 'page' : undefined} className={cn('flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', aiActive ? ACTIVE : IDLE)}>
-                  <Sparkles className="h-[17px] w-[17px] shrink-0" strokeWidth={1.9} /><span className="min-w-0 flex-1 truncate">Wealth AI</span>
-                </Link>
-              )}
-            </div>
-
-            <div className="mt-4 border-t border-border pt-4">
-              <div className="mb-2 flex items-center justify-between px-1">
-                <span className="flex items-center gap-2 text-sm font-bold"><Folder className="h-[18px] w-[18px] fill-current" />Your money</span>
-                <span className="text-xs tabular-nums text-muted-foreground">{moduleCount} modules</span>
-              </div>
-              <ul className="space-y-0.5">
-                {groups.map((g) => {
-                  const expanded = isOpen(g)
-                  return (
-                    <li key={g.key}>
-                      <button type="button" aria-expanded={expanded} onClick={() => setFolder(g, !expanded)}
-                        className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm font-medium outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring">
-                        <ChevronRight className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-150 motion-reduce:transition-none', expanded && 'rotate-90')} />
-                        <Folder className={cn('h-[18px] w-[18px] shrink-0 fill-current', g.tone)} />
-                        <span className="min-w-0 flex-1 truncate">{g.label}</span>
-                        <span className="text-xs tabular-nums text-muted-foreground" title="Modules set up">{g.items.filter((i) => done[i.id]).length}/{g.items.length}</span>
-                      </button>
-                      {expanded && (
-                        <ul className="ml-4 mt-0.5 space-y-0.5 pl-2.5">
-                          {g.items.map((i) => <li key={i.id} className="tree-item">{row(i, true)}</li>)}
-                        </ul>
-                      )}
+            {sections.map((sec, n) => (
+              <div key={sec.label ?? 'main'} className={cn(n > 0 && 'mt-4')}>
+                {sec.label && <p className="mb-1 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{sec.label}</p>}
+                <ul className="space-y-0.5">
+                  {sec.items.map((i) => <li key={i.id}>{row(i)}</li>)}
+                  {n === 0 && aiOn && (
+                    <li>
+                      <Link href="/dashboard/ai" onClick={onNavigate} aria-current={aiActive ? 'page' : undefined} className={cn('flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', aiActive ? ACTIVE : IDLE)}>
+                        <Sparkles className="h-[16px] w-[16px] shrink-0" strokeWidth={1.9} /><span className="min-w-0 flex-1 truncate">Wealth AI</span>
+                      </Link>
                     </li>
-                  )
-                })}
-              </ul>
-            </div>
+                  )}
+                </ul>
+              </div>
+            ))}
           </>
         )}
       </nav>
 
       <div className="shrink-0 space-y-2 border-t border-border p-3">
+        {settings && row(settings)}
         {!drawer && onToggleRail && (
           <button type="button" onClick={onToggleRail} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed}
             className={cn('flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring', collapsed && 'mx-auto h-10 w-10 justify-center p-0')}>

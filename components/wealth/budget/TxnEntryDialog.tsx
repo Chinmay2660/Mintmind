@@ -16,7 +16,6 @@ import { displayExpr, evalAmount, hasOperator, pressKey } from '@/lib/wealth/amo
 import { findDuplicates, learnCorrection, suggestCategory } from '@/lib/ai/budgetAI'
 import { DateInput, Select } from '@/components/ui/pickers'
 import { cn } from '@/lib/utils'
-import { categoryIcon } from './categoryIcon'
 import { matchRule } from '@/lib/wealth/rules'
 import { useRules } from './RulesDialog'
 
@@ -67,7 +66,7 @@ export function TxnEntryDialog({ initialType = 'expense', row, draft, defaultMon
   const [busy, setBusy] = useState(false)
   const [typing, setTyping] = useState(false)
   const [f, setF] = useState({
-    date: startDate, note: seed?.note || '', tags: (seed?.tags || []).join(', '),
+    date: startDate, note: seed?.note || '',
     category: seed?.category || cats.expense[0] || 'Other', incomeCategory: cats.income[0] || 'Other',
     mode: seed?.mode || 'upi', cardId: seed?.cardId || data.cards[0]?.id || '', debitCardId: seed?.debitCardId || data.debitCards[0]?.id || '', accountId: seed?.accountId || bankAccs[0]?.id || '',
     receiveId: accountId || accounts[0]?.id || '',
@@ -82,7 +81,6 @@ export function TxnEntryDialog({ initialType = 'expense', row, draft, defaultMon
     if (!ruleHit || pickedByHand) return
     setF((p) => (type === 'income' ? (p.incomeCategory === ruleHit.category ? p : { ...p, incomeCategory: ruleHit.category }) : (p.category === ruleHit.category ? p : { ...p, category: ruleHit.category })))
   }, [ruleHit, pickedByHand, type])
-  const parseTags = (t: string) => [...new Set(t.split(',').map((x) => x.trim().replace(/^#/, '').slice(0, 24)).filter(Boolean))].slice(0, 8)
 
   const pending = hasOperator(expr)
   const amount = evalAmount(expr) ?? 0
@@ -121,13 +119,13 @@ export function TxnEntryDialog({ initialType = 'expense', row, draft, defaultMon
         if (f.mode === 'cash' && !cashAcc) throw new Error('Add a Cash account in Bank Accounts first')
         if (f.mode === 'debit' && !debit) throw new Error('Add a debit card under Cards first')
         if ((f.mode === 'upi' || f.mode === 'bank') && !f.accountId) throw new Error('Choose a bank account')
-        const rec = { amount, date: f.date, category: f.category, mode: f.mode, cardId: f.mode === 'card' ? f.cardId : null, debitCardId: f.mode === 'debit' ? f.debitCardId : null, accountId: f.mode === 'cash' ? cashAcc!.id : f.mode === 'debit' ? debit!.accountId : f.mode === 'card' ? null : f.accountId, note: f.note, tags: parseTags(f.tags) }
+        const rec = { amount, date: f.date, category: f.category, mode: f.mode, cardId: f.mode === 'card' ? f.cardId : null, debitCardId: f.mode === 'debit' ? f.debitCardId : null, accountId: f.mode === 'cash' ? cashAcc!.id : f.mode === 'debit' ? debit!.accountId : f.mode === 'card' ? null : f.accountId, note: f.note }
         row ? await updateExpense(db, row.id, rec) : await addExpense(db, rec)
         // learn from the category the user finally chose, so the next suggestion matches
         if (f.note.trim()) await db.meta.put({ key: 'categoryRules', value: learnCorrection(rules, f.note, f.category) })
       } else if (type === 'income') {
         if (!f.receiveId) throw new Error('Choose an account')
-        await addIncome(db, { accountId: f.receiveId, amount, date: f.date, category: f.incomeCategory, description: f.note, tags: parseTags(f.tags) })
+        await addIncome(db, { accountId: f.receiveId, amount, date: f.date, category: f.incomeCategory, description: f.note })
       } else {
         await addTransfer(db, { from: parse(f.from), to: parse(f.to), amount, date: f.date, note: f.note })
       }
@@ -215,19 +213,7 @@ export function TxnEntryDialog({ initialType = 'expense', row, draft, defaultMon
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain border-t border-border px-5 py-4 md:border-t-0">
             {type !== 'transfer' && (
               <>
-              <div role="radiogroup" aria-label="Category" className="grid grid-cols-4 gap-2 md:grid-cols-6">
-                {catList.map((c) => {
-                  const Icon = categoryIcon(c)
-                  const on = catValue === c
-                  return (
-                    <button key={c} type="button" role="radio" aria-checked={on} onClick={() => { setPickedByHand(true); setF((p) => ({ ...p, [catKey]: c })) }}
-                      className={cn('flex flex-col items-center gap-1.5 rounded-2xl border px-1 py-2.5 text-[11px] font-medium leading-tight outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', on ? tone.ring : 'border-transparent bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground')}>
-                      <Icon className="h-5 w-5" aria-hidden />
-                      <span className="line-clamp-1 w-full break-all">{c}</span>
-                    </button>
-                  )
-                })}
-              </div>
+              <Row name="Category"><Select aria-label="Category" value={catValue} onChange={(e) => { setPickedByHand(true); setF((p) => ({ ...p, [catKey]: e.target.value })) }}>{catList.map((c) => <option key={c} value={c}>{c}</option>)}</Select></Row>
               <button type="button" onClick={() => { onClose(); if (window.location.pathname === '/dashboard/budget') window.dispatchEvent(new Event('mm:open-categories')); else router.push('/dashboard/budget?add=categories') }} className="-mt-1 inline-flex items-center gap-1 self-start rounded text-xs font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><Tags className="h-3.5 w-3.5" />Add or edit categories</button>
               </>
             )}
@@ -261,7 +247,6 @@ export function TxnEntryDialog({ initialType = 'expense', row, draft, defaultMon
                   placeholder={type === 'transfer' ? 'e.g. ATM withdrawal' : type === 'expense' ? 'e.g. Swiggy' : 'Optional'}
                   className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/40" />
               </Row>
-              {type !== 'transfer' && <Row name="Tags"><input value={f.tags} onChange={set('tags')} onFocus={() => setTyping(true)} onBlur={() => setTyping(false)} aria-label="Tags, separated by commas" placeholder="e.g. trip, work (optional)" className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/40" /></Row>}
               {ruleHit && !pickedByHand && <p className="text-xs text-muted-foreground">Rule: description contains <strong className="text-foreground">{ruleHit.contains}</strong>, so the category is <strong className="text-foreground">{ruleHit.category}</strong>. Pick another to override.</p>}
             </div>
 

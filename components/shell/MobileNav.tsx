@@ -38,6 +38,18 @@ export function MobileNav() {
         {navMain.map((item) => {
           const active = isDashboardNavActive(pathname, item.path)
           const Icon = item.icon
+          // Spend is the main job on a phone, so it is a raised round button in the middle of the bar
+          if (item.id === 7) {
+            return (
+              <Link key={item.id} href={item.path} aria-current={active ? 'page' : undefined} aria-label="Spend: transactions and budgets"
+                className="group flex min-w-0 flex-1 flex-col items-center justify-end gap-1 pb-1.5 text-[11px] font-semibold outline-none">
+                <span className={cn('-mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 ring-4 ring-sidebar transition-transform group-active:scale-95 group-focus-visible:ring-ring', active && 'ring-primary/30')}>
+                  <Icon className="h-6 w-6" strokeWidth={2.1} />
+                </span>
+                <span className={cn('w-full truncate text-center', active ? 'text-primary' : 'text-foreground')}>{tabLabel(item.name)}</span>
+              </Link>
+            )
+          }
           return (
             <Link
               key={item.id}
