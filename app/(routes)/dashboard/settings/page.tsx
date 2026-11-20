@@ -193,7 +193,7 @@ function AppearanceTab() {
           )
         })}
       </div>
-      <h4 className="mb-2 mt-6 flex items-center gap-1.5 text-sm font-semibold">Look<InfoTip label="Look">Retro is the warm paper style with a monospace font. Clean is a plainer white and grey style with a regular font. It is remembered on this device, and Light, Dark and System work with both.</InfoTip></h4>
+      <h4 className="mb-2 mt-6 flex items-center gap-1.5 text-sm font-semibold">Look<InfoTip label="Look">Sage and Lavender are calm, light looks with a regular font. Ember is charcoal grey with orange, Ink is black, white and grey, and Violet is the original purple. Ocean, Sunset, Rose and Forest are single-colour looks. Paper is the warm paper style with a monospace font. Your choice is remembered on this device, and Light, Dark and System work with all of them.</InfoTip></h4>
       <div role="radiogroup" aria-label="Look" className="grid gap-3 sm:grid-cols-2">
         {UI_STYLES.map((o) => {
           const on = look === o.value

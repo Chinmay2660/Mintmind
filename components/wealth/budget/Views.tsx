@@ -67,7 +67,7 @@ function Row({ t, onEdit, onDelete, onDuplicate, onSplit, onBookmark, selecting,
   const starred = !!t.raw?.bookmarked
   return (
     <TxnRow kind={t.kind} title={t.title} category={t.category} amount={t.amount} selected={selected}
-      meta={`${t.kind === 'expense' ? `${expenseParts(t.raw).length > 1 ? 'Split: ' + expenseParts(t.raw).map((p) => `${p.category} ${formatINR(p.amount)}`).join(', ') : t.sub} · ${modeLabel(t.raw.mode)}` : t.sub}${t.raw?.tags?.length ? ' · ' + t.raw.tags.map((x: string) => '#' + x).join(' ') : ''}`}
+      meta={`${t.kind === 'expense' ? `${expenseParts(t.raw).length > 1 ? 'Split: ' + expenseParts(t.raw).map((p) => `${p.category} ${formatINR(p.amount)}`).join(', ') : t.sub} · ${modeLabel(t.raw.mode)}` : t.sub}`}
       onLongPress={onLongPress && !selecting ? () => onLongPress(t) : undefined}
       onSwipeLeft={!selecting && !t.legacy ? { label: 'Delete', run: () => onDelete(t) } : undefined}
       onSwipeRight={!selecting && t.kind === 'expense' ? { label: 'Edit', run: () => onEdit(t) } : undefined}
@@ -111,11 +111,9 @@ export function TransactionsView({ list, ym, onEdit, onDelete, onAdd, onDuplicat
   const [kind, setKind] = useState<'all' | Tx['kind']>('all')
   const [cat, setCat] = useState('')
   const [acct, setAcct] = useState('')
-  const [tag, setTag] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const { data: wd } = useWealth()
-  const allTags = useMemo(() => [...new Set(list.flatMap((t) => (t.raw?.tags || []) as string[]))].sort(), [list])
   const accountName = (t: Tx) => { const r = t.raw || {}; const id = r.accountId || r.cardId || r.fromId; const a = wd.bankAccounts.find((x: any) => x.id === id) || wd.cards.find((x: any) => x.id === id); return a ? (a.nickname || a.bankName || `${a.bank} ${a.cardName}`) : '' }
   const [onlyStar, setOnlyStar] = useState(false)
   const [selecting, setSelecting] = useState(false)
@@ -123,8 +121,8 @@ export function TransactionsView({ list, ym, onEdit, onDelete, onAdd, onDuplicat
   const cats = useCategories()
   const allCats = useMemo(() => [...new Set([...cats.expense, ...cats.income])], [cats])
 
-  const shown = useMemo(() => list.filter((t) => (kind === 'all' || t.kind === kind) && (!cat || t.category === cat) && (!acct || t.raw?.accountId === acct || t.raw?.cardId === acct || t.raw?.fromId === acct || t.raw?.toId === acct) && (!from || t.date >= from) && (!to || t.date <= to) && (!tag || (t.raw?.tags || []).includes(tag)) && (!onlyStar || t.raw?.bookmarked) && matchesAll(q, t.title, t.sub, t.category, t.amount, t.date, t.raw?.note, accountName(t), (t.raw?.tags || []).join(' '))), [list, kind, cat, acct, tag, from, to, q, onlyStar])
-  const pg = usePagination(shown, { pageSize: 25, resetKey: `${ym}|${kind}|${cat}|${acct}|${tag}|${from}|${to}|${q}|${onlyStar}` })
+  const shown = useMemo(() => list.filter((t) => (kind === 'all' || t.kind === kind) && (!cat || t.category === cat) && (!acct || t.raw?.accountId === acct || t.raw?.cardId === acct || t.raw?.fromId === acct || t.raw?.toId === acct) && (!from || t.date >= from) && (!to || t.date <= to) && (!onlyStar || t.raw?.bookmarked) && matchesAll(q, t.title, t.sub, t.category, t.amount, t.date, t.raw?.note, accountName(t))), [list, kind, cat, acct, from, to, q, onlyStar])
+  const pg = usePagination(shown, { pageSize: 25, resetKey: `${ym}|${kind}|${cat}|${acct}|${from}|${to}|${q}|${onlyStar}` })
   const groups = useMemo(() => groupByDay(pg.slice as any) as unknown as { date: string; items: Tx[]; income: number; expense: number }[], [pg.slice])
   const starCount = useMemo(() => list.filter((t) => t.raw?.bookmarked).length, [list])
 
@@ -160,10 +158,9 @@ export function TransactionsView({ list, ym, onEdit, onDelete, onAdd, onDuplicat
             {wd.cards.map((x: any) => <option key={x.id} value={x.id}>{x.bank} {x.cardName}</option>)}
           </Select>
         </label>
-        {allTags.length > 0 && <label className="min-w-0 text-xs text-muted-foreground [grid-column:1/-1] sm:max-w-sm">Tag<Select aria-label="Tag" value={tag} onChange={(e) => setTag(e.target.value)}><option value="">All tags</option>{allTags.map((x) => <option key={x} value={x}>#{x}</option>)}</Select></label>}
         <label className="min-w-0 text-xs text-muted-foreground">From<div className="mt-0.5"><DateInput aria-label="From date" min={`${ym}-01`} max={to || `${ym}-31`} value={from} onChange={(e) => setFrom(e.target.value)} /></div></label>
         <label className="min-w-0 text-xs text-muted-foreground">To<div className="mt-0.5"><DateInput aria-label="To date" min={from || `${ym}-01`} max={`${ym}-31`} value={to} onChange={(e) => setTo(e.target.value)} /></div></label>
-        {(acct || tag || from || to || cat || kind !== 'all' || q || onlyStar) && <Button type="button" variant="ghost" size="sm" className="justify-self-start [grid-column:1/-1]" onClick={() => { setAcct(''); setTag(''); setFrom(''); setTo(''); setCat(''); setKind('all'); setQ(''); setOnlyStar(false) }}>Clear filters</Button>}
+        {(acct || from || to || cat || kind !== 'all' || q || onlyStar) && <Button type="button" variant="ghost" size="sm" className="justify-self-start [grid-column:1/-1]" onClick={() => { setAcct(''); setFrom(''); setTo(''); setCat(''); setKind('all'); setQ(''); setOnlyStar(false) }}>Clear filters</Button>}
         <span className="text-right text-xs text-muted-foreground tabular-nums [grid-column:1/-1]">{shown.length} of {list.length}</span>
       </div>
       {groups.length === 0 ? <Empty title={onlyStar ? 'No bookmarked transactions this month' : list.length ? 'No matches' : 'No transactions this month'} description={onlyStar ? 'Tap the star on a transaction to keep it handy.' : undefined} action={!list.length ? <Button onClick={onAdd}><Plus className="mr-1.5 h-4 w-4" />Add transaction</Button> : undefined} /> : (
@@ -300,8 +297,8 @@ export function CategoryManager({ onClose }: { onClose: () => void }) {
         <div role="tablist" aria-label="Category type" className="grid grid-cols-2 rounded-lg bg-muted p-1 text-sm font-medium">
           {(['expense', 'income'] as const).map((k) => <button key={k} role="tab" aria-selected={kind === k} onClick={() => { setKind(k); setEditing(null) }} className={cn('rounded-md py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring', kind === k ? 'bg-card shadow-card' : 'text-muted-foreground')}>{k === 'expense' ? 'Expense' : 'Income'}</button>)}
         </div>
-        <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); const base = cleanName(name); if (!base) return; const n = parent ? makeSub(parent, base) : base; if (list.some((c) => c.toLowerCase() === n.toLowerCase())) return void toast.error('That category already exists'); run(async () => { await saveCategories(db, { expense: kind === 'expense' ? [...cats.expense, n] : cats.expense, income: kind === 'income' ? [...cats.income, n] : cats.income }); setName('') }) }}>
-          <div className="w-36 shrink-0"><Select aria-label="Add under" value={parent} onChange={(e) => setParent(e.target.value)}><option value="">Main category</option>{groups.map((g) => <option key={g.name} value={g.name}>Under {g.name}</option>)}</Select></div><Input aria-label={parent ? `New sub category under ${parent}` : 'New category'} placeholder={parent ? `New sub category of ${parent}` : `New ${kind} category`} value={name} maxLength={30} onChange={(e) => setName(e.target.value)} /><Button type="submit" disabled={!cleanName(name)}><Plus className="mr-1 h-4 w-4" />Add</Button>
+        <form className="flex flex-col gap-2 sm:flex-row" onSubmit={(e) => { e.preventDefault(); const base = cleanName(name); if (!base) return; const n = parent ? makeSub(parent, base) : base; if (list.some((c) => c.toLowerCase() === n.toLowerCase())) return void toast.error('That category already exists'); run(async () => { await saveCategories(db, { expense: kind === 'expense' ? [...cats.expense, n] : cats.expense, income: kind === 'income' ? [...cats.income, n] : cats.income }); setName('') }) }}>
+          <div className="w-full sm:w-36 sm:shrink-0"><Select aria-label="Add under" value={parent} onChange={(e) => setParent(e.target.value)}><option value="">Main category</option>{groups.map((g) => <option key={g.name} value={g.name}>Under {g.name}</option>)}</Select></div><Input aria-label={parent ? `New sub category under ${parent}` : 'New category'} placeholder={parent ? `New sub category of ${parent}` : `New ${kind} category`} value={name} maxLength={30} onChange={(e) => setName(e.target.value)} /><Button type="submit" className="sm:shrink-0" disabled={!cleanName(name)}><Plus className="mr-1 h-4 w-4" />Add</Button>
         </form>
         <ul className="max-h-72 divide-y divide-border overflow-y-auto">
           {list.map((c) => (
