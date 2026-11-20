@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight, FileUp, Plus, Settings2, Tags, TriangleAlert, Wand2 } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, FileUp, MoreHorizontal, Plus, Settings2, Tags, TriangleAlert, Wand2 } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useAddParam } from '@/lib/hooks/useAddParam'
 import { useKeys } from '@/lib/hooks/useKeys'
 import { RecurringView } from '@/components/wealth/budget/RecurringView'
@@ -85,6 +86,7 @@ export default function BudgetPage() {
   const duplicate = (t: Tx) => setDlg({ kind: 'txn', type: 'expense', draft: { ...t.raw, date: undefined } })
   const bookmark = (items: Tx[], on: boolean) => setBookmarks(db, items.map((t) => ({ kind: t.kind, id: t.id, legacy: t.legacy })), on).then(() => toast.success(on ? 'Bookmarked' : 'Bookmark removed')).catch(() => toast.error('Could not update bookmarks'))
   const [rulesOpen, setRulesOpen] = useState(false)
+  const [moreStats, setMoreStats] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   useAddParam((what) => { if (what === 'categories') setDlg({ kind: 'categories' }) })
   useEffect(() => { const open = () => setDlg({ kind: 'categories' }); window.addEventListener('mm:open-categories', open); return () => window.removeEventListener('mm:open-categories', open) }, [])
@@ -118,10 +120,19 @@ export default function BudgetPage() {
               <MonthPicker value={ym} max={curYm} onChange={setYm} className="min-w-32 justify-center" />
               <Button variant="outline" size="icon" aria-label="Next month" disabled={ym >= curYm} onClick={() => setYm(addMonths(`${ym}-01`, 1).slice(0, 7))}><ChevronRight className="h-4 w-4" /></Button>
             </div>
-            <Button variant="outline" onClick={() => setDlg({ kind: 'categories' })}><Tags className="mr-1.5 h-4 w-4" />Categories</Button>
-            <Button variant="outline" onClick={() => setRulesOpen(true)}><Wand2 className="mr-1.5 h-4 w-4" />Rules</Button>
-            <Button variant="outline" onClick={() => setImportOpen(true)}><FileUp className="mr-1.5 h-4 w-4" />Import CSV</Button>
+            {/* desktop keeps the full toolbar; a phone gets Budget plus a small tools menu */}
+            <Button variant="outline" className="max-md:hidden" onClick={() => setDlg({ kind: 'categories' })}><Tags className="mr-1.5 h-4 w-4" />Categories</Button>
+            <Button variant="outline" className="max-md:hidden" onClick={() => setRulesOpen(true)}><Wand2 className="mr-1.5 h-4 w-4" />Rules</Button>
+            <Button variant="outline" className="max-md:hidden" onClick={() => setImportOpen(true)}><FileUp className="mr-1.5 h-4 w-4" />Import CSV</Button>
             <Button variant="outline" onClick={() => setDlg({ kind: 'budget' })}><Settings2 className="mr-1.5 h-4 w-4" />Budget</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><Button variant="outline" size="icon" className="md:hidden max-md:!flex-none" aria-label="More tools"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setDlg({ kind: 'categories' })}><Tags className="mr-2 h-4 w-4" />Categories</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setRulesOpen(true)}><Wand2 className="mr-2 h-4 w-4" />Rules</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setImportOpen(true)}><FileUp className="mr-2 h-4 w-4" />Import CSV</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </>
         }
         primaryAction={{ label: 'Add transaction', onClick: () => setDlg({ kind: 'txn', type: 'expense' }) }}
@@ -141,6 +152,7 @@ export default function BudgetPage() {
         onTouchEnd={(e) => {
           const st = swipe.current; swipe.current = null
           if (!st) return
+          if (st.x <= 24) return // the left edge belongs to swipe-back
           if ((e.target as HTMLElement).closest('[role="region"], [role="tablist"], [role="slider"], [data-swipe-row], input, textarea, [role="dialog"]')) return
           const t = e.changedTouches[0]; const dx = t.clientX - st.x; const dy = t.clientY - st.y
           if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 2) { const i = TAB_ORDER.indexOf(tab); const n = TAB_ORDER[i + (dx < 0 ? 1 : -1)]; if (n) setTab(n) }
@@ -160,6 +172,24 @@ export default function BudgetPage() {
         <Empty title={`No budget for ${monthName}`} description="Set a monthly budget to see daily pacing and projections." action={<Button onClick={() => setDlg({ kind: 'budget' })}>Set budget</Button>} />
       ) : (
         <>
+          {/* phone: the answer to "how am I doing?" first, then a one-tap way to log spending */}
+          <div className="surface-card space-y-3 p-4 md:hidden">
+            <div className="flex items-end justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-muted-foreground">{p.remaining < 0 ? 'Over budget by' : 'Left to spend'}</p>
+                <p className={cn('truncate text-3xl font-semibold tracking-tight', p.remaining < 0 && 'text-destructive')}><Money value={Math.abs(p.remaining)} /></p>
+              </div>
+              <p className="shrink-0 text-right text-xs text-muted-foreground">{p.remainingDays > 0 ? <><span className="font-semibold text-foreground"><Money value={p.safeDailySpend} /></span>/day<br />for {p.remainingDays} days</> : 'month done'}</p>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={Math.min(p.utilisation, 100)} aria-valuemin={0} aria-valuemax={100} aria-label="Budget used">
+              <div className={cn('h-full rounded-full', p.utilisation >= 90 ? 'bg-destructive' : p.utilisation >= 70 ? 'bg-warning' : 'bg-primary')} style={{ width: `${Math.min(p.utilisation, 100)}%` }} />
+            </div>
+            <p className="text-xs text-muted-foreground"><Money value={p.spent} /> of <Money value={scopeBudget} /> spent · {p.utilisation}% used</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button onClick={() => setDlg({ kind: 'txn', type: 'expense' })}><Plus className="mr-1.5 h-4 w-4" />Add expense</Button>
+              <Button variant="outline" onClick={() => setTab('budgets')}>Category budgets</Button>
+            </div>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <label htmlFor="budget-scope" className="text-sm font-medium">Showing</label>
             <Select id="budget-scope" className="w-auto" value={catFilter} onChange={(e) => setCatFilter(e.target.value)}>
@@ -168,7 +198,7 @@ export default function BudgetPage() {
             </Select>
             {catFilter && catLimit === 0 && <span className="text-xs text-warning">No limit set for {catFilter}. Set one under Budget to see its daily pace.</span>}
           </div>
-          <div className="grid grid-cols-1 gap-3 min-[460px]:grid-cols-2 lg:grid-cols-4 border-b border-border pb-5">
+          <div className={cn('grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 border-b border-border pb-5 max-md:[&>*]:px-3 max-md:[&>*]:py-3', !moreStats && 'max-md:hidden')}>
             <Stat label={catFilter ? `${catFilter} budget` : 'Monthly budget'} value={<Money value={scopeBudget} />} hint={!catFilter && carry > 0 ? `incl. ${formatINR(carry)} rolled over` : `${p.days} days`} />
             <Stat label="Spent" value={<Money value={p.spent} />} hint={<span className="flex flex-wrap items-center gap-x-2"><span><UsagePct value={p.utilisation} warnAt={70} highAt={90} /> used</span><Metric amount={p.spent - prevTotal} invertGood className="text-xs" hint="No spending last month" /></span>} />
             <Stat label="Remaining" value={<span className={p.remaining < 0 ? 'text-destructive' : ''}><Money value={p.remaining} /></span>} hint={p.remainingDays > 0 ? `${formatINR(p.safeDailySpend)}/day safe to spend` : undefined} />
@@ -178,6 +208,7 @@ export default function BudgetPage() {
             <Stat label="Projected month-end" value={<Money value={p.projected} />} hint={p.projectedOver > 0 ? `${formatINR(p.projectedOver)} over` : 'within budget'} />
             <Stat label="Change vs last month" info="Spending this month against the whole of last month. Lower is better." value={<Metric amount={p.spent - prevTotal} pct={prevTotal > 0 ? ((p.spent - prevTotal) / prevTotal) * 100 : null} invertGood className="text-lg font-semibold sm:text-xl" />} hint={`Last month ${formatINR(prevTotal)}`} />
           </div>
+          <button type="button" onClick={() => setMoreStats((v) => !v)} aria-expanded={moreStats} className="-mt-2 flex w-full items-center justify-center gap-1 py-1 text-xs font-medium text-primary md:hidden">{moreStats ? 'Fewer numbers' : 'More numbers'}<ChevronDown className={cn('h-3.5 w-3.5 transition-transform', moreStats && 'rotate-180')} /></button>
 
           <Panel title={catFilter ? `Daily pacing: ${catFilter}` : 'Daily pacing'}>
             <div className="h-72">

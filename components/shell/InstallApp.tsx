@@ -86,17 +86,21 @@ export function InstallBanner() {
   const dismiss = () => { setHidden(true); if (canStorePreferences()) { try { localStorage.setItem(DISMISS_KEY, '1') } catch { /* it just comes back next visit */ } } }
   const hint = mode === 'ios' ? 'Tap Share, then Add to Home Screen.' : mode === 'mac-safari' ? 'In Safari choose File, then Add to Dock.' : 'Use your browser menu: Install or Add to Home Screen.'
   return (
-    <section aria-label="Install Mintmind" className="surface-card flex flex-wrap items-center gap-3 px-4 py-3">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground"><Download className="h-5 w-5" aria-hidden /></span>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold">Install Mintmind on this device</p>
-        <p className="text-xs text-muted-foreground">Opens in its own window, loads fast and works offline.{mode !== 'prompt' && steps ? ` ${hint}` : ''}</p>
+    <section aria-label="Install Mintmind" className="surface-card relative flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center">
+      <div className="flex min-w-0 flex-1 items-start gap-3 pr-8 sm:pr-0">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground"><Download className="h-5 w-5" aria-hidden /></span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">Install Mintmind</p>
+          <p className="text-xs text-muted-foreground">Opens in its own window, loads fast and works offline.{mode !== 'prompt' && steps ? ` ${hint}` : ''}</p>
+        </div>
       </div>
-      {mode === 'prompt'
-        ? <Button size="sm" onClick={install}><Download className="mr-1.5 h-4 w-4" />Install</Button>
-        : <Button size="sm" onClick={() => setSteps((v) => !v)} aria-expanded={steps}>How to install</Button>}
-      {mode !== 'prompt' && <button type="button" onClick={dismiss} className="text-xs font-medium text-muted-foreground underline underline-offset-2 hover:text-foreground">Already installed</button>}
-      <button type="button" onClick={dismiss} aria-label="Dismiss" className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"><X className="h-4 w-4" aria-hidden /></button>
+      <div className="flex shrink-0 items-center gap-3">
+        {mode === 'prompt'
+          ? <Button size="sm" className="flex-1 sm:flex-none" onClick={install}><Download className="mr-1.5 h-4 w-4" />Install</Button>
+          : <Button size="sm" className="flex-1 sm:flex-none" onClick={() => setSteps((v) => !v)} aria-expanded={steps}>How to install</Button>}
+        {mode !== 'prompt' && <button type="button" onClick={dismiss} className="whitespace-nowrap text-xs font-medium text-muted-foreground underline underline-offset-2 hover:text-foreground">Already installed</button>}
+      </div>
+      <button type="button" onClick={dismiss} aria-label="Dismiss" className="absolute right-2 top-2 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground sm:static sm:right-auto sm:top-auto"><X className="h-4 w-4" aria-hidden /></button>
     </section>
   )
 }

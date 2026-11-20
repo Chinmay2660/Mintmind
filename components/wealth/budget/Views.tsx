@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
-import { ArrowDownLeft, ArrowUpRight, CheckSquare, ChevronLeft, ChevronRight, Copy, Download, Pencil, Plus, Scale, Search, Split, Star, Trash2, X } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, CheckSquare, ChevronLeft, ChevronRight, Copy, Download, MoreVertical, Pencil, Plus, Scale, Search, Split, Star, Trash2, X } from 'lucide-react'
 import { SnapCarousel } from '@/components/ui/snap-carousel'
 import { TxnRow } from './TxnRow'
 import { toast } from 'sonner'
@@ -18,6 +18,7 @@ import { usePagination } from '@/lib/hooks/usePagination'
 import { useKeys } from '@/lib/hooks/useKeys'
 import { matchesAll } from '@/lib/search'
 import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { expenseParts } from '@/lib/wealth/splits'
@@ -72,11 +73,24 @@ function Row({ t, onEdit, onDelete, onDuplicate, onSplit, onBookmark, selecting,
       onSwipeRight={!selecting && t.kind === 'expense' ? { label: 'Edit', run: () => onEdit(t) } : undefined}
       leading={selecting ? <Checkbox checked={!!selected} onChange={() => onToggle?.(t)} aria-label={`Select ${t.title}`} /> : undefined}
       actions={selecting ? undefined : <>
+        {/* phone: one "more" menu (swipe also edits and deletes); desktop keeps the row of buttons */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-9 w-9 md:hidden" aria-label={`Actions for ${t.title}`}><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {t.kind === 'expense' && <DropdownMenuItem onClick={() => onEdit(t)}><Pencil className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>}
+            {onBookmark && <DropdownMenuItem onClick={() => onBookmark(t, !starred)}><Star className={cn('mr-2 h-4 w-4', starred && 'fill-current')} />{starred ? 'Remove bookmark' : 'Bookmark'}</DropdownMenuItem>}
+            {t.kind === 'expense' && onDuplicate && <DropdownMenuItem onClick={() => onDuplicate(t)}><Copy className="mr-2 h-4 w-4" />Duplicate</DropdownMenuItem>}
+            {t.kind === 'expense' && onSplit && <DropdownMenuItem onClick={() => onSplit(t)}><Split className="mr-2 h-4 w-4" />Split across categories</DropdownMenuItem>}
+            {!t.legacy && <DropdownMenuItem onClick={() => onDelete(t)} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <span className="flex items-center max-md:hidden">
         {onBookmark && <Button variant="ghost" size="icon" className="h-9 w-9" aria-label={starred ? 'Remove bookmark' : 'Bookmark'} aria-pressed={starred} onClick={() => onBookmark(t, !starred)}><Star className={cn('h-4 w-4', starred && 'fill-[hsl(var(--highlight))] text-[hsl(85_60%_30%)] dark:text-highlight')} /></Button>}
         {t.kind === 'expense' && onDuplicate && <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Duplicate expense" title="Duplicate" onClick={() => onDuplicate(t)}><Copy className="h-4 w-4" /></Button>}
         {t.kind === 'expense' && onSplit && <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Split expense across categories" title="Split across categories" onClick={() => onSplit(t)}><Split className="h-4 w-4" /></Button>}
         {t.kind === 'expense' && <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Edit expense" onClick={() => onEdit(t)}><Pencil className="h-4 w-4" /></Button>}
         {!t.legacy && <Button variant="ghost" size="icon" className="h-9 w-9" aria-label={`Delete ${t.kind}`} onClick={() => onDelete(t)}><Trash2 className="h-4 w-4" /></Button>}
+        </span>
       </>} />
   )
 }

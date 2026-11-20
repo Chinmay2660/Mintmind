@@ -1,19 +1,30 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { Menu } from 'lucide-react'
 import { DASHBOARD_NAV_MAIN, DASHBOARD_NAV_MORE, isDashboardNavActive } from '@/lib/constants/dashboardNav'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { useVisibleNav } from './FeatureGuard'
+import { NotificationsMenu } from './NotificationsMenu'
 
 // One short word per tab. "Budget & Expenses" reads as "Expenses" because that is what people look for.
 const tabLabel = (name: string) => (/transaction|expense/i.test(name) ? 'Spend' : name.split(' ')[0])
 
 export function MobileNav() {
   const pathname = usePathname()
+  const router = useRouter()
+  // On a phone the app opens on Transactions & Budgets (once per session); Overview is still one tap away.
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('mm-landed')) return
+      sessionStorage.setItem('mm-landed', '1')
+      if (pathname === '/dashboard' && window.matchMedia('(max-width: 767px)').matches) router.replace('/dashboard/budget')
+    } catch { /* storage blocked: stay where we are */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const { main: navMain, more: navMore } = useVisibleNav()
   const [open, setOpen] = useState(false)
   const moreActive = navMore.some((m) => isDashboardNavActive(pathname, m.path))
@@ -56,8 +67,12 @@ export function MobileNav() {
             </button>
           </SheetTrigger>
           <SheetContent side="bottom" className="max-h-[80dvh] overflow-y-auto rounded-t-2xl border-t border-border bg-card pb-8">
-            <SheetHeader className="mb-3 text-left">
+            <SheetHeader className="mb-3 flex-row items-center justify-between space-y-0 text-left">
               <SheetTitle>More</SheetTitle>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                Notifications
+                <NotificationsMenu />
+              </div>
             </SheetHeader>
             <div className="grid grid-cols-2 gap-2">
               {navMore.map((item) => {

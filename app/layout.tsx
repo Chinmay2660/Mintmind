@@ -34,9 +34,12 @@ export const viewport = {
   initialScale: 1,
   themeColor: [{ media: "(prefers-color-scheme: light)", color: "#F6F0E9" }, { media: "(prefers-color-scheme: dark)", color: "#25231F" }],
   viewportFit: "cover",
+  // Chrome on Android resizes the page when the keyboard opens, so bottom sheets stay above it (iOS is handled by KeyboardAware)
+  interactiveWidget: "resizes-content",
 };
 
 import { BOOT_SCRIPT } from "@/lib/uiStyle";
+import { KeyboardAware } from "@/components/shell/KeyboardAware";
 
 export default function RootLayout({ children }) {
   return (
@@ -49,6 +52,7 @@ export default function RootLayout({ children }) {
       <body suppressHydrationWarning className="font-sans antialiased">
         <Providers>
           <Toaster />
+          <KeyboardAware />
           {children}
         </Providers>
       </body>

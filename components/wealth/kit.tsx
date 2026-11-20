@@ -55,14 +55,14 @@ export function PageHeader({ title, description, actions, primaryAction, seconda
       )}
       {secondaryAction && (
         <button type="button" onClick={secondaryAction.onClick} disabled={secondaryAction.disabled} aria-label={secondaryAction.label}
-          className="fab fixed bottom-[calc(var(--mobile-fab-bottom)+8.5rem)] right-4 z-30 flex h-14 w-14 items-center justify-center gap-2 rounded-full border-2 border-primary bg-card text-foreground shadow-lg outline-none transition-transform hover:bg-muted active:scale-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 md:bottom-[8.75rem] md:h-12 md:w-auto md:px-5 md:text-sm md:font-semibold">
-          <Plus className="h-6 w-6 md:h-4 md:w-4" /><span className="hidden md:inline">{secondaryAction.label}</span>
+          className="fab fixed bottom-[calc(var(--mobile-fab-bottom)+8.5rem)] right-4 z-30 flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 outline-none transition-transform hover:bg-primary/90 active:scale-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 md:bottom-[8.75rem] md:px-5 paper:border paper:border-[hsl(var(--edge))] paper:shadow-[1.5px_3px_0_0_hsl(var(--drop))] print:hidden">
+          <Plus className="h-4 w-4" /><span>{secondaryAction.label}</span>
         </button>
       )}
       {primaryAction && (
         <button type="button" onClick={primaryAction.onClick} disabled={primaryAction.disabled} aria-label={primaryAction.label}
-          className="fab fixed bottom-[calc(var(--mobile-fab-bottom)+4.25rem)] right-4 z-30 flex h-14 w-14 items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 outline-none transition-transform hover:bg-primary/90 active:scale-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 md:bottom-[5.25rem] md:h-12 md:w-auto md:px-5 md:text-sm md:font-semibold paper:border paper:border-[hsl(var(--edge))] paper:shadow-[1.5px_3px_0_0_hsl(var(--drop))] print:hidden">
-          <Plus className="h-6 w-6 md:h-4 md:w-4" /><span className="hidden md:inline">{primaryAction.label}</span>
+          className="fab fixed bottom-[calc(var(--mobile-fab-bottom)+4.25rem)] right-4 z-30 flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 outline-none transition-transform hover:bg-primary/90 active:scale-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 md:bottom-[5.25rem] md:px-5 paper:border paper:border-[hsl(var(--edge))] paper:shadow-[1.5px_3px_0_0_hsl(var(--drop))] print:hidden">
+          <Plus className="h-4 w-4" /><span>{primaryAction.label}</span>
         </button>
       )}
     </div>

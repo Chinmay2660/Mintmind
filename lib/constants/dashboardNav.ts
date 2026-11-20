@@ -45,8 +45,9 @@ export const DASHBOARD_NAV_ALL: DashboardNavItem[] = [
 ]
 
 /** Mobile bottom bar: primary modules; everything else lives under "More". */
-const PRIMARY_IDS = [1, 2, 3, 7]
-export const DASHBOARD_NAV_MAIN = DASHBOARD_NAV_ALL.filter((i) => PRIMARY_IDS.includes(i.id))
+// Order matters: Spend (Transactions & Budgets) sits in the middle of the phone bar (Overview, Net Worth, Spend, Accounts, More).
+const PRIMARY_IDS = [1, 2, 7, 3]
+export const DASHBOARD_NAV_MAIN = PRIMARY_IDS.map((id) => DASHBOARD_NAV_ALL.find((i) => i.id === id)!)
 export const DASHBOARD_NAV_MORE = DASHBOARD_NAV_ALL.filter((i) => !PRIMARY_IDS.includes(i.id))
 
 export interface SearchItem {

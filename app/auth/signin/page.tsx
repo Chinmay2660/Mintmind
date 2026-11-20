@@ -40,6 +40,17 @@ function SignInContent() {
   const [needMfa, setNeedMfa] = useState(false)
   const [busy, setBusy] = useState<null | 'form' | 'google' | 'demo'>(null)
   const [error, setError] = useState('')
+  // already signed in (or in demo): skip the sign-in screen
+  const [checking, setChecking] = useState(true)
+
+  useEffect(() => {
+    let alive = true
+    axios.get('/api/auth/session')
+      .then((r) => { if (r.data?.user) window.location.replace(callbackUrl); else if (alive) setChecking(false) })
+      .catch(() => { if (alive) setChecking(false) })
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     const e = params.get('error')
@@ -145,6 +156,8 @@ function SignInContent() {
       setBusy(null)
     }
   }
+
+  if (checking) return <div className="flex min-h-dvh items-center justify-center bg-background"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading" /></div>
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-background px-4 py-10 text-foreground">
