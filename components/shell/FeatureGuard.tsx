@@ -47,8 +47,9 @@ export function FeatureGuard({ children }: { children: ReactNode }) {
 export function useVisibleNav() {
   const { isEnabled } = useFeatures()
   const all = DASHBOARD_NAV_ALL.filter((i) => { const k = featureForPath(i.path); return !k || isEnabled(k) || (k === 'vault' && (isEnabled('documents') || isEnabled('digital_legacy'))) })
-  // bottom bar: first four of the usual favourites that are on; everything else goes under More
-  const favourites = [1, 2, 3, 7, 4, 5, 6]
+  // bottom bar: first four of the usual favourites that are on; everything else goes under More.
+  // Order: Overview, Net Worth, Spend (middle of the five tabs with More), Accounts.
+  const favourites = [1, 2, 7, 3, 4, 5, 6]
   const main: DashboardNavItem[] = favourites.map((id) => all.find((i) => i.id === id)).filter(Boolean).slice(0, 4) as DashboardNavItem[]
   const more = all.filter((i) => !main.includes(i))
   return { all, main, more }

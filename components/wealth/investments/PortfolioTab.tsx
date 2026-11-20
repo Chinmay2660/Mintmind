@@ -11,21 +11,25 @@ type Slot = 1 | 2 | 3 | 4 | 5 | 6
 const slot = (i: number) => (((i % 6) + 1) as Slot)
 
 /** The whole portfolio in one place: every class of investment, its share and what it has gained. Each row opens that section. */
-export function PortfolioTab({ onOpen }: { onOpen: (key: string) => void }) {
+/** part: 'summary' is the figures strip alone (shown above the section tabs, as on Insurance); 'body' is the breakdown below. */
+export function PortfolioTab({ onOpen, part = 'body' }: { onOpen: (key: string) => void; part?: 'summary' | 'body' }) {
   const { data } = useWealth()
   const today = useMemo(() => new Date(), [])
   const p = useMemo(() => portfolioOverview({ funds: data.funds as any[], fundTxns: data.fundTxns as any[], sips: data.sips as any[], assets: data.assets as any[], today }), [data.funds, data.fundTxns, data.sips, data.assets, today])
   const rows = p.rows.filter((r) => r.count > 0)
 
+  if (part === 'summary') return (
+    <section aria-label="Summary" className="grid grid-cols-2 gap-3 border-b border-border pb-5 lg:grid-cols-4">
+      <Stat label="Portfolio value" value={<Money value={p.total} />} />
+      <Stat label="Put in" info="Only holdings where you recorded what was paid are counted here." value={<Money value={p.invested} />} />
+      <Stat label="Gain" info="Value minus what was put in, for holdings where the cost is known." value={p.invested > 0 ? <Metric amount={p.gain} pct={p.gainPct} className="text-lg font-semibold sm:text-xl" /> : '-'} />
+      <Stat label="Holdings" value={rows.reduce((s, r) => s + r.count, 0)} hint={`${rows.length} ${rows.length === 1 ? 'kind' : 'kinds'}`} />
+    </section>
+  )
+
   return (
     <div className="space-y-5">
       <PageHeader description="Everything you have invested, across mutual funds, deposits, retirement accounts, stocks and gold. Property and bank balances are not counted here." />
-      <section aria-label="Summary" className="grid grid-cols-1 gap-3 border-b border-border pb-5 min-[460px]:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Portfolio value" value={<Money value={p.total} />} />
-        <Stat label="Put in" info="Only holdings where you recorded what was paid are counted here." value={<Money value={p.invested} />} />
-        <Stat label="Gain" info="Value minus what was put in, for holdings where the cost is known." value={p.invested > 0 ? <Metric amount={p.gain} pct={p.gainPct} className="text-lg font-semibold sm:text-xl" /> : '-'} />
-        <Stat label="Holdings" value={rows.reduce((s, r) => s + r.count, 0)} hint={`${rows.length} ${rows.length === 1 ? 'kind' : 'kinds'}`} />
-      </section>
       {rows.length === 0 ? <Empty title="No investments yet" description="Add a mutual fund, a fixed deposit or any other investment from its section." /> : (
         <Panel title="Where it is">
           <div className="flex h-3 overflow-hidden rounded-full border border-border">

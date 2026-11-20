@@ -250,8 +250,10 @@
 button > svg, a > svg, [role='tab'] > svg { flex-shrink: 0; }
 @media (max-width: 767px) {
   .fab { transition: transform 200ms ease, opacity 200ms ease; }
-  [data-fab-hidden] .fab { transform: translateY(calc(100% + 6rem)); opacity: 0; pointer-events: none; }
+  [data-fab-hidden] .fab, body[data-scroll-locked] .fab { transform: translateY(calc(100% + 6rem)); opacity: 0; pointer-events: none; }
 }
+/* the app scrolls inside its own container, so the page itself never rubber-bands or pulls to refresh */
+html, body { overscroll-behavior-y: none; }
 @media (prefers-reduced-motion: reduce) { .fab { transition: none; } }
 .cv-auto { content-visibility: auto; contain-intrinsic-size: auto 4.5rem; }
 

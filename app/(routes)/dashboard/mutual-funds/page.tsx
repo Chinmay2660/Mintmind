@@ -18,7 +18,7 @@ import { Delta, Empty, Metric, LoadingBlock, PageHeader, Panel, Select, Stat } f
 import { StatementImportButton } from '@/components/wealth/StatementImport'
 import { FundForm, NavForm, SipForm } from '@/components/wealth/FundForms'
 import { PdfStatementImport } from '@/components/wealth/PdfStatementImport'
-import { TabBar } from '@/components/ui/tab-bar'
+import { cn } from '@/lib/utils'
 import { HoldingsTab } from '@/components/wealth/investments/HoldingsTab'
 import { PortfolioTab } from '@/components/wealth/investments/PortfolioTab'
 
@@ -163,7 +163,13 @@ export default function InvestmentsPage() {
   useEffect(() => { if (new URLSearchParams(window.location.search).get('add') === 'fund') setTab('funds') }, [])
   return (
     <div className="space-y-5">
-      <TabBar label="Investment sections" tabs={TABS} value={tab} onChange={(k) => setTab(k as Tab)} />
+      {/* same order as Insurance: the totals first, then the section chips, then the section itself */}
+      <PortfolioTab part="summary" onOpen={() => {}} />
+      <div role="tablist" aria-label="Investment sections" className="flex flex-wrap gap-1.5">
+        {TABS.map((t) => (
+          <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)} className={cn('rounded-full border px-3 py-1 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', tab === t.key ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{t.label}</button>
+        ))}
+      </div>
       {tab === 'portfolio' && <PortfolioTab onOpen={(key) => setTab((key === 'mutualFunds' ? 'funds' : key) as Tab)} />}
       {tab === 'funds' && <MutualFundsTab />}
       {(tab === 'fd' || tab === 'rd' || tab === 'retirement' || tab === 'market' || tab === 'gold') && <HoldingsTab key={tab} kind={tab} />}

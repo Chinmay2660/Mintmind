@@ -55,9 +55,12 @@ export function TopBar() {
         <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={togglePrivacyMode} aria-label={privacyMode ? 'Show balances' : 'Hide balances'} aria-pressed={privacyMode}>
           {privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </Button>
-        <ThemeToggle />
-        <NotificationsMenu />
-        <UserProfile />
+        {/* on a phone, theme, notifications and profile live in More / Settings */}
+        <div className="hidden items-center gap-0.5 md:flex">
+          <ThemeToggle />
+          <NotificationsMenu />
+          <UserProfile />
+        </div>
       </div>
     </header>
   )

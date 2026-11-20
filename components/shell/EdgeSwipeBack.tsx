@@ -20,8 +20,11 @@ export function EdgeSwipeBack() {
     let start: { x: number; y: number; t: number } | null = null
     const down = (e: TouchEvent) => {
       const t = e.touches[0]
-      start = e.touches.length === 1 && t.clientX <= 20 ? { x: t.clientX, y: t.clientY, t: Date.now() } : null
+      // Not when the touch belongs to something else: a swipeable row (its right swipe is "edit"), a field, a slider, or an open dialog or sheet.
+      const own = e.target instanceof Element && e.target.closest('[data-swipe-row], input, textarea, [role="slider"]')
+      start = e.touches.length === 1 && t.clientX <= 20 && !own && !document.querySelector('[role="dialog"]') ? { x: t.clientX, y: t.clientY, t: Date.now() } : null
     }
+    const cancel = () => { start = null }
     const up = (e: TouchEvent) => {
       const s = start; start = null
       if (!s) return
@@ -31,7 +34,8 @@ export function EdgeSwipeBack() {
     }
     window.addEventListener('touchstart', down, { passive: true })
     window.addEventListener('touchend', up, { passive: true })
-    return () => { window.removeEventListener('touchstart', down); window.removeEventListener('touchend', up) }
+    window.addEventListener('touchcancel', cancel, { passive: true }) // the browser took the gesture (scroll, system back): do nothing
+    return () => { window.removeEventListener('touchstart', down); window.removeEventListener('touchend', up); window.removeEventListener('touchcancel', cancel) }
   }, [])
   return null
 }

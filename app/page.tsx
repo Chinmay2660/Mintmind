@@ -79,7 +79,7 @@ export default function Home() {
           <nav aria-label="Main" className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
             <a href="#features" className="hover:text-foreground">Features</a><a href="#calculators" className="hover:text-foreground">Calculators</a><a href="#privacy" className="hover:text-foreground">Privacy</a>
           </nav>
-          <div className="flex items-center gap-1.5"><ThemeToggle /><Button asChild variant="ghost" size="sm" className="hidden rounded-full sm:inline-flex"><Link href="/auth/signin">Sign in</Link></Button><AppEntryButton /></div>
+          <div className="flex items-center gap-1.5"><ThemeToggle /><Button asChild variant="ghost" size="sm" className="hidden rounded-full sm:inline-flex"><Link href="/auth/signin?mode=signup">Sign up</Link></Button><AppEntryButton /></div>
         </header>
       </div>
 
@@ -90,7 +90,7 @@ export default function Home() {
               <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">Your entire financial world.<GradientText className="block">One clear picture.</GradientText></h1>
               <p className="mt-5 max-w-xl text-lg text-muted-foreground">Track your net worth, manage investments, understand your spending, and build a clearer picture of your financial future.</p>
               <div className="mt-8 flex flex-wrap items-start gap-3">
-                <ShimmerCta href="/auth/signin?mode=signup">Get started <ArrowRight className="ml-2 h-4 w-4" /></ShimmerCta>
+                <ShimmerCta href="/auth/signin">Get started <ArrowRight className="ml-2 h-4 w-4" /></ShimmerCta>
                 <Button asChild size="lg" variant="outline" className="rounded-full"><a href="#features">Explore features</a></Button>
                 <DemoButton size="lg" variant="secondary" label="See a sample family" />
               </div>
@@ -203,7 +203,7 @@ export default function Home() {
         <section className="border-t border-border">
           <div className="mx-auto flex max-w-6xl flex-col items-start gap-5 px-4 py-14 sm:px-6 md:flex-row md:items-center md:justify-between">
             <div><h2 className="text-2xl font-semibold tracking-tight">Make your money easier to understand.</h2><p className="mt-1 text-muted-foreground">Start with the sample family or add your own numbers.</p></div>
-            <div className="flex flex-wrap items-start gap-3"><Button asChild size="lg"><Link href="/auth/signin?mode=signup">Get started</Link></Button><DemoButton size="lg" label="See a sample family" /></div>
+            <div className="flex flex-wrap items-start gap-3"><Button asChild size="lg"><Link href="/auth/signin">Get started</Link></Button><DemoButton size="lg" label="See a sample family" /></div>
           </div>
         </section>
       </main>
