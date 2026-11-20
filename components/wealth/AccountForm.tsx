@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { toISO } from '@/lib/wealth/calc'
 import { Input } from '@/components/ui/input'
 import { Field, FormDialog, Select, StepFormDialog } from './kit'
+import { POPULAR_BANKS } from '@/lib/wealth/banks'
 
 export const ACCOUNT_TYPES = [
   { value: 'savings', label: 'Savings' },
@@ -43,7 +44,7 @@ export function AccountForm({ row, onClose, onSave }: { row?: any; onClose: () =
       steps={[
         { title: "Account", content: (<>
       <Field label="Account type" className="full">{(id) => <Select id={id} value={f.type} onChange={set('type')}>{ACCOUNT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</Select>}</Field>
-      {!cash && <Field label="Bank name">{(id) => <Input id={id} required value={f.bankName} onChange={set('bankName')} />}</Field>}
+      {!cash && <Field label="Bank name">{(id) => <><Input id={id} required list="popular-banks" autoComplete="off" placeholder="Start typing, e.g. HDFC" value={f.bankName} onChange={set('bankName')} /><datalist id="popular-banks">{POPULAR_BANKS.map((b) => <option key={b} value={b} />)}</datalist></>}</Field>}
       {!cash && <Field label="Account holder">{(id) => <Input id={id} required value={f.holderName} onChange={set('holderName')} />}</Field>}
       <Field label={cash ? 'Name' : 'Nickname'}>{(id) => <Input id={id} required={cash} value={f.nickname} onChange={set('nickname')} placeholder={cash ? 'Cash in hand' : ''} />}</Field>
         </>) },

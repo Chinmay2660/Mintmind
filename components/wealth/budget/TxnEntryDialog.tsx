@@ -30,7 +30,8 @@ const TONE: Record<TxnType, { text: string; bg: string; ring: string }> = {
   income: { text: 'text-income', bg: 'bg-income text-white', ring: 'border-income bg-income/10 text-income' },
   transfer: { text: 'text-primary', bg: 'bg-primary text-primary-foreground', ring: 'border-primary bg-primary/10 text-primary' },
 }
-const label = (a: any) => a.nickname || a.bankName
+// "Nickname - Bank Name" so two accounts at one bank are easy to tell apart (cash is just "Cash")
+const label = (a: any) => (a.type === 'cash' ? 'Cash' : !a.nickname || !a.bankName || a.nickname === a.bankName ? a.nickname || a.bankName : `${a.nickname} - ${a.bankName}`)
 const cardLabel = (c: any) => `${c.bank} ${c.cardName}`
 
 const KEYS: { k: string; l: string }[][] = [
@@ -197,7 +198,7 @@ export function TxnEntryDialog({ initialType = 'expense', row, draft, defaultMon
           <section className="hidden shrink-0 border-t border-border px-5 pt-4 md:block">
             <label htmlFor="txn-amount" className="text-sm font-medium">Amount</label>
             <div className="relative mt-1.5"><span className={cn('pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lg font-medium', tone.text)}>₹</span>
-              <input id="txn-amount" inputMode="decimal" autoComplete="off" placeholder="0" value={expr} onChange={(e) => { const v = e.target.value.replace(/[^0-9.]/g, ''); const i = v.indexOf('.'); setExpr(i < 0 ? v : v.slice(0, i + 1) + v.slice(i + 1).replace(/./g, '')) }} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); save() } }}
+              <input id="txn-amount" inputMode="decimal" autoComplete="off" placeholder="0" value={expr} onChange={(e) => { const v = e.target.value.replace(/[^0-9.]/g, ''); const i = v.indexOf('.'); setExpr(i < 0 ? v : v.slice(0, i + 1) + v.slice(i + 1).replace(/[^0-9]/g, '').slice(0, 2)) }} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); save() } }}
                 className={cn('h-12 w-full rounded-xl border border-input bg-background pl-8 pr-3 text-2xl font-semibold tabular-nums outline-none placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-ring/40', tone.text)} /></div>
           </section>
           <section className="shrink-0 px-6 pb-3 pt-2 text-center md:hidden">
