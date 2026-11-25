@@ -1,5 +1,6 @@
 'use client'
 
+import { useBackToClose } from '@/lib/hooks/useBackToClose'
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,7 @@ export function ConfirmDialog({
   variant = 'default',
   isLoading = false,
 }: ConfirmDialogProps) {
+  useBackToClose(open, () => onOpenChange(false))
   const handleCancel = () => {
     if (onCancel) onCancel()
     else onOpenChange(false)

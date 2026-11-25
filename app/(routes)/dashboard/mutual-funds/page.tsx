@@ -1,15 +1,20 @@
 'use client'
 
+import { TabBar } from '@/components/ui/tab-bar'
+import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useAddParam } from '@/lib/hooks/useAddParam'
-import { Plus, RefreshCw, ChevronRight, Loader2 } from 'lucide-react'
+import { ArrowLeft, Plus, RefreshCw, ChevronRight, Loader2 } from 'lucide-react'
+import { useDetailCrumb } from '@/components/shell/DetailCrumb'
 import axios from 'axios'
-import { refreshNavs } from '@/lib/market/client'
+import { lastMarketSync, refreshNavs } from '@/lib/market/client'
+import { agoLabel, navFreshness } from '@/lib/market/freshness'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { addFund, recordSipInstalment, save, remove, updateNav } from '@/lib/wealth/actions'
-import { fundMetrics, nextSipDate, portfolioSummary, monthlyEquivalent } from '@/lib/wealth/calc'
+import { fundMetrics, nextSipDate, portfolioSummary, monthlyEquivalent, toISO } from '@/lib/wealth/calc'
 import { cap, formatDate, formatINR, formatPct } from '@/lib/wealth/format'
 import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
@@ -17,9 +22,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Pagination } from '@/components/ui/pagination'
 import { usePagination } from '@/lib/hooks/usePagination'
 import { Delta, Empty, Metric, LoadingBlock, PageHeader, Panel, Select, Stat } from '@/components/wealth/kit'
-import { StatementImportButton } from '@/components/wealth/StatementImport'
 import { FundForm, NavForm, SipForm } from '@/components/wealth/FundForms'
-import { PdfStatementImport } from '@/components/wealth/PdfStatementImport'
 import { cn } from '@/lib/utils'
 import { HoldingsTab } from '@/components/wealth/investments/HoldingsTab'
 import { PortfolioTab } from '@/components/wealth/investments/PortfolioTab'
@@ -48,17 +51,17 @@ function MutualFundsTab() {
 
   return (
     <div className="space-y-5">
-      <PageHeader actions={<><Button variant="outline" disabled={syncing || data.funds.length === 0} onClick={async () => { setSyncing(true); try { const n = await refreshNavs(db, data.funds); toast.success(n ? `${n} ${n === 1 ? 'NAV' : 'NAVs'} updated` : 'NAVs are already up to date') } catch (e) { toast.error(axios.isAxiosError(e) && e.response?.data?.error ? String(e.response.data.error) : 'Could not refresh NAVs. Try again later.') } finally { setSyncing(false) } }}>{syncing ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}Refresh NAVs</Button><StatementImportButton /><PdfStatementImport /></>} primaryAction={{ label: 'Add fund', onClick: () => setDlg({ kind: 'fund' }) }} />
+      <PageHeader actions={<><Button variant="outline" disabled={syncing || data.funds.length === 0} onClick={async () => { setSyncing(true); try { const n = await refreshNavs(db, data.funds); toast.success(n ? `${n} ${n === 1 ? 'NAV' : 'NAVs'} updated` : 'NAVs are already up to date') } catch (e) { toast.error(axios.isAxiosError(e) && e.response?.data?.error ? String(e.response.data.error) : 'Could not refresh NAVs. Try again later.') } finally { setSyncing(false) } }}>{syncing ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}Refresh NAVs</Button></>} primaryAction={{ label: 'Add fund', onClick: () => setDlg({ kind: 'fund' }) }} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 border-b border-border pb-5">
-        <Stat label="Invested" info="Total money you have put in across all funds, including lump sums and SIP instalments." value={<Money value={s.invested} />} />
-        <Stat label="Current value" info="Units you hold multiplied by each fund's latest NAV." value={<Money value={s.value} />} />
-        <Stat label="Absolute return" info="Gain or loss compared with what you invested. It ignores how long the money was invested, so use XIRR to compare over time." value={<Metric amount={s.absReturn} pct={s.absReturnPct} className="text-lg font-semibold sm:text-xl" />} />
+        <Stat label="Invested" value={<Money value={s.invested} />} />
+        <Stat label="Current value" value={<Money value={s.value} />} />
+        <Stat label="Absolute return" value={<Metric amount={s.absReturn} pct={s.absReturnPct} className="text-lg font-semibold sm:text-xl" />} />
         <Stat label="XIRR" info="Your annualised return, taking into account when each rupee went in. It describes the past and does not predict future returns. Needs at least two dated cashflows." value={<Metric pct={s.xirrPct} digits={2} hint="Needs at least two dated cashflows" className="text-lg font-semibold sm:text-xl" />} />
-        <Stat label="Today's gain / loss" info="Change in value since the previous NAV. Shows a dash until a previous NAV is known." value={<Metric amount={s.todayGain} compact={false} hint="Needs previous NAV" className="text-lg font-semibold sm:text-xl" />} />
-        <Stat label="Funds" info="Number of mutual fund holdings you track." value={s.fundCount} />
-        <Stat label="Active SIPs" info="SIPs that are running now and will debit on their next due date." value={s.activeSips} />
-        <Stat label="Monthly SIP commitment" info="Total of all active SIP instalments in a month." value={<Money value={s.monthlySipCommitment} />} />
+        <Stat label="Today's gain / loss" value={<Metric amount={s.todayGain} compact={false} hint="Needs previous NAV" className="text-lg font-semibold sm:text-xl" />} />
+        <Stat label="Funds" value={s.fundCount} />
+        <Stat label="Active SIPs" value={s.activeSips} />
+        <Stat label="Monthly SIP commitment" value={<Money value={s.monthlySipCommitment} />} />
       </div>
 
       {ranked.length >= 2 && (
@@ -81,6 +84,7 @@ function MutualFundsTab() {
       <Panel title="Holdings" action={data.funds.length > 1 ? <div className="flex flex-wrap items-center justify-end gap-2"><div className="w-40"><Select aria-label="Fund category" value={fcat} onChange={(e) => setFcat(e.target.value)}><option value="">All categories</option>{fundCats.map((x) => <option key={x}>{x}</option>)}</Select></div><div className="w-40"><Select aria-label="Sort funds" value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)}><option value="name">Sort: name</option><option value="value">Sort: value</option><option value="return">Sort: return</option><option value="pct">Sort: return %</option></Select></div></div> : undefined}>
         {data.funds.length === 0 ? <Empty title="No mutual funds yet" description="Add a fund manually from your statement." action={<Button onClick={() => setDlg({ kind: 'fund' })}>Add fund</Button>} /> : (
           <>
+          <NavFreshness funds={data.funds} />
           <ul className="space-y-2 md:hidden">
             {pg.slice.map((f: any) => {
               const m = fundMetrics(f, data.fundTxns, today)
@@ -111,7 +115,7 @@ function MutualFundsTab() {
                       <td className="px-3 text-right"><Money value={m.value} /></td>
                       <td className="px-3 text-right"><Delta amount={m.absReturn} pct={m.absReturnPct} /></td>
                       <td className="px-3 text-right"><Metric pct={m.xirrPct} hint="Needs at least two dated cashflows" /></td>
-                      <td className="px-3 text-right tabular-nums">{f.currentNav}<span className="block text-xs text-muted-foreground">{formatDate(f.navDate)}</span></td>
+                      <td className="px-3 text-right tabular-nums">{f.currentNav}<span className="block text-xs text-muted-foreground">{formatDate(f.navDate)}</span>{navFreshness(f.navDate, toISO(today)).stale && <span className="block text-xs text-warning">May be out of date</span>}</td>
                       <td className="pl-3 text-right"><Button size="sm" variant="outline" onClick={() => setDlg({ kind: 'nav', row: f })}><RefreshCw className="mr-1 h-3.5 w-3.5" />NAV</Button></td>
                     </tr>
                   )
@@ -151,31 +155,67 @@ function MutualFundsTab() {
   )
 }
 
-type Tab = 'portfolio' | 'funds' | 'fd' | 'rd' | 'retirement' | 'market' | 'gold'
+type Tab = 'portfolio' | 'funds' | 'fd' | 'rd' | 'retirement' | 'market' | 'gold' | 'property'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'portfolio', label: 'Portfolio' }, { key: 'funds', label: 'Mutual funds' }, { key: 'fd', label: 'Fixed deposits' }, { key: 'rd', label: 'Recurring deposits' },
-  { key: 'retirement', label: 'EPF, PPF, NPS' }, { key: 'market', label: 'Stocks & ETFs' }, { key: 'gold', label: 'Gold' },
+  { key: 'retirement', label: 'EPF, PPF, NPS' }, { key: 'market', label: 'Stocks & ETFs' }, { key: 'gold', label: 'Gold' }, { key: 'property', label: 'Property & other' },
 ]
 
-/** Investments: the whole portfolio, and a section for each kind of holding. Property, vehicles and loans live under Net worth. */
+/** Investments: the whole portfolio, and a section for each kind of holding. Property and other assets are the last section; loans live under Net worth. */
 export default function InvestmentsPage() {
+  usePrivacyMode() // draws amounts again when balances are hidden or shown
   const [tab, setTab] = useState<Tab>('portfolio')
+  const [phone, setPhone] = useState(false)
+  const router = useRouter()
+  const [fromLink, setFromLink] = useState(false) // opened straight to one section (from the Overview, say): Back returns there, not to the portfolio list
+  useEffect(() => { const mq = window.matchMedia('(max-width: 767px)'); const f = () => setPhone(mq.matches); f(); mq.addEventListener('change', f); return () => mq.removeEventListener('change', f) }, [])
+  // on a phone the Portfolio list is the way in: a row opens that kind of holding as its own page, and Back (the arrow, the browser or a swipe) returns to the list
+  const sectionLabel = TABS.find((x) => x.key === tab)?.label
+  useDetailCrumb(phone && tab !== 'portfolio' && !fromLink ? sectionLabel : null, () => setTab('portfolio'))
   // a link such as ?add=fund lands on the section that can add it
   // the address is read after mount so the server and the browser draw the same first screen
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { if (new URLSearchParams(window.location.search).get('add') === 'fund') setTab('funds') }, [])
+  useEffect(() => { const q = new URLSearchParams(window.location.search); const t = q.get('tab'); if (q.get('add') === 'fund') { setTab('funds'); setFromLink(true) } else if (t && TABS.some((x) => x.key === t)) { setTab(t as Tab); setFromLink(true) } }, [])
   return (
     <div className="space-y-5">
       {/* same order as Insurance: the totals first, then the section chips, then the section itself */}
-      <PortfolioTab part="summary" onOpen={() => {}} />
-      <div role="tablist" aria-label="Investment sections" className="flex flex-wrap gap-1.5">
-        {TABS.map((t) => (
-          <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} onClick={() => setTab(t.key)} className={cn('rounded-full border px-3 py-1 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', tab === t.key ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{t.label}</button>
-        ))}
-      </div>
+      {tab !== 'portfolio' && (
+        <div className="flex items-center gap-2 md:hidden">
+          <button type="button" onClick={() => (fromLink ? router.back() : setTab('portfolio'))} className="-ml-1 inline-flex items-center gap-1 rounded-lg px-1 py-2 text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" aria-hidden />{fromLink ? 'Back' : 'Investments'}</button>
+          <span className="text-sm font-semibold">{sectionLabel}</span>
+        </div>
+      )}
+      <div className={cn(tab !== 'portfolio' && 'max-md:hidden')}><PortfolioTab part="summary" onOpen={() => {}} /></div>
+      <div className="max-md:hidden"><TabBar label="Investment sections" tabs={TABS.map((t) => ({ key: t.key, label: t.label }))} value={tab} onChange={(k) => setTab(k as Tab)} /></div>
       {tab === 'portfolio' && <PortfolioTab onOpen={(key) => setTab((key === 'mutualFunds' ? 'funds' : key) as Tab)} />}
+      {tab === 'portfolio' && (
+        <section className="surface-card px-4 py-1 md:hidden" aria-label="Add or open any kind of holding">
+          <h2 className="pt-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Add or open</h2>
+          <ul className="divide-y divide-border">
+            {TABS.filter((t) => t.key !== 'portfolio').map((t) => (
+              <li key={t.key}><button type="button" onClick={() => setTab(t.key)} className="flex min-h-12 w-full items-center justify-between gap-3 text-left text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring">{t.label}<ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden /></button></li>
+            ))}
+          </ul>
+        </section>
+      )}
       {tab === 'funds' && <MutualFundsTab />}
-      {(tab === 'fd' || tab === 'rd' || tab === 'retirement' || tab === 'market' || tab === 'gold') && <HoldingsTab key={tab} kind={tab} />}
+      {(tab === 'fd' || tab === 'rd' || tab === 'retirement' || tab === 'market' || tab === 'gold' || tab === 'property') && <HoldingsTab key={tab} kind={tab} />}
     </div>
+  )
+}
+
+/** One line under the holdings heading: the newest NAV date, how many funds look out of date, and when NAVs were last refreshed. */
+function NavFreshness({ funds }: { funds: any[] }) {
+  const [ago, setAgo] = useState('')
+  useEffect(() => { const t = funds.map((f) => f.navFetchedAt).filter(Boolean).sort().pop() || lastMarketSync(); setAgo(t ? agoLabel(t) : '') }, [funds])
+  const todayISO = toISO(new Date())
+  const dates = funds.map((f) => f.navDate).filter(Boolean).sort()
+  const stale = funds.filter((f) => navFreshness(f.navDate, todayISO).stale).length
+  if (!dates.length) return null
+  return (
+    <p className="mb-2 text-xs text-muted-foreground">
+      Latest NAV {formatDate(dates[dates.length - 1])}{ago ? ` · refreshed ${ago}` : ''}
+      {stale > 0 && <span className="text-warning"> · {stale} {stale === 1 ? 'fund looks' : 'funds look'} out of date. Tap Refresh NAVs, or update by hand.</span>}
+    </p>
   )
 }

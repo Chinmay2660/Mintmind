@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 /**
@@ -12,8 +12,7 @@ export function MainScroll({ children }: { children: ReactNode }) {
   const outer = useRef<HTMLElement>(null)
   const inner = useRef<HTMLDivElement>(null)
   const [pad, setPad] = useState(false)
-  const [fabsShown, setFabsShown] = useState(true)
-  const revealFabs = useRef<() => void>(() => {})
+  const [userHidden, setUserHidden] = useState(false)
 
   useLayoutEffect(() => {
     const o = outer.current
@@ -27,54 +26,43 @@ export function MainScroll({ children }: { children: ReactNode }) {
     return () => ro.disconnect()
   }, [])
 
-  // Phone: the floating Add and Wealth AI buttons stay out of the way. They show briefly on arrival, come back when you scroll
-  // up or tap the edge tab, and slide away again after a few idle seconds, on scrolling down, or while the keyboard is open.
+  // Phone: the floating Add and Wealth AI buttons are always visible. They go away only when you tap the edge tab (remembered),
+  // or while the keyboard is open so they never cover what you type.
   useEffect(() => {
-    const o = outer.current
-    if (!o) return
-    const mq = window.matchMedia('(max-width: 767px)')
+    try { if (localStorage.getItem('mm-fab-hidden') === '1') setUserHidden(true) } catch {}
+  }, [])
+  useEffect(() => {
     const root = document.documentElement
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const hide = () => { clearTimeout(timer); root.setAttribute('data-fab-hidden', 'true'); setFabsShown(false) }
-    const show = (ms = 4000) => {
-      if (!mq.matches || root.hasAttribute('data-kb-open')) return
-      root.removeAttribute('data-fab-hidden'); setFabsShown(true)
-      clearTimeout(timer); timer = setTimeout(hide, ms)
+    const mq = window.matchMedia('(max-width: 767px)')
+    const apply = () => {
+      if (mq.matches && (userHidden || root.hasAttribute('data-kb-open'))) root.setAttribute('data-fab-hidden', 'true')
+      else root.removeAttribute('data-fab-hidden')
     }
-    revealFabs.current = () => show(5000)
-    if (mq.matches) { show(2500) }
-    let last = o.scrollTop
-    const onScroll = () => {
-      if (!mq.matches) return
-      const y = o.scrollTop
-      if (y - last > 10) hide()
-      else if (last - y > 10 && y > 40) show()
-      last = y
-    }
+    apply()
     const field = (t: EventTarget | null) => t instanceof HTMLElement && t.matches('input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]), textarea, select, [contenteditable="true"]')
-    const onFocusIn = (e: FocusEvent) => { if (mq.matches && field(e.target)) { root.setAttribute('data-kb-open', 'true'); hide() } }
-    const onFocusOut = () => { root.removeAttribute('data-kb-open') }
-    o.addEventListener('scroll', onScroll, { passive: true })
+    const onFocusIn = (e: FocusEvent) => { if (mq.matches && field(e.target)) { root.setAttribute('data-kb-open', 'true'); apply() } }
+    const onFocusOut = () => { root.removeAttribute('data-kb-open'); apply() }
     document.addEventListener('focusin', onFocusIn)
     document.addEventListener('focusout', onFocusOut)
+    mq.addEventListener('change', apply)
     return () => {
-      clearTimeout(timer)
-      o.removeEventListener('scroll', onScroll)
       document.removeEventListener('focusin', onFocusIn)
       document.removeEventListener('focusout', onFocusOut)
+      mq.removeEventListener('change', apply)
       root.removeAttribute('data-fab-hidden'); root.removeAttribute('data-kb-open')
     }
-  }, [])
+  }, [userHidden])
+  const toggle = () => setUserHidden(v => { const n = !v; try { localStorage.setItem('mm-fab-hidden', n ? '1' : '0') } catch {} return n })
 
   return (
     <>
-    {/* a small edge tab: the always-there way to bring the buttons back */}
-    <button type="button" onClick={() => revealFabs.current()} aria-label="Show Add and Wealth AI buttons" aria-hidden={fabsShown} tabIndex={fabsShown ? -1 : 0}
-      className={cn('fixed right-0 z-30 flex h-14 w-5 items-center justify-center rounded-l-full border border-r-0 border-border bg-card/90 text-muted-foreground shadow-sm backdrop-blur transition-opacity bottom-[calc(var(--mobile-tab-bar-height)+var(--mobile-safe-bottom)+1.25rem)] md:hidden print:hidden', fabsShown && 'pointer-events-none opacity-0')}>
-      <ChevronLeft className="h-4 w-4" aria-hidden />
+    {/* a small edge tab: hides the floating buttons, or brings them back */}
+    <button type="button" onClick={toggle} aria-label={userHidden ? 'Show Add and Wealth AI buttons' : 'Hide Add and Wealth AI buttons'}
+      className="fixed right-0 z-30 flex h-12 w-6 items-center justify-center rounded-l-full border border-r-0 border-primary/60 bg-primary text-primary-foreground shadow-md bottom-[calc(var(--mobile-tab-bar-height)+var(--mobile-safe-bottom)+12rem)] md:hidden print:hidden [[data-kb-open]_&]:hidden">
+      {userHidden ? <ChevronLeft className="h-5 w-5" strokeWidth={2.5} aria-hidden /> : <ChevronRight className="h-5 w-5" strokeWidth={2.5} aria-hidden />}
     </button>
     <main ref={outer} id="dashboard-main-scroll" tabIndex={-1} className={cn('app-main outline-none min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain mobile-content-pb md:pb-0', pad && 'md:pb-28')}>
-      <div ref={inner} className="mx-auto w-full max-w-[88rem] space-y-5 px-4 py-5 md:px-6 lg:px-8">{children}</div>
+      <div ref={inner} className="mx-auto w-full max-w-[88rem] min-[2200px]:max-w-[120rem] space-y-5 px-4 py-5 md:px-6 lg:px-8">{children}</div>
     </main>
     </>
   )

@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from 'react'
 
+import { setAmountsMasked } from '@/lib/wealth/format'
+
 const STORAGE_KEY = 'mintmind_privacy_mode'
 
 interface PrivacyContextValue {
@@ -45,6 +47,9 @@ export function PrivacyProvider({ children }: { children: ReactNode }) {
   const togglePrivacyMode = useCallback(() => {
     setPrivacyMode(!privacyMode)
   }, [privacyMode, setPrivacyMode])
+
+  // set while rendering, so every amount drawn in this pass already sees the right setting
+  setAmountsMasked(hydrated && privacyMode)
 
   const value = useMemo(
     () => ({ privacyMode: hydrated ? privacyMode : false, togglePrivacyMode, setPrivacyMode }),

@@ -15,13 +15,12 @@ import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Empty, Field, FormDialog, PageHeader, StepFormDialog, Panel, Select } from './kit'
 import { PdfStatementImport } from '@/components/wealth/PdfStatementImport'
-import { AssetSections } from './AssetSections'
 import { AssetForm } from './AssetForm'
 
 type Kind = 'asset' | 'liability'
 
 /** Where EPF, PPF, FDs, gold, real estate and stocks (the Assets page) and loans (the Loans page) are added and updated. Bank, funds and cards have their own tabs. */
-export function AssetsLoans({ view }: { view: 'assets' | 'loans' }) {
+export function AssetsLoans({ view }: { view: 'loans' }) {
   const { data, db } = useWealth()
   const [edit, setEdit] = useState<null | { kind: Kind; row: any; category?: string }>(null)
   const [del, setDel] = useState<null | { kind: Kind; id: string; name: string }>(null)
@@ -30,11 +29,10 @@ export function AssetsLoans({ view }: { view: 'assets' | 'loans' }) {
 
   return (
     <div className="space-y-4">
-      {view === 'assets'
-        ? <PageHeader description="What you own: deposits, EPF, gold, stocks, property and more. Net worth is worked out from these." actions={<PdfStatementImport label="Import PDF" />} primaryAction={{ label: 'Add asset', onClick: () => setEdit({ kind: 'asset', row: null, category: 'fd' }) }} />
-        : <PageHeader description="What you owe. Net worth is worked out from these." primaryAction={{ label: 'Add loan', onClick: () => setEdit({ kind: 'liability', row: null }) }} />}
-      {view === 'assets' && <AssetSections assets={data.assets} onAdd={(category) => setEdit({ kind: 'asset', row: null, category })} onEdit={(a) => setEdit({ kind: 'asset', row: a })} onDelete={(a) => setDel({ kind: 'asset', id: a.id, name: a.name })} />}
-      {view === 'loans' && <Panel title="Loans" action={<span className="text-sm font-semibold tabular-nums"><Money value={data.liabilities.reduce((n: number, l: any) => n + (Number(l.outstanding) || 0), 0)} /></span>}>
+      <PageHeader description="What you owe. Net worth is worked out from these." primaryAction={{ label: 'Add loan', onClick: () => setEdit({ kind: 'liability', row: null }) }} />
+      {view === 'loans' && <section aria-label="Loans" className="space-y-3">
+        {/* the page is already called Loans, so no extra box: the total, then the cards */}
+        {data.liabilities.length > 0 && <div><p className="text-xs text-muted-foreground">Total outstanding</p><p className="text-xl font-semibold tabular-nums"><Money value={data.liabilities.reduce((n: number, l: any) => n + (Number(l.outstanding) || 0), 0)} /></p></div>}
         {data.liabilities.length === 0 ? <Empty title="No loans added" description="Add a home, car or personal loan, or a card balance you carry, and it is taken off your net worth." /> : (
           <ul className="grid gap-3 md:grid-cols-2">{data.liabilities.map((l: any) => (
             <li key={l.id} className="flex min-w-0 flex-col rounded-xl border border-border bg-muted/40 p-4">
@@ -57,7 +55,7 @@ export function AssetsLoans({ view }: { view: 'assets' | 'loans' }) {
               )}
             </li>))}</ul>
         )}
-      </Panel>}
+      </section>}
       {edit?.kind === 'asset' && <AssetForm row={edit.row} category={edit.category} onClose={() => setEdit(null)} onSave={async (rec) => { await save(db, 'assets', rec); toast.success('Saved') }} />}
       {edit?.kind === 'liability' && <ItemForm kind={edit.kind} row={edit.row} onClose={() => setEdit(null)} onSave={async (rec) => { await save(db, table(edit.kind), rec); toast.success('Saved') }} />}
       <ConfirmDialog open={!!del} onOpenChange={(o) => !o && setDel(null)} title={`Delete ${del?.name}?`} description="It is removed from net worth, and from any goal it was linked to." confirmLabel="Delete" variant="destructive" onConfirm={async () => { if (del) await remove(db, table(del.kind), del.id); setDel(null); toast.success('Deleted') }} />

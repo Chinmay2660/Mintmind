@@ -56,7 +56,7 @@ export function LimitsPanel() {
   )
 }
 
-function ContributionForm({ kind, assets, onClose, onSave }: { kind: 'ppf' | 'nps'; assets: any[]; onClose: () => void; onSave: (a: any) => Promise<void> }) {
+export function ContributionForm({ kind, assets, onClose, onSave }: { kind: 'ppf' | 'nps'; assets: any[]; onClose: () => void; onSave: (a: any) => Promise<void> }) {
   const [assetId, setAssetId] = useState(assets[0]?.id || '')
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState(toISO(new Date()))

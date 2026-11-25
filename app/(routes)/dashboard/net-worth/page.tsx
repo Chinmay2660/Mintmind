@@ -1,8 +1,9 @@
 'use client'
 
+import { TabBar } from '@/components/ui/tab-bar'
 import { useEffect, useMemo, useState } from 'react'
 import { Area, AreaChart, CartesianGrid, ReferenceDot, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Check, Download, FileText, Flag, Plus, StickyNote, TrendingUp } from 'lucide-react'
+import { Building2, Check, Download, FileSpreadsheet, FileText, Flag, Plus, Scale, StickyNote, TrendingUp } from 'lucide-react'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { growthVs, toISO } from '@/lib/wealth/calc'
 import { ASSET_LABELS, LIABILITY_LABELS } from '@/lib/wealth/labels'
@@ -10,6 +11,7 @@ import { formatCompactINR, formatDate, formatINR } from '@/lib/wealth/format'
 import { monthLabel } from '@/lib/wealth/selectors'
 import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
+import { QuickTiles } from '@/components/ui/quick-tiles'
 import { Input } from '@/components/ui/input'
 import { Delta, Empty, LoadingBlock, PageHeader, Panel, RangeTabs, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle } from '@/components/wealth/kit'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
@@ -26,9 +28,10 @@ import { assetValue } from '@/lib/wealth/holdings'
 import { byAccountType } from '@/lib/wealth/accountTypes'
 import { netWorthEvents } from '@/lib/wealth/nwEvents'
 import { DateInput } from '@/components/ui/pickers'
-import { TabBar } from '@/components/ui/tab-bar'
 
 const VIEWS = ['Monthly', 'Yearly'] as const
+const RANGES = [{ key: 'all', label: 'All time', months: 0 }, { key: '6m', label: '6 months', months: 6 }, { key: '1y', label: '1 year', months: 12 }, { key: '3y', label: '3 years', months: 36 }, { key: 'custom', label: 'Custom', months: -1 }] as const
+const monthsAgoISO = (n: number) => { const d = new Date(); d.setMonth(d.getMonth() - n); return toISO(d) }
 
 // how each kind of milestone looks: a colour and an icon, so it never depends on colour alone
 const EVENT_STYLE: Record<string, { color: string; icon: typeof Flag; label: string }> = {
@@ -47,6 +50,17 @@ function NetWorthOverview() {
   const [view, setView] = useState<(typeof VIEWS)[number]>('Monthly')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
+  const [customRange, setCustomRange] = useState(false)
+  // which lines the History chart draws: Net worth to start with; Assets and Liabilities can be added
+  const [show, setShow] = useState<{ netWorth: boolean; assets: boolean; liabilities: boolean }>({ netWorth: true, assets: false, liabilities: false })
+  // which quick choice matches the dates now: a preset starts at a date and runs to today, so it leaves "to" empty
+  const rangeKey = customRange ? 'custom' : !from && !to ? 'all' : (RANGES.find((r) => r.months > 0 && !to && from === monthsAgoISO(r.months))?.key ?? 'custom')
+  const pickRange = (k: string) => {
+    const r = RANGES.find((x) => x.key === k)!
+    if (r.key === 'custom') { setCustomRange(true); return }
+    setCustomRange(false); setTo('')
+    setFrom(r.months > 0 ? monthsAgoISO(r.months) : '')
+  }
   const today = useMemo(() => new Date(), [])
 
   const snapshots = useMemo(() => {
@@ -98,13 +112,14 @@ function NetWorthOverview() {
       <PageHeader
         description="Assets minus liabilities, updated automatically. Add or edit EPF, FDs, gold, property, stocks and loans in Settings → Assets & Loans."
         actions={
-          <>
-            <Button variant="outline" size="sm" asChild><Link href="/dashboard/net-worth/manage">Assets</Link></Button>
-            <Button variant="outline" size="sm" asChild><Link href="/dashboard/net-worth/loans">Loans</Link></Button>
-            <Button variant="outline" size="sm" asChild><Link href="/dashboard/net-worth/statement"><FileText className="mr-1.5 h-4 w-4" />Statement</Link></Button>
-            <Button variant="outline" size="sm" onClick={exportCsv}><Download className="mr-1.5 h-4 w-4" />CSV</Button>
-            <Button variant="outline" size="sm" onClick={exportXlsx}><Download className="mr-1.5 h-4 w-4" />Excel</Button>
-          </>
+          <QuickTiles label="Net worth shortcuts" items={[
+            { key: 'invest', label: 'Investments', icon: TrendingUp, href: '/dashboard/mutual-funds' },
+            { key: 'property', label: 'Property', icon: Building2, href: '/dashboard/mutual-funds?tab=property' },
+            { key: 'loans', label: 'Loans', icon: Scale, href: '/dashboard/net-worth/loans' },
+            { key: 'statement', label: 'Statement', icon: FileText, href: '/dashboard/net-worth/statement' },
+            { key: 'csv', label: 'Export CSV', icon: Download, onClick: exportCsv },
+            { key: 'excel', label: 'Export Excel', icon: FileSpreadsheet, onClick: exportXlsx },
+          ]} />
         }
       />
 
@@ -126,32 +141,61 @@ function NetWorthOverview() {
 
       <Panel
         title="History"
-        action={
-          <div className="flex flex-wrap items-center gap-2">
-            <RangeTabs value={view} onChange={setView} options={VIEWS as readonly (typeof VIEWS)[number][]} label="Granularity" />
-            <DateInput aria-label="From date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-8 w-36 text-xs" />
-            <DateInput aria-label="To date" value={to} onChange={(e) => setTo(e.target.value)} className="h-8 w-36 text-xs" />
-            {(from || to) && <Button size="sm" variant="ghost" onClick={() => { setFrom(''); setTo('') }}>Clear</Button>}
-          </div>
-        }
+        action={<RangeTabs value={view} onChange={setView} options={VIEWS as readonly (typeof VIEWS)[number][]} label="Granularity" />}
       >
-        {chart.length < 2 ? <Empty title="Not enough snapshots for this range" /> : (
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid stroke={chartGrid} vertical={false} />
-                <XAxis dataKey="label" {...chartAxis} minTickGap={24} />
-                <YAxis {...chartAxis} width={56} tickFormatter={(v) => (privacyMode ? '••' : formatCompactINR(v).replace('₹', ''))} />
-                <Tooltip {...chartTooltipStyle} formatter={(v: number, n: string) => [privacyMode ? '••••' : formatINR(v), n]} />
-                <Area type="monotone" dataKey="assets" name="Assets" stroke={chartColor(2)} fill={chartColor(2)} fillOpacity={0.08} strokeWidth={1.5} />
-                <Area type="monotone" dataKey="liabilities" name="Liabilities" stroke={chartColor(5)} fill={chartColor(5)} fillOpacity={0.08} strokeWidth={1.5} />
-                <Area type="monotone" dataKey="netWorth" name="Net worth" stroke={chartColor(1)} fill={chartColor(1)} fillOpacity={0.15} strokeWidth={2.5} />
-                {/* Recharts must see these as direct children of the chart, so they are a flat list and not wrapped in a group */}
-                {shownEvents.flatMap((e) => { const pt = chart.find((c) => c.ym === e.ym); if (!pt) return []; const st = EVENT_STYLE[e.kind]; return [<ReferenceLine key={`${e.id}-l`} x={pt.label} stroke={st.color} strokeDasharray="2 4" strokeOpacity={0.6} />, <ReferenceDot key={`${e.id}-d`} x={pt.label} y={pt.netWorth} r={6} fill={st.color} stroke="hsl(var(--card))" strokeWidth={2} />] })}
-              </AreaChart>
-            </ResponsiveContainer>
+        {/* how far back: quick choices first; two date fields only when you pick Custom */}
+        <div className="mb-3 space-y-2">
+          <div role="group" aria-label="How far back" className="flex flex-wrap gap-1.5">
+            {RANGES.map((r) => {
+              const on = rangeKey === r.key
+              return (
+                <button key={r.key} type="button" aria-pressed={on} onClick={() => pickRange(r.key)}
+                  className={cn('inline-flex min-h-9 items-center rounded-full border px-3 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', on ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{r.label}</button>
+              )
+            })}
           </div>
-        )}
+          {rangeKey === 'custom' && (
+            <div className="grid grid-cols-2 gap-2">
+              <label className="min-w-0 text-xs text-muted-foreground">From<div className="mt-0.5"><DateInput aria-label="From date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} /></div></label>
+              <label className="min-w-0 text-xs text-muted-foreground">To<div className="mt-0.5"><DateInput aria-label="To date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} /></div></label>
+            </div>
+          )}
+        </div>
+        {chart.length < 2 ? <Empty title="Not enough snapshots for this range" /> : (() => {
+          const SERIES = [{ k: 'netWorth', label: 'Net worth', color: chartColor(1) }, { k: 'assets', label: 'Assets', color: chartColor(2) }, { k: 'liabilities', label: 'Liabilities', color: chartColor(5) }] as const
+          const active = SERIES.filter((x) => show[x.k])
+          // the scale follows what is drawn, with room above and below, so the movement is visible instead of squashed against zero
+          const vals = chart.flatMap((c) => active.map((x) => c[x.k]))
+          const lo = Math.min(...vals), hi = Math.max(...vals), pad = Math.max(1, (hi - lo) * 0.12)
+          const toggle = (k: 'netWorth' | 'assets' | 'liabilities') => setShow((cur) => (cur[k] && SERIES.filter((x) => cur[x.k]).length === 1 ? cur : { ...cur, [k]: !cur[k] }))
+          return (
+            <>
+              <div role="group" aria-label="Lines on the chart" className="mb-2 flex flex-wrap gap-2">
+                {SERIES.map((x) => (
+                  <button key={x.k} type="button" aria-pressed={show[x.k]} onClick={() => toggle(x.k)} className={cn('inline-flex min-h-9 items-center gap-2 rounded-full border px-3 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', show[x.k] ? 'border-border bg-card text-foreground' : 'border-border text-muted-foreground')}>
+                    <i className="h-2.5 w-2.5 rounded-full" style={{ background: show[x.k] ? x.color : 'transparent', boxShadow: `inset 0 0 0 1.5px ${x.color}` }} aria-hidden />{x.label}
+                  </button>
+                ))}
+              </div>
+              <div className="h-64 sm:h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chart} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <defs><linearGradient id="nwHistFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={chartColor(1)} stopOpacity={0.25} /><stop offset="100%" stopColor={chartColor(1)} stopOpacity={0} /></linearGradient></defs>
+                    <CartesianGrid stroke={chartGrid} vertical={false} strokeDasharray="3 3" />
+                    <XAxis dataKey="label" {...chartAxis} minTickGap={36} axisLine={false} tickLine={false} />
+                    <YAxis {...chartAxis} width={68} axisLine={false} tickLine={false} domain={[lo - pad, hi + pad]} tickFormatter={(v) => (privacyMode ? '••' : formatCompactINR(v).replace('₹', ''))} />
+                    <Tooltip {...chartTooltipStyle} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3', strokeOpacity: 0.6 }} formatter={(v: number, n: string) => [privacyMode ? '••••' : formatINR(v), n]} />
+                    {show.liabilities && <Area type="monotone" dataKey="liabilities" name="Liabilities" stroke={chartColor(5)} strokeWidth={2} fill="none" dot={false} activeDot={{ r: 4 }} />}
+                    {show.assets && <Area type="monotone" dataKey="assets" name="Assets" stroke={chartColor(2)} strokeWidth={2} fill="none" dot={false} activeDot={{ r: 4 }} />}
+                    {show.netWorth && <Area type="monotone" dataKey="netWorth" name="Net worth" stroke={chartColor(1)} strokeWidth={2.5} fill="url(#nwHistFill)" dot={false} activeDot={{ r: 5, stroke: 'hsl(var(--card))', strokeWidth: 2 }} />}
+                    {/* Recharts must see these as direct children of the chart, so they are a flat list and not wrapped in a group */}
+                    {shownEvents.flatMap((e) => { const pt = chart.find((c) => c.ym === e.ym); if (!pt) return []; const st = EVENT_STYLE[e.kind]; return [<ReferenceLine key={`${e.id}-l`} x={pt.label} stroke={st.color} strokeDasharray="2 4" strokeOpacity={0.6} />, <ReferenceDot key={`${e.id}-d`} x={pt.label} y={pt.netWorth} r={6} fill={st.color} stroke="hsl(var(--card))" strokeWidth={2} />] })}
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </>
+          )
+        })()}
         {shownEvents.length > 0 && (
           <ol className="mt-4 grid gap-x-6 gap-y-2.5 border-t border-border pt-3 sm:grid-cols-2" aria-label="Milestones on the chart">
             {shownEvents.map((e) => { const st = EVENT_STYLE[e.kind]; const Icon = st.icon; return (

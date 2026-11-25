@@ -5,12 +5,12 @@ import { CookieSettingsButton } from '@/components/landing/CookieSettingsButton'
 export const metadata: Metadata = { title: 'Cookies and local storage' }
 
 const Row = ({ name, kind, what, how }: { name: string; kind: string; what: string; how: string }) => (
-  <tr className="border-t border-border align-top">
-    <td className="py-2 pr-3 font-mono text-xs text-foreground">{name}</td><td className="py-2 pr-3">{kind}</td><td className="py-2 pr-3">{what}</td><td className="py-2">{how}</td>
+  <tr className="border-t border-border align-top max-sm:block max-sm:space-y-0.5 max-sm:py-3">
+    <td className="py-2 pr-3 font-mono text-xs text-foreground max-sm:block max-sm:py-0">{name}</td><td data-label="Type" className="py-2 pr-3 max-sm:block max-sm:py-0 max-sm:before:text-muted-foreground max-sm:before:content-[attr(data-label)_':_']">{kind}</td><td data-label="For" className="py-2 pr-3 max-sm:block max-sm:py-0 max-sm:before:text-muted-foreground max-sm:before:content-[attr(data-label)_':_']">{what}</td><td data-label="How long" className="py-2 max-sm:block max-sm:py-0 max-sm:before:text-muted-foreground max-sm:before:content-[attr(data-label)_':_']">{how}</td>
   </tr>
 )
 const Table = ({ children }: { children: React.ReactNode }) => (
-  <div className="overflow-x-auto"><table className="w-full min-w-[34rem] text-left text-xs"><thead className="text-[11px] uppercase tracking-wide text-muted-foreground"><tr><th className="pb-2 pr-3 font-bold">Name</th><th className="pb-2 pr-3 font-bold">Type</th><th className="pb-2 pr-3 font-bold">What it is for</th><th className="pb-2 font-bold">How long</th></tr></thead><tbody>{children}</tbody></table></div>
+  <div className="overflow-x-auto"><table className="w-full text-left text-xs sm:min-w-[34rem] max-sm:[&_tbody]:block"><thead className="text-[11px] uppercase tracking-wide text-muted-foreground max-sm:sr-only"><tr><th className="pb-2 pr-3 font-bold">Name</th><th className="pb-2 pr-3 font-bold">Type</th><th className="pb-2 pr-3 font-bold">What it is for</th><th className="pb-2 font-bold">How long</th></tr></thead><tbody>{children}</tbody></table></div>
 )
 
 export default function CookiesPage() {

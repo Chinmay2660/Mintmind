@@ -1,10 +1,13 @@
 'use client'
 
+import { toastProblem } from '@/lib/notify'
+import { shortAccountName } from '@/lib/wealth/accountName'
 import { useMemo, useRef, useState } from 'react'
 import { FileSpreadsheet, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
-import { importTransactions } from '@/lib/wealth/actions'
+import { importTransactions, undoImport } from '@/lib/wealth/actions'
+import { existingImportKeys, looksLikeExistingIncome, withImportKeys } from '@/lib/wealth/importKey'
 import { detectColumns, parseCsv, toTransactions } from '@/lib/wealth/csvImport'
 import { matchRule } from '@/lib/wealth/rules'
 import { findDuplicates } from '@/lib/ai/budgetAI'
@@ -41,25 +44,28 @@ export function ImportCsvDialog({ open, onOpenChange }: { open: boolean; onOpenC
 
   const reset = () => { setName(''); setRows([]); setHeader([]); setMap(null) }
   const load = async (file: File) => {
-    if (file.size > MAX_BYTES) return toast.error('That file is larger than 5 MB')
+    if (file.size > MAX_BYTES) return toast.warning('That file is larger than 5 MB')
     const parsed = parseCsv(await file.text())
-    if (parsed.length < 2) return toast.error('No rows found. Is this a CSV file with a header row?')
+    if (parsed.length < 2) return toast.warning('No rows found. Is this a CSV file with a header row?')
     setName(file.name); setHeader(parsed[0]); setRows(parsed.slice(1)); setMap(detectColumns(parsed[0]))
   }
 
   const result = useMemo(() => {
     if (!map) return null
     const { items, skipped } = toTransactions(rows, map, { monthFirst, invert })
-    const marked = items.map((it) => {
+    const have = existingImportKeys(data.expenses, data.bankTxns)
+    const marked = withImportKeys(items, acct).map((it) => {
       // rules fill the category when the file has none; a repeat of something already recorded is flagged
       const category = it.category || matchRule(rules, it.note, it.kind)?.category || ''
-      const dupe = it.kind === 'expense' && findDuplicates({ amount: it.amount, date: it.date, category: category || 'Other', note: it.note }, data.expenses).length > 0
-      return { ...it, category, dupe }
+      const same = have.has(it.importKey) // this exact row was imported before
+      const dupe = !same && (it.kind === 'expense' ? findDuplicates({ amount: it.amount, date: it.date, category: category || 'Other', note: it.note }, data.expenses).length > 0 : looksLikeExistingIncome(it, acct, data.bankTxns))
+      return { ...it, category, dupe, same }
     })
     return { items: marked, skipped }
-  }, [rows, map, monthFirst, invert, rules, data.expenses])
+  }, [rows, map, monthFirst, invert, rules, data.expenses, data.bankTxns, acct])
 
-  const toAdd = result ? result.items.filter((i) => !(skipDupes && i.dupe)) : []
+  const toAdd = result ? result.items.filter((i) => !i.same && !(skipDupes && i.dupe)) : []
+  const already = result ? result.items.filter((i) => i.same).length : 0
   const dupes = result ? result.items.filter((i) => i.dupe).length : 0
   const noColumns = !!map && (map.date < 0 || (map.amount < 0 && map.debit < 0 && map.credit < 0))
 
@@ -67,9 +73,12 @@ export function ImportCsvDialog({ open, onOpenChange }: { open: boolean; onOpenC
     setBusy(true)
     try {
       const r = await importTransactions(db, toAdd, acct)
-      toast.success(`Added ${r.expenses} expense${r.expenses === 1 ? '' : 's'} and ${r.income} income entr${r.income === 1 ? 'y' : 'ies'}`)
+      toast.success(`Added ${r.expenses} expense${r.expenses === 1 ? '' : 's'} and ${r.income} income entr${r.income === 1 ? 'y' : 'ies'}${r.skippedExisting ? `. ${r.skippedExisting} already imported, left out.` : ''}`, {
+        duration: 20000,
+        action: { label: 'Undo', onClick: async () => { const u = await undoImport(db, r.batch); toast.success(`Removed ${u.expenses + u.income} imported entries${u.kept ? `. ${u.kept} you had already reviewed stayed.` : ''}`) } },
+      })
       reset(); onOpenChange(false)
-    } catch (e) { toast.error(e instanceof Error ? e.message : 'Could not import') } finally { setBusy(false) }
+    } catch (e) { toastProblem(e, 'Could not import') } finally { setBusy(false) }
   }
 
   const colSelect = (k: keyof NonNullable<typeof map>, label: string) => (
@@ -106,7 +115,7 @@ export function ImportCsvDialog({ open, onOpenChange }: { open: boolean; onOpenC
             </fieldset>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="text-xs text-muted-foreground">Bank account these belong to<div className="mt-0.5"><Select aria-label="Account" value={acct} onChange={(e) => setAccount(e.target.value)}>{accounts.length === 0 && <option value="">No bank accounts yet</option>}{accounts.map((a) => <option key={a.id} value={a.id}>{a.nickname || a.bankName}</option>)}</Select></div></label>
+              <label className="text-xs text-muted-foreground">Bank account these belong to<div className="mt-0.5"><Select aria-label="Account" value={acct} onChange={(e) => setAccount(e.target.value)}>{accounts.length === 0 && <option value="">No bank accounts yet</option>}{accounts.map((a) => <option key={a.id} value={a.id}>{shortAccountName(a, accounts)}</option>)}</Select></div></label>
               <div className="space-y-1.5 self-end text-sm">
                 <label className="flex items-center gap-2.5"><Checkbox checked={monthFirst} onChange={(e) => setMonthFirst(e.target.checked)} aria-label="Dates are month first" />Dates are month first (11/05 is 5 November)</label>
                 <label className="flex items-center gap-2.5"><Checkbox checked={invert} onChange={(e) => setInvert(e.target.checked)} aria-label="Spending is listed as positive" />Spending is listed as positive amounts</label>
@@ -115,7 +124,15 @@ export function ImportCsvDialog({ open, onOpenChange }: { open: boolean; onOpenC
 
             {result && !noColumns && (
               <>
-                <div className="overflow-x-auto rounded-xl border border-border">
+                <ul aria-label="Preview of the first rows" className="divide-y divide-border rounded-xl border border-border sm:hidden">
+                  {result.items.slice(0, 8).map((i, n) => (
+                    <li key={n} className="flex items-start justify-between gap-3 px-3 py-2 text-xs">
+                      <span className="min-w-0"><span className="block truncate text-sm font-medium">{i.note || '-'}</span><span className="block text-muted-foreground">{formatDate(i.date)} · {i.category || 'Other'}</span>{(i.same || i.dupe) && <span className="block text-muted-foreground">{i.same ? 'Already imported' : 'Looks already recorded'}</span>}</span>
+                      <span className="shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums">{i.kind === 'income' ? '+' : '-'}{formatINR(i.amount)}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="hidden overflow-x-auto rounded-xl border border-border sm:block">
                   <table className="w-full min-w-[34rem] text-left text-xs">
                     <caption className="sr-only">Preview of the first rows</caption>
                     <thead className="bg-muted/60 text-[11px] uppercase tracking-wide text-muted-foreground"><tr><th scope="col" className="px-2 py-1.5">Date</th><th scope="col" className="px-2 py-1.5">Description</th><th scope="col" className="px-2 py-1.5">Category</th><th scope="col" className="px-2 py-1.5 text-right">Amount</th><th scope="col" className="px-2 py-1.5">Note</th></tr></thead>
@@ -126,13 +143,14 @@ export function ImportCsvDialog({ open, onOpenChange }: { open: boolean; onOpenC
                           <td className="max-w-[14rem] truncate px-2 py-1.5">{i.note || '-'}</td>
                           <td className="px-2 py-1.5">{i.category || 'Other'}</td>
                           <td className="whitespace-nowrap px-2 py-1.5 text-right tabular-nums">{i.kind === 'income' ? '+' : '-'}{formatINR(i.amount)}</td>
-                          <td className="px-2 py-1.5 text-muted-foreground">{i.dupe ? 'Looks already recorded' : ''}</td>
+                          <td className="px-2 py-1.5 text-muted-foreground">{i.same ? 'Already imported' : i.dupe ? 'Looks already recorded' : ''}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
                 <p className="text-sm"><strong className="tabular-nums">{result.items.length}</strong> readable rows{result.skipped.length ? `, ${result.skipped.length} skipped (no date or amount)` : ''}{dupes ? `, ${dupes} look already recorded` : ''}.</p>
+                {already > 0 && <p className="text-sm text-muted-foreground">{already} of these {already === 1 ? "was" : "were"} imported from an earlier file and will be left out.</p>}
                 {dupes > 0 && <label className="flex items-center gap-2.5 text-sm"><Checkbox checked={skipDupes} onChange={(e) => setSkipDupes(e.target.checked)} aria-label="Leave out rows that look already recorded" />Leave out the {dupes} that look already recorded</label>}
               </>
             )}

@@ -5,7 +5,7 @@ import { requireAuth, rateLimitOrRespond } from '@/lib/middleware/api'
 import { hashPassword, passwordProblem, verifyPassword } from '@/lib/passwords'
 import { generateSecret, otpauthUrl, verifyTotp } from '@/lib/totp'
 import { decrypt, encrypt } from '@/lib/utils/crypto'
-import { invalidateUserCache } from '@/lib/auth'
+import { generateToken, invalidateUserCache } from '@/lib/auth'
 
 export async function GET() {
   const { user, response } = await requireAuth()
@@ -58,9 +58,12 @@ export async function POST(request) {
       const problem = passwordProblem(body.newPassword)
       if (problem) return NextResponse.json({ error: problem }, { status: 400 })
       u.passwordHash = await hashPassword(body.newPassword)
+      u.tokenVersion = (u.tokenVersion || 0) + 1 // every other device is signed out; this one gets a fresh token below
       await u.save()
       invalidateUserCache(u._id)
-      return NextResponse.json({ success: true })
+      const res = NextResponse.json({ success: true })
+      res.cookies.set('auth-token', generateToken(u), { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 30 * 24 * 60 * 60, path: '/' })
+      return res
     }
     default:
       return NextResponse.json({ error: 'Unknown action' }, { status: 400 })

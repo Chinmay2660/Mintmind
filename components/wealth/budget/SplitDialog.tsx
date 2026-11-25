@@ -31,7 +31,7 @@ export function SplitDialog({ expense, onClose }: { expense: any; onClose: () =>
   const left = Math.round((total - rows.reduce((s, r) => s + (Number(r.amount) || 0), 0)) * 100) / 100
 
   const save = async () => {
-    if (!check.ok) return toast.error(check.error)
+    if (!check.ok) return toast.warning(check.error)
     await splitExpense(db, expense.id, check.splits)
     toast.success('Split saved')
     onClose()

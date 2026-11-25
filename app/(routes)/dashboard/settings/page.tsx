@@ -1,5 +1,14 @@
 'use client'
 
+import { ReportsTab } from '@/components/settings/ReportsTab'
+import { toastProblem } from '@/lib/notify'
+import { useDashboardLayout, DASHBOARD_BLOCKS } from '@/components/dashboard/useDashboardLayout'
+import { DashboardCustomize } from '@/components/dashboard/DashboardCustomize'
+import { SharingSettings } from '@/components/family/SharingSettings'
+import { RulesDialog } from '@/components/wealth/budget/RulesDialog'
+import { CategoryManager } from '@/components/wealth/budget/Views'
+import { ArrowLeft, ChevronRight } from 'lucide-react'
+import { useDetailCrumb } from '@/components/shell/DetailCrumb'
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { useTheme } from 'next-themes'
@@ -10,6 +19,7 @@ import { toast } from 'sonner'
 import { formatINR } from '@/lib/wealth/format'
 import { Check, Cloud, Download, Laptop, LogOut, Moon, Pencil, RotateCcw, ShieldCheck, Sun, Trash2, Upload } from 'lucide-react'
 import { useWealth } from '@/lib/wealth/WealthContext'
+import { SyncStatus } from '@/components/wealth/SyncStatus'
 import { TABLES, clearAll } from '@/lib/wealth/db'
 import { validateMobile } from '@/lib/features'
 import { deviceNotifyOn, deviceNotifySupported, disableDeviceNotify, enableDeviceNotify } from '@/lib/notify/device'
@@ -25,54 +35,88 @@ import { MyAppFeatures } from '@/components/onboarding/MyAppFeatures'
 import { useFeatures } from '@/lib/features/FeaturesContext'
 import { cn } from '@/lib/utils'
 import { toISO } from '@/lib/wealth/calc'
-import { TabBar } from '@/components/ui/tab-bar'
 import { UI_STYLES, UI_STYLE_KEY, applyStyle, normaliseStyle } from '@/lib/uiStyle'
 import { Checkbox } from '@/components/ui/checkbox'
 import { InstallApp } from '@/components/shell/InstallApp'
 
-const TABS = ['Account', 'My App Features', 'Appearance', 'Preferences', 'Automation', 'AI', 'Integrations', 'Data'] as const
+const TABS = ['Account', 'My App Features', 'Appearance', 'Preferences', 'Budget', 'Family sharing', 'Automation', 'AI', 'Integrations', 'Import & export', 'Data'] as const
 type Tab = (typeof TABS)[number]
 
-const DEFAULT_PREFS = { currency: 'INR', dateFormat: 'DD MMM YYYY', hideBalances: false, achievements: true, notifications: { premiums: true, cardDues: true, sips: true, budget: true, lowBalance: true, navStale: true, staleValues: true, legacy: true, family: true }, autoLockMinutes: 5 }
+// On a phone, Settings opens as a short grouped list; a row opens that section as its own page (with a back arrow). A wide screen keeps the side list.
+const GROUPS: { label: string; items: { t: Tab; hint: string }[] }[] = [
+  { label: 'You', items: [{ t: 'Account', hint: 'Profile, security and sign-in' }] },
+  { label: 'Make it yours', items: [{ t: 'Appearance', hint: 'Look, theme and dashboard layout' }, { t: 'My App Features', hint: 'Turn parts of the app on or off' }, { t: 'Preferences', hint: 'Currency, alerts and privacy' }] },
+  { label: 'Money', items: [{ t: 'Budget', hint: 'Categories and rules' }, { t: 'Family sharing', hint: 'What each person can see of you' }, { t: 'Automation', hint: 'Reminders and routine updates' }] },
+  { label: 'Connections', items: [{ t: 'AI', hint: 'Wealth assistant and providers' }, { t: 'Integrations', hint: 'Connected services' }] },
+  { label: 'Your data', items: [{ t: 'Import & export', hint: 'Import statements, Excel and PDF reports' }, { t: 'Data', hint: 'Backup, restore and reset' }] },
+]
+
+const DEFAULT_PREFS = { currency: 'INR', dateFormat: 'DD MMM YYYY', hideBalances: false, notifications: { premiums: true, cardDues: true, sips: true, budget: true, lowBalance: true, navStale: true, staleValues: true, legacy: true, family: true }, autoLockMinutes: 5 }
 
 export default function SettingsPage() {
-  const [tab, setTab] = useState<Tab>('Account')
+  const [tab, setTab] = useState<Tab | null>(null) // null: the list on a phone, and the Account section on a wide screen
+  const [phone, setPhone] = useState(false)
+  useEffect(() => { const mq = window.matchMedia('(max-width: 767px)'); const f = () => setPhone(mq.matches); f(); mq.addEventListener('change', f); return () => mq.removeEventListener('change', f) }, [])
+  // on a phone an open section is a page of its own: the back arrow, the browser's Back and the edge swipe all return to the list
+  useDetailCrumb(phone && tab ? tab : null, () => setTab(null))
   // deep links such as /dashboard/settings?tab=assets
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get('tab')
-    const map: Record<string, Tab> = { account: 'Account', features: 'My App Features', automation: 'Automation', ai: 'AI', integrations: 'Integrations', data: 'Data' }
-    if (q === 'assets') window.location.replace('/dashboard/net-worth/manage')
+    const map: Record<string, Tab> = { family: 'Family sharing', budget: 'Budget', account: 'Account', features: 'My App Features', automation: 'Automation', ai: 'AI', integrations: 'Integrations', reports: 'Import & export', export: 'Import & export', import: 'Import & export', data: 'Data' }
+    if (q === 'assets') window.location.replace('/dashboard/mutual-funds?tab=property')
     else if (q && map[q]) setTab(map[q])
   }, [])
   const { ready } = useWealth()
   const { isEnabled } = useFeatures()
+  const current: Tab = tab ?? 'Account'
   if (!ready) return <LoadingBlock className="h-64" />
-  const sections = TABS.filter((t) => (t === 'Automation' ? isEnabled('automation') : t === 'AI' ? isEnabled('ai_assistant') : true))
+  const sections = TABS.filter((t) => (t === 'Automation' ? isEnabled('automation') : t === 'AI' ? isEnabled('ai_assistant') : t === 'Family sharing' ? isEnabled('family_circle') : true))
   return (
     <div className="space-y-5">
-      <PageHeader />
+      <div className="print:hidden"><PageHeader /></div>
       <div className="md:grid md:grid-cols-[13rem_minmax(0,1fr)] md:gap-8">
         {/* a list down the left on a wide screen, the usual tab strip on a phone */}
-        <nav aria-label="Settings sections" className="mb-5 hidden md:sticky md:top-4 md:mb-0 md:block md:self-start">
+        <nav aria-label="Settings sections" className="mb-5 hidden print:hidden md:sticky md:top-4 md:mb-0 md:block md:self-start">
           <ul className="space-y-0.5">
             {sections.map((t) => (
               <li key={t}>
-                <button type="button" onClick={() => setTab(t)} aria-current={tab === t ? 'page' : undefined}
-                  className={cn('flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', tab === t ? 'bg-accent text-accent-foreground paper:bg-primary paper:text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>{t}</button>
+                <button type="button" onClick={() => setTab(t)} aria-current={current === t ? 'page' : undefined}
+                  className={cn('flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', current === t ? 'bg-accent text-accent-foreground paper:bg-primary paper:text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>{t}</button>
               </li>
             ))}
           </ul>
         </nav>
-        <div className="md:hidden"><TabBar label="Settings sections" tabs={sections.map((t) => ({ key: t, label: t }))} value={tab} onChange={(k) => setTab(k as typeof tab)} /></div>
-        <div className="min-w-0 space-y-5 max-md:mt-5">
-          {tab === 'Account' && <AccountTab />}
-          {tab === 'My App Features' && <MyAppFeatures />}
-          {tab === 'Appearance' && <AppearanceTab />}
-          {tab === 'Preferences' && <PreferencesTab />}
-          {tab === 'Automation' && <AutomationManager />}
-          {tab === 'AI' && <AiSettings />}
-          {tab === 'Integrations' && <IntegrationsTab />}
-          {tab === 'Data' && <DataTab />}
+        {!tab && (
+          <div className="space-y-5 md:hidden print:hidden">
+            {GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => sections.includes(i.t)) })).filter((g) => g.items.length).map((g) => (
+              <section key={g.label}>
+                <h2 className="mb-1 px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{g.label}</h2>
+                <ul className="surface-card divide-y divide-border px-4">
+                  {g.items.map(({ t, hint }) => (
+                    <li key={t}><button type="button" onClick={() => setTab(t)} className="group flex min-h-14 w-full items-center justify-between gap-3 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className="min-w-0"><span className="block text-sm font-medium">{t}</span><span className="block truncate text-xs text-muted-foreground">{hint}</span></span><ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary" aria-hidden /></button></li>
+                  ))}
+                </ul>
+              </section>))}
+          </div>
+        )}
+        {tab && (
+          <div className="flex items-center gap-2 md:hidden print:hidden">
+            <button type="button" onClick={() => setTab(null)} className="-ml-1 inline-flex items-center gap-1 rounded-lg px-1 py-2 text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" aria-hidden />Settings</button>
+            <span className="text-sm font-semibold">{tab}</span>
+          </div>
+        )}
+        <div className={cn('min-w-0 space-y-5 max-md:mt-3', !tab && 'max-md:hidden')}>
+          {current === 'Account' && <AccountTab />}
+          {current === 'My App Features' && <MyAppFeatures />}
+          {current === 'Appearance' && <><AppearanceTab /><DashboardLayoutSettings /></>}
+          {current === 'Preferences' && <PreferencesTab />}
+          {current === 'Budget' && <BudgetSettings />}
+          {current === 'Family sharing' && <SharingSettings />}
+          {current === 'Automation' && <AutomationManager />}
+          {current === 'AI' && <AiSettings />}
+          {current === 'Integrations' && <IntegrationsTab />}
+          {current === 'Import & export' && <ReportsTab />}
+          {current === 'Data' && <DataTab />}
         </div>
       </div>
     </div>
@@ -179,7 +223,7 @@ function AppearanceTab() {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
   const opts = [{ v: 'light', l: 'Light', i: Sun }, { v: 'dark', l: 'Dark', i: Moon }, { v: 'system', l: 'System', i: Laptop }]
-  const [look, setLook] = useState('retro')
+  const [look, setLook] = useState('purple')
   useEffect(() => { try { setLook(normaliseStyle(localStorage.getItem(UI_STYLE_KEY))) } catch { /* default look */ } }, [])
   return (
     <Panel flat title="Theme">
@@ -193,7 +237,7 @@ function AppearanceTab() {
           )
         })}
       </div>
-      <h4 className="mb-2 mt-6 flex items-center gap-1.5 text-sm font-semibold">Look<InfoTip label="Look">Sage and Lavender are calm, light looks with a regular font. Ember is charcoal grey with orange, Ink is black, white and grey, and Violet is the original purple. Ocean, Sunset, Rose and Forest are single-colour looks. Paper is the warm paper style with a monospace font. Your choice is remembered on this device, and Light, Dark and System work with all of them.</InfoTip></h4>
+      <h4 className="mb-2 mt-6 flex items-center gap-1.5 text-sm font-semibold">Look<InfoTip label="Look">Sage and Lavender are calm, light looks with a regular font. Ember is charcoal grey with orange, Ink is black, white and grey, and Violet is the default purple look. Ocean, Sunset, Rose and Forest are single-colour looks. Paper is a denser, warm paper style with a small monospace font. Your choice is remembered on this device, and Light, Dark and System work with all of them.</InfoTip></h4>
       <div role="radiogroup" aria-label="Look" className="grid gap-3 sm:grid-cols-2">
         {UI_STYLES.map((o) => {
           const on = look === o.value
@@ -220,7 +264,7 @@ function DeviceNotifyToggle() {
     if (!v) { disableDeviceNotify(); setOn(false); return }
     const r = await enableDeviceNotify()
     if (r === 'on') { setOn(true); toast.success('Device notifications on') }
-    else toast.error(r === 'denied' ? 'Notifications are blocked. Allow them in your browser settings.' : 'This browser does not support notifications')
+    else (r === 'denied' ? toast.warning('Notifications are blocked. Allow them in your browser settings.') : toast.info('This browser does not support notifications'))
   }
   return (
     <div className="mb-4 rounded-lg border border-border p-3">
@@ -241,7 +285,6 @@ function PreferencesTab() {
           <Field label="Currency" hint="Currency is fixed for now.">{(id) => <Select id={id} disabled value="INR"><option value="INR">INR (₹)</option></Select>}</Field>
           <Field label="Date format">{(id) => <Select id={id} value={prefs.dateFormat} onChange={(e) => update({ dateFormat: e.target.value })}><option>DD MMM YYYY</option><option>DD/MM/YYYY</option><option>MM/DD/YYYY</option><option>YYYY-MM-DD</option></Select>}</Field>
           <label className="flex items-center gap-2 text-sm"><Checkbox checked={privacyMode} onChange={(e) => { setPrivacyMode(e.target.checked); update({ hideBalances: e.target.checked }) }} />Hide balances by default</label>
-          <label className="flex items-center gap-2 text-sm"><Checkbox checked={prefs.achievements !== false} onChange={(e) => update({ achievements: e.target.checked })} />Show streaks and milestones on the dashboard<InfoTip label="Streaks and milestones">Habits such as months under budget or goals reached, worked out from your own records. Off hides the panel.</InfoTip></label>
         </div>
       </Panel>
       <Panel flat title="Notifications">
@@ -320,11 +363,12 @@ function DataTab() {
       await clearAll(db)
       for (const t of TABLES) if (t !== 'vaultItems' && Array.isArray(json.tables[t])) await db[t].bulkPut(json.tables[t])
       toast.success('Backup restored')
-    } catch (e) { toast.error(e instanceof Error ? e.message : 'Could not restore backup') }
+    } catch (e) { toastProblem(e, 'Could not restore backup') }
   }
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
+      <Panel flat title="Where your data is"><SyncStatus /></Panel>
       <Panel flat title="Export & backup" description="Restoring replaces current data. Vault items are not included in this file.">
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={exportAll}><Download className="mr-2 h-4 w-4" />Export backup</Button>
@@ -346,6 +390,37 @@ function DataTab() {
       <ConfirmDialog open={dlg === 'reset'} onOpenChange={(o) => !o && setDlg(null)} title="Reset demo data?" description="All demo changes will be lost." confirmLabel="Reset" onConfirm={async () => { await resetDemo(); forgetLocalExtras(); setDlg(null); toast.success('Demo data reset') }} />
       <ConfirmDialog open={dlg === 'wipe'} onOpenChange={(o) => !o && setDlg(null)} title="Erase all tracked data?" description="This cannot be undone. Export a backup first if unsure." confirmLabel="Erase" variant="destructive" onConfirm={async () => { try { await axios.delete('/api/user/data') } catch { /* local-first: still erase this browser */ } await clearAll(db); forgetLocalExtras(); setDlg(null); toast.success('Data erased') }} />
       <ConfirmDialog open={dlg === 'delete'} onOpenChange={(o) => !o && setDlg(null)} title="Delete your account?" description="This permanently removes your account. It cannot be undone." confirmLabel="Delete account" variant="destructive" onConfirm={async () => { try { await axios.delete('/api/user/account'); await clearAll(db); forgetLocalExtras(); await signOut() } catch { toast.error('Could not delete account') } }} />
+    </div>
+  )
+}
+
+/** Everything you set up for budgeting lives here, not on the Budget page: the categories spending goes into, and the rules that file imports under them. */
+function BudgetSettings() {
+  const [categories, setCategories] = useState(false)
+  const [rules, setRules] = useState(false)
+  return (
+    <div className="space-y-4">
+      <Panel title="Categories" description="The groups your spending and income are sorted into. Add your own, rename them, or make sub-categories (Food > Eating out).">
+        <Button variant="outline" onClick={() => setCategories(true)}>Manage categories</Button>
+      </Panel>
+      <Panel title="Rules" description="Say once that a description such as “swiggy” always goes to Food, and imports and new entries file themselves.">
+        <Button variant="outline" onClick={() => setRules(true)}>Manage rules</Button>
+      </Panel>
+      <p className="text-xs text-muted-foreground">Monthly limits for each category belong to a month, so they are edited with that month's figures: the Budgets tab on the Budget page.</p>
+      {categories && <CategoryManager onClose={() => setCategories(false)} />}
+      <RulesDialog open={rules} onOpenChange={setRules} />
+    </div>
+  )
+}
+
+/** Which sections the Overview shows and in what order. It used to be a button on the dashboard. */
+function DashboardLayoutSettings() {
+  const layout = useDashboardLayout(DASHBOARD_BLOCKS)
+  return (
+    <div className="mt-4">
+      <Panel title="Dashboard layout" description="Show or hide sections of the Overview, change their order, and make each full or half width.">
+        <DashboardCustomize blocks={DASHBOARD_BLOCKS} order={layout.order} hidden={layout.hidden} half={layout.half} isCustom={layout.isCustom} onOrder={layout.setOrder} onToggle={layout.toggle} onSize={layout.toggleHalf} onReset={layout.reset} />
+      </Panel>
     </div>
   )
 }

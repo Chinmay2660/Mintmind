@@ -36,7 +36,7 @@ export function RulesDialog({ open, onOpenChange }: { open: boolean; onOpenChang
   const save = (next: CategoryRule[]) => saveRules(db, next).catch(() => toast.error('Could not save the rules'))
   const add = () => {
     const t = text.trim()
-    if (!t) return toast.error('Type the words the description should contain')
+    if (!t) return toast.warning('Type the words the description should contain')
     save([...rules, { id: uid('rl'), contains: t, category, kind: 'expense' }])
     setText('')
     toast.success('Rule added')

@@ -21,8 +21,8 @@ export function CashFlowView({ list, ym }: { list: any[]; ym: string }) {
       <div className="grid grid-cols-1 gap-3 min-[460px]:grid-cols-2 lg:grid-cols-4 border-b border-border pb-5">
         <Stat label="Money in" value={<Money value={r.totalIn} />} hint={`${months} months`} />
         <Stat label="Money out" value={<Money value={r.totalOut} />} hint={`${months} months`} />
-        <Stat label="Kept" info="Money in minus money out over the period. Negative means you spent more than came in." value={<span className={cn(r.net < 0 && 'text-destructive')}><Money value={r.net} signed /></span>} hint={`${formatINR(r.avgNet)} a month on average`} />
-        <Stat label="Net this month vs last" info="The month's money in minus money out, compared with the month before." value={<Metric amount={cur ? cur.net - (prev?.net ?? 0) : null} className="text-lg font-semibold sm:text-xl" hint="Needs two months" />} hint={cur?.savingsRate != null ? `${cur.savingsRate}% of income kept` : 'No income recorded'} />
+        <Stat label="Kept" value={<span className={cn(r.net < 0 && 'text-destructive')}><Money value={r.net} signed /></span>} hint={`${formatINR(r.avgNet)} a month on average`} />
+        <Stat label="Net this month vs last" value={<Metric amount={cur ? cur.net - (prev?.net ?? 0) : null} className="text-lg font-semibold sm:text-xl" hint="Needs two months" />} hint={cur?.savingsRate != null ? `${cur.savingsRate}% of income kept` : 'No income recorded'} />
       </div>
 
       <Panel title="Month by month" description="Bars use a square-root scale, so a very large month does not shrink the others to nothing. Compare the lengths within a month, and use the figure on the right for the exact amount kept." action={<div className="inline-flex rounded-lg border border-border bg-muted p-0.5">{([6, 12] as const).map((n) => <button key={n} type="button" aria-pressed={months === n} onClick={() => setMonths(n)} className={cn('rounded-md px-3 py-1 text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-ring', months === n ? 'bg-card shadow-card' : 'text-muted-foreground')}>{n} months</button>)}</div>}>

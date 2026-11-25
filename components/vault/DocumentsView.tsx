@@ -1,10 +1,12 @@
 'use client'
 
+import { documentIcon } from '@/lib/categoryIcons'
+import { CategoryCarousel } from '@/components/ui/category-carousel'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import axios from 'axios'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Cloud, Folder, RefreshCw, Search, Upload } from 'lucide-react'
+import { Cloud, Folder, Lock, RefreshCw, Search, Upload } from 'lucide-react'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { uid } from '@/lib/wealth/db'
 import { toISO } from '@/lib/wealth/calc'
@@ -33,13 +35,24 @@ export function DocumentsView() {
   const { ready, isDemo, db, data } = useWealth()
   const [remote, setRemote] = useState<Doc[] | null>(null)
   const [drive, setDrive] = useState<{ configured: boolean; connected: boolean; reason?: string } | null>(null)
-  const [cat, setCat] = useState('All')
+  // one category at a time. It opens on the first one that has documents (the newest document's, for a real account), until you pick one.
+  const [picked, setPicked] = useState<string | null>(null)
+  const [remoteFirst, setRemoteFirst] = useState<string | null>(null)
+  const demoFirst = CATEGORIES.find((c) => (data.documents as any[]).some((d) => d.category === c))
+  const cat = picked ?? (isDemo ? demoFirst : remoteFirst) ?? CATEGORIES[0]
+  const setCat = setPicked
+  useEffect(() => {
+    if (!ready || isDemo || !drive?.connected) return
+    let live = true
+    axios.get('/api/drive/files', { params: { limit: 1 } }).then((r) => { const c = r.data.documents?.[0]?.category; if (live && CATEGORIES.includes(c)) setRemoteFirst(c) }).catch(() => {})
+    return () => { live = false }
+  }, [ready, isDemo, drive?.connected])
   const [q, setQ] = useState('')
   const [dq, setDq] = useState('') // the search, a moment after typing stops, so the server is not asked on every key
   useEffect(() => { const t = setTimeout(() => setDq(q), 300); return () => clearTimeout(t) }, [q])
   // Real accounts: the server returns one filtered page at a time. The demo has everything on the device, so it pages locally below.
   const sp = useServerPagination<Doc>(async ({ page, pageSize }) => {
-    const r = await axios.get('/api/drive/files', { params: { page, limit: pageSize, category: cat === 'All' ? undefined : cat, q: dq || undefined } })
+    const r = await axios.get('/api/drive/files', { params: { page, limit: pageSize, category: dq ? undefined : cat, q: dq || undefined } })
     return { items: r.data.documents.map((d: Doc) => ({ ...d, hasFile: true })), total: r.data.total ?? r.data.documents.length }
   }, { pageSize: 12, resetKey: `${cat}|${dq}`, enabled: ready && !isDemo && !!drive?.connected })
   const [pending, setPending] = useState<Pending[]>([])
@@ -64,7 +77,7 @@ export function DocumentsView() {
   useEffect(() => { if (ready) refresh() }, [ready, refresh])
 
   const docs: Doc[] = useMemo(() => (isDemo ? data.documents.map((d: any) => ({ id: d.id, name: d.name, fileName: d.fileName, category: d.category, mimeType: d.mimeType, size: d.size, notes: d.notes, uploaded: d.uploaded, hasFile: !!d.blob })) : sp.items), [isDemo, data.documents, sp.items])
-  const filtered = isDemo ? docs.filter((d) => (cat === 'All' || d.category === cat) && matchesAll(dq, d.name, d.fileName, d.category, d.notes)) : docs
+  const filtered = isDemo ? docs.filter((d) => (dq ? true : d.category === cat) && matchesAll(dq, d.name, d.fileName, d.category, d.notes)) : docs
   const local = usePagination(filtered, { pageSize: 12, resetKey: `${cat}|${dq}` })
   const shown = isDemo ? local.slice : sp.items
   const pg = isDemo ? { ...local, loading: false } : { ...sp, loading: sp.loading }
@@ -90,7 +103,7 @@ export function DocumentsView() {
 
   const onPick = (file?: File) => {
     if (!file) return
-    if (file.size > MAX) return void toast.error('File is larger than 25 MB')
+    if (file.size > MAX) return void toast.warning('File is larger than 25 MB')
     setForm({ file })
   }
 
@@ -111,7 +124,7 @@ export function DocumentsView() {
   const doReplace = async (file?: File) => {
     const d = replaceTarget.current
     if (!file || !d) return
-    if (file.size > MAX) return void toast.error('File is larger than 25 MB')
+    if (file.size > MAX) return void toast.warning('File is larger than 25 MB')
     try {
       if (isDemo) await db.documents.update(d.id, { blob: file, fileName: file.name, mimeType: file.type, size: file.size })
       else { const fd = new FormData(); fd.set('file', file); await axios.put(`/api/drive/files/${d.id}`, fd); await refresh() }
@@ -134,17 +147,20 @@ export function DocumentsView() {
         <Panel>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-start gap-3"><Cloud className="mt-0.5 h-5 w-5 text-primary" /><div><p className="font-medium">{drive?.reason === 'expired' ? 'Reconnect Google Drive' : 'Connect Google Drive'}</p>
-              <p className="text-sm text-muted-foreground">{!drive?.configured ? 'Google Drive connection isn’t available right now. Please try again later.' : 'Your documents are stored in your own Drive. We can only see files this app creates.'}</p></div></div>
+              <p className="text-sm text-muted-foreground">{!drive?.configured ? 'Google Drive connection isn’t available right now. Please try again later.' : 'Your documents are stored in your own Google Drive. Mintmind can only see the files it creates or that you choose to add, and it does not encrypt them.'}</p></div></div>
             {drive?.configured ? <Button asChild><a href="/api/drive/connect">Connect</a></Button> : <Button asChild variant="outline"><Link href="/dashboard/settings">Settings</Link></Button>}
           </div>
         </Panel>
       )}
 
+      {!isDemo && (
+        <p className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2.5 text-xs text-muted-foreground"><Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden /><span>Files live in your Google Drive and are <strong className="font-semibold text-foreground">not encrypted by Mintmind</strong>. Anyone who can open your Google account can open them. Keep passwords, PINs and recovery codes in the Vault, not in a document.</span></p>
+      )}
+
       <div className="relative max-w-sm"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input aria-label="Search documents" className="h-10 pl-9" placeholder="Search name, category, notes" value={q} onChange={(e) => setQ(e.target.value)} /></div>
 
-      <div className="flex flex-wrap gap-1.5">
-        {['All', ...CATEGORIES].map((c) => <button key={c} type="button" aria-pressed={cat === c} onClick={() => setCat(c)} className={cn('flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium', cat === c ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{c !== 'All' && <Folder className="h-3 w-3" />}{c}</button>)}
-      </div>
+      <CategoryCarousel label="Document categories" value={cat} onChange={setCat} items={CATEGORIES.map((c) => ({ key: c, label: c, icon: documentIcon(c) }))} />
+      {dq && <p className="-mt-2 text-xs text-muted-foreground">Searching every category.</p>}
 
       {pending.length > 0 && (
         <Panel title="Uploading">

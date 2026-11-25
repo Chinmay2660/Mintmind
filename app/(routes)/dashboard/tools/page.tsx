@@ -1,5 +1,7 @@
 'use client'
 
+import { TabBar } from '@/components/ui/tab-bar'
+import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { useMemo, useState } from 'react'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { availableBalance, toISO } from '@/lib/wealth/calc'
@@ -13,7 +15,6 @@ import { AboutYou } from '@/components/planning/AboutYou'
 import { PlanAhead } from '@/components/planning/PlanAhead'
 import { CheckUp } from '@/components/planning/CheckUp'
 import { useProfileInputs } from '@/components/planning/useProfileInputs'
-import { TabBar } from '@/components/ui/tab-bar'
 
 const TABS = ['Plan ahead', 'Money check-up', 'Emergency fund', 'Loan payoff', 'Insurance cover', 'Retirement'] as const
 type Tab = (typeof TABS)[number]
@@ -22,6 +23,7 @@ const sum = (rows: any[], k: string) => rows.reduce((s, r) => s + (Number(r[k]) 
 const fromData = (n: number) => (n > 0 ? String(Math.round(n)) : '')
 
 export default function PlanningToolsPage() {
+  usePrivacyMode() // draws amounts again when balances are hidden or shown
   const { ready, data } = useWealth()
   const [tab, setTab] = useState<Tab>('Plan ahead')
   const { v, set, derived } = useProfileInputs(data)

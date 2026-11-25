@@ -31,7 +31,6 @@ export interface DashboardNavItem {
 export const DASHBOARD_NAV_ALL: DashboardNavItem[] = [
   { id: 1, name: 'Overview', icon: LayoutDashboard, path: '/dashboard' },
   { id: 2, name: 'Net Worth', icon: TrendingUp, path: '/dashboard/net-worth' },
-  { id: 14, name: 'Assets', icon: Building2, path: '/dashboard/net-worth/manage' },
   { id: 15, name: 'Loans', icon: Scale, path: '/dashboard/net-worth/loans' },
   { id: 3, name: 'Accounts', icon: Landmark, path: '/dashboard/bank-accounts' },
   { id: 4, name: 'Investments', icon: PieChart, path: '/dashboard/mutual-funds' },
@@ -46,9 +45,12 @@ export const DASHBOARD_NAV_ALL: DashboardNavItem[] = [
 
 /** Mobile bottom bar: primary modules; everything else lives under "More". */
 // Order matters: Spend (Transactions & Budgets) sits in the middle of the phone bar (Overview, Net Worth, Spend, Accounts, More).
-const PRIMARY_IDS = [1, 2, 7, 3]
+const PRIMARY_IDS = [1, 2, 7, 9]
 export const DASHBOARD_NAV_MAIN = PRIMARY_IDS.map((id) => DASHBOARD_NAV_ALL.find((i) => i.id === id)!)
-export const DASHBOARD_NAV_MORE = DASHBOARD_NAV_ALL.filter((i) => !PRIMARY_IDS.includes(i.id))
+/** Pages the Overview's Assets and Liabilities tabs open (banks, investments, cards, insurance, loans). On a phone they are reached from there, so the menu does not repeat them. */
+export const WEALTH_IDS = [3, 4, 5, 6, 15]
+export const OVERVIEW_DRILL_PATHS = ['/dashboard/bank-accounts', '/dashboard/mutual-funds', '/dashboard/credit-cards', '/dashboard/insurance', '/dashboard/net-worth/loans', '/dashboard/net-worth/manage']
+export const DASHBOARD_NAV_MORE = DASHBOARD_NAV_ALL.filter((i) => !PRIMARY_IDS.includes(i.id) && !WEALTH_IDS.includes(i.id))
 
 export interface SearchItem {
   name: string

@@ -1,10 +1,13 @@
 'use client'
 
+import { useMySharedSummary } from '@/components/family/useMySummary'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import axios from 'axios'
 import { toast } from 'sonner'
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Copy, Lock, Plus, Trash2, UserPlus } from 'lucide-react'
+import { Check, ChevronRight, Copy, Lock, MoreVertical, Plus, Trash2, UserPlus } from 'lucide-react'
+import Link from 'next/link'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { uid } from '@/lib/wealth/db'
 import { growthVs, portfolioSummary } from '@/lib/wealth/calc'
@@ -22,11 +25,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { InviteReady, JoinWithCode, demoInvite, type InviteInfo } from '@/components/family/InviteCodes'
 
 const ROLES = [{ v: 'admin', l: 'Admin' }, { v: 'member', l: 'Member' }, { v: 'emergency_contact', l: 'Emergency Contact' }]
-const PERMS: [string, string, string][] = [
-  ['netWorth', 'Total net worth', 'Assets, liabilities and growth'], ['overview', 'Overview', 'That I exist in the circle and my profile'], ['bank', 'Bank balances', 'Total savings balance'],
-  ['mutualFunds', 'Mutual funds', 'Current portfolio value'], ['insurance', 'Insurance', 'Total coverage'], ['documents', 'Documents', 'Document list (never file contents)'],
-  ['emergencyOnly', 'Emergency-only', 'Hide everything from the dashboard; share only through Digital Legacy'],
-]
 const roleLabel = (r: string) => ROLES.find((x) => x.v === r)?.l ?? r
 
 interface VM { id: string; name: string; relation?: string; role: string; status: string; self: boolean; email?: string; permissions?: Record<string, boolean>; summary: any }
@@ -40,17 +38,7 @@ export default function FamilyPage() {
 
   const lastSent = useRef({ body: '', at: 0 })
   // my own shareable summary, computed locally from my data
-  const mine = useMemo(() => {
-    const today = new Date()
-    const g = growthVs(data.snapshots, netWorth.netWorth, 1, today)
-    const cover = coverageTotals(data.policies, today)
-    return {
-      assets: netWorth.assets, liabilities: netWorth.liabilities, netWorth: netWorth.netWorth, growthPct: g?.pct ?? null,
-      bank: data.bankAccounts.reduce((s: number, b: any) => s + b.currentBalance, 0),
-      mutualFunds: portfolioSummary(data.funds, data.fundTxns, data.sips, today).value, insuranceCover: cover.total,
-      joint: data.bankAccounts.filter((b: any) => b.type === 'joint').map((b: any) => ({ key: `acct:${b.accountNumber}`, value: b.currentBalance })),
-    }
-  }, [data, netWorth])
+  const mine = useMySharedSummary()
 
   const load = useCallback(async () => {
     if (isDemo) {
@@ -102,12 +90,6 @@ export default function FamilyPage() {
   const sortedMembers = [...circle.members].sort((a, b) => Number(a.status === 'invited' || a.status === 'pending') - Number(b.status === 'invited' || b.status === 'pending') || (roleRank[a.role] ?? 9) - (roleRank[b.role] ?? 9) || Number(b.self) - Number(a.self) || a.name.localeCompare(b.name))
   const self = circle.members.find((m) => m.self)
 
-  const setSharing = async (key: string, value: boolean) => {
-    if (!self?.permissions) return
-    const permissions = { ...self.permissions, [key]: value }
-    if (isDemo) await db.members.update(self.id, { permissions })
-    else await api({ action: 'update-sharing', permissions })
-  }
   const setRole = async (m: VM, role: string) => {
     if (isDemo) await db.members.update(m.id, { role }); else await api({ action: 'update-member', memberId: m.id, role }, 'Role updated')
   }
@@ -134,29 +116,64 @@ export default function FamilyPage() {
           )}
         </Panel>
         <Panel title="Members" className="lg:col-span-2">
-          <ul className="divide-y divide-border">
+          {/* one card per person: who they are and their role on top, what they share below, every action in one menu */}
+          <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
             {sortedMembers.map((m) => {
               const s = m.summary
+              const initials = m.name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()
+              const canRemove = (admin && !m.self) || (m.self && circle.members.length > 1)
+              const canInvite = (m.status === 'invited' || m.status === 'pending') && admin
+              const hasMenu = (admin && !m.self) || !!m.email || canInvite || (m.status === 'invited' && isDemo) || canRemove
               return (
-                <li key={m.id} className="py-3">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0"><p className="font-medium">{m.name}{m.self ? ' (you)' : ''}</p><p className="text-xs text-muted-foreground">{m.relation}{m.email ? <> · <CopyValue value={m.email} label="Email" /></> : null}{m.status === 'invited' ? ' · Invite pending' : ''}</p></div>
-                    <div className="flex items-center gap-1.5">
-                      {admin && !m.self ? <Select aria-label={`Role for ${m.name}`} className="h-8 w-auto text-xs" value={m.role} onChange={(e) => setRole(m, e.target.value)}>{ROLES.map((r) => <option key={r.v} value={r.v}>{r.l}</option>)}</Select> : <span className="rounded-md bg-muted px-2 py-1 text-xs">{roleLabel(m.role)}</span>}
-                      {m.status === 'invited' && isDemo && <Button size="sm" variant="outline" onClick={() => db.members.update(m.id, { status: 'active' })}>Simulate accept</Button>}
-                      {(m.status === 'invited' || m.status === 'pending') && admin && <Button size="sm" variant="outline" onClick={async () => { if (isDemo) { setInvite(demoInvite(m.id, m.name)); return } const r = await api({ action: 'refresh-invite', memberId: m.id }); if (r?.invite) setInvite({ ...r.invite, name: m.name }) }}>Code and link</Button>}
-                      {(admin && !m.self || (m.self && circle.members.length > 1)) && <Button size="icon" variant="ghost" className="h-8 w-8" aria-label={m.self ? 'Leave circle' : `Remove ${m.name}`} onClick={() => setDlg({ del: m })}><Trash2 className="h-3.5 w-3.5" /></Button>}
+                <li key={m.id} className="rounded-xl border border-border bg-muted/30 p-4">
+                  <div className="flex items-center gap-3">
+                    <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-semibold text-primary">{initials}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold">{m.name}{m.self ? ' (you)' : ''}</p>
+                      <p className="truncate text-xs text-muted-foreground">{m.relation}{m.status === 'invited' ? ' · Invite pending' : ''}</p>
                     </div>
+                    <span className="shrink-0 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium text-muted-foreground">{roleLabel(m.role)}</span>
+                    {hasMenu && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button type="button" size="icon" variant="ghost" className="h-9 w-9 shrink-0" aria-label={`Actions for ${m.name}`}><MoreVertical className="h-4 w-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                          {admin && !m.self && (
+                            <>
+                              <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Role</DropdownMenuLabel>
+                              {ROLES.map((r) => (
+                                <DropdownMenuItem key={r.v} className="cursor-pointer" onClick={() => setRole(m, r.v)}>
+                                  <Check className={`mr-2 h-4 w-4 ${m.role === r.v ? '' : 'opacity-0'}`} aria-hidden />{r.l}
+                                </DropdownMenuItem>
+                              ))}
+                              <DropdownMenuSeparator />
+                            </>
+                          )}
+                          {m.email && <DropdownMenuItem className="cursor-pointer" onClick={async () => { try { await navigator.clipboard.writeText(m.email); toast.success('Email copied') } catch { toast.error('Could not copy') } }}><Copy className="mr-2 h-4 w-4" />Copy email</DropdownMenuItem>}
+                          {canInvite && <DropdownMenuItem className="cursor-pointer" onClick={async () => { if (isDemo) { setInvite(demoInvite(m.id, m.name)); return } const r = await api({ action: 'refresh-invite', memberId: m.id }); if (r?.invite) setInvite({ ...r.invite, name: m.name }) }}><UserPlus className="mr-2 h-4 w-4" />Invite code and link</DropdownMenuItem>}
+                          {m.status === 'invited' && isDemo && <DropdownMenuItem className="cursor-pointer" onClick={() => db.members.update(m.id, { status: 'active' })}><Check className="mr-2 h-4 w-4" />Simulate accept</DropdownMenuItem>}
+                          {canRemove && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={() => setDlg({ del: m })}><Trash2 className="mr-2 h-4 w-4" />{m.self ? 'Leave circle' : 'Remove from circle'}</DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                   {m.status === 'active' && (s && s.netWorth !== undefined ? (
-                    <dl className="mt-2 grid grid-cols-2 gap-2 text-sm sm:grid-cols-5">
-                      <div><dt className="text-xs text-muted-foreground">Net worth</dt><dd className="font-medium"><Money value={s.netWorth} compact /></dd></div>
-                      {s.bank !== undefined && <div><dt className="text-xs text-muted-foreground">Bank</dt><dd><Money value={s.bank} compact /></dd></div>}
-                      {s.mutualFunds !== undefined && <div><dt className="text-xs text-muted-foreground">Mutual funds</dt><dd><Money value={s.mutualFunds} compact /></dd></div>}
-                      {s.insuranceCover !== undefined && <div><dt className="text-xs text-muted-foreground">Insurance cover</dt><dd><Money value={s.insuranceCover} compact /></dd></div>}
-                      {s.growthPct != null && <div><dt className="text-xs text-muted-foreground">Growth</dt><dd>{formatPct(s.growthPct, 1)}</dd></div>}
-                    </dl>
-                  ) : <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground"><Lock className="h-3.5 w-3.5" />Not shared with you</p>)}
+                    <div className="mt-3 border-t border-border pt-3">
+                      <p className="text-xs text-muted-foreground">Net worth</p>
+                      <p className="flex items-baseline gap-2 text-xl font-semibold tabular-nums"><Money value={s.netWorth} compact />{s.growthPct != null && <span className="text-xs font-medium text-muted-foreground">{formatPct(s.growthPct, 1)} this month</span>}</p>
+                      <dl className="mt-2 grid grid-cols-3 gap-2 text-sm">
+                        {s.bank !== undefined && <div className="min-w-0"><dt className="text-xs text-muted-foreground">Bank</dt><dd className="truncate font-medium tabular-nums"><Money value={s.bank} compact /></dd></div>}
+                        {s.mutualFunds !== undefined && <div className="min-w-0"><dt className="text-xs text-muted-foreground">Funds</dt><dd className="truncate font-medium tabular-nums"><Money value={s.mutualFunds} compact /></dd></div>}
+                        {s.insuranceCover !== undefined && <div className="min-w-0"><dt className="text-xs text-muted-foreground">Cover</dt><dd className="truncate font-medium tabular-nums"><Money value={s.insuranceCover} compact /></dd></div>}
+                      </dl>
+                    </div>
+                  ) : <p className="mt-3 flex items-center gap-1.5 border-t border-border pt-3 text-xs text-muted-foreground"><Lock className="h-3.5 w-3.5" aria-hidden />Not shared with you</p>)}
                 </li>
               )
             })}
@@ -164,13 +181,10 @@ export default function FamilyPage() {
         </Panel>
       </div>
 
-      {self?.permissions && (
-        <Panel title="My sharing">
-          <ul className="grid gap-3 sm:grid-cols-2">{PERMS.map(([k, l, d]) => (
-            <li key={k}><label className="flex items-start gap-2.5 text-sm"><Checkbox className="mt-0.5" checked={!!self.permissions![k]} onChange={(e) => setSharing(k, e.target.checked)} /><span><span className="block font-medium">{l}</span><span className="text-xs text-muted-foreground">{d}</span></span></label></li>
-          ))}</ul>
-        </Panel>
-      )}
+      <Link href="/dashboard/settings?tab=family" className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring">
+        <span><strong className="font-semibold">Sharing is set in Settings.</strong> Choose what everyone, or one person, can see of you, and preview it.</span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+      </Link>
 
       {invite && <InviteReady info={invite} onClose={() => setInvite(null)} onRefresh={async () => { if (isDemo) { setInvite(demoInvite(invite.memberId, invite.name)); return } const r = await api({ action: 'refresh-invite', memberId: invite.memberId }); if (r?.invite) setInvite({ ...r.invite, name: invite.name }) }} />}
 

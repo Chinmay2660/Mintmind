@@ -1,15 +1,14 @@
 'use client'
 
-import { AssetsLoans } from '@/components/wealth/AssetsLoans'
-import { useWealth } from '@/lib/wealth/WealthContext'
-import { LoadingBlock } from '@/components/wealth/kit'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
-export default function AssetsPage() {
-  const { ready } = useWealth()
-  if (!ready) return <LoadingBlock className="h-64" />
-  return (
-    <div className="space-y-5">
-      <AssetsLoans view="assets" />
-    </div>
-  )
+/** Assets now live in Investments (Property & other). Old links and bookmarks land there, keeping ?add=asset. */
+export default function AssetsRedirect() {
+  const router = useRouter()
+  useEffect(() => {
+    const add = new URLSearchParams(window.location.search).get('add')
+    router.replace('/dashboard/mutual-funds?tab=property' + (add === 'asset' ? '&add=asset' : ''))
+  }, [router])
+  return null
 }

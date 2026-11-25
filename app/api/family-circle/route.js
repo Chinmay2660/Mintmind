@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import FamilyCircle from '@/models/FamilyCircle'
 import { requireAuth, rateLimitOrRespond } from '@/lib/middleware/api'
-import { visibleSummary } from '@/lib/family/visibility'
+import { permissionsFor, visibleSummary } from '@/lib/family/visibility'
 import { decryptJson, encryptJson } from '@/lib/utils/crypto'
 import { hashOtp, hashToken, inviteLive, isOtpShape, newInvite } from '@/lib/family/invite'
 
@@ -44,7 +44,10 @@ function present(circle, user) {
         id: m._id.toString(), name: m.name, relation: m.relation, role: m.role, status: m.status, self: !!mine,
         email: mine || (self && self.role === 'admin') ? m.email : undefined,
         permissions: mine ? m.permissions : undefined,
-        summary: mine ? openSummary(m.summary) : m.status === 'active' ? visibleSummary(openSummary(m.summary), m.permissions) : null,
+        // the personal settings you made for particular people (only you see them)
+        overrides: mine ? (m.overrides || []).map((o) => ({ viewerId: String(o.viewerId), permissions: o.permissions })) : undefined,
+        // what THIS member lets YOU see: a personal setting for you if they made one, else their circle-wide setting
+        summary: mine ? openSummary(m.summary) : m.status === 'active' ? visibleSummary(openSummary(m.summary), self ? permissionsFor(m, self._id) : m.permissions) : null,
         invitePending: m.status === 'invited',
       }
     }),
@@ -131,7 +134,23 @@ export async function POST(request) {
     case 'update-sharing': {
       const self = circle && me(circle, user)
       if (!self) return NextResponse.json({ error: 'Not in a circle' }, { status: 404 })
-      for (const k of PERM_KEYS) if (typeof body.permissions?.[k] === 'boolean') self.permissions[k] = body.permissions[k]
+      if (body.memberId) {
+        // sharing with one particular person
+        const target = circle.members.id(body.memberId)
+        if (!target || String(target._id) === String(self._id)) return NextResponse.json({ error: 'Choose another member' }, { status: 400 })
+        const at = self.overrides.findIndex((o) => String(o.viewerId) === String(target._id))
+        if (body.reset) {
+          if (at >= 0) self.overrides.splice(at, 1) // back to the circle-wide setting
+        } else {
+          const base = at >= 0 ? self.overrides[at].permissions : self.permissions
+          const next = {}
+          for (const k of PERM_KEYS) next[k] = typeof body.permissions?.[k] === 'boolean' ? body.permissions[k] : !!base?.[k]
+          if (at >= 0) self.overrides[at].permissions = next
+          else self.overrides.push({ viewerId: target._id, permissions: next })
+        }
+      } else {
+        for (const k of PERM_KEYS) if (typeof body.permissions?.[k] === 'boolean') self.permissions[k] = body.permissions[k]
+      }
       await circle.save()
       return NextResponse.json({ circle: present(circle, user) })
     }

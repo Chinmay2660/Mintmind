@@ -4,6 +4,7 @@ import MarketPrice from '@/models/MarketPrice'
 import MarketMeta from '@/models/MarketMeta'
 import { requireAuth, rateLimitOrRespond } from '@/lib/middleware/api'
 import { matchFund, nameKey } from '@/lib/market/parsers'
+import { kiteConfig } from '@/lib/kite/client'
 
 /**
  * Latest cached NAV for the funds the browser sends: [{ id, name, isin?, symbol?, schemeCode? }].
@@ -20,12 +21,12 @@ export async function POST(request) {
   await connectDB()
   const ids = [...new Set(funds.flatMap((f) => [f.isin, f.symbol]).filter(Boolean))]
   const codes = [...new Set(funds.map((f) => f.schemeCode).filter(Boolean).map(String))]
-  const rows = await MarketPrice.find({ kind: 'mf', $or: [{ isins: { $in: ids } }, { symbol: { $in: ids } }, { schemeCode: { $in: codes } }, { nameKey: { $in: [...new Set(funds.map((f) => nameKey(f.name)).filter(Boolean))] } }] }).lean()
+  const rows = await MarketPrice.find({ kind: 'mf', ...(kiteConfig().enabled ? {} : { source: 'amfi' }), $or: [{ isins: { $in: ids } }, { symbol: { $in: ids } }, { schemeCode: { $in: codes } }, { nameKey: { $in: [...new Set(funds.map((f) => nameKey(f.name)).filter(Boolean))] } }] }).lean()
   const prices = []
   for (const f of funds) {
     const r = matchFund(f, rows)
     if (r) prices.push({ id: f.id, nav: r.price, date: r.priceDate, source: r.source })
   }
   const meta = await MarketMeta.findOne({ key: 'sync' }).lean()
-  return NextResponse.json({ prices, lastSyncAt: meta?.lastSyncAt ?? null })
+  return NextResponse.json({ prices, lastSyncAt: meta?.lastSyncAt ?? null, amfiOk: !meta?.lastResult?.errors?.amfi })
 }

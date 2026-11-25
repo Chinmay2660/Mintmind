@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { FEATURES, featureByKey, featureForPath } from '@/lib/features'
 import { useFeatures } from '@/lib/features/FeaturesContext'
-import { DASHBOARD_NAV_ALL, type DashboardNavItem } from '@/lib/constants/dashboardNav'
+import { DASHBOARD_NAV_ALL, WEALTH_IDS, type DashboardNavItem } from '@/lib/constants/dashboardNav'
 import { iconFor } from '@/components/onboarding/icons'
 import { Button } from '@/components/ui/button'
 import { LoadingBlock } from '@/components/wealth/kit'
@@ -49,9 +49,10 @@ export function useVisibleNav() {
   const all = DASHBOARD_NAV_ALL.filter((i) => { const k = featureForPath(i.path); return !k || isEnabled(k) || (k === 'vault' && (isEnabled('documents') || isEnabled('digital_legacy'))) })
   // bottom bar: first four of the usual favourites that are on; everything else goes under More.
   // Order: Overview, Net Worth, Spend (middle of the five tabs with More), Accounts.
-  const favourites = [1, 2, 7, 3, 4, 5, 6]
+  const favourites = [1, 2, 7, 9, 3]
   const main: DashboardNavItem[] = favourites.map((id) => all.find((i) => i.id === id)).filter(Boolean).slice(0, 4) as DashboardNavItem[]
-  const more = all.filter((i) => !main.includes(i))
+  // the pages the Wealth list opens are not repeated in More
+  const more = all.filter((i) => !main.includes(i) && !WEALTH_IDS.includes(i.id))
   return { all, main, more }
 }
 

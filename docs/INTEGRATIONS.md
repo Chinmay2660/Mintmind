@@ -44,40 +44,41 @@ Until then the workflow falls back to email, so the confirmation step is never s
 Call once a day: `GET /api/legacy-plan/cron` with header `Authorization: Bearer $CRON_SECRET`
 (Vercel Cron, GitHub Actions, cron-job.org…). Set `CRON_SECRET` to a long random string.
 
-## Market prices: weekly NAV sync (internal, Zerodha Kite optional)
-Not a user feature. A server job keeps a shared price cache; the app reads it once a week to refresh fund NAVs.
+## Market prices: daily NAV sync (internal, Zerodha Kite optional)
+Not a user feature. A server job keeps a shared price cache; the app reads it once a day to refresh fund NAVs.
 
-**Schedule it** once a week (cron-job.org, GitHub Actions, Vercel Cron…):
+**Schedule it** once a day, in the evening IST after AMFI publishes (cron-job.org, GitHub Actions, Vercel Cron…):
 `GET /api/internal/market-sync` with header `Authorization: Bearer $CRON_SECRET`. The response is the status report
 (counts per source, errors, and `kite: ok | login_required | not_configured`).
 
 Sources (each fails independently):
 * **AMFI NAV file** (public, no login): always fetched. Covers every mutual fund; this alone keeps NAVs current.
-* **Zerodha Kite** (optional): the full MF list with last prices, plus last traded prices for equities in
+* **Zerodha Kite** (optional, **off unless `KITE_ENABLED=1`**): Zerodha's terms restrict redistributing its data to other people and its free tier excludes market data, so enable it only on a single-owner install. Users are never served Kite prices while it is off. The full MF list with last prices, plus last traded prices for equities in
   `MARKET_EQUITY_SYMBOLS` (e.g. `NSE:NIFTYBEES,NSE:RELIANCE`) to check progress. Needs `KITE_API_KEY`, `KITE_API_SECRET`.
   Create the app at https://developers.kite.trade with Redirect URL `${APP_URL}/api/internal/kite/callback`.
 
 **Kite sign-in (owner only).** Kite access tokens expire around 6 AM IST every day and there is no refresh token, so the
-owner opens `${APP_URL}/api/internal/kite/login?key=$CRON_SECRET` on the day the weekly job should use Kite. If no valid
+owner opens `${APP_URL}/api/internal/kite/login?key=$CRON_SECRET` on the day the job should use Kite. If no valid
 session exists the job still runs on AMFI and reports `kite: "login_required"`. The token is stored encrypted and never leaves the server.
 
-**In the app.** Once a week, when someone opens the dashboard, the browser sends its fund names/ISINs to
+**In the app.** Once a day, when someone opens the dashboard, the browser sends its fund names/ISINs to
 `POST /api/market/prices` and updates only NAV and value (source `market`). Units, invested amounts and transactions are never changed.
-Matching uses ISIN / symbol / scheme code first, then an exact normalised name; ambiguous names are skipped, never guessed.
+Matching uses ISIN / symbol / scheme code first, then an exact normalised name; ambiguous names are skipped, never guessed. When AMFI and Kite both describe a fund, the newest price date wins and AMFI wins a tie. Each fund shows its NAV date and when it was last refreshed, and a NAV more than four business days old is marked "May be out of date".
 A fund can carry an optional `isin`, `symbol` or `schemeCode` field to make matching exact.
 
 ---
 
 # Architecture notes
 
-* **Wealth data** (banks, funds, cards, policies, budget, expenses, net-worth snapshots, family-demo, documents-demo)
-  lives in a per-profile IndexedDB (`mm-wealth-<userId>`, Dexie). Demo Mode uses `mm-wealth-demo` and a cookie-only
-  session (`mm-demo`), so it can never read or write a real account. There is no server sync for this data yet:
-  use Settings → Data → Export backup to move devices. (Planned: encrypted server sync.)
+* **Wealth data** (banks, funds, cards, policies, budget, expenses, net-worth snapshots, goals) lives in a per-user IndexedDB
+  (Dexie) on each device and is synced to MongoDB through `/api/sync` (`lib/wealth/sync.js`), so every signed-in device
+  stays in step. Records other than the vault are **not end-to-end encrypted**; the server does not read inside them.
+  Demo Mode uses `mm-wealth-demo` and a cookie-only session (`mm-demo`), never syncs, and can never read or write a real
+  account. Settings, Data still has export and restore.
 * **Calculations** are pure and tested: `lib/wealth/calc.js` (net worth, XIRR, utilisation, budget pacing, SIP dates),
   `lib/family/visibility.js`, `lib/legacy/stateMachine.js`, `lib/vault/crypto.js`, `lib/totp.js`. Run `npm test`.
 * **Vault** is zero-knowledge: PBKDF2-SHA256 (600k) → AES-256-GCM via WebCrypto, recovery key, optional WebAuthn-PRF biometrics.
-  Vault data never leaves the device. The old server-side `PasswordEntry` data is **not** migrated (it was readable by the server).
+  Vault items are encrypted in the browser and synced only as ciphertext, so the server cannot read them. The old server-side `PasswordEntry` data is **not** migrated (it was readable by the server).
 * **Family Circle**: members control what *they* share; admins manage membership only. Server enforces visibility.
 * **Auth**: email+password (scrypt), TOTP MFA, Google, rate limiting (IP + per-account), Demo.
   Known gap: no email verification or password-reset-by-email yet.

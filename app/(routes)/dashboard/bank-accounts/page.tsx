@@ -1,5 +1,6 @@
 'use client'
 
+import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import Link from 'next/link'
 import { useState } from 'react'
 import { useAddParam } from '@/lib/hooks/useAddParam'
@@ -15,6 +16,7 @@ import { Empty, LoadingBlock, PageHeader, Stat } from '@/components/wealth/kit'
 import { AccountForm } from '@/components/wealth/AccountForm'
 
 export default function BankAccountsPage() {
+  usePrivacyMode() // draws amounts again when balances are hidden or shown
   const { ready, data, db } = useWealth()
   const [adding, setAdding] = useState(false)
   useAddParam((what) => { if (what === 'account') setAdding(true) })
@@ -36,7 +38,7 @@ export default function BankAccountsPage() {
             <Link key={b.id} href={`/dashboard/bank-accounts/${b.id}`} aria-label={`${b.nickname || b.bankName}, open details`} className="surface-card block p-4 outline-none transition-all hover:border-primary/40 hover:shadow-elevated focus-visible:ring-2 focus-visible:ring-ring motion-safe:hover:-translate-y-0.5">
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-highlight/30 text-[hsl(85_60%_26%)] dark:bg-highlight/20 dark:text-highlight"><Landmark className="h-5 w-5" /></span>
-                <div className="min-w-0 flex-1"><p className="truncate font-medium">{b.nickname || b.bankName}</p><p className="truncate text-xs text-muted-foreground">{b.type === 'cash' ? 'Cash in hand' : `${b.bankName} · ${b.holderName}`}</p></div>
+                <div className="min-w-0 flex-1"><p className="truncate font-medium">{b.nickname || b.bankName}</p><p className="truncate text-xs text-muted-foreground">{b.type === 'cash' ? 'Wallet' : b.type === 'joint' && b.holderName ? `${b.bankName} · ${b.holderName}` : b.bankName}</p></div>
                 <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
               </div>
               <p className="mt-4 text-2xl font-semibold"><Money value={b.currentBalance} /></p>

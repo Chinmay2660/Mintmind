@@ -56,8 +56,8 @@ export function PdfStatementImport({ label = 'Import PDF' }: { label?: string })
   }
 
   const choose = (f: File) => {
-    if (f.type && f.type !== 'application/pdf') return toast.error('Choose a PDF file')
-    if (f.size > MAX_BYTES) return toast.error('File is larger than 15 MB')
+    if (f.type && f.type !== 'application/pdf') return toast.warning('Choose a PDF file')
+    if (f.size > MAX_BYTES) return toast.warning('File is larger than 15 MB')
     picked.current = f
     read(f)
   }

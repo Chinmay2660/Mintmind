@@ -1,5 +1,6 @@
 'use client'
 
+import { BackLink } from '@/components/shell/BackLink'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
@@ -55,15 +56,15 @@ export default function BankAccountDetail() {
 
   return (
     <div className="space-y-5">
-      <Link href="/dashboard/bank-accounts" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Bank accounts</Link>
+      <BackLink href="/dashboard/bank-accounts" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Bank accounts</BackLink>
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div><h2 className="text-xl font-semibold">{acc.nickname || acc.bankName}</h2><p className="text-sm text-muted-foreground">{acc.type === 'cash' ? 'Cash in hand' : `${acc.bankName} · ${ACCOUNT_TYPES.find((t) => t.value === acc.type)?.label}`}</p></div>
+        <div><h2 className="text-xl font-semibold">{acc.nickname || acc.bankName}</h2><p className="text-sm text-muted-foreground">{acc.type === 'cash' ? 'Cash wallet' : `${acc.bankName} · ${ACCOUNT_TYPES.find((t) => t.value === acc.type)?.label}`}</p></div>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" onClick={() => setDlg('balance')}><RefreshCw className="mr-1.5 h-4 w-4" />Update balance</Button>
           <Button size="sm" variant="outline" onClick={() => setEntry('income')}><Plus className="mr-1.5 h-4 w-4" />Income</Button>
           <Button size="sm" variant="outline" onClick={() => setEntry('transfer')}>Transfer</Button>
           <Button size="sm" variant="outline" onClick={() => setDlg('edit')}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button>
-          <Button size="sm" variant="outline" onClick={() => setDlg('delete')}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button>
+          {acc.type !== 'cash' && <Button size="sm" variant="outline" onClick={() => setDlg('delete')}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button>}
         </div>
       </div>
 
@@ -71,12 +72,12 @@ export default function BankAccountDetail() {
         <Stat label="Current balance" value={<Money value={acc.currentBalance} />} />
         {acc.type !== 'cash' && <Stat label="Available balance" value={<Money value={availableBalance(acc)} />} hint={mabShortfall(acc) > 0 ? <span className="text-warning">₹{mabShortfall(acc).toLocaleString('en-IN')} below MAB</span> : `Current − MAB (${acc.mab ? '₹' + Number(acc.mab).toLocaleString('en-IN') : 'none set'})`} />}
         <Stat label="Last updated" value={formatDate(acc.lastUpdated)} />
-        {acc.type !== 'cash' && <Stat label="Account holder" value={<CopyValue value={acc.holderName} label="Account holder" />} />}
+        {acc.type === 'joint' && <Stat label="Joint holders" value={<CopyValue value={acc.holderName} label="Account holder" />} />}
       </div>
-      {acc.type !== 'cash' && <Panel title="Account details" action={<Button size="sm" variant="outline" onClick={() => { const t = [`Bank: ${acc.bankName}`, `Account holder: ${acc.holderName}`, `Account number: ${acc.accountNumber}`, acc.ifsc ? `IFSC: ${acc.ifsc}` : ''].filter(Boolean).join('\n'); navigator.clipboard.writeText(t).then(() => toast.success('Bank details copied'), () => toast.error('Could not copy')) }}>Copy all details</Button>}>
+      {acc.type !== 'cash' && <Panel title="Account details" action={<Button size="sm" variant="outline" onClick={() => { const t = [`Bank: ${acc.bankName}`, acc.holderName ? `Account holder: ${acc.holderName}` : '', `Account number: ${acc.accountNumber}`, acc.ifsc ? `IFSC: ${acc.ifsc}` : ''].filter(Boolean).join('\n'); navigator.clipboard.writeText(t).then(() => toast.success('Bank details copied'), () => toast.error('Could not copy')) }}>Copy all details</Button>}>
         <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
           <div><dt className="text-xs text-muted-foreground">Bank</dt><dd><CopyValue value={acc.bankName} label="Bank name" /></dd></div>
-          <div><dt className="text-xs text-muted-foreground">Account holder</dt><dd><CopyValue value={acc.holderName} label="Account holder" /></dd></div>
+          {acc.type === 'joint' && <div><dt className="text-xs text-muted-foreground">Joint holders</dt><dd><CopyValue value={acc.holderName} label="Joint holders" /></dd></div>}
           <div><dt className="text-xs text-muted-foreground">Account number</dt><dd><CopyValue value={acc.accountNumber} label="Account number" mono /></dd></div>
           <div><dt className="text-xs text-muted-foreground">IFSC</dt><dd><CopyValue value={acc.ifsc} label="IFSC" mono /></dd></div>
           <div className="sm:col-span-2 lg:col-span-4"><dt className="text-xs text-muted-foreground">Notes</dt><dd>{acc.notes || '-'}</dd></div>

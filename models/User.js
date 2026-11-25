@@ -29,6 +29,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
   },
   passwordHash: { type: String, select: false },
+  // Sign-in tokens carry this number. Changing a password raises it, which ends every older session.
+  tokenVersion: { type: Number, default: 0 },
+  // A pending password reset: only a hash of the emailed token is kept, and it expires.
+  passwordReset: { type: { hash: String, expiresAt: Date }, select: false },
   mfa: {
     enabled: { type: Boolean, default: false },
     secretEnc: { type: String, select: false },

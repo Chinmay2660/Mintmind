@@ -1,5 +1,10 @@
 'use client'
 
+import { toastProblem } from '@/lib/notify'
+import { TabBar } from '@/components/ui/tab-bar'
+import { CategoryCarousel } from '@/components/ui/category-carousel'
+import { passwordIcon } from '@/lib/categoryIcons'
+import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Copy, Download, Eye, EyeOff, FileText, Fingerprint, HeartHandshake, KeyRound, Lock, Pencil, Plus, RefreshCw, Search, ShieldCheck, Star, Trash2, Upload, Wand2 } from 'lucide-react'
@@ -20,8 +25,8 @@ import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Select, Foot
 import { formatDate } from '@/lib/wealth/format'
 import { cn } from '@/lib/utils'
 import { Slider } from '@/components/ui/slider'
-import { TabBar } from '@/components/ui/tab-bar'
 import { Checkbox } from '@/components/ui/checkbox'
+import { copySecret } from '@/lib/vault/clipboard'
 
 const CATEGORIES = ['Banking', 'Email', 'Social', 'Shopping', 'Work', 'Entertainment', 'Government', 'Other']
 /** Extra sign-in step a login needs besides the password. Only the type of step is recorded; never store an authenticator secret here. */
@@ -162,7 +167,7 @@ function LockScreen({ meta, isDemo, bioOk, onSetup, onUnlock, onMetaChange, reen
       <Panel title="Save your recovery key" className="mx-auto max-w-md">
         <p className="mb-3 text-sm text-muted-foreground">This is the only way to regain access if you forget your master password. We cannot recover it for you. Store it somewhere safe and offline.</p>
         <code className="block select-all rounded-lg bg-muted p-3 text-center text-lg tracking-wider">{recKey}</code>
-        <div className="mt-4 flex gap-2"><Button variant="outline" onClick={() => { navigator.clipboard.writeText(recKey); toast.success('Copied') }}><Copy className="mr-2 h-4 w-4" />Copy</Button>
+        <div className="mt-4 flex gap-2"><Button variant="outline" onClick={async () => { try { await copySecret(recKey); toast.success('Recovery key copied. It clears from the clipboard in 20 seconds where your browser allows it. Save it somewhere safe first.') } catch { toast.error('Could not copy. Select the key and copy it by hand.') } }}><Copy className="mr-2 h-4 w-4" />Copy</Button>
           <Button onClick={async () => { const p = pendingSetup; setRecKey(null); setPendingSetup(null); if (p.existing) { await onUnlock({ key: p.key, bits: p.bits }) } else await onSetup(p.meta, p.key, p.bits) }}>I&apos;ve saved it, continue</Button></div>
       </Panel>
     )
@@ -202,15 +207,16 @@ function LockScreen({ meta, isDemo, bioOk, onSetup, onUnlock, onMetaChange, reen
 
 function Unlocked({ items, session, meta, bioOk, onLock, onSave, onDelete, db, onMeta, reload }: { items: Item[]; session: { key: CryptoKey; bits: ArrayBuffer }; meta: any; bioOk: boolean; onLock: () => void; onSave: (i: Partial<Item>) => Promise<void>; onDelete: (id: string) => Promise<void>; db: any; onMeta: (m: any) => Promise<void>; reload: () => Promise<void> }) {
   const { data } = useWealth()
-  const [q, setQ] = useState(''); const [cat, setCat] = useState('All'); const [favOnly, setFavOnly] = useState(false)
+  const [q, setQ] = useState(''); const [cat, setCat] = useState(''); const [favOnly, setFavOnly] = useState(false)
   const [edit, setEdit] = useState<null | { row?: Item; type: 'login' | 'note' }>(null); const [del, setDel] = useState<Item | null>(null); const [gen, setGen] = useState(false)
   const [shown, setShown] = useState<Record<string, boolean>>({})
   const fileRef = useRef<HTMLInputElement>(null)
-  const list = useMemo(() => items.filter((i) => (cat === 'All' || i.category === cat) && (!favOnly || i.favourite) && (!q || [i.name, i.username, i.url, i.member].some((x) => x?.toLowerCase().includes(q.toLowerCase())))).sort((a, b) => Number(b.favourite) - Number(a.favourite) || a.name.localeCompare(b.name)), [items, q, cat, favOnly])
+  // one category at a time (the first that has items to start with); typing a search looks in every category
+  const activeCat = cat || (CATEGORIES.find((c) => items.some((i) => i.category === c)) ?? CATEGORIES[0])
+  const list = useMemo(() => items.filter((i) => (q ? true : i.category === activeCat) && (!favOnly || i.favourite) && (!q || [i.name, i.username, i.url, i.member].some((x) => x?.toLowerCase().includes(q.toLowerCase())))).sort((a, b) => Number(b.favourite) - Number(a.favourite) || a.name.localeCompare(b.name)), [items, q, activeCat, favOnly])
 
   const copy = async (text: string, what: string) => {
-    await navigator.clipboard.writeText(text); toast.success(`${what} copied. Clipboard clears in 20s.`)
-    setTimeout(async () => { try { if ((await navigator.clipboard.readText()) === text) await navigator.clipboard.writeText('') } catch { try { await navigator.clipboard.writeText('') } catch { /* ignore */ } } }, 20000)
+    await copySecret(text); toast.success(`${what} copied. It clears from the clipboard in 20 seconds where your browser allows it.`)
   }
   const members = ['Family', ...data.members.map((m: any) => m.name)]
 
@@ -224,7 +230,7 @@ function Unlocked({ items, session, meta, bioOk, onLock, onSave, onDelete, db, o
       const j = JSON.parse(await f.text()); if (j.app !== 'mintmind-vault') throw new Error('Not a vault export')
       if (j.meta.salt !== meta.salt) throw new Error('This export was made with a different master password. Restore it by recreating the vault with that password.')
       for (const r of j.items) await db.vaultItems.put(r); await reload(); toast.success('Vault items imported')
-    } catch (e) { toast.error(e instanceof Error ? e.message : 'Import failed') }
+    } catch (e) { toastProblem(e, 'Import failed') }
   }
 
   return (
@@ -243,9 +249,8 @@ function Unlocked({ items, session, meta, bioOk, onLock, onSave, onDelete, db, o
         <div className="relative min-w-52 flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input aria-label="Search vault" className="pl-9" placeholder="Search name, username, website" value={q} onChange={(e) => setQ(e.target.value)} /></div>
         <Button variant={favOnly ? 'default' : 'outline'} aria-pressed={favOnly} onClick={() => setFavOnly(!favOnly)}><Star className="mr-1.5 h-4 w-4" />Favourites</Button>
       </div>
-      <div className="flex flex-wrap gap-1.5">
-        {['All', ...CATEGORIES].map((c) => <button key={c} type="button" aria-pressed={cat === c} onClick={() => setCat(c)} className={cn('rounded-full border px-3 py-1 text-xs font-medium transition-colors', cat === c ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{c}</button>)}
-      </div>
+      <CategoryCarousel label="Password categories" value={activeCat} onChange={setCat} items={CATEGORIES.map((c) => ({ key: c, label: c, icon: passwordIcon(c), count: items.filter((i) => i.category === c).length }))} />
+      {q && <p className="-mt-2 text-xs text-muted-foreground">Searching every category.</p>}
 
       {list.length === 0 ? <Empty title={items.length ? 'No matches' : 'Your vault is empty'} description="Add logins and secure notes. They are encrypted before being stored." /> : (
         <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -258,7 +263,7 @@ function Unlocked({ items, session, meta, bioOk, onLock, onSave, onDelete, db, o
 
       <Panel title="Vault security">
         <div className="flex flex-wrap gap-2">
-          {bioOk && !meta.biometric && <Button variant="outline" onClick={async () => { try { const b = await enableBiometric(session.bits); await onMeta({ ...meta, biometric: b }); toast.success('Biometric unlock enabled on this device') } catch (e) { toast.error(e instanceof Error ? e.message : 'Could not enable biometrics') } }}><Fingerprint className="mr-2 h-4 w-4" />Enable biometric unlock</Button>}
+          {bioOk && !meta.biometric && <Button variant="outline" onClick={async () => { try { const b = await enableBiometric(session.bits); await onMeta({ ...meta, biometric: b }); toast.success('Biometric unlock enabled on this device') } catch (e) { toastProblem(e, 'Could not enable biometrics') } }}><Fingerprint className="mr-2 h-4 w-4" />Enable biometric unlock</Button>}
           {meta.biometric && <Button variant="outline" onClick={async () => { const { biometric: _b, ...rest } = meta; void _b; await onMeta(rest); toast.success('Biometric unlock disabled') }}>Disable biometric unlock</Button>}
           <Button variant="outline" onClick={exportEnc}><Download className="mr-2 h-4 w-4" />Export encrypted</Button>
           <Button variant="outline" onClick={() => fileRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import encrypted</Button>
@@ -321,6 +326,7 @@ const TAB_ICON = { passwords: KeyRound, documents: FileText, legacy: HeartHandsh
 /** The Vault hub: passwords, documents and the digital legacy plan in one place.
  *  Tabs stay mounted once opened so the unlocked vault key survives switching tabs (the legacy bundle needs it). */
 export default function VaultPage() {
+  usePrivacyMode() // draws amounts again when balances are hidden or shown
   const { isEnabled } = useFeatures()
   const tabs = (['passwords', 'documents', 'legacy'] as VaultTab[]).filter((t) => t === 'passwords' ? isEnabled('vault') : t === 'documents' ? isEnabled('documents') : isEnabled('digital_legacy'))
   const [tab, setTab] = useState<VaultTab>('passwords')

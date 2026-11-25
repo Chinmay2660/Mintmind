@@ -1,5 +1,6 @@
 'use client'
 
+import { shortAccountName } from '@/lib/wealth/accountName'
 import { useState } from 'react'
 import { toISO } from '@/lib/wealth/calc'
 import { Input } from '@/components/ui/input'
@@ -71,6 +72,20 @@ export function InvestmentForm({ fund, onClose, onSave }: { fund: any; onClose: 
   )
 }
 
+export function RedeemForm({ fund, onClose, onSave }: { fund: any; onClose: () => void; onSave: (v: { date: string; units: number; nav?: number; amount?: number }) => Promise<void> }) {
+  const [f, setF] = useState({ date: toISO(new Date()), units: '', nav: String(fund.currentNav || ''), amount: '' })
+  const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
+  return (
+    <FormDialog open onOpenChange={(o) => !o && onClose()} title="Record a sale" description={`You hold ${fund.units} units. The gain is worked out at your average cost.`}
+      onSubmit={async () => { await onSave({ date: f.date, units: Number(f.units), nav: Number(f.nav) || undefined, amount: Number(f.amount) || undefined }) }}>
+      <Field label="Date">{(id) => <DateInput id={id} required max={toISO(new Date())} value={f.date} onChange={set('date')} />}</Field>
+      <Field label="Units sold">{(id) => <Input id={id} type="number" step="any" min="0" required value={f.units} onChange={set('units')} />}</Field>
+      <Field label="Sold at NAV (₹)" hint="Leave the amount empty to use units × NAV.">{(id) => <Input id={id} type="number" step="any" min="0" value={f.nav} onChange={set('nav')} />}</Field>
+      <Field label="Amount received (₹, optional)">{(id) => <Input id={id} type="number" step="any" min="0" value={f.amount} onChange={set('amount')} />}</Field>
+    </FormDialog>
+  )
+}
+
 export function SipForm({ row, funds, onClose, onSave }: { row?: any; funds: any[]; onClose: () => void; onSave: (r: any) => Promise<void> }) {
   const { data } = useWealth()
   const [f, setF] = useState({ accountId: row?.accountId || '',
@@ -93,7 +108,7 @@ export function SipForm({ row, funds, onClose, onSave }: { row?: any; funds: any
       <Field label="Frequency">{(id) => <Select id={id} value={f.frequency} onChange={set('frequency')}><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="yearly">Yearly</option></Select>}</Field>
       <Field label="Debit day of month">{(id) => <Input id={id} type="number" min="1" max="31" value={f.debitDay} onChange={set('debitDay')} />}</Field>
       <Field label="Status">{(id) => <Select id={id} value={f.status} onChange={set('status')}><option value="active">Active</option><option value="paused">Paused</option><option value="stopped">Stopped</option><option value="completed">Completed</option></Select>}</Field>
-      <Field label="Debit from account" hint="When you mark an instalment paid, this account is debited." className="full">{(id) => <Select id={id} value={f.accountId} onChange={set('accountId')}><option value="">Do not link</option>{data.bankAccounts.filter((a: any) => a.type !== 'cash').map((a: any) => <option key={a.id} value={a.id}>{a.nickname || a.bankName}</option>)}</Select>}</Field>
+      <Field label="Debit from account" hint="When you mark an instalment paid, this account is debited." className="full">{(id) => <Select id={id} value={f.accountId} onChange={set('accountId')}><option value="">Do not link</option>{data.bankAccounts.filter((a: any) => a.type !== 'cash').map((a: any) => <option key={a.id} value={a.id}>{shortAccountName(a, data.bankAccounts)}</option>)}</Select>}</Field>
       <Field label="Start date">{(id) => <DateInput id={id} required value={f.startDate} onChange={set('startDate')} />}</Field>
       <Field label="End date (optional)">{(id) => <DateInput id={id} value={f.endDate} onChange={set('endDate')} />}</Field>
       <Field label="Total instalments">{(id) => <Input id={id} type="number" min="0" value={f.instalmentsTotal} onChange={set('instalmentsTotal')} />}</Field>

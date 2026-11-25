@@ -1,6 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { toastProblem } from '@/lib/notify'
+import { shortAccountName } from '@/lib/wealth/accountName'
+import { policyIcon } from '@/lib/categoryIcons'
+import { CategoryCarousel } from '@/components/ui/category-carousel'
+import { usePrivacyMode } from '@/contexts/PrivacyContext'
+import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Check, ChevronRight, Paperclip, Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
@@ -27,17 +33,25 @@ import { TabBar } from '@/components/ui/tab-bar'
 const typeLabel = (v: string) => POLICY_TYPES.find((t) => t.value === v)?.label ?? v
 
 export default function InsurancePage() {
+  usePrivacyMode() // draws amounts again when balances are hidden or shown
   const { ready, data, db } = useWealth()
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter] = useState('')
   const [dlg, setDlg] = useState<null | { kind: 'edit' | 'del'; row?: any }>(null)
   const [detail, setDetail] = useState<string | null>(null)
+  const router = useRouter()
+  const [fromLink, setFromLink] = useState(false) // opened straight to one policy (from the Overview): Back returns there
+  useEffect(() => { const id = new URLSearchParams(window.location.search).get('policy'); if (id) { setDetail(id); setFromLink(true) } }, [])
+  const closeDetail = () => { if (fromLink) router.back(); else setDetail(null) }
   const today = useMemo(() => new Date(), [])
   const cover = useMemo(() => coverageTotals(data.policies, today), [data.policies, today])
-  useDetailCrumb(detail ? data.policies.find((x: any) => x.id === detail)?.policyName ?? null : null, () => setDetail(null))
+  useDetailCrumb(detail && !fromLink ? data.policies.find((x: any) => x.id === detail)?.policyName ?? null : null, () => setDetail(null))
   if (!ready) return <LoadingBlock className="h-64" />
 
   const annual = data.policies.reduce((s, p) => s + annualPremium(p), 0)
-  const list = data.policies.filter((p) => filter === 'all' || p.type === filter)
+  // one type at a time; it opens on the first type that has a policy
+  const typeCount = (t: string) => data.policies.filter((p: any) => p.type === t).length
+  const activeType = POLICY_TYPES.some((t) => t.value === filter) ? filter : (POLICY_TYPES.find((t) => typeCount(t.value) > 0)?.value ?? POLICY_TYPES[0].value)
+  const list = data.policies.filter((p: any) => p.type === activeType)
 
   return (
     <div className="space-y-5">
@@ -48,11 +62,7 @@ export default function InsurancePage() {
         {Object.entries(cover.byType).slice(0, 2).map(([k, v]) => <Stat key={k} label={`${typeLabel(k)} cover`} value={<Money value={v} compact />} />)}
       </div>
 
-      {!detail && <div className="flex flex-wrap gap-1.5">
-        {[{ value: 'all', label: 'All' }, ...POLICY_TYPES].map((t) => (
-          <button key={t.value} type="button" aria-pressed={filter === t.value} onClick={() => setFilter(t.value)} className={cn('rounded-full border px-3 py-1 text-xs font-medium', filter === t.value ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{t.label}</button>
-        ))}
-      </div>}
+      {!detail && <CategoryCarousel label="Policy type" value={activeType} onChange={setFilter} items={POLICY_TYPES.map((t) => ({ key: t.value, label: t.label, icon: policyIcon(t.value), count: typeCount(t.value) }))} />}
 
       {!detail && (list.length === 0 ? <Empty title="No policies" action={<Button onClick={() => setDlg({ kind: 'edit' })}>Add policy</Button>} /> : (
         <div className="grid gap-3 lg:grid-cols-2">
@@ -63,8 +73,8 @@ export default function InsurancePage() {
 
       {detail && (() => { const p = data.policies.find((x: any) => x.id === detail); return p ? (
         <PolicyDetail p={p} today={today} doc={data.documents.find((x: any) => x.id === p.documentId)} history={data.premiums.filter((h: any) => h.policyId === p.id).sort((x: any, y: any) => y.date.localeCompare(x.date)).slice(0, 5)}
-          onClose={() => setDetail(null)}
-          onPaid={async () => { try { await recordPremiumPaid(db, p.id); toast.success('Premium recorded; next due date moved forward') } catch (e) { toast.error(e instanceof Error ? e.message : 'Could not record the premium') } }}
+          onClose={closeDetail}
+          onPaid={async () => { try { await recordPremiumPaid(db, p.id); toast.success('Premium recorded; next due date moved forward') } catch (e) { toastProblem(e, 'Could not record the premium') } }}
           onEdit={() => { setDetail(null); setDlg({ kind: 'edit', row: p }) }}
           onDelete={() => { setDetail(null); setDlg({ kind: 'del', row: p }) }} />
       ) : null })()}
@@ -195,7 +205,7 @@ function PolicyForm({ row, members, documents, accounts, onClose, onSave }: { ro
           <Field label="End / expiry date">{(id) => <DateInput id={id} value={f.endDate} onChange={set('endDate')} />}</Field>
         </> },
         { title: 'Links (optional)', description: 'Connect the policy to an account and its paperwork.', content: <>
-          <Field label="Pay premium from" hint="Marking a premium paid debits this account." className="full">{(id) => <Select id={id} value={f.accountId} onChange={set('accountId')}><option value="">Do not link</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.nickname || a.bankName}</option>)}</Select>}</Field>
+          <Field label="Pay premium from" hint="Marking a premium paid debits this account." className="full">{(id) => <Select id={id} value={f.accountId} onChange={set('accountId')}><option value="">Do not link</option>{accounts.map((a) => <option key={a.id} value={a.id}>{shortAccountName(a, accounts)}</option>)}</Select>}</Field>
           <Field label="Attached document" className="full">{(id) => <Select id={id} value={f.documentId} onChange={set('documentId')}><option value="">None (upload under Documents first)</option>{documents.filter((d) => d.category === 'Insurance').concat(documents.filter((d) => d.category !== 'Insurance')).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</Select>}</Field>
         </> },
       ]}

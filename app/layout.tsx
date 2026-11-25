@@ -32,7 +32,7 @@ export const metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: [{ media: "(prefers-color-scheme: light)", color: "#F6F0E9" }, { media: "(prefers-color-scheme: dark)", color: "#25231F" }],
+  themeColor: [{ media: "(prefers-color-scheme: light)", color: "#F6F6F8" }, { media: "(prefers-color-scheme: dark)", color: "#120F1A" }],
   viewportFit: "cover",
   // Chrome on Android resizes the page when the keyboard opens, so bottom sheets stay above it (iOS is handled by KeyboardAware)
   interactiveWidget: "resizes-content",
@@ -43,7 +43,7 @@ import { KeyboardAware } from "@/components/shell/KeyboardAware";
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning data-style="paper" data-retro="true">
+    <html lang="en" suppressHydrationWarning data-style="purple">
       <head suppressHydrationWarning>
         <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
         <link rel="preload" href="/fonts/jetbrains-mono-400.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />

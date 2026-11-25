@@ -1,5 +1,6 @@
 'use client'
 
+import { BackLink } from '@/components/shell/BackLink'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
@@ -7,14 +8,15 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 import { ArrowLeft, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
-import { addFundInvestment, deleteFund, save, updateNav } from '@/lib/wealth/actions'
+import { addFundInvestment, deleteFund, redeemFund, save, updateNav } from '@/lib/wealth/actions'
+import { realisedGains } from '@/lib/wealth/realised'
 import { fundMetrics, nextSipDate } from '@/lib/wealth/calc'
 import { cap, formatDate, formatINR, formatPct } from '@/lib/wealth/format'
 import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Delta, Empty, Metric, LoadingBlock, Panel, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle } from '@/components/wealth/kit'
-import { FundForm, InvestmentForm, NavForm } from '@/components/wealth/FundForms'
+import { FundForm, InvestmentForm, NavForm, RedeemForm } from '@/components/wealth/FundForms'
 import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 
@@ -23,7 +25,7 @@ export default function FundDetail() {
   const router = useRouter()
   const { ready, data, db } = useWealth()
   const { privacyMode } = usePrivacyMode()
-  const [dlg, setDlg] = useState<null | 'edit' | 'nav' | 'inv' | 'del'>(null)
+  const [dlg, setDlg] = useState<null | 'edit' | 'nav' | 'inv' | 'del' | 'sell'>(null)
   const f = data.funds.find((x) => x.id === id)
   const txns = useMemo(() => data.fundTxns.filter((t) => t.fundId === id).sort((a, b) => a.date.localeCompare(b.date)), [data.fundTxns, id])
   const sips = data.sips.filter((s) => s.fundId === id)
@@ -43,15 +45,17 @@ export default function FundDetail() {
   if (!ready) return <LoadingBlock className="h-64" />
   if (!f) return <Empty title="Fund not found" action={<Link className="text-primary underline" href="/dashboard/mutual-funds">Back to funds</Link>} />
   const m = fundMetrics(f, data.fundTxns)
+  const real = realisedGains(txns)
 
   return (
     <div className="space-y-5">
-      <Link href="/dashboard/mutual-funds" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Mutual funds</Link>
+      <BackLink href="/dashboard/mutual-funds" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Mutual funds</BackLink>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0"><h2 className="text-xl font-semibold">{f.name}</h2><p className="flex flex-wrap items-center gap-x-1 text-sm text-muted-foreground">Folio <CopyValue value={f.folio} label="Folio number" mono /></p></div>
         <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:flex-wrap">
           <Button size="sm" className="max-sm:h-10" onClick={() => setDlg('nav')}><RefreshCw className="mr-1.5 h-4 w-4" />Update NAV</Button>
           <Button size="sm" variant="outline" className="hidden sm:inline-flex" onClick={() => setDlg('inv')}><Plus className="mr-1.5 h-4 w-4" />Add investment</Button>
+          <Button size="sm" variant="outline" disabled={!(f.units > 0)} onClick={() => setDlg('sell')}>Record sale</Button>
           <Button size="sm" variant="outline" onClick={() => setDlg('edit')}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button>
           <Button size="sm" variant="outline" onClick={() => setDlg('del')}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button>
         </div>
@@ -61,6 +65,7 @@ export default function FundDetail() {
         <Stat label="Current value" value={<Money value={m.value} />} />
         <Stat label="Return" value={<Metric amount={m.absReturn} pct={m.absReturnPct} className="text-base" />} />
         <Stat label="XIRR" value={<Metric pct={m.xirrPct} hint="Needs at least two dated cashflows" className="text-xl font-semibold" />} />
+        {real.hasSales && <Stat label="Realised gain" info="Profit or loss on units you have already sold, at your average cost. Tax statements use FIFO lots, so they can differ." value={<Metric amount={real.realised} compact={false} className="text-xl font-semibold" />} hint={real.incomplete ? 'Some purchase history is missing, so this is partial' : `from ${real.sells.length} ${real.sells.length === 1 ? 'sale' : 'sales'}`} />}
         <Stat label="Units" value={f.units} />
         <Stat label="Average NAV" value={`₹${m.avgNav}`} />
         <Stat label="Current NAV" value={`₹${f.currentNav}`} hint={`as of ${formatDate(f.navDate)} (${f.navSource})`} />
@@ -99,6 +104,7 @@ export default function FundDetail() {
       </div>
       {dlg === 'edit' && <FundForm row={f} onClose={() => setDlg(null)} onSave={async (r) => { await save(db, 'funds', r); toast.success('Fund updated') }} />}
       {dlg === 'nav' && <NavForm fund={f} onClose={() => setDlg(null)} onSave={async (nav, date) => { await updateNav(db, f.id, nav, date); toast.success('NAV updated') }} />}
+      {dlg === 'sell' && <RedeemForm fund={f} onClose={() => setDlg(null)} onSave={async (v) => { const r = await redeemFund(db, f.id, v); toast.success(r.gain >= 0 ? `Sale recorded. Realised gain ${formatINR(r.gain)}` : `Sale recorded. Realised loss ${formatINR(Math.abs(r.gain))}`) }} />}
       {dlg === 'inv' && <InvestmentForm fund={f} onClose={() => setDlg(null)} onSave={async (v) => { await addFundInvestment(db, f.id, v); toast.success('Investment added') }} />}
       <ConfirmDialog open={dlg === 'del'} onOpenChange={(o) => !o && setDlg(null)} title="Delete this fund?" description="Its transactions and SIPs are removed too." confirmLabel="Delete" variant="destructive" onConfirm={async () => { await deleteFund(db, f.id); toast.success('Fund deleted'); router.push('/dashboard/mutual-funds') }} />
     </div>

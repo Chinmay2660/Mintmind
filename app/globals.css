@@ -172,7 +172,7 @@
     --chart-1: 277 100% 66%;
     --chart-grid: 256 18% 23%;
   }
-  [data-style='purple'].dark .text-primary, [data-style='purple'].dark .hover:text-primary:hover { color: hsl(277 100% 74%); }
+  [data-style='purple'].dark .text-primary, [data-style='purple'].dark .hover\:text-primary:hover { color: hsl(277 100% 74%); }
 }
 
 @layer base {
@@ -186,7 +186,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 2% 13%;
     --sidebar: 0 0% 100%;
-    --primary: 17 92% 42%;
+    --primary: 17 92% 39%;
     --primary-foreground: 0 0% 100%;
     --secondary: 240 4% 93%;
     --secondary-foreground: 240 2% 13%;
@@ -336,7 +336,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 35 25% 12%;
     --sidebar: 0 0% 100%;
-    --primary: 30 95% 36%;
+    --primary: 30 95% 33%;
     --primary-foreground: 0 0% 100%;
     --secondary: 35 21% 94%;
     --secondary-foreground: 35 25% 12%;
@@ -1238,3 +1238,23 @@ html { -webkit-text-size-adjust: 100%; scroll-padding-top: 5rem; }
 @keyframes splash-bar { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
 @keyframes splash-out { to { opacity: 0; visibility: hidden; pointer-events: none; } }
 .splash { animation: splash-out 0.3s ease 8s forwards; }
+
+/* Touch targets: on a phone, small buttons and tabs get an invisible hit area of at least 40px, without changing how they look.
+   This sits in the base layer so any Tailwind class (fixed, absolute, after:...) on a button still wins over it. */
+@layer base {
+  @media (pointer: coarse), (max-width: 767px) {
+    :where(button, [role='tab'], [role='switch'], a[class*='text-xs']):not(:disabled) { position: relative; }
+    :where(button, [role='tab'], [role='switch'], a[class*='text-xs']):not(:disabled)::after {
+      content: '';
+      position: absolute;
+      inset-block: min(0px, calc((100% - 40px) / 2));
+      inset-inline: min(0px, calc((100% - 40px) / 2));
+    }
+  }
+}
+
+/* Dark Violet: the accent colour is too dark to read as text on the dark surfaces (3.4 : 1). Text and icons that use it get a lighter
+   purple (about 7 : 1). This sits outside the layers on purpose, so it beats Tailwind's own text-primary class. Buttons keep the full accent. */
+[data-style='purple'].dark .text-primary,
+[data-style='purple'].dark .hover\:text-primary:hover,
+[data-style='purple'].dark .group:hover .group-hover\:text-primary { color: hsl(277 100% 76%); }

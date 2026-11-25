@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export interface TabItem { key: string; label: string; icon?: LucideIcon }
+export interface TabItem { key: string; label: string; icon?: LucideIcon; badge?: number }
 
 /**
  * The one tab row used by every page. Two or three tabs share the width evenly on phones; longer rows scroll sideways
@@ -70,6 +70,7 @@ export function TabBar({ label, tabs, value, onChange, className }: { label: str
             >
               {Icon && <Icon className="h-4 w-4" aria-hidden />}
               {t.label}
+              {t.badge ? <span className="rounded-full bg-primary/15 px-1.5 text-[11px] font-semibold leading-5 text-primary" aria-label={`${t.badge} waiting`}>{t.badge}</span> : null}
               <span aria-hidden className={cn('absolute inset-x-2 bottom-0 h-0.5 rounded-full transition-colors', on ? 'bg-primary' : 'bg-transparent')} />
             </button>
           )

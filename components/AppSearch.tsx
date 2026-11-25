@@ -2,13 +2,16 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeftRight, CreditCard, Landmark, PieChart, Scale, Search, Shield, Target, Wallet, X } from 'lucide-react'
+import axios from 'axios'
+import { ArrowLeftRight, CreditCard, FileText, KeyRound, Landmark, PieChart, Scale, Search, Shield, Target, Wallet, X } from 'lucide-react'
 import {
   DASHBOARD_SEARCH_ALL,
   type SearchItem,
 } from '@/lib/constants/dashboardNav'
 import { useAppSearch } from '@/contexts/AppSearchContext'
 import { useWealth } from '@/lib/wealth/WealthContext'
+import { getVaultSession } from '@/lib/vault/session'
+import { decryptJson } from '@/lib/vault/crypto'
 import { formatINR } from '@/lib/wealth/format'
 import { matchesAll } from '@/lib/search'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
@@ -19,8 +22,8 @@ function matchesQuery(item: SearchItem, query: string): boolean {
 }
 
 type Found = { key: string; name: string; sub?: string; path: string; icon: SearchItem['icon']; group: string }
-const GROUP_LABEL: Record<string, string> = { pages: 'Pages', actions: 'Quick actions', transactions: 'Transactions', accounts: 'Accounts and cards', holdings: 'Investments, assets and loans', goals: 'Goals and cover' }
-const GROUP_ORDER = ['pages', 'actions', 'transactions', 'accounts', 'holdings', 'goals']
+const GROUP_LABEL: Record<string, string> = { pages: 'Pages', actions: 'Quick actions', transactions: 'Transactions', accounts: 'Accounts and cards', holdings: 'Investments, assets and loans', goals: 'Goals and cover', documents: 'Documents', vault: 'Vault (unlocked)' }
+const GROUP_ORDER = ['pages', 'actions', 'transactions', 'accounts', 'holdings', 'goals', 'documents', 'vault']
 // every word of the search has to appear somewhere in the record, in any order
 const has = (q: string, ...parts: unknown[]) => matchesAll(q, ...parts)
 const cap = <T,>(list: T[], n = 5) => list.slice(0, n)
@@ -33,7 +36,40 @@ export default function AppSearch() {
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
-  const { data } = useWealth()
+  const { data, isDemo, db } = useWealth()
+  const [vaultTitles, setVaultTitles] = useState<{ id: string; name: string; category: string }[]>([])
+
+  // Vault: only while it is unlocked, and only item names and categories. Decrypted here for this search, held in memory, dropped when the search closes.
+  // Usernames, passwords, notes and links are never read, and nothing is written anywhere.
+  useEffect(() => {
+    const session = getVaultSession()
+    if (!isOpen || !session || !db) { setVaultTitles([]); return }
+    let live = true
+    ;(async () => {
+      const out: { id: string; name: string; category: string }[] = []
+      for (const r of await db.vaultItems.toArray()) { try { const it = await decryptJson(session.key, r); if (it?.name) out.push({ id: r.id, name: String(it.name), category: String(it.category || '') }) } catch { /* skip */ } }
+      if (live) setVaultTitles(out)
+    })()
+    return () => { live = false; setVaultTitles([]) }
+  }, [isOpen, db])
+  const [docs, setDocs] = useState<Found[]>([])
+
+  // Documents: the demo keeps them on this device; a real account asks the server, which searches names, file names, categories and notes. Only metadata is searched, never file contents.
+  useEffect(() => {
+    const q = query.trim()
+    if (!isOpen || q.length < 2) { setDocs([]); return }
+    if (isDemo) {
+      setDocs((data.documents as any[]).filter((d) => has(q, d.name, d.fileName, d.category, d.notes)).slice(0, 5).map((d) => ({ key: 'd' + d.id, name: d.name, sub: `Document · ${d.category}`, path: '/dashboard/vault?tab=documents', icon: FileText, group: 'documents' })))
+      return
+    }
+    let live = true
+    const t = setTimeout(() => {
+      axios.get('/api/drive/files', { params: { q, limit: 5 } })
+        .then((r) => { if (live) setDocs((r.data.documents as any[]).map((d) => ({ key: 'd' + d.id, name: d.name, sub: `Document · ${d.category}`, path: '/dashboard/vault?tab=documents', icon: FileText, group: 'documents' }))) })
+        .catch(() => { if (live) setDocs([]) })
+    }, 250)
+    return () => { live = false; clearTimeout(t) }
+  }, [query, isOpen, isDemo, data.documents])
 
   const results = useMemo<Found[]>(() => {
     const pages: Found[] = DASHBOARD_SEARCH_ALL.filter((item) => matchesQuery(item, query)).map((i) => ({ key: `${i.group}-${i.path}`, name: i.name, path: i.path, icon: i.icon, group: i.group === 'actions' ? 'actions' : 'pages' }))
@@ -49,15 +85,16 @@ export default function AppSearch() {
     ]
     const holdings: Found[] = [
       ...data.funds.filter((x: any) => has(q, x.name, x.fundHouse, x.category)).map((x: any) => ({ key: 'f' + x.id, name: x.name, sub: `Mutual fund · ${formatINR(x.currentValue)}`, path: `/dashboard/mutual-funds/${x.id}`, icon: PieChart, group: 'holdings' })),
-      ...data.assets.filter((x: any) => has(q, x.name, x.category)).map((x: any) => ({ key: 's' + x.id, name: x.name, sub: `Asset · ${x.category}`, path: '/dashboard/net-worth/manage', icon: Wallet, group: 'holdings' })),
+      ...data.assets.filter((x: any) => has(q, x.name, x.category)).map((x: any) => ({ key: 's' + x.id, name: x.name, sub: `Asset · ${x.category}`, path: '/dashboard/mutual-funds', icon: Wallet, group: 'holdings' })),
       ...data.liabilities.filter((x: any) => has(q, x.name, x.category)).map((x: any) => ({ key: 'l' + x.id, name: x.name, sub: `Loan · outstanding ${formatINR(Number(x.outstanding) || 0)}`, path: '/dashboard/net-worth/loans', icon: Scale, group: 'holdings' })),
     ]
     const more: Found[] = [
       ...data.goals.filter((x: any) => has(q, x.name)).map((x: any) => ({ key: 'g' + x.id, name: x.name, sub: 'Goal', path: '/dashboard/net-worth', icon: Target, group: 'goals' })),
       ...data.policies.filter((x: any) => has(q, x.name, x.insurer, x.type)).map((x: any) => ({ key: 'p' + x.id, name: x.name || x.insurer, sub: 'Insurance policy', path: '/dashboard/insurance', icon: Shield, group: 'goals' })),
     ]
-    return [...pages, ...cap(tx), ...cap(accounts), ...cap(holdings), ...cap(more)]
-  }, [query, data])
+    const vault: Found[] = vaultTitles.filter((v) => has(q, v.name, v.category)).slice(0, 5).map((v) => ({ key: 'v' + v.id, name: v.name, sub: `Vault · ${v.category || 'Item'}`, path: '/dashboard/vault', icon: KeyRound, group: 'vault' }))
+    return [...pages, ...cap(tx), ...cap(accounts), ...cap(holdings), ...cap(more), ...docs, ...vault]
+  }, [query, data, docs, vaultTitles])
 
   const grouped = useMemo(() => GROUP_ORDER.map((key) => ({ key, items: results.filter((r) => r.group === key) })).filter((g) => g.items.length), [results])
 
