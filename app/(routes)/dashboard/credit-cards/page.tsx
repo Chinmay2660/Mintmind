@@ -1,6 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { shortAccountName } from '@/lib/wealth/accountName'
+import { TabBar } from '@/components/ui/tab-bar'
+import { useEffect, useMemo, useState } from 'react'
 import { useDetailCrumb } from '@/components/shell/DetailCrumb'
 import { ArrowLeft, ChevronRight, CreditCard, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -16,13 +19,12 @@ import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, StepFormDialog, LoadingBlock, PageHeader, Panel, Progress, Select, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForPct, UsagePct } from '@/components/wealth/kit'
+import { Empty, Field, FormDialog, StepFormDialog, LoadingBlock, PageHeader, Panel, Progress, Select, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForPct, toneForCredit, UsagePct } from '@/components/wealth/kit'
 import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
 import { DebitCardsTab } from '@/components/wealth/DebitCards'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { cn } from '@/lib/utils'
 import { DateInput } from '@/components/ui/pickers'
-import { TabBar } from '@/components/ui/tab-bar'
 
 const NETWORKS = ['Visa', 'Mastercard', 'RuPay', 'American Express', 'Diners Club']
 
@@ -30,6 +32,10 @@ function CreditCardsTab() {
   const { ready, data, db } = useWealth()
   const { privacyMode } = usePrivacyMode()
   const [sel, setSel] = useState<string | null>(null)
+  const router = useRouter()
+  const [fromLink, setFromLink] = useState(false) // opened straight to one card (from the Overview): Back returns there
+  useEffect(() => { const id = new URLSearchParams(window.location.search).get('card'); if (id) { setSel(id); setFromLink(true) } }, [])
+  const closeSel = () => { if (fromLink) router.back(); else setSel(null) }
   const [dlg, setDlg] = useState<null | { kind: 'card' | 'pay' | 'del'; row?: any }>(null)
   const today = useMemo(() => new Date(), [])
   const t = useMemo(() => {
@@ -40,7 +46,7 @@ function CreditCardsTab() {
     return { limit, outstanding, available: limit - outstanding, util: cardUtilisation(limit, outstanding), monthSpend }
   }, [data.cards, data.expenses, today])
   const openCard = sel ? data.cards.find((c) => c.id === sel) : undefined
-  useDetailCrumb(openCard ? `${openCard.bank} ${openCard.cardName}` : null, () => setSel(null))
+  useDetailCrumb(openCard && !fromLink ? `${openCard.bank} ${openCard.cardName}` : null, () => setSel(null))
   if (!ready) return <LoadingBlock className="h-64" />
 
   const card = sel ? data.cards.find((c) => c.id === sel) : undefined
@@ -58,7 +64,7 @@ function CreditCardsTab() {
         <Stat label="Total limit" value={<Money value={t.limit} />} />
         <Stat label="Outstanding" value={<Money value={t.outstanding} />} />
         <Stat label="Available credit" value={<Money value={t.available} />} />
-        <Stat label="Utilisation" value={<UsagePct value={t.util} />} hint={<Progress value={t.util} tone={toneForPct(t.util)} label="Utilisation" />} />
+        <Stat label="Utilisation" value={<UsagePct value={t.util} />} hint={<Progress value={t.util} tone={toneForCredit(t.util)} label="Utilisation" />} />
       </div>
       <p className="text-xs text-muted-foreground">Card spend this month: <Money value={t.monthSpend} /></p>
       </section>
@@ -75,7 +81,7 @@ function CreditCardsTab() {
                     <div className="min-w-0"><p className="truncate font-medium">{c.bank} {c.cardName}</p><p className="text-xs text-muted-foreground">{c.network} · •••• {String(c.cardNumber).slice(-4)}</p></div>
                     <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" /></div>
                   <div className="mt-4 flex items-end justify-between"><div><p className="text-xs text-muted-foreground">Outstanding</p><p className="text-xl font-semibold"><Money value={c.outstanding} /></p></div><p className="text-sm text-muted-foreground">{u}% of <Money value={c.limit} compact /></p></div>
-                  <div className="mt-2"><Progress value={u} tone={toneForPct(u)} label={`${c.cardName} utilisation`} /></div>
+                  <div className="mt-2"><Progress value={u} tone={toneForCredit(u)} label={`${c.cardName} utilisation`} /></div>
                   <p className="mt-2 text-xs text-muted-foreground">{c.outstanding > 0 ? `Due ${formatDate(nextDayOfMonth(c.dueDay, today))}` : 'No dues'}</p>
                 </button>
               )
@@ -84,7 +90,7 @@ function CreditCardsTab() {
 
           {card && (
             <>
-              <button type="button" onClick={() => setSel(null)} className="mb-3 inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" />All cards</button>
+              <button type="button" onClick={closeSel} className="mb-3 inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" />All cards</button>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-lg font-semibold">{card.bank} {card.cardName}</h2>
                 <div className="flex flex-wrap gap-2">
@@ -204,7 +210,7 @@ function CardTxnForm({ cards, card, accounts, onClose, onPay, onCharge }: { card
       <Field label="Amount (₹)">{(id) => <Input id={id} type="number" min="0.01" step="any" inputMode="decimal" required value={f.amount} onChange={set('amount')} />}</Field>
       <Field label="Date">{(id) => <DateInput id={id} required value={f.date} onChange={set('date')} />}</Field>
       {mode === 'pay'
-        ? <Field label="Paid from" className="full">{(id) => <Select id={id} value={f.accountId} onChange={set('accountId')}><option value="">Not linked to a bank account</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.nickname || a.bankName}</option>)}</Select>}</Field>
+        ? <Field label="Paid from" className="full">{(id) => <Select id={id} value={f.accountId} onChange={set('accountId')}><option value="">Not linked to a bank account</option>{accounts.map((a) => <option key={a.id} value={a.id}>{shortAccountName(a, accounts)}</option>)}</Select>}</Field>
         : <Field label="Category" className="full">{(id) => <Select id={id} value={f.category} onChange={set('category')}>{cats.expense.map((c: string) => <option key={c}>{c}</option>)}</Select>}</Field>}
       <Field label="Note" className="full">{(id) => <Input id={id} value={f.note} onChange={set('note')} />}</Field>
     </FormDialog>

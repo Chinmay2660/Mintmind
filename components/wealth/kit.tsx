@@ -1,7 +1,9 @@
 'use client'
 
-import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { ArrowDown, ArrowUp, Check, Info, Loader2, Minus, Plus } from 'lucide-react'
+import { useBackToClose } from '@/lib/hooks/useBackToClose'
+import { toastProblem } from '@/lib/notify'
+import { Children, Fragment, isValidElement, useId, useRef, useState, type FormEvent, type ReactElement, type ReactNode } from 'react'
+import { ArrowDown, ArrowUp, Check, ChevronDown, Info, Loader2, Minus, Plus } from 'lucide-react'
 import * as PopoverPrimitive from '@radix-ui/react-popover'
 import { usePageInfo } from '@/components/shell/DetailCrumb'
 import { toast } from 'sonner'
@@ -114,7 +116,7 @@ export function InfoTip({ label, children }: { label: string; children: ReactNod
     <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
       <PopoverPrimitive.Trigger asChild>
         <button type="button" aria-label={`About ${label}`} onPointerEnter={(e) => { if (e.pointerType === 'mouse') show() }} onPointerLeave={(e) => { if (e.pointerType === 'mouse') hide() }}
-          className="inline-flex h-5 w-5 shrink-0 translate-y-px paper:-translate-y-0.5 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><Info className="h-3.5 w-3.5" /></button>
+          className="relative inline-flex h-5 w-5 shrink-0 translate-y-px [@media(pointer:coarse)]:before:absolute [@media(pointer:coarse)]:before:-inset-3 [@media(pointer:coarse)]:before:content-[''] paper:-translate-y-0.5 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><Info className="h-3.5 w-3.5" /></button>
       </PopoverPrimitive.Trigger>
       <PopoverPrimitive.Portal>
         <PopoverPrimitive.Content side="bottom" align="end" sideOffset={6} collisionPadding={12} onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()} onPointerEnter={show} onPointerLeave={hide}
@@ -189,7 +191,7 @@ export function RangeTabs({ value, onChange, options, label = 'Range' }: { value
           aria-pressed={value === o}
           onClick={() => onChange(o)}
           className={cn(
-            'rounded-md px-2.5 py-1 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring max-md:min-h-9 max-md:px-3.5',
+            'rounded-md px-2.5 py-1 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring max-md:min-h-10 max-md:px-3.5',
             value === o ? 'bg-card text-foreground shadow-card' : 'text-muted-foreground hover:text-foreground'
           )}
         >
@@ -200,7 +202,11 @@ export function RangeTabs({ value, onChange, options, label = 'Range' }: { value
   )
 }
 
-export function Field({ label, hint, error, children, className }: { label: string; hint?: string; error?: string; children: (id: string) => ReactNode; className?: string }) {
+/** A field that is not needed to save. Marked with `optional`, or recognised by its label: "(optional)", Note, Notes, Nickname. */
+const OPTIONAL_LABELS = new Set(['Note', 'Notes', 'Nickname'])
+const isOptionalField = (p: { label?: string; optional?: boolean }) => p.optional === true || /(optional)s*$/i.test(p.label ?? '') || OPTIONAL_LABELS.has(p.label ?? '')
+
+export function Field({ label, hint, error, children, className }: { label: string; hint?: string; error?: string; children: (id: string) => ReactNode; className?: string; optional?: boolean }) {
   const id = useId()
   return (
     <div className={cn('space-y-1.5', className)}>
@@ -237,7 +243,10 @@ export function UsagePct({ value, warnAt = 30, highAt = 50, className }: { value
   return <span className={cn('font-medium tabular-nums', tone, className)}>{value}%<span className="sr-only"> ({level})</span></span>
 }
 
+/** Bar colour for a budget or other limit that should not be passed: amber from 70%, red from 90%. */
 export const toneForPct = (p: number) => (p >= 90 ? 'danger' : p >= 70 ? 'warning' : 'primary')
+/** Bar colour for credit-card utilisation. Same bands as <UsagePct> (30% and 50%), so the bar and the number always agree. */
+export const toneForCredit = (p: number) => (p > 50 ? 'danger' : p > 30 ? 'warning' : 'primary')
 
 interface FormDialogProps {
   open: boolean
@@ -251,7 +260,36 @@ interface FormDialogProps {
 }
 
 /** Standard create/edit modal: native validation, busy state, error toast. */
+// every Field inside the children, looking through fragments
+function flattenFields(children: ReactNode): ReactNode[] {
+  return Children.toArray(children).flatMap((c) => (isValidElement(c) && c.type === Fragment ? flattenFields((c as ReactElement<{ children?: ReactNode }>).props.children) : [c]))
+}
+
+/**
+ * The fields of a form. The ones needed to save show; the optional ones (notes, nickname, "(optional)" fields) wait behind a
+ * "More details" row, so a form opens short. When editing a record they start open, because they may already hold something.
+ */
+export function FormFields({ children, startOpen = false }: { children: ReactNode; startOpen?: boolean }) {
+  const [open, setOpen] = useState(startOpen)
+  const items = flattenFields(children)
+  const optional = items.filter((c) => isValidElement(c) && c.type === Field && isOptionalField((c as ReactElement<{ label?: string; optional?: boolean }>).props))
+  if (optional.length === 0) return <FormGrid>{items}</FormGrid>
+  const main = items.filter((c) => !optional.includes(c))
+  return (
+    <>
+      <FormGrid>{main}</FormGrid>
+      <div className="space-y-3">
+        <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="inline-flex min-h-9 items-center gap-1.5 rounded text-sm font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+          <ChevronDown className={cn('h-4 w-4 transition-transform', open && 'rotate-180')} aria-hidden />{open ? 'Fewer details' : 'More details'}
+        </button>
+        {open && <FormGrid>{optional}</FormGrid>}
+      </div>
+    </>
+  )
+}
+
 export function FormDialog({ open, onOpenChange, title, description, submitLabel = 'Save', onSubmit, children, wide }: FormDialogProps) {
+  useBackToClose(open, () => onOpenChange(false))
   const [busy, setBusy] = useState(false)
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -260,7 +298,7 @@ export function FormDialog({ open, onOpenChange, title, description, submitLabel
       await onSubmit()
       onOpenChange(false)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Something went wrong')
+      toastProblem(err, 'Something went wrong')
     } finally {
       setBusy(false)
     }
@@ -274,7 +312,7 @@ export function FormDialog({ open, onOpenChange, title, description, submitLabel
           <DialogDescription className="sr-only">{description || title}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
-          <FormGrid>{children}</FormGrid>
+          <FormFields startOpen={/^edit/i.test(title)}>{children}</FormFields>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
@@ -300,6 +338,7 @@ export interface FormStep { title: string; description?: string; content: ReactN
 export function StepFormDialog({ open, onOpenChange, title, description, steps, submitLabel = 'Save', onSubmit, wide }: {
   open: boolean; onOpenChange: (o: boolean) => void; title: string; description?: string; steps: FormStep[]; submitLabel?: string; onSubmit: () => Promise<void>; wide?: boolean
 }) {
+  useBackToClose(open, () => onOpenChange(false))
   const [i, setI] = useState(0)
   const [busy, setBusy] = useState(false)
   const body = useRef<HTMLDivElement>(null)
@@ -316,7 +355,7 @@ export function StepFormDialog({ open, onOpenChange, title, description, steps, 
     if (!stepValid()) return
     if (!last) return setI(i + 1)
     setBusy(true)
-    try { await onSubmit(); onOpenChange(false) } catch (err) { toast.error(err instanceof Error ? err.message : 'Something went wrong') } finally { setBusy(false) }
+    try { await onSubmit(); onOpenChange(false) } catch (err) { toastProblem(err, 'Something went wrong') } finally { setBusy(false) }
   }
 
   return (
@@ -342,7 +381,7 @@ export function StepFormDialog({ open, onOpenChange, title, description, steps, 
 
         <form onSubmit={submit} className="space-y-4">
           <div><p className="text-xs text-muted-foreground">Step {i + 1} of {steps.length}</p><div className="flex items-center gap-2"><h3 className="text-base font-semibold">{cur.title}</h3>{cur.description && <InfoTip label={cur.title}>{cur.description}</InfoTip>}</div></div>
-          <div ref={body}><FormGrid>{cur.content}</FormGrid></div>
+          <div ref={body}><FormFields key={i} startOpen={/^edit/i.test(title)}>{cur.content}</FormFields></div>
           <DialogFooter className="gap-2 sm:justify-between sm:gap-0 sm:space-x-0">
             <Button type="button" variant="ghost" onClick={() => (i === 0 ? onOpenChange(false) : setI(i - 1))}>{i === 0 ? 'Cancel' : 'Back'}</Button>
             <Button type="submit" disabled={busy}>

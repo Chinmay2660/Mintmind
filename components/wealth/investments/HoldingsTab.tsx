@@ -1,12 +1,13 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ArrowLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react'
+import { useAddParam } from '@/lib/hooks/useAddParam'
+import { ArrowLeft, ChevronRight, Pencil, PiggyBank, RefreshCw, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { remove, save } from '@/lib/wealth/actions'
 import { assetFacts, depositGroups, GROUPS } from '@/lib/wealth/portfolio'
-import { assetGain, assetValue } from '@/lib/wealth/holdings'
+import { assetGain, assetValue, renewFd } from '@/lib/wealth/holdings'
 import { ASSET_LABELS } from '@/lib/wealth/labels'
 import { formatDate, formatINR } from '@/lib/wealth/format'
 import { useDetailCrumb } from '@/components/shell/DetailCrumb'
@@ -14,10 +15,13 @@ import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Money } from '../Money'
 import { AssetForm } from '../AssetForm'
+import { ContributionForm } from '../LimitsPanel'
 import { Empty, Metric, PageHeader, Panel, Stat } from '../kit'
 
-type Kind = 'fd' | 'rd' | 'retirement' | 'market' | 'gold'
-const SINGULAR: Record<Kind, string> = { fd: 'fixed deposit', rd: 'recurring deposit', retirement: 'retirement account', market: 'stock or ETF', gold: 'gold holding' }
+type Kind = 'fd' | 'rd' | 'retirement' | 'market' | 'gold' | 'property'
+const SINGULAR: Record<Kind, string> = { fd: 'fixed deposit', rd: 'recurring deposit', retirement: 'retirement account', market: 'stock or ETF', gold: 'gold holding', property: 'asset' }
+// Things you own that are not investments. They count in net worth but not in the investment returns.
+const PROPERTY_GROUP = { key: 'property', label: 'Property & other', cats: ['realEstate', 'vehicle', 'other'] }
 
 /**
  * One section of the portfolio: fixed deposits, recurring deposits, retirement accounts, stocks and ETFs, or gold.
@@ -26,11 +30,13 @@ const SINGULAR: Record<Kind, string> = { fd: 'fixed deposit', rd: 'recurring dep
 export function HoldingsTab({ kind }: { kind: Kind }) {
   const { data, db } = useWealth()
   const today = useMemo(() => new Date(), [])
-  const group = GROUPS.find((g) => g.key === kind)!
+  const group = kind === 'property' ? PROPERTY_GROUP : GROUPS.find((g) => g.key === kind)!
   const items = useMemo(() => (data.assets as any[]).filter((a) => group.cats.includes(a.category)), [data.assets, group.cats])
   const [sel, setSel] = useState<string | null>(null)
   const [form, setForm] = useState<null | { row?: any }>(null)
+  useAddParam((what) => { if (what === 'asset') setForm({}) })
   const [del, setDel] = useState<any>(null)
+  const [contrib, setContrib] = useState(false)
   const open = sel ? items.find((a) => a.id === sel) : undefined
   useDetailCrumb(open ? open.name : null, () => setSel(null))
   const deposits = kind === 'fd' || kind === 'rd' ? depositGroups(items, kind, today) : null
@@ -63,7 +69,11 @@ export function HoldingsTab({ kind }: { kind: Kind }) {
         <button type="button" onClick={() => setSel(null)} className="inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" />All {group.label.toLowerCase()}</button>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div><h2 className="text-lg font-semibold">{open.name}</h2><p className="text-xs text-muted-foreground">{ASSET_LABELS[open.category as keyof typeof ASSET_LABELS] ?? open.category}</p></div>
-          <div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => setForm({ row: open })}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button><Button size="sm" variant="outline" onClick={() => setDel(open)}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button></div>
+          <div className="flex flex-wrap gap-2">
+            {/* a matured FD can be renewed in one step; a PPF or NPS account takes a contribution without leaving this page */}
+            {renewFd(open, today) && <Button size="sm" onClick={() => setForm({ row: renewFd(open, today) })}><RefreshCw className="mr-1.5 h-4 w-4" />Renew</Button>}
+            {(open.category === 'ppf' || open.category === 'nps') && <Button size="sm" onClick={() => setContrib(true)}><PiggyBank className="mr-1.5 h-4 w-4" />Add contribution</Button>}
+            <Button size="sm" variant="outline" onClick={() => setForm({ row: open })}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button><Button size="sm" variant="outline" onClick={() => setDel(open)}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button></div>
         </div>
         <Panel title="Details">
           <dl className="divide-y divide-border">
@@ -75,7 +85,8 @@ export function HoldingsTab({ kind }: { kind: Kind }) {
             ))}
           </dl>
         </Panel>
-        {form && <AssetForm row={form.row} category={form.row?.category} onClose={() => setForm(null)} onSave={async (rec) => { await save(db, 'assets', rec); toast.success('Saved') }} />}
+        {form && <AssetForm row={form.row} category={form.row?.category} onClose={() => setForm(null)} onSave={async (rec) => { await save(db, 'assets', rec); toast.success(form.row?.renewals?.length ? 'Renewed. Set the new maturity date if you know it.' : 'Saved') }} />}
+        {contrib && (open.category === 'ppf' || open.category === 'nps') && <ContributionForm kind={open.category} assets={[open]} onClose={() => setContrib(false)} onSave={async (a) => { await save(db, 'assets', a); toast.success('Contribution added') }} />}
         <ConfirmDialog open={!!del} onOpenChange={(o) => !o && setDel(null)} title="Delete this holding?" description="It is removed from your portfolio and your net worth." confirmLabel="Delete" variant="destructive" onConfirm={async () => { await remove(db, 'assets', del.id); setDel(null); setSel(null); toast.success('Deleted') }} />
       </div>
     )
@@ -88,7 +99,7 @@ export function HoldingsTab({ kind }: { kind: Kind }) {
         <section aria-label="Summary" className="grid grid-cols-1 gap-3 border-b border-border pb-5 min-[460px]:grid-cols-2 lg:grid-cols-4">
           <Stat label={kind === 'fd' ? 'Deposited' : 'Put in so far'} value={<Money value={deposits.invested} />} />
           <Stat label="Value today" value={<Money value={deposits.value} />} />
-          <Stat label="Interest earned" info="What has been added by interest up to today, worked out from the rate and dates you recorded, with quarterly compounding." value={<Money value={deposits.interest} />} />
+          <Stat label="Interest earned" value={<Money value={deposits.interest} />} />
           <Stat label="Average rate" value={deposits.avgRate != null ? `${deposits.avgRate}%` : '-'} hint={`${items.length} ${items.length === 1 ? 'deposit' : 'deposits'}`} />
         </section>
       )}

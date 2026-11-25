@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useDetailCrumbValue } from './DetailCrumb'
+import { notePage } from '@/lib/navHistory'
 
 /**
  * On a touch screen, swiping right from the left edge goes back: out of an open record (a card, a goal, a policy) to its list,
@@ -14,6 +15,7 @@ export function EdgeSwipeBack() {
   const router = useRouter()
   const path = usePathname()
   const back = useRef<() => void>(() => {})
+  useEffect(() => { notePage(path) }, [path])
   back.current = () => { if (crumb) crumb.onBack(); else if (path !== '/dashboard') router.back() }
 
   useEffect(() => {

@@ -38,9 +38,9 @@ export function RecurringView({ expenses }: Props) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 border-b border-border pb-5">
-        <Stat label={yearly ? 'Per year' : 'Per month'} info="The total of every recurring payment found in your expenses." value={<Money value={yearly ? monthly * 12 : monthly} />} />
+        <Stat label={yearly ? 'Per year' : 'Per month'} value={<Money value={yearly ? monthly * 12 : monthly} />} />
         <Stat label="Recurring payments" value={rows.length} />
-        <Stat label="Subscriptions" info="Payees that look like subscriptions, such as streaming, software or memberships." value={subs.length} />
+        <Stat label="Subscriptions" value={subs.length} />
         <Stat label="Due in 7 days" value={soon.length} hint={soon.length ? <Money value={soon.reduce((n: number, r: any) => n + r.amount, 0)} /> : undefined} />
       </div>
 

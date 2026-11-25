@@ -13,7 +13,6 @@ import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { usePathname } from 'next/navigation'
 import { Breadcrumbs } from '@/components/shell/Breadcrumbs'
-import { MobileMenu } from '@/components/shell/Sidebar'
 import { Wallet } from 'lucide-react'
 import Link from 'next/link'
 
@@ -24,8 +23,7 @@ export function TopBar() {
 
   return (
     <header className="print:hidden sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-4 backdrop-blur safe-area-inset-top md:px-6">
-      <MobileMenu />
-      <Link href="/dashboard" className="mr-1 hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground min-[480px]:flex md:hidden" aria-label="Mintmind home">
+      <Link href="/dashboard" className="mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground md:hidden" aria-label="Mintmind home">
         <Wallet className="h-4 w-4" />
       </Link>
       <Breadcrumbs />

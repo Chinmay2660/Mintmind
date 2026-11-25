@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { pricesDue, refreshNavs } from '@/lib/market/client'
 
-/** Renders nothing. Once a week, when the app is opened, refreshes fund NAVs from the shared price cache. */
+/** Renders nothing. Once a day, when the app is opened, refreshes fund NAVs from the shared price cache. */
 export function PriceRefresher() {
   const { ready, data, db, isDemo } = useWealth()
   const ran = useRef(false)

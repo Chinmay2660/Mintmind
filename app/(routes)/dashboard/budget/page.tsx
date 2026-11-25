@@ -1,8 +1,14 @@
 'use client'
 
+import { BudgetEditor, type EditorGroup } from '@/components/wealth/budget/BudgetEditor'
+import { IncomeBudgetForm, IncomeProgressPanel, type IncomePlan } from '@/components/wealth/budget/IncomeBudget'
+import { planFor } from '@/lib/wealth/incomeBudget'
+import { useDetailCrumb } from '@/components/shell/DetailCrumb'
+import { toastProblem } from '@/lib/notify'
+import { TabBar } from '@/components/ui/tab-bar'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronDown, ChevronLeft, ChevronRight, FileUp, Plus, Settings2, Tags, TriangleAlert, Wand2 } from 'lucide-react'
-import { useAddParam } from '@/lib/hooks/useAddParam'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, Plus, Settings2, TriangleAlert } from 'lucide-react'
 import { useKeys } from '@/lib/hooks/useKeys'
 import { RecurringView } from '@/components/wealth/budget/RecurringView'
 import { SubscriptionsPanel } from '@/components/wealth/budget/Subscriptions'
@@ -11,17 +17,16 @@ import { CashFlowView } from '@/components/wealth/budget/CashFlowView'
 import { BudgetList } from '@/components/wealth/budget/BudgetList'
 import { expenseParts } from '@/lib/wealth/splits'
 import { SplitDialog } from '@/components/wealth/budget/SplitDialog'
-import { RulesDialog } from '@/components/wealth/budget/RulesDialog'
-import { ImportCsvDialog } from '@/components/wealth/budget/ImportCsvDialog'
 import { toast } from 'sonner'
 import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { deleteExpense, deleteIncome, deleteTransfer, save, setBookmarks } from '@/lib/wealth/actions'
 import { addMonths, availableBalance, budgetPacing, round2, toISO } from '@/lib/wealth/calc'
 import { useCategories } from '@/lib/wealth/useCategories'
+import { childOf, groupCategories } from '@/lib/wealth/subcategories'
 import { buildTransactions, inMonth } from '@/lib/wealth/transactions'
 import { TxnEntryDialog, type TxnType } from '@/components/wealth/budget/TxnEntryDialog'
-import { CalendarView, CategoryManager, MonthlyView, StatsView, SummaryStrip, SummaryView, TransactionsView, type Tx } from '@/components/wealth/budget/Views'
+import { CalendarView, MonthlyView, StatsView, SummaryStrip, SummaryView, TransactionsView, type Tx } from '@/components/wealth/budget/Views'
 import { MonthPicker } from '@/components/ui/pickers'
 import { categoryTotals, monthKey, monthTotal } from '@/lib/wealth/selectors'
 import { formatCompactINR, formatDate, formatINR } from '@/lib/wealth/format'
@@ -33,10 +38,10 @@ import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, InfoTip, Met
 import { cn } from '@/lib/utils'
 import { DateInput } from '@/components/ui/pickers'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
-import { TabBar } from '@/components/ui/tab-bar'
+import { GROUPS, VIEW_LABEL, groupOf, viewFor, KEY_GROUPS } from '@/lib/wealth/budgetTabs'
 import { Checkbox } from '@/components/ui/checkbox'
 
-const TAB_ORDER = ['overview', 'budgets', 'transactions', 'calendar', 'monthly', 'summary', 'recurring', 'stats', 'cashflow', 'review'] as const
+const TAB_ORDER = ['overview', 'budgets', 'transactions', 'calendar', 'review', 'monthly', 'summary', 'stats', 'cashflow', 'recurring'] as const
 
 export default function BudgetPage() {
   const { ready, data, db } = useWealth()
@@ -44,12 +49,33 @@ export default function BudgetPage() {
   const today = useMemo(() => new Date(), [])
   const curYm = toISO(today).slice(0, 7)
   const [ym, setYm] = useState(curYm)
-  const [dlg, setDlg] = useState<null | { kind: 'budget' | 'categories' | 'txn' | 'del' | 'delmany'; row?: any; draft?: any; type?: TxnType; tx?: Tx; txs?: Tx[] }>(null)
+  const [dlg, setDlg] = useState<null | { kind: 'budget' | 'incomeBudget' | 'categories' | 'txn' | 'del' | 'delmany'; row?: any; draft?: any; type?: TxnType; tx?: Tx; txs?: Tx[] }>(null)
   const [tab, setTab] = useState<'overview' | 'budgets' | 'transactions' | 'calendar' | 'monthly' | 'summary' | 'recurring' | 'stats' | 'cashflow' | 'review'>('overview')
-  const { expense: EXPENSE_CATEGORIES } = useCategories()
+  const { expense: EXPENSE_CATEGORIES, income: INCOME_CATEGORIES } = useCategories()
   const [catFilter, setCatFilter] = useState('')
+  const [budgetKind, setBudgetKind] = useState<'expense' | 'income'>('expense') // which budget the Budgets tab is setting
+  const lastTabBeforeCategory = useRef<'overview' | 'budgets'>('overview')
+  const [txnKind, setTxnKind] = useState<'all' | 'expense' | 'income' | 'transfer'>('all') // which kind the Transactions list opens on, when you came from a summary card
+  const [txnCat, setTxnCat] = useState('') // category the Transactions list opens on, when you came from a category
+  const [pacingOpen, setPacingOpen] = useState(false) // the pace chart and detail numbers are one tap away, not on the page by default
+  const [openKids, setOpenKids] = useState<Set<string>>(new Set()) // parents whose sub-categories are showing in Category budgets
+  const router = useRouter()
+  const [phone, setPhone] = useState(false)
+  useEffect(() => { const mq = window.matchMedia('(max-width: 767px)'); const f = () => setPhone(mq.matches); f(); mq.addEventListener('change', f); return () => mq.removeEventListener('change', f) }, [])
+  const params = useSearchParams()
+  const fromCategory = useRef(false)
+  // a category opens that month's expense list as its own history step, so Back goes to the Overview or Budgets you came from
+  const openCategory = (c: string) => { fromCategory.current = true; lastTabBeforeCategory.current = tab === 'budgets' ? 'budgets' : 'overview'; router.push(`/dashboard/budget?tab=transactions&cat=${encodeURIComponent(c)}`) }
+  const openKind = (k: 'income' | 'expense' | 'all') => { fromCategory.current = true; lastTabBeforeCategory.current = 'overview'; router.push(`/dashboard/budget?tab=transactions&kind=${k}`) }
+  const spTab = params.get('tab'), spCat = params.get('cat'), spKind = params.get('kind')
+  useEffect(() => {
+    if (spTab === 'transactions') { setTxnCat(spCat || ''); setTxnKind(spKind === 'income' || spKind === 'expense' || spKind === 'transfer' ? spKind : 'all'); setTab('transactions') }
+    else if (fromCategory.current) { fromCategory.current = false; setTxnCat(''); setTxnKind('all'); setTab(lastTabBeforeCategory.current) }
+  }, [spTab, spCat, spKind])
 
   const budget = data.budgets.find((b) => b.id === ym)
+  const incomePlans = (data.meta.find((m: any) => m.key === 'incomeBudgets')?.value ?? {}) as Record<string, IncomePlan>
+  const incomePlan = planFor(incomePlans, ym)
   const prevYm = addMonths(`${ym}-01`, -1).slice(0, 7)
   const prevBudget = data.budgets.find((b) => b.id === prevYm)
 
@@ -84,18 +110,22 @@ export default function BudgetPage() {
   // Duplicate: opens the entry sheet pre-filled with this expense (today's date) so a repeat purchase is two taps.
   const duplicate = (t: Tx) => setDlg({ kind: 'txn', type: 'expense', draft: { ...t.raw, date: undefined } })
   const bookmark = (items: Tx[], on: boolean) => setBookmarks(db, items.map((t) => ({ kind: t.kind, id: t.id, legacy: t.legacy })), on).then(() => toast.success(on ? 'Bookmarked' : 'Bookmark removed')).catch(() => toast.error('Could not update bookmarks'))
-  const [rulesOpen, setRulesOpen] = useState(false)
   const [moreStats, setMoreStats] = useState(false)
-  const [importOpen, setImportOpen] = useState(false)
-  useAddParam((what) => { if (what === 'categories') setDlg({ kind: 'categories' }) })
-  useEffect(() => { const open = () => setDlg({ kind: 'categories' }); window.addEventListener('mm:open-categories', open); return () => window.removeEventListener('mm:open-categories', open) }, [])
   const swipe = useRef<{ x: number; y: number } | null>(null)
+  const lastView = useRef<Record<string, string>>({})
+  const openGroup = (g: string) => setTab(viewFor(g, lastView.current) as typeof tab)
+  useEffect(() => { lastView.current[groupOf(tab)] = tab }, [tab])
   useKeys({
-    '1': () => setTab('overview'), '2': () => setTab('budgets'), '3': () => setTab('transactions'), '4': () => setTab('calendar'), '5': () => setTab('monthly'), '6': () => setTab('summary'), '7': () => setTab('recurring'), '8': () => setTab('stats'), '9': () => setTab('cashflow'), '0': () => setTab('review'),
+    '1': () => openGroup(KEY_GROUPS[1]), '2': () => openGroup(KEY_GROUPS[2]), '3': () => openGroup(KEY_GROUPS[3]), '4': () => openGroup(KEY_GROUPS[4]), '5': () => openGroup(KEY_GROUPS[5]),
     '[': () => setYm((cur) => addMonths(`${cur}-01`, -1).slice(0, 7)),
     ']': () => setYm((cur) => { const next = addMonths(`${cur}-01`, 1).slice(0, 7); return next > curYm ? cur : next }),
   })
   const step = (by: number) => setYm((cur) => { const next = addMonths(`${cur}-01`, by).slice(0, 7); return next > curYm ? cur : next })
+  // on a phone the Overview is the home: the other views open from its list as pages of their own, and Back returns to it
+  // (a category's expense list is its own history step already, so Back just goes back)
+  const cameFromCategory = spTab === 'transactions'
+  const backToOverview = () => { if (cameFromCategory) router.back(); else setTab('overview') }
+  useDetailCrumb(phone && tab !== 'overview' && !cameFromCategory ? (VIEW_LABEL as Record<string, string>)[tab] : null, backToOverview)
   const askDelete = (t: Tx) => setDlg({ kind: 'del', tx: t })
   if (!ready) return <LoadingBlock className="h-64" />
 
@@ -113,20 +143,11 @@ export default function BudgetPage() {
     <div className="space-y-5">
       <PageHeader
         actions={
-          <>
-            <div className="flex w-full items-center justify-center gap-1 max-md:!basis-full sm:w-auto sm:justify-start">
-              <Button variant="outline" size="icon" aria-label="Previous month" onClick={() => setYm(prevYm)}><ChevronLeft className="h-4 w-4" /></Button>
-              <MonthPicker value={ym} max={curYm} onChange={setYm} className="min-w-32 justify-center" />
-              <Button variant="outline" size="icon" aria-label="Next month" disabled={ym >= curYm} onClick={() => setYm(addMonths(`${ym}-01`, 1).slice(0, 7))}><ChevronRight className="h-4 w-4" /></Button>
-            </div>
-            {/* phone: four labelled buttons in a tidy 2 x 2 grid; wider screens keep them in one row */}
-            <div className="grid w-full grid-cols-2 gap-2 max-md:!basis-full md:contents">
-              <Button variant="outline" onClick={() => setDlg({ kind: 'categories' })}><Tags className="mr-1.5 h-4 w-4" />Categories</Button>
-              <Button variant="outline" onClick={() => setRulesOpen(true)}><Wand2 className="mr-1.5 h-4 w-4" />Rules</Button>
-              <Button variant="outline" onClick={() => setImportOpen(true)}><FileUp className="mr-1.5 h-4 w-4" />Import CSV</Button>
-              <Button variant="outline" onClick={() => setDlg({ kind: 'budget' })}><Settings2 className="mr-1.5 h-4 w-4" />Budget</Button>
-            </div>
-          </>
+          <div className="flex w-full items-center justify-center gap-1 max-md:!basis-full sm:w-auto sm:justify-start">
+            <Button variant="outline" size="icon" aria-label="Previous month" onClick={() => setYm(prevYm)}><ChevronLeft className="h-4 w-4" /></Button>
+            <MonthPicker value={ym} max={curYm} onChange={setYm} className="min-w-32 justify-center" />
+            <Button variant="outline" size="icon" aria-label="Next month" disabled={ym >= curYm} onClick={() => setYm(addMonths(`${ym}-01`, 1).slice(0, 7))}><ChevronRight className="h-4 w-4" /></Button>
+          </div>
         }
         primaryAction={{ label: 'Add transaction', onClick: () => setDlg({ kind: 'txn', type: 'expense' }) }}
       />
@@ -137,7 +158,26 @@ export default function BudgetPage() {
         </div>
       )}
 
-      <TabBar label="Budget views" tabs={[{ key: 'overview', label: 'Overview' }, { key: 'budgets', label: 'Budgets' }, { key: 'transactions', label: 'Transactions' }, { key: 'calendar', label: 'Calendar' }, { key: 'monthly', label: 'Monthly' }, { key: 'summary', label: 'Summary' }, { key: 'recurring', label: 'Recurring' }, { key: 'stats', label: 'Stats' }, { key: 'cashflow', label: 'Cash flow' }, { key: 'review', label: reviewCount ? `Review (${reviewCount})` : 'Review' }]} value={tab} onChange={(k) => setTab(k as typeof tab)} />
+      {tab !== 'overview' && (
+        <div className="flex items-center gap-2 md:hidden">
+          <button type="button" onClick={backToOverview} className="-ml-1 inline-flex items-center gap-1 rounded-lg px-1 py-2 text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" aria-hidden />Budget</button>
+          <span className="text-sm font-semibold">{(VIEW_LABEL as Record<string, string>)[tab]}</span>
+        </div>
+      )}
+      <div className="max-md:hidden"><TabBar label="Budget sections" tabs={GROUPS.map((g) => ({ key: g.key, label: g.label, badge: g.key === 'transactions' ? reviewCount : undefined }))} value={groupOf(tab)} onChange={openGroup} /></div>
+      {(() => {
+        const views = GROUPS.find((g) => g.key === groupOf(tab))!.views
+        if (views.length < 2) return null
+        return (
+          <div role="group" aria-label="Views in this section" className="-mt-2 flex flex-wrap gap-1.5 max-md:hidden">
+            {views.map((v) => (
+              <button key={v} type="button" aria-pressed={tab === v} onClick={() => setTab(v as typeof tab)} className={`inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring ${tab === v ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground'}`}>
+                {VIEW_LABEL[v]}{v === 'review' && reviewCount ? <span className="rounded-full bg-primary/15 px-1.5 text-[11px] font-semibold text-primary">{reviewCount}</span> : null}
+              </button>
+            ))}
+          </div>
+        )
+      })()}
 
       {/* Swipe sideways to move between tabs. Months have their arrows and the [ ] keys. Scrollers, sliders, fields and swipeable rows keep their own gestures. */}
       <div className="space-y-5"
@@ -148,9 +188,9 @@ export default function BudgetPage() {
           if (st.x <= 24) return // the left edge belongs to swipe-back
           if ((e.target as HTMLElement).closest('[role="region"], [role="tablist"], [role="slider"], [data-swipe-row], input, textarea, [role="dialog"]')) return
           const t = e.changedTouches[0]; const dx = t.clientX - st.x; const dy = t.clientY - st.y
-          if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 2) { const i = TAB_ORDER.indexOf(tab); const n = TAB_ORDER[i + (dx < 0 ? 1 : -1)]; if (n) setTab(n) }
+          if (!phone && Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 2) { const i = TAB_ORDER.indexOf(tab); const n = TAB_ORDER[i + (dx < 0 ? 1 : -1)]; if (n) setTab(n) }
         }}>
-      {tab === 'transactions' && <TransactionsView list={monthTx} ym={ym} onEdit={edit} onDelete={askDelete} onDuplicate={duplicate} onSplit={(t) => setSplitFor(t.raw)} onBookmark={bookmark} onBulkDelete={(txs) => setDlg({ kind: 'delmany', txs })} onAdd={() => setDlg({ kind: 'txn', type: 'expense' })} />}
+      {tab === 'transactions' && <TransactionsView key={`${txnCat}|${txnKind}`} initialCategory={txnCat} initialKind={txnKind} list={monthTx} ym={ym} onEdit={edit} onDelete={askDelete} onDuplicate={duplicate} onSplit={(t) => setSplitFor(t.raw)} onBookmark={bookmark} onBulkDelete={(txs) => setDlg({ kind: 'delmany', txs })} onAdd={() => setDlg({ kind: 'txn', type: 'expense' })} />}
       {tab === 'calendar' && <CalendarView list={monthTx} ym={ym} onEdit={edit} onDelete={askDelete} onDuplicate={duplicate} onBookmark={bookmark} />}
       {tab === 'monthly' && <MonthlyView all={allTx} ym={ym} curYm={curYm} onPick={(k) => { setYm(k); setTab('transactions') }} />}
       {tab === 'summary' && <SummaryView list={monthTx} ym={ym} />}
@@ -160,94 +200,130 @@ export default function BudgetPage() {
 
       {tab === 'review' && <ReviewView list={allTx} onEdit={edit} />}
       {tab === 'cashflow' && <CashFlowView list={allTx as any[]} ym={ym} />}
-      {tab === 'budgets' && <BudgetList budget={budget ? { ...budget, total: effective } : budget} prevBudget={prevBudget} expenses={data.expenses} ym={ym} today={today} onEdit={() => setDlg({ kind: 'budget' })} />}
+      {tab === 'budgets' && (
+        <div className="space-y-4">
+          <div role="tablist" aria-label="Which budget" className="grid grid-cols-2 rounded-xl border border-border bg-muted p-1">
+            {([['expense', 'Expense'], ['income', 'Income']] as const).map(([k, l]) => (
+              <button key={k} type="button" role="tab" aria-selected={budgetKind === k} onClick={() => setBudgetKind(k)} className={cn('min-h-10 rounded-lg px-3 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', budgetKind === k ? 'bg-card shadow-card' : 'text-muted-foreground hover:text-foreground')}>{l}</button>
+            ))}
+          </div>
+          <p className="px-1 text-xs text-muted-foreground">Setting the budget for <strong className="font-semibold text-foreground">{monthName}</strong>. Change the month at the top. How you are doing against it is on the Overview.</p>
+          {budgetKind === 'expense' ? (
+            <BudgetEditor
+              key={`expense|${ym}|${budget?.total ?? 0}|${JSON.stringify(budget?.categories ?? {})}`}
+              groups={groupCategories(EXPENSE_CATEGORIES) as EditorGroup[]}
+              values={(budget?.categories ?? {}) as Record<string, number>}
+              total={budget?.total ?? 0}
+              totalLabel="Monthly budget"
+              copyFrom={prevBudget ? { total: prevBudget.total, values: (prevBudget.categories ?? {}) as Record<string, number> } : null}
+              copyLabel="Copy last month"
+              onMore={budget ? () => setDlg({ kind: 'budget' }) : undefined}
+              onSave={async (t, map) => {
+                const sum = Object.values(map).reduce((x, y) => x + y, 0)
+                const total = t > 0 ? t : sum
+                if (!(total > 0)) { toast.warning('Enter a monthly budget, or a limit for at least one category'); return }
+                const base = budget ?? { rollover: false, rolloverCats: [], periods: {} }
+                await save(db, 'budgets', { ...base, id: ym, total, categories: map })
+                toast.success('Budget saved')
+              }}
+            />
+          ) : (
+            <BudgetEditor
+              key={`income|${ym}|${incomePlan?.total ?? 0}|${JSON.stringify(incomePlan?.categories ?? {})}`}
+              groups={INCOME_CATEGORIES.map((c) => ({ name: c, children: [] }))}
+              values={incomePlan?.categories ?? {}}
+              total={incomePlan?.total ?? 0}
+              totalLabel="Expected income"
+              copyFrom={(() => { const prev = planFor(incomePlans, prevYm); return prev && prev !== incomePlan ? { total: prev.total, values: prev.categories ?? {} } : null })()}
+              copyLabel="Copy last month"
+              onSave={async (t, map) => {
+                const sum = Object.values(map).reduce((x, y) => x + y, 0)
+                const total = t > 0 ? t : sum
+                if (!(total > 0)) { toast.warning('Enter the income you expect, or an amount for at least one category'); return }
+                await db.meta.put({ key: 'incomeBudgets', value: { ...incomePlans, [ym]: { total, categories: map } } })
+                toast.success('Income budget saved')
+              }}
+            />
+          )}
+        </div>
+      )}
+      {/* income, expenses and the rest of the month at a glance, first */}
+      {tab === 'overview' && <SummaryStrip list={monthTx} onOpen={openKind} />}
       {tab === 'overview' && (!budget || !p ? (
         <Empty title={`No budget for ${monthName}`} description="Set a monthly budget to see daily pacing and projections." action={<Button onClick={() => setDlg({ kind: 'budget' })}>Set budget</Button>} />
       ) : (
         <>
-          {/* phone: the answer to "how am I doing?" first, then a one-tap way to log spending */}
-          <div className="surface-card space-y-3 p-4 md:hidden">
-            <div className="flex items-end justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-muted-foreground">{p.remaining < 0 ? 'Over budget by' : 'Left to spend'}</p>
-                <p className={cn('truncate text-3xl font-semibold tracking-tight', p.remaining < 0 && 'text-destructive')}><Money value={Math.abs(p.remaining)} /></p>
+          <BudgetList budget={budget ? { ...budget, total: effective } : budget} prevBudget={prevBudget} expenses={data.expenses} ym={ym} today={today} onEdit={() => setDlg({ kind: 'budget' })} onOpenCategory={openCategory} />
+          <IncomeProgressPanel plan={incomePlan} bankTxns={data.bankTxns} ym={ym} onEdit={() => setDlg({ kind: 'incomeBudget' })} />
+          <button type="button" onClick={() => setPacingOpen((v) => !v)} aria-expanded={pacingOpen} className="flex min-h-11 w-full items-center justify-between rounded-xl border border-border px-4 text-sm font-medium outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"><span>Daily pace and numbers</span><ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', pacingOpen && 'rotate-180')} aria-hidden /></button>
+          {pacingOpen && (
+            <>
+            <div className="flex flex-wrap items-center gap-2">
+              <label htmlFor="budget-scope" className="text-sm font-medium">Showing</label>
+              <Select id="budget-scope" className="w-auto" value={catFilter} onChange={(e) => setCatFilter(e.target.value)}>
+                <option value="">All categories</option>
+                {EXPENSE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </Select>
+              {catFilter && catLimit === 0 && <span className="text-xs text-warning">No limit set for {catFilter}. Set one under Budget to see its daily pace.</span>}
+            </div>
+            <div className={cn('grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 border-b border-border pb-5 max-md:[&>*]:px-3 max-md:[&>*]:py-3', !moreStats && 'max-md:hidden')}>
+              <Stat label={catFilter ? `${catFilter} budget` : 'Monthly budget'} value={<Money value={scopeBudget} />} hint={!catFilter && carry > 0 ? `incl. ${formatINR(carry)} rolled over` : `${p.days} days`} />
+              <Stat label="Spent" value={<Money value={p.spent} />} hint={<span className="flex flex-wrap items-center gap-x-2"><span><UsagePct value={p.utilisation} warnAt={70} highAt={90} /> used</span><Metric amount={p.spent - prevTotal} invertGood className="text-xs" hint="No spending last month" /></span>} />
+              <Stat label="Remaining" value={<span className={p.remaining < 0 ? 'text-destructive' : ''}><Money value={p.remaining} /></span>} hint={p.remainingDays > 0 ? `${formatINR(p.safeDailySpend)}/day safe to spend` : undefined} />
+              <Stat label={catFilter ? `${catFilter} daily budget` : 'Daily budget'} value={<Money value={p.dailyBudget} decimals />} hint={catFilter ? 'category limit ÷ days in month' : 'budget ÷ days in month'} />
+              <Stat label={`Expected by ${ym === curYm ? 'today' : 'month end'}`} value={<Money value={p.expectedTillToday} />} hint="Pace line, not remaining" />
+              <Stat label={p.variance > 0 ? 'Over pace by' : 'Under pace by'} value={<span className={p.variance > 0 ? 'text-destructive' : 'text-success'}><Money value={Math.abs(p.variance)} /></span>} />
+              <Stat label="Projected month-end" value={<Money value={p.projected} />} hint={p.projectedOver > 0 ? `${formatINR(p.projectedOver)} over` : 'within budget'} />
+              <Stat label="Change vs last month" value={<Metric amount={p.spent - prevTotal} pct={prevTotal > 0 ? ((p.spent - prevTotal) / prevTotal) * 100 : null} invertGood className="text-lg font-semibold sm:text-xl" />} hint={`Last month ${formatINR(prevTotal)}`} />
+            </div>
+            <button type="button" onClick={() => setMoreStats((v) => !v)} aria-expanded={moreStats} className="-mt-2 flex w-full items-center justify-center gap-1 py-1 text-xs font-medium text-primary md:hidden">{moreStats ? 'Fewer numbers' : 'More numbers'}<ChevronDown className={cn('h-3.5 w-3.5 transition-transform', moreStats && 'rotate-180')} /></button>
+
+            <Panel title={catFilter ? `Daily pacing: ${catFilter}` : 'Daily pacing'}>
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={p.series} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                    <CartesianGrid stroke={chartGrid} vertical={false} />
+                    <XAxis dataKey="day" {...chartAxis} label={{ value: 'Day of month', position: 'insideBottom', offset: 0, fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} height={44} />
+                    <YAxis {...chartAxis} width={52} tickFormatter={(v) => (privacyMode ? '••' : formatCompactINR(v).replace('₹', ''))} />
+                    <Tooltip {...chartTooltipStyle} labelFormatter={(d) => `Day ${d}`} formatter={(v: number, n: string) => [privacyMode ? '••••' : formatINR(v), n]} />
+                    <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                    {scopeBudget > 0 && <ReferenceLine y={scopeBudget} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" label={{ value: 'Budget', fill: 'hsl(var(--muted-foreground))', fontSize: 11, position: 'insideTopLeft' }} />}
+                    {ym === curYm && <ReferenceLine x={p.dayToday} stroke="hsl(var(--border))" />}
+                    <Line type="monotone" dataKey="expected" name="Expected cumulative" stroke={chartColor(2)} strokeWidth={2} strokeDasharray="6 3" dot={false} />
+                    <Line type="monotone" dataKey="actual" name="Actual cumulative" stroke={chartColor(3)} strokeWidth={2.5} dot={false} connectNulls={false} activeDot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
-              <p className="shrink-0 text-right text-xs text-muted-foreground">{p.remainingDays > 0 ? <><span className="font-semibold text-foreground"><Money value={p.safeDailySpend} /></span>/day<br />for {p.remainingDays} days</> : 'month done'}</p>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={Math.min(p.utilisation, 100)} aria-valuemin={0} aria-valuemax={100} aria-label="Budget used">
-              <div className={cn('h-full rounded-full', p.utilisation >= 90 ? 'bg-destructive' : p.utilisation >= 70 ? 'bg-warning' : 'bg-primary')} style={{ width: `${Math.min(p.utilisation, 100)}%` }} />
-            </div>
-            <p className="text-xs text-muted-foreground"><Money value={p.spent} /> of <Money value={scopeBudget} /> spent · {p.utilisation}% used</p>
-            <div className="grid grid-cols-2 gap-2">
-              <Button onClick={() => setDlg({ kind: 'txn', type: 'expense' })}><Plus className="mr-1.5 h-4 w-4" />Add expense</Button>
-              <Button variant="outline" onClick={() => setTab('budgets')}>Category budgets</Button>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <label htmlFor="budget-scope" className="text-sm font-medium">Showing</label>
-            <Select id="budget-scope" className="w-auto" value={catFilter} onChange={(e) => setCatFilter(e.target.value)}>
-              <option value="">All categories</option>
-              {EXPENSE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </Select>
-            {catFilter && catLimit === 0 && <span className="text-xs text-warning">No limit set for {catFilter}. Set one under Budget to see its daily pace.</span>}
-          </div>
-          <div className={cn('grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 border-b border-border pb-5 max-md:[&>*]:px-3 max-md:[&>*]:py-3', !moreStats && 'max-md:hidden')}>
-            <Stat label={catFilter ? `${catFilter} budget` : 'Monthly budget'} value={<Money value={scopeBudget} />} hint={!catFilter && carry > 0 ? `incl. ${formatINR(carry)} rolled over` : `${p.days} days`} />
-            <Stat label="Spent" value={<Money value={p.spent} />} hint={<span className="flex flex-wrap items-center gap-x-2"><span><UsagePct value={p.utilisation} warnAt={70} highAt={90} /> used</span><Metric amount={p.spent - prevTotal} invertGood className="text-xs" hint="No spending last month" /></span>} />
-            <Stat label="Remaining" value={<span className={p.remaining < 0 ? 'text-destructive' : ''}><Money value={p.remaining} /></span>} hint={p.remainingDays > 0 ? `${formatINR(p.safeDailySpend)}/day safe to spend` : undefined} />
-            <Stat label={catFilter ? `${catFilter} daily budget` : 'Daily budget'} value={<Money value={p.dailyBudget} decimals />} hint={catFilter ? 'category limit ÷ days in month' : 'budget ÷ days in month'} />
-            <Stat label={`Expected by ${ym === curYm ? 'today' : 'month end'}`} value={<Money value={p.expectedTillToday} />} hint="Pace line, not remaining" />
-            <Stat label={p.variance > 0 ? 'Over pace by' : 'Under pace by'} value={<span className={p.variance > 0 ? 'text-destructive' : 'text-success'}><Money value={Math.abs(p.variance)} /></span>} />
-            <Stat label="Projected month-end" value={<Money value={p.projected} />} hint={p.projectedOver > 0 ? `${formatINR(p.projectedOver)} over` : 'within budget'} />
-            <Stat label="Change vs last month" info="Spending this month against the whole of last month. Lower is better." value={<Metric amount={p.spent - prevTotal} pct={prevTotal > 0 ? ((p.spent - prevTotal) / prevTotal) * 100 : null} invertGood className="text-lg font-semibold sm:text-xl" />} hint={`Last month ${formatINR(prevTotal)}`} />
-          </div>
-          <button type="button" onClick={() => setMoreStats((v) => !v)} aria-expanded={moreStats} className="-mt-2 flex w-full items-center justify-center gap-1 py-1 text-xs font-medium text-primary md:hidden">{moreStats ? 'Fewer numbers' : 'More numbers'}<ChevronDown className={cn('h-3.5 w-3.5 transition-transform', moreStats && 'rotate-180')} /></button>
+            </Panel>
 
-          <Panel title={catFilter ? `Daily pacing: ${catFilter}` : 'Daily pacing'}>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={p.series} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                  <CartesianGrid stroke={chartGrid} vertical={false} />
-                  <XAxis dataKey="day" {...chartAxis} label={{ value: 'Day of month', position: 'insideBottom', offset: -2, fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} height={36} />
-                  <YAxis {...chartAxis} width={52} tickFormatter={(v) => (privacyMode ? '••' : formatCompactINR(v).replace('₹', ''))} />
-                  <Tooltip {...chartTooltipStyle} labelFormatter={(d) => `Day ${d}`} formatter={(v: number, n: string) => [privacyMode ? '••••' : formatINR(v), n]} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <ReferenceLine y={scopeBudget} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" label={{ value: 'Budget', fill: 'hsl(var(--muted-foreground))', fontSize: 11, position: 'insideTopRight' }} />
-                  {ym === curYm && <ReferenceLine x={p.dayToday} stroke="hsl(var(--border))" />}
-                  <Line type="monotone" dataKey="expected" name="Expected cumulative" stroke={chartColor(2)} strokeWidth={2} strokeDasharray="6 3" dot={false} />
-                  <Line type="monotone" dataKey="actual" name="Actual cumulative" stroke={chartColor(3)} strokeWidth={2.5} dot={false} connectNulls={false} activeDot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </Panel>
-
-          <Panel title="Category budgets">
-            <ul className="grid gap-4 sm:grid-cols-2">
-              {EXPENSE_CATEGORIES.map((c) => {
-                const lim = Number(budget.categories?.[c]) || 0
-                const sp = cats[c] || 0
-                const pct = lim > 0 ? (sp / lim) * 100 : 0
-                return (
-                  <li key={c}>
-                    <div className="mb-1 flex justify-between text-sm"><button type="button" className={cn('font-medium hover:text-primary', catFilter === c && 'text-primary')} onClick={() => setCatFilter(catFilter === c ? '' : c)} aria-pressed={catFilter === c}>{c}</button><span className="text-muted-foreground"><Money value={sp} compact /> / {lim ? <Money value={lim} compact /> : 'no limit'}</span></div>
-                    <Progress value={lim ? pct : 0} tone={toneForPct(pct)} label={`${c} budget used`} />
-                    {lim > 0 && <p className="mt-1 text-xs text-muted-foreground">{formatINR(Math.round((lim / p.days) * 100) / 100, { decimals: true })}/day · {formatINR(Math.max(lim - sp, 0))} left</p>}
-                  </li>
-                )
-              })}
-            </ul>
-          </Panel>
+            </>
+          )}
         </>
       ))}
 
-      {tab === 'overview' && <SummaryStrip list={monthTx} />}
+
+      {tab === 'overview' && (
+        <div className="space-y-5 md:hidden">
+          {([
+            ['Spending', [['transactions', 'Transactions'], ['calendar', 'Calendar'], ['review', 'Review']]],
+            ['Insights', [['monthly', 'Month by month'], ['summary', 'Summary'], ['stats', 'Stats'], ['cashflow', 'Cash flow']]],
+            ['Plan', [['budgets', 'Set budgets'], ['recurring', 'Recurring payments']]],
+          ] as const).map(([label, items]) => (
+            <section key={label}>
+              <h2 className="mb-1 px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</h2>
+              <ul className="surface-card divide-y divide-border px-4">
+                {items.map(([v, name]) => (
+                  <li key={v}><button type="button" onClick={() => setTab(v as typeof tab)} className="group flex min-h-12 w-full items-center justify-between gap-3 text-left text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring"><span>{name}</span><span className="flex items-center gap-2">{v === 'review' && reviewCount > 0 && <span className="rounded-full bg-primary/15 px-1.5 text-[11px] font-semibold text-primary">{reviewCount}</span>}<ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary" aria-hidden /></span></button></li>
+                ))}
+              </ul>
+            </section>))}
+        </div>
+      )}
 
       {dlg?.kind === 'budget' && <BudgetForm ym={ym} row={budget} onClose={() => setDlg(null)} onSave={async (r) => { await save(db, 'budgets', r); toast.success('Budget saved') }} />}
-      {dlg?.kind === 'categories' && <CategoryManager onClose={() => setDlg(null)} />}
+      {dlg?.kind === 'incomeBudget' && <IncomeBudgetForm ym={ym} plan={incomePlan} onClose={() => setDlg(null)} onSave={async (pl) => { await db.meta.put({ key: 'incomeBudgets', value: { ...incomePlans, [ym]: pl } }); toast.success('Income budget saved') }} />}
       {dlg?.kind === 'txn' && <TxnEntryDialog initialType={dlg.type} row={dlg.row} draft={dlg.draft} defaultMonth={ym} onClose={() => setDlg(null)} />}
       {splitFor && <SplitDialog expense={splitFor} onClose={() => setSplitFor(null)} />}
-      <RulesDialog open={rulesOpen} onOpenChange={setRulesOpen} />
-      <ImportCsvDialog open={importOpen} onOpenChange={setImportOpen} />
       <ConfirmDialog open={dlg?.kind === 'delmany'} onOpenChange={(o) => !o && setDlg(null)} title={`Delete ${dlg?.txs?.length ?? 0} transactions?`}
         description="Linked bank balances and card outstanding are restored for each one. This cannot be undone." confirmLabel="Delete all" variant="destructive"
         onConfirm={async () => {
@@ -258,7 +334,7 @@ export default function BudgetPage() {
         }} />
       <ConfirmDialog open={dlg?.kind === 'del'} onOpenChange={(o) => !o && setDlg(null)} title={`Delete this ${dlg?.tx?.kind ?? 'transaction'}?`}
         description={dlg?.tx?.kind === 'transfer' ? 'Both balances are restored.' : dlg?.tx?.kind === 'income' ? 'The account balance is reduced by this amount again.' : 'The linked bank balance or card outstanding is restored.'} confirmLabel="Delete" variant="destructive"
-        onConfirm={async () => { const t = dlg!.tx!; try { t.kind === 'expense' ? await deleteExpense(db, t.id) : t.kind === 'income' ? await deleteIncome(db, t.id) : await deleteTransfer(db, t.id); toast.success('Deleted') } catch (e) { toast.error(e instanceof Error ? e.message : 'Could not delete') } setDlg(null) }} />
+        onConfirm={async () => { const t = dlg!.tx!; try { t.kind === 'expense' ? await deleteExpense(db, t.id) : t.kind === 'income' ? await deleteIncome(db, t.id) : await deleteTransfer(db, t.id); toast.success('Deleted') } catch (e) { toastProblem(e, 'Could not delete') } setDlg(null) }} />
     </div>
   )
 }

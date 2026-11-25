@@ -42,7 +42,7 @@ export function FeaturesProvider({ children }: { children: ReactNode }) {
   const demoOnboarding = data.meta.find((m: any) => m.key === 'onboarding')?.value as { completed: boolean; profile: OnboardingProfile } | undefined
 
   const state = useMemo(() => {
-    if (isDemo) return { ready: wealthReady, enabled: new Set(demoFeatures ? normaliseSelection(demoFeatures.enabled) : FEATURE_KEYS), onboardingCompleted: !!demoOnboarding?.completed, profile: demoOnboarding?.profile ?? null }
+    if (isDemo) return { ready: wealthReady, enabled: new Set(FEATURE_KEYS) /* the demo always has every feature on */, onboardingCompleted: !!demoOnboarding?.completed, profile: demoOnboarding?.profile ?? null }
     return { ready: !!remote, enabled: new Set(remote ? normaliseSelection(remote.enabled) : FEATURE_KEYS), onboardingCompleted: remote?.onboardingCompleted ?? true, profile: remote?.profile ?? null }
   }, [isDemo, wealthReady, demoFeatures, demoOnboarding, remote])
 

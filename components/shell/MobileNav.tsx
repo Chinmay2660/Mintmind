@@ -3,11 +3,12 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Menu } from 'lucide-react'
-import { DASHBOARD_NAV_MAIN, DASHBOARD_NAV_MORE, isDashboardNavActive } from '@/lib/constants/dashboardNav'
+import { Menu, Sparkles } from 'lucide-react'
+import { DASHBOARD_NAV_MAIN, DASHBOARD_NAV_MORE, OVERVIEW_DRILL_PATHS, isDashboardNavActive } from '@/lib/constants/dashboardNav'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { useVisibleNav } from './FeatureGuard'
+import { useFeatures } from '@/lib/features/FeaturesContext'
 import { NotificationsMenu } from './NotificationsMenu'
 
 // One short word per tab. "Budget & Expenses" reads as "Expenses" because that is what people look for.
@@ -26,6 +27,7 @@ export function MobileNav() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const { main: navMain, more: navMore } = useVisibleNav()
+  const aiOn = useFeatures().isEnabled('ai_assistant')
   const [open, setOpen] = useState(false)
   const moreActive = navMore.some((m) => isDashboardNavActive(pathname, m.path))
 
@@ -36,7 +38,8 @@ export function MobileNav() {
     >
       <div className="mx-auto flex h-[4.25rem] max-w-lg items-stretch justify-around px-1">
         {navMain.map((item) => {
-          const active = isDashboardNavActive(pathname, item.path)
+          // the pages the Overview's Assets and Liabilities tabs open still belong to the Overview tab
+          const active = isDashboardNavActive(pathname, item.path) || (item.id === 1 && OVERVIEW_DRILL_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/')))
           const Icon = item.icon
           // Spend is the main job on a phone, so it is a raised round button in the middle of the bar
           if (item.id === 7) {
@@ -87,7 +90,7 @@ export function MobileNav() {
               </div>
             </SheetHeader>
             <div className="grid grid-cols-2 gap-2">
-              {navMore.map((item) => {
+              {[...navMore.filter((i) => i.id !== 12), ...(aiOn ? [{ id: 99, name: 'Wealth AI', icon: Sparkles, path: '/dashboard/ai' }] : []), ...navMore.filter((i) => i.id === 12)].map((item) => {
                 const Icon = item.icon
                 const active = isDashboardNavActive(pathname, item.path)
                 return (

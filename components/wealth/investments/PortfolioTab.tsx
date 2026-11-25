@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { ChevronRight } from 'lucide-react'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { portfolioOverview } from '@/lib/wealth/portfolio'
+import { portfolioRealised } from '@/lib/wealth/realised'
 import { Money } from '../Money'
 import { Empty, Metric, PageHeader, Panel, Stat, chartColor } from '../kit'
 
@@ -17,13 +18,15 @@ export function PortfolioTab({ onOpen, part = 'body' }: { onOpen: (key: string) 
   const today = useMemo(() => new Date(), [])
   const p = useMemo(() => portfolioOverview({ funds: data.funds as any[], fundTxns: data.fundTxns as any[], sips: data.sips as any[], assets: data.assets as any[], today }), [data.funds, data.fundTxns, data.sips, data.assets, today])
   const rows = p.rows.filter((r) => r.count > 0)
+  const realised = useMemo(() => portfolioRealised(data.funds as any[], data.fundTxns as any[]), [data.funds, data.fundTxns])
 
   if (part === 'summary') return (
     <section aria-label="Summary" className="grid grid-cols-2 gap-3 border-b border-border pb-5 lg:grid-cols-4">
       <Stat label="Portfolio value" value={<Money value={p.total} />} />
-      <Stat label="Put in" info="Only holdings where you recorded what was paid are counted here." value={<Money value={p.invested} />} />
-      <Stat label="Gain" info="Value minus what was put in, for holdings where the cost is known." value={p.invested > 0 ? <Metric amount={p.gain} pct={p.gainPct} className="text-lg font-semibold sm:text-xl" /> : '-'} />
+      <Stat label="Put in" value={<Money value={p.invested} />} />
+      <Stat label="Gain" value={p.invested > 0 ? <Metric amount={p.gain} pct={p.gainPct} className="text-lg font-semibold sm:text-xl" /> : '-'} />
       <Stat label="Holdings" value={rows.reduce((s, r) => s + r.count, 0)} hint={`${rows.length} ${rows.length === 1 ? 'kind' : 'kinds'}`} />
+      {realised.hasSales && <Stat label="Realised gain" value={<Metric amount={realised.realised} compact={false} className="text-lg font-semibold sm:text-xl" />} hint={realised.incomplete ? 'Partly estimated: some history is missing' : 'Mutual funds sold'} />}
     </section>
   )
 

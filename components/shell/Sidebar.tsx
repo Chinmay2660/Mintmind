@@ -2,12 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, PanelLeftClose, PanelLeftOpen, Sparkles, Wallet } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, Sparkles, Wallet } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { DASHBOARD_NAV_ALL, APP_NAME, isDashboardNavActive, type DashboardNavItem } from '@/lib/constants/dashboardNav'
 import { cn } from '@/lib/utils'
 import { useFeatures } from '@/lib/features/FeaturesContext'
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { useVisibleNav } from './FeatureGuard'
 import { canStorePreferences } from '@/lib/consent'
 
@@ -21,14 +20,14 @@ const IDLE = 'text-foreground/80 hover:bg-muted hover:text-foreground'
 const SECTIONS: { label?: string; ids: number[] }[] = [
   { ids: [1, 7] },
   { label: 'Money', ids: [3, 5] },
-  { label: 'Wealth', ids: [4, 2, 14, 15] },
+  { label: 'Wealth', ids: [4, 2, 15] },
   { label: 'More', ids: [6, 8, 9, 13] },
 ]
 const SETTINGS_ID = 12
 
 /**
- * The navigation itself. On a wide screen it sits in the sidebar (and can shrink to an icon rail);
- * on a phone or tablet the same content opens as a drawer from the menu button, with no collapse control.
+ * The navigation itself, in the sidebar on a wide screen (it can shrink to an icon rail). On a phone the bottom bar and its
+ * More sheet are the only menu: there is no second, hamburger menu.
  */
 function NavPanel({ collapsed = false, drawer = false, onNavigate, onToggleRail }: { collapsed?: boolean; drawer?: boolean; onNavigate?: () => void; onToggleRail?: () => void }) {
   const pathname = usePathname()
@@ -112,26 +111,5 @@ export function Sidebar() {
     <aside aria-label="Primary" className={cn('hidden shrink-0 flex-col border-r border-border bg-sidebar transition-[width] duration-200 md:flex print:hidden', collapsed ? 'w-[var(--sidebar-width-collapsed)]' : 'w-[var(--sidebar-width)]')}>
       <NavPanel collapsed={collapsed} onToggleRail={toggle} />
     </aside>
-  )
-}
-
-/** The menu button for phones and tablets. It opens the same navigation as a drawer, and a tap outside closes it. */
-export function MobileMenu() {
-  const [open, setOpen] = useState(false)
-  const pathname = usePathname()
-  useEffect(() => { setOpen(false) }, [pathname])
-  return (
-    <>
-      <button type="button" onClick={() => setOpen(true)} aria-label="Open menu" aria-expanded={open}
-        className="mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring md:hidden print:hidden">
-        <Menu className="h-[18px] w-[18px]" />
-      </button>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="left" className="flex w-[86vw] max-w-[19rem] flex-col gap-0 bg-sidebar p-0 sm:max-w-[19rem] [&>button]:hidden">
-          <SheetTitle className="sr-only">Menu</SheetTitle>
-          <NavPanel drawer onNavigate={() => setOpen(false)} />
-        </SheetContent>
-      </Sheet>
-    </>
   )
 }

@@ -1,8 +1,10 @@
 'use client'
 
+import { toastProblem } from '@/lib/notify'
+import { shortAccountName } from '@/lib/wealth/accountName'
 import { useMemo, useState } from 'react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
-import { ArrowDownLeft, ArrowUpRight, CheckSquare, ChevronLeft, ChevronRight, Copy, Download, MoreVertical, Pencil, Plus, Scale, Search, Split, Star, Trash2, X } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, CheckSquare, ChevronLeft, ChevronRight, Copy, Download, MoreVertical, Pencil, Plus, Scale, Search, SlidersHorizontal, Split, Star, Trash2, X } from 'lucide-react'
 import { SnapCarousel } from '@/components/ui/snap-carousel'
 import { TxnRow } from './TxnRow'
 import { toast } from 'sonner'
@@ -34,27 +36,40 @@ export interface Tx { key: string; kind: 'expense' | 'income' | 'transfer'; id: 
 const KIND_STYLE = { expense: 'text-destructive', income: 'text-success', transfer: 'text-muted-foreground' } as const
 const sign = { expense: '-', income: '+', transfer: '' } as const
 
-export function SummaryStrip({ list }: { list: Tx[] }) {
+/** The month in one plain row, as a money manager shows it: income, expenses and the total, each in its own colour. */
+export function MonthTotals({ list }: { list: Tx[] }) {
+  const s = monthSummary(list as any)
+  return (
+    <dl className="surface-card grid grid-cols-3 divide-x divide-border px-2 py-3 text-center" aria-label="This month">
+      <div className="px-2"><dt className="text-xs text-muted-foreground">Income</dt><dd className="mt-0.5 text-base font-semibold tabular-nums text-income"><Money value={s.income} compact /></dd></div>
+      <div className="px-2"><dt className="text-xs text-muted-foreground">Expenses</dt><dd className="mt-0.5 text-base font-semibold tabular-nums text-expense"><Money value={s.expense} compact /></dd></div>
+      <div className="px-2"><dt className="text-xs text-muted-foreground">Total</dt><dd className={cn('mt-0.5 text-base font-semibold tabular-nums', s.net < 0 && 'text-expense')}><Money value={s.net} compact signed /></dd></div>
+    </dl>
+  )
+}
+
+/** Income, expenses and what is left. Each card opens that month's log: the income entries, the expenses, or everything. */
+export function SummaryStrip({ list, onOpen }: { list: Tx[]; onOpen?: (kind: 'income' | 'expense' | 'all') => void }) {
   const s = monthSummary(list as any)
   const count = (k: Tx['kind']) => list.filter((t) => t.kind === k).length
   const saved = s.income > 0 ? Math.round((s.net / s.income) * 100) : null
   const cards = [
-    { key: 'income', label: 'Income', icon: ArrowDownLeft, value: <Money value={s.income} />, hint: `${count('income')} ${count('income') === 1 ? 'entry' : 'entries'} this month`, chip: 'bg-success/25 text-foreground', tint: 'success', bar: '!border-success/60' },
-    { key: 'expense', label: 'Expenses', icon: ArrowUpRight, value: <Money value={s.expense} />, hint: `${count('expense')} ${count('expense') === 1 ? 'expense' : 'expenses'} this month`, chip: 'bg-destructive/25 text-foreground', tint: 'destructive', bar: '!border-destructive/60' },
-    { key: 'net', label: s.net < 0 ? 'Overspent' : 'Saved', icon: Scale, value: <Money value={s.net} signed />, hint: saved === null ? 'No income recorded yet' : `${saved}% of income`, chip: s.net < 0 ? 'bg-destructive/25 text-foreground' : 'bg-primary/30 text-foreground', tint: s.net < 0 ? 'destructive' : 'primary', bar: s.net < 0 ? '!border-destructive/60' : '!border-primary/60' },
+    { key: 'income', open: 'income' as const, label: 'Income', icon: ArrowDownLeft, value: <Money value={s.income} />, hint: `${count('income')} ${count('income') === 1 ? 'entry' : 'entries'} this month`, chip: 'bg-success/25 text-foreground', tint: 'success', bar: '!border-success/60' },
+    { key: 'expense', open: 'expense' as const, label: 'Expenses', icon: ArrowUpRight, value: <Money value={s.expense} />, hint: `${count('expense')} ${count('expense') === 1 ? 'expense' : 'expenses'} this month`, chip: 'bg-destructive/25 text-foreground', tint: 'destructive', bar: '!border-destructive/60' },
+    { key: 'net', open: 'all' as const, label: s.net < 0 ? 'Overspent' : 'Saved', icon: Scale, value: <Money value={s.net} signed />, hint: saved === null ? 'No income recorded yet' : `${saved}% of income`, chip: s.net < 0 ? 'bg-destructive/25 text-foreground' : 'bg-primary/30 text-foreground', tint: s.net < 0 ? 'destructive' : 'primary', bar: s.net < 0 ? '!border-destructive/60' : '!border-primary/60' },
   ]
   // Swipeable on phones, three across from tablet up. Every figure is the month's real total.
   return (
     <SnapCarousel label="Month summary" cols={3} itemWidth="w-[72%]">
       {cards.map((c) => (
-        <div key={c.key} style={{ background: `color-mix(in srgb, hsl(var(--${c.tint})) 32%, hsl(var(--card)))` }} className={cn('surface-card relative flex h-full flex-col justify-between overflow-hidden p-4', c.bar)}>
+        <button key={c.key} type="button" disabled={!onOpen} onClick={() => onOpen?.(c.open)} aria-label={`${c.label}: show the ${c.open === 'all' ? 'transactions' : c.open === 'income' ? 'income entries' : 'expenses'}`} style={{ background: `color-mix(in srgb, hsl(var(--${c.tint})) 32%, hsl(var(--card)))` }} className={cn('surface-card relative flex h-full w-full flex-col justify-between overflow-hidden p-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring', onOpen && 'transition-transform active:scale-[0.99]', c.bar)}>
           <div className="flex items-center gap-2">
             <span className={cn('flex h-8 w-8 items-center justify-center rounded-lg', c.chip)}><c.icon className="h-4 w-4" aria-hidden /></span>
             <p className="text-sm font-medium">{c.label}</p>
           </div>
           <p className="mt-4 text-2xl font-semibold tracking-tight tabular-nums [&_*]:!text-foreground">{c.value}</p>
           <p className="mt-1 text-xs opacity-80">{c.hint}</p>
-        </div>
+        </button>
       ))}
     </SnapCarousel>
   )
@@ -66,7 +81,7 @@ function Row({ t, onEdit, onDelete, onDuplicate, onSplit, onBookmark, selecting,
 }) {
   const starred = !!t.raw?.bookmarked
   return (
-    <TxnRow kind={t.kind} title={t.title} category={t.category} amount={t.amount} selected={selected}
+    <TxnRow layout="money" kind={t.kind} title={t.title} category={t.category} amount={t.amount} selected={selected}
       meta={`${t.kind === 'expense' ? `${expenseParts(t.raw).length > 1 ? 'Split: ' + expenseParts(t.raw).map((p) => `${p.category} ${formatINR(p.amount)}`).join(', ') : t.sub} · ${modeLabel(t.raw.mode)}` : t.sub}`}
       onLongPress={onLongPress && !selecting ? () => onLongPress(t) : undefined}
       onSwipeLeft={!selecting && !t.legacy ? { label: 'Delete', run: () => onDelete(t) } : undefined}
@@ -103,25 +118,32 @@ function exportTxCsv(rows: Tx[], ym: string) {
 }
 
 /** Daily view: transactions grouped by date with day totals, search, filters, bookmarks and multi-select. */
-export function TransactionsView({ list, ym, onEdit, onDelete, onAdd, onDuplicate, onSplit, onBookmark, onBulkDelete }: {
+export function TransactionsView({ initialCategory = '', initialKind = 'all', list, ym, onEdit, onDelete, onAdd, onDuplicate, onSplit, onBookmark, onBulkDelete, onImport }: {
+  onImport?: () => void
+  /** open already filtered to one category (a parent category includes its sub-categories) */
+  initialCategory?: string
+  /** open already showing only income, only expenses or only transfers */
+  initialKind?: 'all' | 'expense' | 'income' | 'transfer'
   list: Tx[]; ym: string; onEdit: (t: Tx) => void; onDelete: (t: Tx) => void; onAdd: () => void; onDuplicate?: (t: Tx) => void; onSplit?: (t: Tx) => void
   onBookmark?: (items: Tx[], on: boolean) => void; onBulkDelete?: (items: Tx[]) => void
 }) {
   const [q, setQ] = useState('')
-  const [kind, setKind] = useState<'all' | Tx['kind']>('all')
-  const [cat, setCat] = useState('')
+  const [kind, setKind] = useState<'all' | Tx['kind']>(initialKind)
+  const [cat, setCat] = useState(initialCategory)
   const [acct, setAcct] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const { data: wd } = useWealth()
   const accountName = (t: Tx) => { const r = t.raw || {}; const id = r.accountId || r.cardId || r.fromId; const a = wd.bankAccounts.find((x: any) => x.id === id) || wd.cards.find((x: any) => x.id === id); return a ? (a.nickname || a.bankName || `${a.bank} ${a.cardName}`) : '' }
   const [onlyStar, setOnlyStar] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [selecting, setSelecting] = useState(false)
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const cats = useCategories()
   const allCats = useMemo(() => [...new Set([...cats.expense, ...cats.income])], [cats])
 
-  const shown = useMemo(() => list.filter((t) => (kind === 'all' || t.kind === kind) && (!cat || t.category === cat) && (!acct || t.raw?.accountId === acct || t.raw?.cardId === acct || t.raw?.fromId === acct || t.raw?.toId === acct) && (!from || t.date >= from) && (!to || t.date <= to) && (!onlyStar || t.raw?.bookmarked) && matchesAll(q, t.title, t.sub, t.category, t.amount, t.date, t.raw?.note, accountName(t))), [list, kind, cat, acct, from, to, q, onlyStar])
+  const shown = useMemo(() => list.filter((t) => (kind === 'all' || t.kind === kind) && (!cat || t.category === cat || parentOf(t.category) === cat) && (!acct || t.raw?.accountId === acct || t.raw?.cardId === acct || t.raw?.fromId === acct || t.raw?.toId === acct) && (!from || t.date >= from) && (!to || t.date <= to) && (!onlyStar || t.raw?.bookmarked) && matchesAll(q, t.title, t.sub, t.category, t.amount, t.date, t.raw?.note, accountName(t))), [list, kind, cat, acct, from, to, q, onlyStar])
   const pg = usePagination(shown, { pageSize: 25, resetKey: `${ym}|${kind}|${cat}|${acct}|${from}|${to}|${q}|${onlyStar}` })
   const groups = useMemo(() => groupByDay(pg.slice as any) as unknown as { date: string; items: Tx[]; income: number; expense: number }[], [pg.slice])
   const starCount = useMemo(() => list.filter((t) => t.raw?.bookmarked).length, [list])
@@ -137,43 +159,49 @@ export function TransactionsView({ list, ym, onEdit, onDelete, onAdd, onDuplicat
 
   return (
     <div className="space-y-4">
-      <SummaryStrip list={list} />
-      <div className="space-y-2.5 md:flex md:flex-wrap md:items-center md:gap-2 md:space-y-0">
-        <div className="relative md:min-w-56 md:flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input aria-label="Search transactions" className="h-11 pl-9 md:h-10" placeholder="Search description, category" value={q} onChange={(e) => setQ(e.target.value)} /></div>
-        <div className="grid grid-cols-4 rounded-xl border border-border bg-muted p-1 md:inline-grid md:w-auto">
-          {(['all', 'expense', 'income', 'transfer'] as const).map((k) => <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)} className={cn('min-h-9 rounded-lg px-3 text-xs font-medium capitalize outline-none focus-visible:ring-2 focus-visible:ring-ring', kind === k ? 'bg-card shadow-card' : 'text-muted-foreground hover:text-foreground')}>{k}</button>)}
+      <MonthTotals list={list} />
+      {/* kinds as plain tabs; search, filters, bookmarks and select are small icons, so the list stays the main thing */}
+      <div className="flex items-end justify-between gap-2 border-b border-border">
+        <div role="tablist" aria-label="Show" className="flex gap-5">
+          {(['all', 'income', 'expense', 'transfer'] as const).map((k) => <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => setKind(k)} className={cn('-mb-px min-h-10 border-b-2 px-0.5 text-sm font-medium capitalize outline-none focus-visible:ring-2 focus-visible:ring-ring', kind === k ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}>{k === 'all' ? 'All' : k}</button>)}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="min-w-0 flex-1 md:w-52 md:flex-none"><Select aria-label="Category" value={cat} onChange={(e) => setCat(e.target.value)}><option value="">All categories</option>{allCats.map((c) => <option key={c}>{c}</option>)}</Select></div>
-          <Button variant={onlyStar ? 'default' : 'outline'} onClick={() => setOnlyStar((v) => !v)} aria-pressed={onlyStar} aria-label={`Bookmarked only (${starCount})`} className="h-10 shrink-0"><Star className={cn('h-4 w-4', onlyStar && 'fill-current')} /><span className="ml-1.5 tabular-nums">{starCount}</span></Button>
-          <Button variant="outline" onClick={() => (selecting ? stop() : begin())} aria-pressed={selecting} disabled={!shown.length && !selecting} className="h-10 shrink-0"><CheckSquare className="h-4 w-4 md:mr-1.5" /><span className="max-md:sr-only">{selecting ? 'Done' : 'Select'}</span></Button>
-          <Button variant="outline" onClick={() => exportTxCsv(shown, ym)} disabled={!shown.length} aria-label="Download CSV" className="h-10 shrink-0"><Download className="h-4 w-4 md:mr-1.5" /><span className="max-md:sr-only">CSV</span></Button>
+        <div className="flex items-center pb-0.5">
+          <Button variant="ghost" size="icon" className="h-10 w-10" aria-pressed={searchOpen} aria-label="Search" onClick={() => setSearchOpen((v) => !v)}><Search className={cn('h-[18px] w-[18px]', (searchOpen || q) && 'text-primary')} /></Button>
+          <Button variant="ghost" size="icon" className="relative h-10 w-10" aria-pressed={filtersOpen} aria-label="Filters" onClick={() => setFiltersOpen((v) => !v)}><SlidersHorizontal className={cn('h-[18px] w-[18px]', (filtersOpen || acct || from || to || cat) && 'text-primary')} />{(acct || from || to || cat) && <span aria-hidden className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />}</Button>
+          <Button variant="ghost" size="icon" className="h-10 w-10" aria-pressed={onlyStar} aria-label={`Bookmarked only (${starCount})`} onClick={() => setOnlyStar((v) => !v)}><Star className={cn('h-[18px] w-[18px]', onlyStar && 'fill-current text-primary')} /></Button>
+          <Button variant="ghost" size="icon" className="h-10 w-10" aria-pressed={selecting} aria-label={selecting ? 'Done selecting' : 'Select'} disabled={!shown.length && !selecting} onClick={() => (selecting ? stop() : begin())}><CheckSquare className={cn('h-[18px] w-[18px]', selecting && 'text-primary')} /></Button>
         </div>
       </div>
-      <div className="grid items-end gap-2 [grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr))]">
-        <label className="min-w-0 text-xs text-muted-foreground [grid-column:1/-1] sm:max-w-sm">Account or card
-          <Select aria-label="Account or card" value={acct} onChange={(e) => setAcct(e.target.value)}>
-            <option value="">All accounts and cards</option>
-            {wd.bankAccounts.map((a: any) => <option key={a.id} value={a.id}>{a.nickname || a.bankName}</option>)}
-            {wd.cards.map((x: any) => <option key={x.id} value={x.id}>{x.bank} {x.cardName}</option>)}
-          </Select>
-        </label>
-        <label className="min-w-0 text-xs text-muted-foreground">From<div className="mt-0.5"><DateInput aria-label="From date" min={`${ym}-01`} max={to || `${ym}-31`} value={from} onChange={(e) => setFrom(e.target.value)} /></div></label>
-        <label className="min-w-0 text-xs text-muted-foreground">To<div className="mt-0.5"><DateInput aria-label="To date" min={from || `${ym}-01`} max={`${ym}-31`} value={to} onChange={(e) => setTo(e.target.value)} /></div></label>
-        {(acct || from || to || cat || kind !== 'all' || q || onlyStar) && <Button type="button" variant="ghost" size="sm" className="justify-self-start [grid-column:1/-1]" onClick={() => { setAcct(''); setFrom(''); setTo(''); setCat(''); setKind('all'); setQ(''); setOnlyStar(false) }}>Clear filters</Button>}
-        <span className="text-right text-xs text-muted-foreground tabular-nums [grid-column:1/-1]">{shown.length} of {list.length}</span>
-      </div>
+      {searchOpen && <div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input autoFocus aria-label="Search transactions" className="h-11 pl-9" placeholder="Search description, category" value={q} onChange={(e) => setQ(e.target.value)} /></div>}
+      {filtersOpen && (
+        <div className="grid items-end gap-2 [grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr))]">
+          <label className="min-w-0 text-xs text-muted-foreground">Category<div className="mt-0.5"><Select aria-label="Category" value={cat} onChange={(e) => setCat(e.target.value)}><option value="">All categories</option>{allCats.map((c) => <option key={c}>{c}</option>)}</Select></div></label>
+          <label className="min-w-0 text-xs text-muted-foreground">Account or card
+            <div className="mt-0.5"><Select aria-label="Account or card" value={acct} onChange={(e) => setAcct(e.target.value)}>
+              <option value="">All accounts and cards</option>
+              {wd.bankAccounts.map((a: any) => <option key={a.id} value={a.id}>{shortAccountName(a, wd.bankAccounts)}</option>)}
+              {wd.cards.map((x: any) => <option key={x.id} value={x.id}>{x.bank} {x.cardName}</option>)}
+            </Select></div>
+          </label>
+          <label className="min-w-0 text-xs text-muted-foreground">From<div className="mt-0.5"><DateInput aria-label="From date" min={`${ym}-01`} max={to || `${ym}-31`} value={from} onChange={(e) => setFrom(e.target.value)} /></div></label>
+          <label className="min-w-0 text-xs text-muted-foreground">To<div className="mt-0.5"><DateInput aria-label="To date" min={from || `${ym}-01`} max={`${ym}-31`} value={to} onChange={(e) => setTo(e.target.value)} /></div></label>
+          <div className="flex items-center justify-between gap-3 [grid-column:1/-1]">
+            <span className="text-xs tabular-nums text-muted-foreground">{shown.length} of {list.length}</span>
+            {(acct || from || to || cat || kind !== 'all' || q || onlyStar) && <Button type="button" variant="ghost" size="sm" onClick={() => { setAcct(''); setFrom(''); setTo(''); setCat(''); setKind('all'); setQ(''); setOnlyStar(false) }}>Clear filters</Button>}
+          </div>
+        </div>
+      )}
       {groups.length === 0 ? <Empty title={onlyStar ? 'No bookmarked transactions this month' : list.length ? 'No matches' : 'No transactions this month'} description={onlyStar ? 'Tap the star on a transaction to keep it handy.' : undefined} action={!list.length ? <Button onClick={onAdd}><Plus className="mr-1.5 h-4 w-4" />Add transaction</Button> : undefined} /> : (
-        <div className={cn('space-y-3', selecting && 'pb-24')}>
+        <div className={cn('surface-card overflow-hidden', selecting && 'mb-24')}>
           {groups.map((g) => (
-            <section key={g.date} className="surface-card">
-              <header className="flex items-center justify-between gap-3 border-b border-border bg-muted/40 px-4 py-2">
+            <section key={g.date}>
+              <header className="flex items-center justify-between gap-3 border-y border-border bg-muted/50 px-4 py-1.5 first:border-t-0">
                 <span className="flex items-center gap-2">
                   <span className="text-xl font-semibold tabular-nums leading-none">{g.date.slice(8, 10)}</span>
                   <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-primary">{new Date(g.date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short' })}</span>
-                  <span className="text-xs text-muted-foreground tabular-nums">{g.date.slice(5, 7)}.{g.date.slice(0, 4)}</span>
+                  <span className="text-xs text-muted-foreground tabular-nums">{new Date(g.date + 'T00:00:00').toLocaleDateString('en-IN', { month: 'long' })}, {g.date.slice(0, 4)}</span>
                 </span>
-                <span className="flex gap-3 text-xs font-medium tabular-nums">{g.income > 0 && <span>+{formatINR(g.income)}</span>}{g.expense > 0 && <span className="text-muted-foreground">-{formatINR(g.expense)}</span>}</span>
+                <span className="flex gap-3 text-xs font-medium tabular-nums">{g.income > 0 && <span className="text-income">+{formatINR(g.income)}</span>}{g.expense > 0 && <span className="text-expense">-{formatINR(g.expense)}</span>}</span>
               </header>
               <ul className="divide-y divide-border px-4">{g.items.map((t) => <Row key={t.key} t={t} onEdit={onEdit} onDelete={onDelete} onDuplicate={onDuplicate} onSplit={onSplit} onBookmark={onBookmark ? (x, on) => onBookmark([x], on) : undefined} selecting={selecting} selected={picked.has(t.key)} onToggle={toggle} onLongPress={begin} />)}</ul>
             </section>
@@ -288,7 +316,7 @@ export function CategoryManager({ onClose }: { onClose: () => void }) {
   const stored = !!data.meta.find((m: any) => m.key === 'categories')
   const used = (c: string) => (kind === 'expense' ? data.expenses.filter((e: any) => e.category === c).length : data.bankTxns.filter((t: any) => t.type === 'income' && t.category === c).length)
   const init = async () => { if (!stored) await saveCategories(db, { expense: cats.expense, income: cats.income }) }
-  const run = async (fn: () => Promise<void>) => { try { await init(); await fn() } catch (e) { toast.error(e instanceof Error ? e.message : 'Failed') } }
+  const run = async (fn: () => Promise<void>) => { try { await init(); await fn() } catch (e) { toastProblem(e, 'Failed') } }
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -403,7 +431,7 @@ export function SummaryView({ list, ym }: { list: Tx[]; ym: string }) {
     const r = t.raw || {}
     if (r.cardId) { const c = data.cards.find((x: any) => x.id === r.cardId); return c ? `${c.bank} ${c.cardName}` : 'Credit card' }
     const a = data.bankAccounts.find((x: any) => x.id === r.accountId)
-    return a ? a.nickname || a.bankName : 'Not linked'
+    return a ? shortAccountName(a, data.bankAccounts) : 'Not linked'
   }
   const byMode = group((t) => modeLabel(t.raw?.mode))
   const byAccount = group(accountName)

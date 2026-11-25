@@ -1,5 +1,7 @@
 'use client'
 
+import { BackLink } from '@/components/shell/BackLink'
+import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Printer } from 'lucide-react'
@@ -17,6 +19,7 @@ const PAPER = { '--background': '0 0% 100%', '--foreground': '0 0% 0%', '--card'
 
 /** A net worth statement to sign: assets and liabilities as of today, with space for a signature. It is self-declared, not an audit. */
 export default function StatementPage() {
+  usePrivacyMode() // draws amounts again when balances are hidden or shown
   const { ready, data, isDemo } = useWealth()
   const { user } = useAuth()
   const [detailed, setDetailed] = useState(true)
@@ -52,7 +55,7 @@ export default function StatementPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <Link href="/dashboard/net-worth" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Net worth</Link>
+        <BackLink href="/dashboard/net-worth" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Net worth</BackLink>
         <div className="flex flex-wrap items-center gap-4">
           <label className="flex items-center gap-2 text-sm"><Checkbox checked={detailed} onChange={(e) => setDetailed(e.target.checked)} aria-label="List every account and holding" />List every account and holding</label>
           <Button onClick={() => { const prev = document.title; document.title = `net-worth-statement-${toISO(today)}`; window.addEventListener('afterprint', () => { document.title = prev }, { once: true }); window.print() }}><Printer className="mr-1.5 h-4 w-4" />Print or save as PDF</Button>

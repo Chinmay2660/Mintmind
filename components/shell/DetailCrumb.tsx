@@ -1,5 +1,6 @@
 'use client'
 
+import { dialogJustPopped, expectSelfPop, isSelfPop } from '@/lib/navHistory'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 interface Crumb { label: string; onBack: () => void }
@@ -31,6 +32,30 @@ export function useDetailCrumb(label: string | null | undefined, onBack: () => v
     set({ label, onBack: () => back.current() })
     return () => set(null)
   }, [label, set])
+
+  // The browser's Back button (and a phone's back gesture) should close the open record and stay on the page, not leave it.
+  const open = !!label
+  const run = useRef(0)
+  useEffect(() => {
+    if (!open) return
+    const mine = ++run.current
+    let ours = true
+    // an entry that is already there (React may run an effect twice while developing) is reused
+    if (!(window.history.state as any)?.mmDetail) window.history.pushState({ ...(window.history.state || {}), mmDetail: true }, '')
+    // a dialog above this record may be the thing Back was meant for: look again once it has had its turn
+    const onPop = (e: Event) => { if (isSelfPop(e)) return; setTimeout(() => { if (dialogJustPopped()) return; if (ours) { ours = false; back.current() } }, 0) }
+    window.addEventListener('popstate', onPop)
+    return () => {
+      window.removeEventListener('popstate', onPop)
+      const was = ours
+      ours = false
+      // closed from the screen rather than with Back: take the extra entry off again, but only if it is still the current one and no newer run took over
+      setTimeout(() => {
+        if (run.current !== mine || !was) return
+        if ((window.history.state as any)?.mmDetail) { expectSelfPop(); window.history.back() }
+      }, 0)
+    }
+  }, [open])
 }
 
 export const usePageInfoValue = () => useContext(DetailCrumbContext).info

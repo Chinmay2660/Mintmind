@@ -23,7 +23,7 @@ export function StatementImportButton() {
   const groups = res ? groupByFund(res.txns) : []
 
   const read = async (f: File) => {
-    if (f.size > MAX_BYTES) return toast.error('File is larger than 5 MB')
+    if (f.size > MAX_BYTES) return toast.warning('File is larger than 5 MB')
     setBusy(true)
     try {
       const XLSX = await import('xlsx')

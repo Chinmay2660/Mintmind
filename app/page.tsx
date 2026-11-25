@@ -61,7 +61,7 @@ const PRIVACY: { icon: LucideIcon; title: string; text: string }[] = [
 ]
 
 const FAQ: [string, string][] = [
-  ['Where is my data stored?', 'Your records live in your own browser on your own device. Your sign-in lives on the server. Documents go to your Google Drive only if you connect it. Export a backup from Settings before you switch devices.'],
+  ['Where is my data stored?', 'When you sign in, your records are saved on our server so every device you sign in on stays in step, and a copy is kept on each device so the app also works offline. Your Vault (passwords and secrets) is encrypted on your device before it is sent, so we cannot read it; if you lose both the master password and the recovery key, it cannot be recovered. Other records are not end-to-end encrypted. The sample family never leaves your browser. Documents go to your own Google Drive only if you connect it, and Mintmind does not encrypt those files. Settings has an export for your own backup.'],
   ['Does it connect to my bank?', 'No. Balances come from what you enter or import from a statement. Nothing refreshes from your bank automatically.'],
   ['Can a family use it together?', 'Yes, in part. A Family Circle shows each member\'s net worth when they choose to share it, and you can track goals and insurance for the household. Budgets and expenses are kept per person; a shared household budget is not available yet.'],
   ['What cookies does it use?', 'Only essential ones to keep you signed in, plus optional storage to remember your theme and layout if you allow it. There are no advertising or analytics cookies. The cookie notice lists every item.'],

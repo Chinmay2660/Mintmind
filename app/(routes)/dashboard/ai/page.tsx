@@ -1,5 +1,7 @@
 'use client'
 
+import { TabBar } from '@/components/ui/tab-bar'
+import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { useState } from 'react'
 import { Copy, Download, Printer, Share2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -11,11 +13,11 @@ import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { LoadingBlock, PageHeader, Panel, Progress } from '@/components/wealth/kit'
 import { cn } from '@/lib/utils'
-import { TabBar } from '@/components/ui/tab-bar'
 
 const TABS = ['Ask', 'Quick add', 'Health score', 'Report'] as const
 
 export default function AiPage() {
+  usePrivacyMode() // draws amounts again when balances are hidden or shown
   const [tab, setTab] = useState<(typeof TABS)[number]>('Ask')
   const { ready, health, report, isDemo } = useAi()
   const [share, setShare] = useState(false)

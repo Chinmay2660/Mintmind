@@ -200,6 +200,7 @@ function SignInContent() {
             <Field label="Password" hint={mode === 'signup' ? 'At least 10 characters with upper/lower case, numbers or symbols.' : undefined}>
               {(id) => <Input id={id} type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={mode === 'signup' ? 10 : 1} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} />}
             </Field>
+            {mode === 'login' && <p className="-mt-2 text-right text-sm"><a href="/auth/forgot" className="-my-2 inline-block py-2 font-medium text-primary hover:underline">Forgot password?</a></p>}
             {needMfa && (
               <Field label="Authentication code" hint="Enter the 6-digit code from your authenticator app.">
                 {(id) => <Input id={id} inputMode="numeric" pattern="\d{6}" maxLength={6} value={totp} onChange={(e) => setTotp(e.target.value)} required autoFocus autoComplete="one-time-code" />}

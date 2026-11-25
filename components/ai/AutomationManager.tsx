@@ -32,7 +32,7 @@ export function AutomationManager() {
 
   // what this automation would say right now, without saving a run or sending anything
   const test = (r: any) => {
-    if (!facts) return toast.error('Your figures are still loading')
+    if (!facts) return toast.warning('Your figures are still loading')
     try {
       const res: any = TEMPLATES[r.templateId].evaluate(facts, { ...defaultParams(r.templateId), ...r.params }, data, new Date())
       if (res.fired) toast.message(`${res.title}`, { description: res.body, duration: 9000 }); else toast.message('Nothing to report right now', { description: res.reason || 'Its condition is not met today.' })

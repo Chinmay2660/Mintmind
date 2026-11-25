@@ -26,7 +26,9 @@ const MemberSchema = new mongoose.Schema({
   inviteTokenHash: { type: String, select: false },
   inviteOtpHash: { type: String, select: false },
   inviteExpires: { type: Date },
-  permissions: { type: PermissionsSchema, default: () => ({}) },
+  permissions: { type: PermissionsSchema, default: () => ({}) }, // what everyone in the circle may see
+  // a personal setting for one person (the member _id of the viewer); it replaces `permissions` for that person only
+  overrides: [new mongoose.Schema({ viewerId: { type: mongoose.Schema.Types.ObjectId, required: true }, permissions: { type: PermissionsSchema, default: () => ({}) } }, { _id: false })],
   summary: { type: mongoose.Schema.Types.Mixed },
   joinedAt: { type: Date },
 })

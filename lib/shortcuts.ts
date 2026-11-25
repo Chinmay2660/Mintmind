@@ -36,7 +36,7 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
   {
     title: 'On the Transactions & budgets page',
     items: [
-      { keys: ['1-0'], label: 'Switch tab', hint: '1 Overview, 2 Budgets, 3 Transactions, 4 Calendar, 5 Monthly, 6 Summary, 7 Recurring, 8 Stats, 9 Cash flow, 0 Review' },
+      { keys: ['1-5'], label: 'Switch section', hint: '1 Overview, 2 Budgets, 3 Transactions (list, calendar, to review), 4 Insights (monthly, summary, stats, cash flow), 5 Recurring' },
       { keys: ['['], label: 'Previous month' },
       { keys: [']'], label: 'Next month' },
       { keys: ['J'], label: 'Next page of transactions' },

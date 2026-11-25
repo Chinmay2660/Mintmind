@@ -5,6 +5,9 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, ...props }, ref) => {
+    // a number field should bring up the number pad: with decimals when it allows them (step="any" or a fraction), digits only otherwise
+    const step = props.step == null ? null : String(props.step)
+    const numberPad = type === 'number' && !props.inputMode ? (step === 'any' || (step != null && step.includes(".")) ? 'decimal' : 'numeric') : props.inputMode
     return (
       <input
         type={type}
@@ -16,6 +19,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         )}
         ref={ref}
         {...props}
+        inputMode={numberPad}
         onWheel={(e) => {
           if (type === 'number') e.currentTarget.blur()
           props.onWheel?.(e)
