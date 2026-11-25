@@ -1,5 +1,6 @@
 'use client'
 
+import { BackBar } from '@/components/shell/BackBar'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -25,6 +26,7 @@ export default function BankAccountsPage() {
 
   return (
     <div className="space-y-5">
+      <BackBar phoneOnly />
       <PageHeader primaryAction={{ label: 'Add account', onClick: () => setAdding(true) }} />
       <section aria-label="Summary" className="grid grid-cols-2 gap-3 border-b border-border pb-5 lg:grid-cols-3">
         <Stat label="Total balance" value={<Money value={total} />} />

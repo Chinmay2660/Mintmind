@@ -1,5 +1,6 @@
 'use client'
 
+import { BackBar } from '@/components/shell/BackBar'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { AssetsLoans } from '@/components/wealth/AssetsLoans'
 import { useWealth } from '@/lib/wealth/WealthContext'
@@ -11,6 +12,7 @@ export default function LoansPage() {
   if (!ready) return <LoadingBlock className="h-64" />
   return (
     <div className="space-y-5">
+      <BackBar phoneOnly />
       <AssetsLoans view="loans" />
     </div>
   )

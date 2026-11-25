@@ -77,7 +77,7 @@ export function TxnRow({ kind, title, category, meta, amount, actions, leading, 
         {leading && <span className="flex h-10 w-6 shrink-0 items-center justify-center">{leading}</span>}
         {layout === 'money' ? (
           <>
-            <span className="w-[5.5rem] shrink-0 truncate text-xs text-muted-foreground sm:w-28">{kind === 'transfer' ? 'Transfer' : category}</span>
+            <span className="w-[5.5rem] shrink-0 truncate text-xs text-muted-foreground sm:w-28">{kind === 'transfer' ? 'Transfer' : String(category).split(' > ').pop()}</span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium">{title}</span>
               <span className="block truncate text-xs text-muted-foreground">{meta}</span>

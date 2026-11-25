@@ -82,7 +82,8 @@ function Row({ t, onEdit, onDelete, onDuplicate, onSplit, onBookmark, selecting,
   const starred = !!t.raw?.bookmarked
   return (
     <TxnRow layout="money" kind={t.kind} title={t.title} category={t.category} amount={t.amount} selected={selected}
-      meta={`${t.kind === 'expense' ? `${expenseParts(t.raw).length > 1 ? 'Split: ' + expenseParts(t.raw).map((p) => `${p.category} ${formatINR(p.amount)}`).join(', ') : t.sub} · ${modeLabel(t.raw.mode)}` : t.sub}`}
+      // the category is already shown at the left, so this line is what is not: the split, the way it was paid, or the account
+      meta={t.kind === 'expense' ? (expenseParts(t.raw).length > 1 ? 'Split: ' + expenseParts(t.raw).map((p) => `${String(p.category).split(' > ').pop()} ${formatINR(p.amount)}`).join(', ') : modeLabel(t.raw.mode)) : t.kind === 'income' ? (t.sub.split(' · ').slice(1).join(' · ') || t.sub) : t.sub}
       onLongPress={onLongPress && !selecting ? () => onLongPress(t) : undefined}
       onSwipeLeft={!selecting && !t.legacy ? { label: 'Delete', run: () => onDelete(t) } : undefined}
       onSwipeRight={!selecting && t.kind === 'expense' ? { label: 'Edit', run: () => onEdit(t) } : undefined}
@@ -162,19 +163,21 @@ export function TransactionsView({ initialCategory = '', initialKind = 'all', li
       <MonthTotals list={list} />
       {/* kinds as plain tabs; search, filters, bookmarks and select are small icons, so the list stays the main thing */}
       <div className="flex items-end justify-between gap-2 border-b border-border">
-        <div role="tablist" aria-label="Show" className="flex gap-5">
+        <div role="tablist" aria-label="Show" className="flex gap-4">
           {(['all', 'income', 'expense', 'transfer'] as const).map((k) => <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => setKind(k)} className={cn('-mb-px min-h-10 border-b-2 px-0.5 text-sm font-medium capitalize outline-none focus-visible:ring-2 focus-visible:ring-ring', kind === k ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}>{k === 'all' ? 'All' : k}</button>)}
         </div>
         <div className="flex items-center pb-0.5">
           <Button variant="ghost" size="icon" className="h-10 w-10" aria-pressed={searchOpen} aria-label="Search" onClick={() => setSearchOpen((v) => !v)}><Search className={cn('h-[18px] w-[18px]', (searchOpen || q) && 'text-primary')} /></Button>
           <Button variant="ghost" size="icon" className="relative h-10 w-10" aria-pressed={filtersOpen} aria-label="Filters" onClick={() => setFiltersOpen((v) => !v)}><SlidersHorizontal className={cn('h-[18px] w-[18px]', (filtersOpen || acct || from || to || cat) && 'text-primary')} />{(acct || from || to || cat) && <span aria-hidden className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />}</Button>
-          <Button variant="ghost" size="icon" className="h-10 w-10" aria-pressed={onlyStar} aria-label={`Bookmarked only (${starCount})`} onClick={() => setOnlyStar((v) => !v)}><Star className={cn('h-[18px] w-[18px]', onlyStar && 'fill-current text-primary')} /></Button>
-          <Button variant="ghost" size="icon" className="h-10 w-10" aria-pressed={selecting} aria-label={selecting ? 'Done selecting' : 'Select'} disabled={!shown.length && !selecting} onClick={() => (selecting ? stop() : begin())}><CheckSquare className={cn('h-[18px] w-[18px]', selecting && 'text-primary')} /></Button>
         </div>
       </div>
       {searchOpen && <div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input autoFocus aria-label="Search transactions" className="h-11 pl-9" placeholder="Search description, category" value={q} onChange={(e) => setQ(e.target.value)} /></div>}
       {filtersOpen && (
         <div className="grid items-end gap-2 [grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr))]">
+          <div className="flex flex-wrap gap-2 [grid-column:1/-1]">
+            <Button type="button" variant={onlyStar ? 'default' : 'outline'} size="sm" aria-pressed={onlyStar} onClick={() => setOnlyStar((v) => !v)}><Star className={cn('mr-1.5 h-4 w-4', onlyStar && 'fill-current')} />Bookmarked ({starCount})</Button>
+            <Button type="button" variant={selecting ? 'default' : 'outline'} size="sm" aria-pressed={selecting} disabled={!shown.length && !selecting} onClick={() => (selecting ? stop() : begin())}><CheckSquare className="mr-1.5 h-4 w-4" />{selecting ? 'Done selecting' : 'Select'}</Button>
+          </div>
           <label className="min-w-0 text-xs text-muted-foreground">Category<div className="mt-0.5"><Select aria-label="Category" value={cat} onChange={(e) => setCat(e.target.value)}><option value="">All categories</option>{allCats.map((c) => <option key={c}>{c}</option>)}</Select></div></label>
           <label className="min-w-0 text-xs text-muted-foreground">Account or card
             <div className="mt-0.5"><Select aria-label="Account or card" value={acct} onChange={(e) => setAcct(e.target.value)}>
@@ -453,7 +456,6 @@ export function SummaryView({ list, ym }: { list: Tx[]; ym: string }) {
         <Panel title="How you paid"><Bars rows={byMode} total={s.expense} /></Panel>
       </div>
       <Panel title="Paid from" description="Accounts and cards that funded your spending"><Bars rows={byAccount} total={s.expense} /></Panel>
-      <div className="flex justify-end"><Button variant="outline" onClick={() => exportTxCsv(list, ym)} disabled={!list.length}><Download className="mr-1.5 h-4 w-4" />Export this month (CSV)</Button></div>
     </div>
   )
 }

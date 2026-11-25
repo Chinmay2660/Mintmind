@@ -152,9 +152,10 @@ export default function BudgetPage() {
         primaryAction={{ label: 'Add transaction', onClick: () => setDlg({ kind: 'txn', type: 'expense' }) }}
       />
 
-      {alerts.length > 0 && (
+      {tab === 'overview' && alerts.length > 0 && (
         <div role="status" className="space-y-1 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
-          {alerts.map((a) => <p key={a} className="flex items-start gap-2"><TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" />{a}</p>)}
+          {alerts.slice(0, 2).map((a) => <p key={a} className="flex items-start gap-2"><TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" />{a}</p>)}
+          {alerts.length > 2 && <p className="pl-6 text-xs text-muted-foreground">and {alerts.length - 2} more categories over their limit. See the list below.</p>}
         </div>
       )}
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { BackBar } from '@/components/shell/BackBar'
 import { useMemo, useState } from 'react'
 import { useAddParam } from '@/lib/hooks/useAddParam'
 import { ArrowLeft, ChevronRight, Pencil, PiggyBank, RefreshCw, Trash2 } from 'lucide-react'
@@ -66,7 +67,7 @@ export function HoldingsTab({ kind }: { kind: Kind }) {
     const facts = assetFacts(open, today)
     return (
       <div className="space-y-5">
-        <button type="button" onClick={() => setSel(null)} className="inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" />All {group.label.toLowerCase()}</button>
+        <BackBar onBack={() => setSel(null)} />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div><h2 className="text-lg font-semibold">{open.name}</h2><p className="text-xs text-muted-foreground">{ASSET_LABELS[open.category as keyof typeof ASSET_LABELS] ?? open.category}</p></div>
           <div className="flex flex-wrap gap-2">
@@ -93,10 +94,10 @@ export function HoldingsTab({ kind }: { kind: Kind }) {
   }
 
   return (
-    <div className="space-y-5">
-      <PageHeader primaryAction={{ label: `Add ${SINGULAR[kind]}`, onClick: () => setForm({}) }} />
+    <div className="flex flex-col gap-5">
+      <div className="absolute"><PageHeader primaryAction={{ label: `Add ${SINGULAR[kind]}`, onClick: () => setForm({}) }} /></div>
       {deposits && items.length > 0 && (
-        <section aria-label="Summary" className="grid grid-cols-1 gap-3 border-b border-border pb-5 min-[460px]:grid-cols-2 lg:grid-cols-4">
+        <section aria-label="Summary" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Stat label={kind === 'fd' ? 'Deposited' : 'Put in so far'} value={<Money value={deposits.invested} />} />
           <Stat label="Value today" value={<Money value={deposits.value} />} />
           <Stat label="Interest earned" value={<Money value={deposits.interest} />} />

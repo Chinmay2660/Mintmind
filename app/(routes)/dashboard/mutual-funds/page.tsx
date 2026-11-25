@@ -1,5 +1,6 @@
 'use client'
 
+import { BackBar } from '@/components/shell/BackBar'
 import { TabBar } from '@/components/ui/tab-bar'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import Link from 'next/link'
@@ -181,7 +182,7 @@ export default function InvestmentsPage() {
       {/* same order as Insurance: the totals first, then the section chips, then the section itself */}
       {tab !== 'portfolio' && (
         <div className="flex items-center gap-2 md:hidden">
-          <button type="button" onClick={() => (fromLink ? router.back() : setTab('portfolio'))} className="-ml-1 inline-flex items-center gap-1 rounded-lg px-1 py-2 text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" aria-hidden />{fromLink ? 'Back' : 'Investments'}</button>
+          <BackBar onBack={() => (fromLink ? router.back() : setTab('portfolio'))} />
           <span className="text-sm font-semibold">{sectionLabel}</span>
         </div>
       )}
