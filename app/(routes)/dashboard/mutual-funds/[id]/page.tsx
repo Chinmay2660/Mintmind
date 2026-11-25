@@ -1,5 +1,6 @@
 'use client'
 
+import { BackBar } from '@/components/shell/BackBar'
 import { BackLink } from '@/components/shell/BackLink'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
@@ -49,7 +50,7 @@ export default function FundDetail() {
 
   return (
     <div className="space-y-5">
-      <BackLink href="/dashboard/mutual-funds" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Mutual funds</BackLink>
+      <BackBar fallback="/dashboard/mutual-funds" />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0"><h2 className="text-xl font-semibold">{f.name}</h2><p className="flex flex-wrap items-center gap-x-1 text-sm text-muted-foreground">Folio <CopyValue value={f.folio} label="Folio number" mono /></p></div>
         <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:flex-wrap">

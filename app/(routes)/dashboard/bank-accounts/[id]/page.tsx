@@ -1,5 +1,6 @@
 'use client'
 
+import { BackBar } from '@/components/shell/BackBar'
 import { BackLink } from '@/components/shell/BackLink'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
@@ -56,7 +57,7 @@ export default function BankAccountDetail() {
 
   return (
     <div className="space-y-5">
-      <BackLink href="/dashboard/bank-accounts" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Bank accounts</BackLink>
+      <BackBar fallback="/dashboard/bank-accounts" />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><h2 className="text-xl font-semibold">{acc.nickname || acc.bankName}</h2><p className="text-sm text-muted-foreground">{acc.type === 'cash' ? 'Cash wallet' : `${acc.bankName} · ${ACCOUNT_TYPES.find((t) => t.value === acc.type)?.label}`}</p></div>
         <div className="flex flex-wrap gap-2">

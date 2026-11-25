@@ -1,5 +1,6 @@
 'use client'
 
+import { BackBar } from '@/components/shell/BackBar'
 import { useMemo, useState } from 'react'
 import { useDetailCrumb } from '@/components/shell/DetailCrumb'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -71,7 +72,7 @@ export function DebitCardsTab() {
 
           {card && (
             <>
-              <button type="button" onClick={() => setSel(null)} className="mb-3 inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" />All debit cards</button>
+              <BackBar onBack={() => setSel(null)} />
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-lg font-semibold">{card.bank} {card.cardName}</h2>
                 <div className="flex gap-2"><Button size="sm" onClick={() => setDlg({ txn: true, row: card })}>Add transaction</Button><Button size="sm" variant="outline" onClick={() => setDlg({ row: card })}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button><Button size="sm" variant="outline" onClick={() => setDlg({ row: card, del: true })}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button></div>

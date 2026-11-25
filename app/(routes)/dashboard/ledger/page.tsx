@@ -63,7 +63,7 @@ export default function LedgerPage() {
   return (
     <div className="space-y-5">
       <PageHeader description="Every movement on every account, with money out, money in and the balance after it. It comes from each account's balance history, so transactions, transfers, card payments, SIPs and premiums are all here."
-        actions={<Button variant="outline" onClick={exportCsv} disabled={!shown.length}><Download className="mr-1.5 h-4 w-4" />Export CSV</Button>} />
+        />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 border-b border-border pb-5">
         <Stat label="Entries" value={shown.length} />

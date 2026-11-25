@@ -76,49 +76,22 @@ function NetWorthOverview() {
   }, [data.snapshots, from, to, view])
 
   const events = useMemo(() => netWorthEvents(data.snapshots), [data.snapshots])
-  const byType = useMemo(() => byAccountType(netWorth.assetBreakdown), [netWorth.assetBreakdown])
   if (!ready) return <LoadingBlock className="h-96" />
 
-  const cmp = [
-    { label: 'Last month', g: growthVs(data.snapshots, netWorth.netWorth, 1, today) },
-    { label: '3 months ago', g: growthVs(data.snapshots, netWorth.netWorth, 3, today) },
-    { label: 'Last year', g: growthVs(data.snapshots, netWorth.netWorth, 12, today) },
-  ]
   const chart = snapshots.map((s) => ({ ym: s.date.slice(0, 7), label: view === 'Yearly' ? s.date.slice(0, 4) : monthLabel(s.date.slice(0, 7)), netWorth: s.netWorth, assets: s.assets, liabilities: s.liabilities }))
 
   // markers sit on months, so they show in the monthly view and only for months inside the range
   const shownEvents = view === 'Monthly' ? events.filter((e) => chart.some((c) => c.ym === e.ym)) : []
 
-  const exportXlsx = async () => {
-    const XLSX = await import('xlsx') // ~400 KB, loaded only on demand
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(snapshots.map((s) => ({ Date: s.date, Assets: s.assets, Liabilities: s.liabilities, 'Net worth': s.netWorth }))), 'Snapshots')
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Object.entries(netWorth.assetBreakdown).map(([k, v]) => ({ Category: ASSET_LABELS[k as keyof typeof ASSET_LABELS] ?? k, Value: v }))), 'Assets')
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Object.entries(netWorth.liabilityBreakdown).map(([k, v]) => ({ Category: LIABILITY_LABELS[k as keyof typeof LIABILITY_LABELS] ?? k, Outstanding: v }))), 'Liabilities')
-    XLSX.writeFile(wb, `net-worth-${toISO(today)}.xlsx`)
-  }
-  const exportCsv = () => {
-    const rows = ['Date,Assets,Liabilities,Net worth', ...snapshots.map((s) => `${s.date},${s.assets},${s.liabilities},${s.netWorth}`)]
-    const url = URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `net-worth-${toISO(today)}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
   return (
     <div className="space-y-5">
       <PageHeader
-        description="Assets minus liabilities, updated automatically. Add or edit EPF, FDs, gold, property, stocks and loans in Settings → Assets & Loans."
+        description="Assets minus liabilities, updated automatically. The breakdown by kind is on the Overview."
         actions={
           <QuickTiles label="Net worth shortcuts" items={[
             { key: 'invest', label: 'Investments', icon: TrendingUp, href: '/dashboard/mutual-funds' },
             { key: 'property', label: 'Property', icon: Building2, href: '/dashboard/mutual-funds?tab=property' },
             { key: 'loans', label: 'Loans', icon: Scale, href: '/dashboard/net-worth/loans' },
-            { key: 'statement', label: 'Statement', icon: FileText, href: '/dashboard/net-worth/statement' },
-            { key: 'csv', label: 'Export CSV', icon: Download, onClick: exportCsv },
-            { key: 'excel', label: 'Export Excel', icon: FileSpreadsheet, onClick: exportXlsx },
           ]} />
         }
       />
@@ -128,15 +101,6 @@ function NetWorthOverview() {
         <Stat label="Total assets" value={<Money value={netWorth.assets} />} />
         <Stat label="Total liabilities" value={<Money value={netWorth.liabilities} />} />
         <Stat label="Debt to assets" value={`${netWorth.assets ? Math.round((netWorth.liabilities / netWorth.assets) * 1000) / 10 : 0}%`} />
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        {cmp.map((c) => (
-          <div key={c.label} className="surface-card px-4 py-3">
-            <p className="text-xs text-muted-foreground">vs {c.label}</p>
-            {c.g ? (<><p className="mt-1 text-sm font-semibold"><Money value={c.g.base} /> <span className="font-normal text-muted-foreground">on {formatDate(c.g.baseDate)}</span></p><Delta amount={c.g.diff} pct={c.g.pct} /></>) : <p className="mt-1 text-sm text-muted-foreground">Not enough history</p>}
-          </div>
-        ))}
       </div>
 
       <Panel
@@ -208,59 +172,10 @@ function NetWorthOverview() {
         )}
       </Panel>
 
-      <Panel title="By account type" description="Your assets grouped by the kind of account they sit in. Liabilities are not netted off here.">
-        {byType.length === 0 ? <Empty title="No assets yet" /> : (
-          <>
-            <div className="flex h-3 overflow-hidden rounded-full border border-border">
-              {byType.map((r, i) => <span key={r.key} style={{ width: `${r.pct}%`, background: chartColor((((i % 6) + 1)) as 1 | 2 | 3 | 4 | 5 | 6) }} />)}
-            </div>
-            <ul className="mt-3 divide-y divide-border">
-              {byType.map((r, i) => (
-                <li key={r.key} className="flex items-center justify-between gap-3 py-2 text-sm">
-                  <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full" style={{ background: chartColor((((i % 6) + 1)) as 1 | 2 | 3 | 4 | 5 | 6) }} aria-hidden />{r.label}<span className="text-xs text-muted-foreground">{r.pct}%</span></span>
-                  <Money value={r.value} className="font-medium" />
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </Panel>
-
       <WhyChanged />
       <NetWorthJournal />
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Assets">
-          <ul className="divide-y divide-border">
-            <Row name="Bank savings" sub="From Bank Accounts" value={netWorth.assetBreakdown.bank || 0} />
-            <Row name="Mutual funds" sub="From Mutual Funds" value={netWorth.assetBreakdown.mutualFunds || 0} />
-            {data.assets.map((a) => (
-              <Row key={a.id} name={a.name} sub={`${ASSET_LABELS[a.category as keyof typeof ASSET_LABELS] ?? a.category} · Updated ${formatDate(a.updated)}`} value={assetValue(a)} />
-            ))}
-          </ul>
-        </Panel>
-        <Panel title="Liabilities">
-          <ul className="divide-y divide-border">
-            <Row name="Credit card dues" sub="From Cards" value={netWorth.liabilityBreakdown.creditCards || 0} />
-            {data.liabilities.map((l) => (
-              <Row key={l.id} name={l.name} sub={`${LIABILITY_LABELS[l.category as keyof typeof LIABILITY_LABELS] ?? l.category}${l.emi ? ` · EMI ${formatINR(l.emi)}` : ''}`} value={l.outstanding} />
-            ))}
-          </ul>
-        </Panel>
-      </div>
-
     </div>
-  )
-}
-
-function Row({ name, sub, value }: { name: string; sub: string; value: number }) {
-  return (
-    <li className="flex items-center justify-between gap-3 py-2.5">
-      <div className="min-w-0"><p className="truncate text-sm font-medium">{name}</p><p className="truncate text-xs text-muted-foreground">{sub}</p></div>
-      <div className="flex shrink-0 items-center gap-1">
-        <Money value={value} className="text-sm font-medium" />
-      </div>
-    </li>
   )
 }
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { BackBar } from '@/components/shell/BackBar'
 import { useRouter } from 'next/navigation'
 import { toastProblem } from '@/lib/notify'
 import { shortAccountName } from '@/lib/wealth/accountName'
@@ -55,6 +56,7 @@ export default function InsurancePage() {
 
   return (
     <div className="space-y-5">
+      {!detail && <BackBar phoneOnly />}
       <PageHeader description="Coverage is protection, not wealth. It is never counted in your net worth." primaryAction={{ label: 'Add policy', onClick: () => setDlg({ kind: 'edit' }) }} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 border-b border-border pb-5">
         <Stat label="Total coverage" value={<Money value={cover.total} compact />} hint={`${cover.activeCount} active`} />
@@ -128,7 +130,7 @@ function PolicyDetail({ p, today, doc, history, onClose, onPaid, onEdit, onDelet
   const row = (k: string, children: React.ReactNode) => <div key={k} className="flex items-start justify-between gap-4 py-2.5 text-sm"><dt className="shrink-0 text-muted-foreground">{k}</dt><dd className="min-w-0 text-right font-medium">{children}</dd></div>
   return (
     <section className="space-y-3">
-      <button type="button" onClick={onClose} className="inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" />All policies</button>
+      <BackBar onBack={onClose} />
       <div className="surface-card space-y-4 p-5">
         <div><h3 className="text-xl font-semibold">{p.policyName}</h3><p className="text-sm text-muted-foreground">{p.company} · {typeLabel(p.type)}</p></div>
         <div className="flex items-end justify-between gap-3">

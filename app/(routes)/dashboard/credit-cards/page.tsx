@@ -1,5 +1,6 @@
 'use client'
 
+import { BackBar } from '@/components/shell/BackBar'
 import { useRouter } from 'next/navigation'
 import { shortAccountName } from '@/lib/wealth/accountName'
 import { TabBar } from '@/components/ui/tab-bar'
@@ -58,6 +59,7 @@ function CreditCardsTab() {
 
   return (
     <div className="space-y-5">
+      {!openCard && <BackBar phoneOnly />}
       <PageHeader secondaryAction={{ label: 'Add transaction', disabled: data.cards.length === 0, onClick: () => setDlg({ kind: 'pay', row: card }) }} primaryAction={{ label: 'Add card', onClick: () => setDlg({ kind: 'card' }) }} />
       <section aria-label="Summary" className="space-y-3 border-b border-border pb-5">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -90,7 +92,7 @@ function CreditCardsTab() {
 
           {card && (
             <>
-              <button type="button" onClick={closeSel} className="mb-3 inline-flex items-center gap-1 rounded text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" />All cards</button>
+              <BackBar onBack={closeSel} />
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-lg font-semibold">{card.bank} {card.cardName}</h2>
                 <div className="flex flex-wrap gap-2">

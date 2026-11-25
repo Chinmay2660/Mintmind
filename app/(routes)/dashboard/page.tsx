@@ -191,9 +191,8 @@ export default function DashboardPage() {
                 ))}
               </div>
               {openGroup && (
-                <div className="flex items-baseline justify-between gap-3 pb-1">
+                <div className="pb-1">
                   <p className="text-xs text-muted-foreground">{openGroup.uncounted ? openGroup.note : tabTotal > 0 ? `${Math.round((openGroup.value / tabTotal) * 100)}% of ${moneyTab}` : ''}</p>
-                  <Link href={openGroup.href} className="-my-2 inline-flex shrink-0 items-center gap-0.5 py-2 text-xs font-medium text-primary hover:underline">Open<ChevronRight className="h-3.5 w-3.5" aria-hidden /></Link>
                 </div>
               )}
               <ul className="divide-y divide-border">
@@ -208,13 +207,6 @@ export default function DashboardPage() {
                   </li>))}
               </ul>
             </>}
-        {isEnabled('budget_expenses') && (
-          <Link href="/dashboard/budget" className="mt-3 flex min-h-14 items-center justify-between gap-3 border-t border-border pt-3 outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <span className="min-w-0 flex-1"><span className="block text-sm font-medium">This month's budget</span><span className="block text-xs text-muted-foreground">{m.pacing ? <>of <Money value={m.budget.total} compact /> spent</> : 'Not set yet'}</span>{m.pacing && <span className="mt-1.5 block"><Progress value={m.pacing.utilisation} tone={toneForPct(m.pacing.utilisation)} label="Budget used" /></span>}</span>
-            <span className="shrink-0 text-sm font-semibold tabular-nums">{m.pacing ? <Money value={m.pacing.spent} /> : <span className="text-primary">Set up</span>}</span>
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-          </Link>
-        )}
       </section>
     ),
     summary: (
