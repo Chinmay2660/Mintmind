@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { ChevronDown, Settings2 } from 'lucide-react'
 import { budgetRows } from '@/lib/wealth/budgetRows'
@@ -10,7 +11,7 @@ import { Empty, Metric, Panel, Stat } from '../kit'
 import { cn } from '@/lib/utils'
 import { childOf } from '@/lib/wealth/subcategories'
 
-interface Props { budget: any; prevBudget?: any; expenses: any[]; ym: string; today: Date; onEdit: () => void; onOpenCategory?: (category: string) => void }
+interface Props { budget: any; prevBudget?: any; expenses: any[]; ym: string; today: Date; onOpenCategory?: (category: string) => void }
 
 const BAR: Record<string, string> = { none: 'bg-muted-foreground/40', under: 'bg-primary', over: 'bg-warning', exceeded: 'bg-destructive' }
 const CHIP: Record<string, string> = { none: 'border-border text-muted-foreground', under: 'border-primary/50 bg-primary/15 text-foreground', over: 'border-warning/60 bg-warning/15 text-foreground', exceeded: 'border-destructive/60 bg-destructive/15 text-destructive' }
@@ -20,11 +21,11 @@ const WORDS: Record<string, string> = { none: 'No limit', under: 'On track', ove
  * Every category with its limit, what is spent and how much could be spent by today if the limit were spread evenly.
  * The tick on each bar is "today's pace": spending to the left of it is on track, to the right is ahead.
  */
-export function BudgetList({ budget, prevBudget, expenses, ym, today, onEdit, onOpenCategory }: Props) {
+export function BudgetList({ budget, prevBudget, expenses, ym, today, onOpenCategory }: Props) {
   const { rows: rawRows, total, days, dayToday } = useMemo(() => budgetRows({ budget, prevBudget, expenses, ym, today }), [budget, prevBudget, expenses, ym, today])
   const rows = rawRows as any[]
   const [openKids, setOpenKids] = useState<Set<string>>(new Set()) // parents whose sub-categories are showing
-  if (!budget) return <Empty title="No budget for this month" description="Set a monthly budget and a limit for each category." action={<Button onClick={onEdit}>Set budget</Button>} />
+  if (!budget) return <Empty title="No budget for this month" description="Set a monthly budget and a limit for each category." action={<Button asChild><Link href="/dashboard/settings?tab=budget">Set budget in Settings</Link></Button>} />
   const now = dayToday > 0 && dayToday < days
 
   return (
@@ -72,7 +73,7 @@ export function BudgetList({ budget, prevBudget, expenses, ym, today, onEdit, on
         )
       })()}
 
-      <Panel title="Categories" description="The marker shows how much you could have spent by today. Green is spending within that pace; orange or red is spending beyond it." action={<Button size="sm" variant="outline" onClick={onEdit}><Settings2 className="mr-1.5 h-4 w-4" />Edit budgets</Button>}>
+      <Panel title="Categories" description="The marker shows how much you could have spent by today. Green is spending within that pace; orange or red is spending beyond it.">
         {rows.length === 0 ? <Empty title="No categories yet" description="Set a limit for each category, or record some expenses." /> : (
           <ul className="divide-y divide-border">
             {rows.map((r) => {

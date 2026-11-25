@@ -191,16 +191,16 @@ function MutualFundsTab() {
 }
 
 type Tab = 'portfolio' | 'funds' | 'fd' | 'rd' | 'retirement' | 'market' | 'gold' | 'property'
-// Mutual funds first, as in an investing app; the allocation view is the last tab
+// Allocation first (where it all sits), then a tab for each kind of holding
 const TABS: { key: Tab; label: string }[] = [
-  { key: 'funds', label: 'Mutual funds' }, { key: 'market', label: 'Stocks & ETFs' }, { key: 'fd', label: 'Fixed deposits' }, { key: 'rd', label: 'Recurring deposits' },
-  { key: 'retirement', label: 'EPF, PPF, NPS' }, { key: 'gold', label: 'Gold' }, { key: 'property', label: 'Property & other' }, { key: 'portfolio', label: 'Allocation' },
+  { key: 'portfolio', label: 'Allocation' }, { key: 'funds', label: 'Mutual funds' }, { key: 'market', label: 'Stocks & ETFs' }, { key: 'fd', label: 'Fixed deposits' },
+  { key: 'rd', label: 'Recurring deposits' }, { key: 'retirement', label: 'EPF, PPF, NPS' }, { key: 'gold', label: 'Gold' }, { key: 'property', label: 'Property & other' },
 ]
 
-/** Investments: your totals, then a tab for each kind of holding. It opens on Mutual funds. */
+/** Investments: your totals, then a tab for each kind of holding. It opens on the first tab, Allocation. */
 export default function InvestmentsPage() {
   usePrivacyMode() // draws amounts again when balances are hidden or shown
-  const [tab, setTab] = useState<Tab>('funds')
+  const [tab, setTab] = useState<Tab>('portfolio')
   // a link such as ?tab=fd or ?add=fund lands on that tab (read after mount, so the server and the browser draw the same first screen)
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { const q = new URLSearchParams(window.location.search); const t = q.get('tab'); if (q.get('add') === 'fund') setTab('funds'); else if (t && TABS.some((x) => x.key === t)) setTab(t as Tab) }, [])

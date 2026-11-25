@@ -1,5 +1,6 @@
 'use client'
 
+import { BudgetSetup } from '@/components/settings/BudgetSetup'
 import { ReportsTab } from '@/components/settings/ReportsTab'
 import { toastProblem } from '@/lib/notify'
 import { useDashboardLayout, DASHBOARD_BLOCKS } from '@/components/dashboard/useDashboardLayout'
@@ -400,14 +401,14 @@ function BudgetSettings() {
   const [rules, setRules] = useState(false)
   return (
     <div className="space-y-4">
+      <Panel flat title="Budgets" description="Limits for a month, in total and by category. Later months start from the one before."><BudgetSetup /></Panel>
       <Panel title="Categories" description="The groups your spending and income are sorted into. Add your own, rename them, or make sub-categories (Food > Eating out).">
         <Button variant="outline" onClick={() => setCategories(true)}>Manage categories</Button>
       </Panel>
       <Panel title="Rules" description="Say once that a description such as “swiggy” always goes to Food, and imports and new entries file themselves.">
         <Button variant="outline" onClick={() => setRules(true)}>Manage rules</Button>
       </Panel>
-      <p className="text-xs text-muted-foreground">Monthly limits for each category belong to a month, so they are edited with that month's figures: the Budgets tab on the Budget page.</p>
-      {categories && <CategoryManager onClose={() => setCategories(false)} />}
+            {categories && <CategoryManager onClose={() => setCategories(false)} />}
       <RulesDialog open={rules} onOpenChange={setRules} />
     </div>
   )

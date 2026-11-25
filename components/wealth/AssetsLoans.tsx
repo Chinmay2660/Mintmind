@@ -1,5 +1,6 @@
 'use client'
 
+import { TabBar } from '@/components/ui/tab-bar'
 import { useState } from 'react'
 import { useAddParam } from '@/lib/hooks/useAddParam'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
@@ -24,6 +25,7 @@ export function AssetsLoans({ view }: { view: 'loans' }) {
   const { data, db } = useWealth()
   const [edit, setEdit] = useState<null | { kind: Kind; row: any; category?: string }>(null)
   const [del, setDel] = useState<null | { kind: Kind; id: string; name: string }>(null)
+  const [loanKind, setLoanKind] = useState('all') // All first, then a tab for each kind of loan you have
   useAddParam((what) => { if (what === 'asset' || what === 'liability') setEdit({ kind: what as Kind, row: null, category: what === 'asset' ? 'fd' : undefined }) })
   const table = (k: Kind) => (k === 'asset' ? 'assets' : 'liabilities')
 
@@ -33,8 +35,12 @@ export function AssetsLoans({ view }: { view: 'loans' }) {
       {view === 'loans' && <section aria-label="Loans" className="space-y-3">
         {/* the page is already called Loans, so no extra box: the total, then the cards */}
         {data.liabilities.length > 0 && <div><p className="text-xs text-muted-foreground">Total outstanding</p><p className="text-xl font-semibold tabular-nums"><Money value={data.liabilities.reduce((n: number, l: any) => n + (Number(l.outstanding) || 0), 0)} /></p></div>}
+        {data.liabilities.length > 0 && (() => {
+          const present = [...new Set<string>(data.liabilities.map((l: any) => l.category))]
+          return present.length > 1 ? <TabBar label="Kinds of loan" value={present.includes(loanKind) ? loanKind : 'all'} onChange={setLoanKind} tabs={[{ key: 'all', label: 'All', badge: data.liabilities.length }, ...present.map((k) => ({ key: k, label: LIABILITY_LABELS[k as keyof typeof LIABILITY_LABELS] ?? k, badge: data.liabilities.filter((l: any) => l.category === k).length }))]} /> : null
+        })()}
         {data.liabilities.length === 0 ? <Empty title="No loans added" description="Add a home, car or personal loan, or a card balance you carry, and it is taken off your net worth." /> : (
-          <ul className="grid gap-3 md:grid-cols-2">{data.liabilities.map((l: any) => (
+          <ul className="grid gap-3 md:grid-cols-2">{data.liabilities.filter((l: any) => loanKind === 'all' || l.category === loanKind).map((l: any) => (
             <li key={l.id} className="flex min-w-0 flex-col rounded-xl border border-border bg-muted/40 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">

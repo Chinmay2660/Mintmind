@@ -58,8 +58,9 @@ function CreditCardsTab() {
 
   return (
     <div className="space-y-5">
-      {openCard ? <BackBar onBack={closeSel} /> : <BackBar phoneOnly />}
+      <BackBar phoneOnly />
       <PageHeader secondaryAction={{ label: 'Add transaction', disabled: data.cards.length === 0, onClick: () => setDlg({ kind: 'pay', row: card }) }} primaryAction={openCard ? undefined : { label: 'Add card', onClick: () => setDlg({ kind: 'card' }) }} />
+      {data.cards.length > 1 && <TabBar label="Cards" value={sel ?? 'all'} onChange={(k) => setSel(k === 'all' ? null : k)} tabs={[{ key: 'all', label: 'All cards', badge: data.cards.length }, ...data.cards.map((c) => ({ key: c.id, label: `${c.bank} ${c.cardName}` }))]} />}
       {!openCard && <section aria-label="Summary" className="space-y-3">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Total limit" value={<Money value={t.limit} />} />

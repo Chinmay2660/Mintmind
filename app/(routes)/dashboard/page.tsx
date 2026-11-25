@@ -1,5 +1,6 @@
 'use client'
 
+import { GrowwChart } from '@/components/wealth/GrowwChart'
 import { netWorthGroups } from '@/lib/wealth/netWorthGroups'
 import { InstallBanner } from '@/components/shell/InstallApp'
 import Link from 'next/link'
@@ -76,6 +77,7 @@ export default function DashboardPage() {
   const [hoverPt, setHoverPt] = useState<{ date: string; v: number } | null>(null) // the point being touched or hovered on the chart
   const [heroRange, setHeroRange] = useState<'1W' | '1M' | '3M' | '6M' | '1Y' | 'ALL'>('1M')
   const [moneyTab, setMoneyTab] = useState<'assets' | 'liabilities'>('assets')
+  const [moneySub, setMoneySub] = useState('') // which kind is open under Assets or Liabilities; empty means the first
   const [showAllRows, setShowAllRows] = useState(false) // the Assets / Liabilities list shows the five biggest; View more shows the rest
   const today = useMemo(() => new Date(), [])
   const layout = useDashboardLayout(DASHBOARD_BLOCKS)
@@ -169,8 +171,11 @@ export default function DashboardPage() {
   const groups = netWorthGroups({ assetBreakdown: netWorth.assetBreakdown as any, bankAccounts: data.bankAccounts, cards: data.cards, liabilities: data.liabilities, cover: isEnabled('insurance') ? m.cover.total : 0, coverCount: m.cover.activeCount, funds: data.funds, balanceHistory: data.balanceHistory, expenses: data.expenses, cardPayments: data.cardPayments, todayIso: toISO(today), policies: data.policies.filter((p: any) => !p.endDate || p.endDate >= toISO(today)), labels: ASSET_LABELS as any })
   const shownGroups = (moneyTab === 'assets' ? groups.assets : groups.liabilities).filter((g) => g.key !== 'banks' || isEnabled('bank_accounts')).filter((g) => g.key !== 'cards' || isEnabled('credit_cards'))
   const tabTotal = moneyTab === 'assets' ? netWorth.assets : netWorth.liabilities
-  // every holding in the tab, biggest first. Insurance is cover, not money held, so it is not in this list (its chip opens it).
-  const allRows = shownGroups.filter((g) => !g.uncounted).flatMap((g) => (g.children.length ? g.children : [{ key: g.key, kind: g.key, label: g.label, value: g.value, href: g.href } as any]).map((r: any) => ({ ...r, groupKey: g.key }))).sort((x: any, y: any) => y.value - x.value)
+  // the first kind is open by default; its holdings are listed biggest first, five at a time
+  const openGroup = shownGroups.find((g) => g.key === moneySub) ?? shownGroups[0]
+  const allRows: any[] = openGroup
+    ? (openGroup.children.length ? openGroup.children : [{ key: openGroup.key, kind: openGroup.key, label: openGroup.label, value: openGroup.value, href: openGroup.href }]).map((r: any) => ({ ...r, groupKey: openGroup.key })).sort((x: any, y: any) => y.value - x.value)
+    : []
   const topRows = showAllRows ? allRows : allRows.slice(0, 5)
 
   const blocks: Record<string, React.ReactNode> = {
@@ -178,19 +183,18 @@ export default function DashboardPage() {
       <section aria-label="Net worth breakdown" className="surface-card p-4 sm:p-5">
         <div role="tablist" aria-label="Assets or liabilities" className="flex gap-7 border-b border-border">
           {([['assets', 'Assets', netWorth.assets], ['liabilities', 'Liabilities', netWorth.liabilities]] as const).map(([k, l, v]) => (
-            <button key={k} type="button" role="tab" aria-selected={moneyTab === k} onClick={() => { setMoneyTab(k); setShowAllRows(false) }} className={cn('-mb-px border-b-2 pb-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring', moneyTab === k ? 'border-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
+            <button key={k} type="button" role="tab" aria-selected={moneyTab === k} onClick={() => { setMoneyTab(k); setMoneySub(''); setShowAllRows(false) }} className={cn('-mb-px border-b-2 pb-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring', moneyTab === k ? 'border-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
               <span className="block text-xs font-medium">{l}</span><span className={cn('block text-lg font-semibold tabular-nums', moneyTab === k && 'text-foreground')}><Money value={v} /></span>
             </button>))}
         </div>
         {shownGroups.length === 0
           ? <p className="py-8 text-center text-sm text-muted-foreground">{moneyTab === 'assets' ? 'Add a bank account or an investment to start.' : 'No loans or card dues.'}</p>
           : <>
-              {/* each kind opens its own page, where what is in it is laid out as tabs */}
-              <nav aria-label={moneyTab === 'assets' ? 'Open a kind of asset' : 'Open a kind of liability'} className="flex flex-wrap gap-2 py-3">
+              <div role="tablist" aria-label={moneyTab === 'assets' ? 'Kinds of assets' : 'Kinds of liabilities'} className="flex flex-wrap gap-2 py-3">
                 {shownGroups.map((g) => (
-                  <Link key={g.key} href={g.href} className="inline-flex min-h-9 items-center gap-1 rounded-full border border-border px-3.5 text-sm font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{g.label}<ChevronRight className="h-3.5 w-3.5 opacity-60" aria-hidden /></Link>
+                  <button key={g.key} type="button" role="tab" aria-selected={openGroup?.key === g.key} onClick={() => { setMoneySub(g.key); setShowAllRows(false) }} className={cn('min-h-9 rounded-full border px-3.5 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', openGroup?.key === g.key ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{g.label}</button>
                 ))}
-              </nav>
+              </div>
               <ul className="divide-y divide-border">
                 {topRows.map((r: any) => {
                   const RowIcon = KIND_ICON[r.kind] || GROUP_ICON[r.groupKey] || Wallet
@@ -198,8 +202,8 @@ export default function DashboardPage() {
                     <li key={`${r.groupKey}-${r.key}`}>
                       <Link href={r.href} className="group flex min-h-14 items-center gap-3 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring">
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary" aria-hidden><RowIcon className="h-5 w-5" /></span>
-                        <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{r.label}</span>{tabTotal > 0 && <span className="block text-xs text-muted-foreground">{Math.round((r.value / tabTotal) * 100)}% of {moneyTab}</span>}</span>
-                        <span className="shrink-0 text-right"><span className="block text-sm font-semibold tabular-nums"><Money value={r.value} /></span>{r.dayChange != null && <span className="block text-xs tabular-nums"><Delta amount={r.dayChange} pct={r.dayPct} invertGood={!!r.inverted} /> <span className="text-muted-foreground">1D</span></span>}</span>
+                        <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{r.label}</span>{openGroup && !openGroup.uncounted && openGroup.value > 0 && <span className="block text-xs text-muted-foreground">{Math.round((r.value / openGroup.value) * 100)}% of {openGroup.label.toLowerCase()}</span>}</span>
+                        <span className="shrink-0 text-right"><span className="block text-sm font-semibold tabular-nums"><Money value={r.value} compact={!!openGroup?.uncounted} /></span>{r.dayChange != null && <span className="block text-xs tabular-nums"><Delta amount={r.dayChange} pct={r.dayPct} invertGood={!!r.inverted} /> <span className="text-muted-foreground">1D</span></span>}</span>
                         <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden />
                       </Link>
                     </li>
@@ -375,28 +379,7 @@ export default function DashboardPage() {
                       ? <><span className="font-semibold tabular-nums text-foreground">{privacyMode ? '••••' : formatINR(hoverPt.v)}</span><span>{formatDate(hoverPt.date)}</span><Delta pill amount={hoverPt.v - hero.base} pct={hero.base ? ((hoverPt.v - hero.base) / Math.abs(hero.base)) * 100 : null} /></>
                       : <>{LABEL}<Delta pill amount={hero.diff} pct={hero.pct} /></>}
                   </div>
-                  {hero.series.length < 2
-                    ? <p className="flex h-36 items-center justify-center text-sm text-muted-foreground">Not enough history for this range yet.</p>
-                    : (
-                      <div className="mt-1 h-40 select-none sm:h-48" role="img" aria-label={`Net worth over the ${LABEL.toLowerCase()}, ${up ? 'up' : 'down'} ${formatINR(Math.abs(hero.diff))}`}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={hero.series} margin={{ top: 10, right: 8, left: 8, bottom: 6 }}
-                            onMouseMove={(st: any) => { const pt = st?.activePayload?.[0]?.payload; if (pt) setHoverPt((cur) => (cur && cur.date === pt.date ? cur : { date: pt.date, v: pt.v })) }}
-                            onMouseLeave={() => setHoverPt(null)}>
-                            <defs><linearGradient id="nwHeroFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={col} stopOpacity={0.22} /><stop offset="100%" stopColor={col} stopOpacity={0} /></linearGradient></defs>
-                            <XAxis dataKey="date" hide />
-                            {/* a little room above and below, so the line never touches the edge */}
-                            <YAxis hide domain={[(min: number) => min - Math.max(1, (hero.series.reduce((m2, x) => Math.max(m2, x.v), min) - min) * 0.12), (max: number) => max + Math.max(1, (max - hero.series.reduce((m2, x) => Math.min(m2, x.v), max)) * 0.12)]} />
-                            <Tooltip content={() => null} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3', strokeOpacity: 0.6 }} />
-                            <Area type="monotone" dataKey="v" stroke={col} strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round" fill="url(#nwHeroFill)" isAnimationActive={false}
-                              dot={(dp: any) => (dp.index === hero.series.length - 1 && !hoverPt
-                                ? <g key="end"><circle cx={dp.cx} cy={dp.cy} r={7} fill={col} fillOpacity={0.18} /><circle cx={dp.cx} cy={dp.cy} r={3.5} fill={col} stroke="hsl(var(--card))" strokeWidth={1.5} /></g>
-                                : <g key={dp.index} />)}
-                              activeDot={{ r: 4.5, fill: col, stroke: 'hsl(var(--card))', strokeWidth: 2 }} />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-                    )}
+                  <GrowwChart height={160} readout={false} ariaLabel={`Net worth over the ${LABEL.toLowerCase()}, ${up ? 'up' : 'down'} ${formatINR(Math.abs(hero.diff))}`} format={(v) => (privacyMode ? '••••' : formatINR(v))} data={hero.series.map((pt) => ({ x: pt.date, y: pt.v }))} onHover={(pt) => setHoverPt(pt ? { date: pt.x, v: pt.y } : null)} />
                   <div role="tablist" aria-label="Chart range" className="mt-1 flex items-center justify-between">
                     {(['1W', '1M', '3M', '6M', '1Y', 'ALL'] as const).map((r) => (
                       <button key={r} type="button" role="tab" aria-selected={heroRange === r} onClick={() => setHeroRange(r)} className={cn('min-h-9 min-w-11 rounded-full px-3 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring', heroRange === r ? 'bg-accent text-primary' : 'text-muted-foreground hover:text-foreground')}>{r === 'ALL' ? 'All' : r}</button>
