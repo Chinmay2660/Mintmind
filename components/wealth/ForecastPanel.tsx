@@ -1,5 +1,6 @@
 'use client'
 
+import { GrowwChart } from '@/components/wealth/GrowwChart'
 import { useMemo, useState } from 'react'
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useWealth } from '@/lib/wealth/WealthContext'
@@ -47,14 +48,7 @@ export function ForecastPanel() {
           <div><p className="text-xs text-muted-foreground">Change from today</p><Metric amount={Math.round(nw.points[years] - netWorth.netWorth)} className="text-base font-semibold" /></div>
           <label className="text-xs text-muted-foreground">Yearly return: <strong className="text-foreground">{growth}%</strong><InfoTip label="Yearly return">The average yearly growth of what you own. Equity has swung widely from year to year, so try a lower figure too.</InfoTip><Slider aria-label="Yearly return in percent" min={3} max={14} step={1} value={growth} onChange={setGrowth} className="mt-1" /></label>
         </div>
-        <div className="h-60">
-          <ResponsiveContainer width="100%" height="100%"><LineChart data={nwRows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-            <CartesianGrid stroke={chartGrid} strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="label" {...chartAxis} interval="preserveStartEnd" /><YAxis {...chartAxis} width={64} tickFormatter={(v) => formatCompactINR(v)} />
-            <Tooltip {...chartTooltipStyle} formatter={(v: number) => formatCompactINR(v)} />
-            <Line dataKey="value" name="Net worth" stroke={chartColor(1)} strokeWidth={3} dot={false} />
-          </LineChart></ResponsiveContainer>
-        </div>
+        <GrowwChart height={200} tone="neutral" ariaLabel="Net worth ahead" format={(v) => formatCompactINR(v)} data={nwRows.map((r: any) => ({ x: String(r.label), y: Number(r.value) }))} />
       </Panel>
 
       <Panel title="Cash over the next 6 months" description="Your bank and cash balance if each month looks like your recent average. It does not know about one-off bills, bonuses or a change in your spending.">
@@ -62,15 +56,7 @@ export function ForecastPanel() {
           <span>{cash.net >= 0 ? 'Growing by' : 'Falling by'} <strong className={cn('tabular-nums', cash.net < 0 && 'text-destructive')}>{formatINR(Math.abs(cash.net))}</strong> a month</span>
           {cash.runsOut ? <span className="font-semibold text-destructive" role="status">Runs out in {label(cash.runsOut.ym)} at this pace</span> : <span className="text-muted-foreground">Lowest: {formatINR(cash.lowest.end)} in {label(cash.lowest.ym)}</span>}
         </div>
-        <div className="h-52">
-          <ResponsiveContainer width="100%" height="100%"><LineChart data={cash.points.map((p) => ({ label: label(p.ym), value: p.end }))} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-            <CartesianGrid stroke={chartGrid} strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="label" {...chartAxis} /><YAxis {...chartAxis} width={64} tickFormatter={(v) => formatCompactINR(v)} />
-            <Tooltip {...chartTooltipStyle} formatter={(v: number) => formatCompactINR(v)} />
-            <ReferenceLine y={0} stroke="hsl(var(--destructive))" strokeDasharray="4 4" />
-            <Line dataKey="value" name="Cash" stroke={chartColor(2)} strokeWidth={3} dot />
-          </LineChart></ResponsiveContainer>
-        </div>
+        <GrowwChart height={180} zero ariaLabel="Cash over the coming months" format={(v) => formatCompactINR(v)} data={cash.points.map((p) => ({ x: label(p.ym), y: p.end }))} />
       </Panel>
 
       <Panel title="Goals" description="If your monthly saving were shared equally between the goals still open, when would each be reached? Change the shares on the goals themselves; this is only a picture.">

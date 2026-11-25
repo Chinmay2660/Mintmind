@@ -49,10 +49,11 @@ export default function InsurancePage() {
   if (!ready) return <LoadingBlock className="h-64" />
 
   const annual = data.policies.reduce((s, p) => s + annualPremium(p), 0)
-  // one type at a time; it opens on the first type that has a policy
+  // All first, then a tab for each kind of policy that exists
   const typeCount = (t: string) => data.policies.filter((p: any) => p.type === t).length
-  const activeType = POLICY_TYPES.some((t) => t.value === filter) ? filter : (POLICY_TYPES.find((t) => typeCount(t.value) > 0)?.value ?? POLICY_TYPES[0].value)
-  const list = data.policies.filter((p: any) => p.type === activeType)
+  const kinds = POLICY_TYPES.filter((t) => typeCount(t.value) > 0)
+  const activeType = kinds.some((t) => t.value === filter) ? filter : 'all'
+  const list = activeType === 'all' ? data.policies : data.policies.filter((p: any) => p.type === activeType)
 
   return (
     <div className="space-y-5">
@@ -64,7 +65,7 @@ export default function InsurancePage() {
         {Object.entries(cover.byType).slice(0, 2).map(([k, v]) => <Stat key={k} label={`${typeLabel(k)} cover`} value={<Money value={v} compact />} />)}
       </div>
 
-      {!detail && <CategoryCarousel label="Policy type" value={activeType} onChange={setFilter} items={POLICY_TYPES.map((t) => ({ key: t.value, label: t.label, icon: policyIcon(t.value), count: typeCount(t.value) }))} />}
+      {!detail && kinds.length > 0 && <TabBar label="Kinds of policy" value={activeType} onChange={setFilter} tabs={[{ key: 'all', label: 'All', badge: data.policies.length }, ...kinds.map((t) => ({ key: t.value, label: t.label, badge: typeCount(t.value) }))]} />}
 
       {!detail && (list.length === 0 ? <Empty title="No policies" action={<Button onClick={() => setDlg({ kind: 'edit' })}>Add policy</Button>} /> : (
         <div className="grid gap-3 lg:grid-cols-2">

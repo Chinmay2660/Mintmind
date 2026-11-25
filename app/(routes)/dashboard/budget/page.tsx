@@ -1,7 +1,8 @@
 'use client'
 
-import { BudgetEditor, type EditorGroup } from '@/components/wealth/budget/BudgetEditor'
-import { IncomeBudgetForm, IncomeProgressPanel, type IncomePlan } from '@/components/wealth/budget/IncomeBudget'
+import Link from 'next/link'
+import { BackBar } from '@/components/shell/BackBar'
+import { IncomeProgressPanel, type IncomePlan } from '@/components/wealth/budget/IncomeBudget'
 import { planFor } from '@/lib/wealth/incomeBudget'
 import { useDetailCrumb } from '@/components/shell/DetailCrumb'
 import { toastProblem } from '@/lib/notify'
@@ -41,7 +42,7 @@ import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { GROUPS, VIEW_LABEL, groupOf, viewFor, KEY_GROUPS } from '@/lib/wealth/budgetTabs'
 import { Checkbox } from '@/components/ui/checkbox'
 
-const TAB_ORDER = ['overview', 'budgets', 'transactions', 'calendar', 'review', 'monthly', 'summary', 'stats', 'cashflow', 'recurring'] as const
+const TAB_ORDER = ['overview', 'transactions', 'calendar', 'review', 'monthly', 'summary', 'stats', 'cashflow', 'recurring'] as const
 
 export default function BudgetPage() {
   const { ready, data, db } = useWealth()
@@ -49,12 +50,11 @@ export default function BudgetPage() {
   const today = useMemo(() => new Date(), [])
   const curYm = toISO(today).slice(0, 7)
   const [ym, setYm] = useState(curYm)
-  const [dlg, setDlg] = useState<null | { kind: 'budget' | 'incomeBudget' | 'categories' | 'txn' | 'del' | 'delmany'; row?: any; draft?: any; type?: TxnType; tx?: Tx; txs?: Tx[] }>(null)
-  const [tab, setTab] = useState<'overview' | 'budgets' | 'transactions' | 'calendar' | 'monthly' | 'summary' | 'recurring' | 'stats' | 'cashflow' | 'review'>('overview')
+  const [dlg, setDlg] = useState<null | { kind: 'categories' | 'txn' | 'del' | 'delmany'; row?: any; draft?: any; type?: TxnType; tx?: Tx; txs?: Tx[] }>(null)
+  const [tab, setTab] = useState<'overview' | 'transactions' | 'calendar' | 'monthly' | 'summary' | 'recurring' | 'stats' | 'cashflow' | 'review'>('overview')
   const { expense: EXPENSE_CATEGORIES, income: INCOME_CATEGORIES } = useCategories()
   const [catFilter, setCatFilter] = useState('')
-  const [budgetKind, setBudgetKind] = useState<'expense' | 'income'>('expense') // which budget the Budgets tab is setting
-  const lastTabBeforeCategory = useRef<'overview' | 'budgets'>('overview')
+  const lastTabBeforeCategory = useRef<'overview'>('overview')
   const [txnKind, setTxnKind] = useState<'all' | 'expense' | 'income' | 'transfer'>('all') // which kind the Transactions list opens on, when you came from a summary card
   const [txnCat, setTxnCat] = useState('') // category the Transactions list opens on, when you came from a category
   const [pacingOpen, setPacingOpen] = useState(false) // the pace chart and detail numbers are one tap away, not on the page by default
@@ -65,7 +65,7 @@ export default function BudgetPage() {
   const params = useSearchParams()
   const fromCategory = useRef(false)
   // a category opens that month's expense list as its own history step, so Back goes to the Overview or Budgets you came from
-  const openCategory = (c: string) => { fromCategory.current = true; lastTabBeforeCategory.current = tab === 'budgets' ? 'budgets' : 'overview'; router.push(`/dashboard/budget?tab=transactions&cat=${encodeURIComponent(c)}`) }
+  const openCategory = (c: string) => { fromCategory.current = true; lastTabBeforeCategory.current = 'overview'; router.push(`/dashboard/budget?tab=transactions&cat=${encodeURIComponent(c)}`) }
   const openKind = (k: 'income' | 'expense' | 'all') => { fromCategory.current = true; lastTabBeforeCategory.current = 'overview'; router.push(`/dashboard/budget?tab=transactions&kind=${k}`) }
   const spTab = params.get('tab'), spCat = params.get('cat'), spKind = params.get('kind')
   useEffect(() => {
@@ -116,16 +116,11 @@ export default function BudgetPage() {
   const openGroup = (g: string) => setTab(viewFor(g, lastView.current) as typeof tab)
   useEffect(() => { lastView.current[groupOf(tab)] = tab }, [tab])
   useKeys({
-    '1': () => openGroup(KEY_GROUPS[1]), '2': () => openGroup(KEY_GROUPS[2]), '3': () => openGroup(KEY_GROUPS[3]), '4': () => openGroup(KEY_GROUPS[4]), '5': () => openGroup(KEY_GROUPS[5]),
+    '1': () => openGroup(KEY_GROUPS[1]), '2': () => openGroup(KEY_GROUPS[2]), '3': () => openGroup(KEY_GROUPS[3]), '4': () => openGroup(KEY_GROUPS[4]),
     '[': () => setYm((cur) => addMonths(`${cur}-01`, -1).slice(0, 7)),
     ']': () => setYm((cur) => { const next = addMonths(`${cur}-01`, 1).slice(0, 7); return next > curYm ? cur : next }),
   })
   const step = (by: number) => setYm((cur) => { const next = addMonths(`${cur}-01`, by).slice(0, 7); return next > curYm ? cur : next })
-  // on a phone the Overview is the home: the other views open from its list as pages of their own, and Back returns to it
-  // (a category's expense list is its own history step already, so Back just goes back)
-  const cameFromCategory = spTab === 'transactions'
-  const backToOverview = () => { if (cameFromCategory) router.back(); else setTab('overview') }
-  useDetailCrumb(phone && tab !== 'overview' && !cameFromCategory ? (VIEW_LABEL as Record<string, string>)[tab] : null, backToOverview)
   const askDelete = (t: Tx) => setDlg({ kind: 'del', tx: t })
   if (!ready) return <LoadingBlock className="h-64" />
 
@@ -159,18 +154,12 @@ export default function BudgetPage() {
         </div>
       )}
 
-      {tab !== 'overview' && (
-        <div className="flex items-center gap-2 md:hidden">
-          <button type="button" onClick={backToOverview} className="-ml-1 inline-flex items-center gap-1 rounded-lg px-1 py-2 text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" aria-hidden />Budget</button>
-          <span className="text-sm font-semibold">{(VIEW_LABEL as Record<string, string>)[tab]}</span>
-        </div>
-      )}
-      <div className="max-md:hidden"><TabBar label="Budget sections" tabs={GROUPS.map((g) => ({ key: g.key, label: g.label, badge: g.key === 'transactions' ? reviewCount : undefined }))} value={groupOf(tab)} onChange={openGroup} /></div>
+      <TabBar label="Budget sections" tabs={GROUPS.map((g) => ({ key: g.key, label: g.label, badge: g.key === 'transactions' ? reviewCount : undefined }))} value={groupOf(tab)} onChange={openGroup} />
       {(() => {
         const views = GROUPS.find((g) => g.key === groupOf(tab))!.views
         if (views.length < 2) return null
         return (
-          <div role="group" aria-label="Views in this section" className="-mt-2 flex flex-wrap gap-1.5 max-md:hidden">
+          <div role="group" aria-label="Views in this section" className="-mt-2 flex flex-wrap gap-1.5">
             {views.map((v) => (
               <button key={v} type="button" aria-pressed={tab === v} onClick={() => setTab(v as typeof tab)} className={`inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring ${tab === v ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground'}`}>
                 {VIEW_LABEL[v]}{v === 'review' && reviewCount ? <span className="rounded-full bg-primary/15 px-1.5 text-[11px] font-semibold text-primary">{reviewCount}</span> : null}
@@ -189,7 +178,7 @@ export default function BudgetPage() {
           if (st.x <= 24) return // the left edge belongs to swipe-back
           if ((e.target as HTMLElement).closest('[role="region"], [role="tablist"], [role="slider"], [data-swipe-row], input, textarea, [role="dialog"]')) return
           const t = e.changedTouches[0]; const dx = t.clientX - st.x; const dy = t.clientY - st.y
-          if (!phone && Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 2) { const i = TAB_ORDER.indexOf(tab); const n = TAB_ORDER[i + (dx < 0 ? 1 : -1)]; if (n) setTab(n) }
+          if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 2) { const i = TAB_ORDER.indexOf(tab); const n = TAB_ORDER[i + (dx < 0 ? 1 : -1)]; if (n) setTab(n) }
         }}>
       {tab === 'transactions' && <TransactionsView key={`${txnCat}|${txnKind}`} initialCategory={txnCat} initialKind={txnKind} list={monthTx} ym={ym} onEdit={edit} onDelete={askDelete} onDuplicate={duplicate} onSplit={(t) => setSplitFor(t.raw)} onBookmark={bookmark} onBulkDelete={(txs) => setDlg({ kind: 'delmany', txs })} onAdd={() => setDlg({ kind: 'txn', type: 'expense' })} />}
       {tab === 'calendar' && <CalendarView list={monthTx} ym={ym} onEdit={edit} onDelete={askDelete} onDuplicate={duplicate} onBookmark={bookmark} />}
@@ -201,61 +190,15 @@ export default function BudgetPage() {
 
       {tab === 'review' && <ReviewView list={allTx} onEdit={edit} />}
       {tab === 'cashflow' && <CashFlowView list={allTx as any[]} ym={ym} />}
-      {tab === 'budgets' && (
-        <div className="space-y-4">
-          <div role="tablist" aria-label="Which budget" className="grid grid-cols-2 rounded-xl border border-border bg-muted p-1">
-            {([['expense', 'Expense'], ['income', 'Income']] as const).map(([k, l]) => (
-              <button key={k} type="button" role="tab" aria-selected={budgetKind === k} onClick={() => setBudgetKind(k)} className={cn('min-h-10 rounded-lg px-3 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', budgetKind === k ? 'bg-card shadow-card' : 'text-muted-foreground hover:text-foreground')}>{l}</button>
-            ))}
-          </div>
-          <p className="px-1 text-xs text-muted-foreground">Setting the budget for <strong className="font-semibold text-foreground">{monthName}</strong>. Change the month at the top. How you are doing against it is on the Overview.</p>
-          {budgetKind === 'expense' ? (
-            <BudgetEditor
-              key={`expense|${ym}|${budget?.total ?? 0}|${JSON.stringify(budget?.categories ?? {})}`}
-              groups={groupCategories(EXPENSE_CATEGORIES) as EditorGroup[]}
-              values={(budget?.categories ?? {}) as Record<string, number>}
-              total={budget?.total ?? 0}
-              totalLabel="Monthly budget"
-              copyFrom={prevBudget ? { total: prevBudget.total, values: (prevBudget.categories ?? {}) as Record<string, number> } : null}
-              copyLabel="Copy last month"
-              onMore={budget ? () => setDlg({ kind: 'budget' }) : undefined}
-              onSave={async (t, map) => {
-                const sum = Object.values(map).reduce((x, y) => x + y, 0)
-                const total = t > 0 ? t : sum
-                if (!(total > 0)) { toast.warning('Enter a monthly budget, or a limit for at least one category'); return }
-                const base = budget ?? { rollover: false, rolloverCats: [], periods: {} }
-                await save(db, 'budgets', { ...base, id: ym, total, categories: map })
-                toast.success('Budget saved')
-              }}
-            />
-          ) : (
-            <BudgetEditor
-              key={`income|${ym}|${incomePlan?.total ?? 0}|${JSON.stringify(incomePlan?.categories ?? {})}`}
-              groups={INCOME_CATEGORIES.map((c) => ({ name: c, children: [] }))}
-              values={incomePlan?.categories ?? {}}
-              total={incomePlan?.total ?? 0}
-              totalLabel="Expected income"
-              copyFrom={(() => { const prev = planFor(incomePlans, prevYm); return prev && prev !== incomePlan ? { total: prev.total, values: prev.categories ?? {} } : null })()}
-              copyLabel="Copy last month"
-              onSave={async (t, map) => {
-                const sum = Object.values(map).reduce((x, y) => x + y, 0)
-                const total = t > 0 ? t : sum
-                if (!(total > 0)) { toast.warning('Enter the income you expect, or an amount for at least one category'); return }
-                await db.meta.put({ key: 'incomeBudgets', value: { ...incomePlans, [ym]: { total, categories: map } } })
-                toast.success('Income budget saved')
-              }}
-            />
-          )}
-        </div>
-      )}
+      {spTab === 'transactions' && (spCat || spKind) && <BackBar phoneOnly />}
       {/* income, expenses and the rest of the month at a glance, first */}
       {tab === 'overview' && <SummaryStrip list={monthTx} onOpen={openKind} />}
       {tab === 'overview' && (!budget || !p ? (
-        <Empty title={`No budget for ${monthName}`} description="Set a monthly budget to see daily pacing and projections." action={<Button onClick={() => setDlg({ kind: 'budget' })}>Set budget</Button>} />
+        <Empty title={`No budget for ${monthName}`} description="Set a monthly budget in Settings to see daily pacing and projections." action={<Button asChild><Link href="/dashboard/settings?tab=budget">Set budget in Settings</Link></Button>} />
       ) : (
         <>
-          <BudgetList budget={budget ? { ...budget, total: effective } : budget} prevBudget={prevBudget} expenses={data.expenses} ym={ym} today={today} onEdit={() => setDlg({ kind: 'budget' })} onOpenCategory={openCategory} />
-          <IncomeProgressPanel plan={incomePlan} bankTxns={data.bankTxns} ym={ym} onEdit={() => setDlg({ kind: 'incomeBudget' })} />
+          <BudgetList budget={budget ? { ...budget, total: effective } : budget} prevBudget={prevBudget} expenses={data.expenses} ym={ym} today={today} onOpenCategory={openCategory} />
+          <IncomeProgressPanel plan={incomePlan} bankTxns={data.bankTxns} ym={ym} />
           <button type="button" onClick={() => setPacingOpen((v) => !v)} aria-expanded={pacingOpen} className="flex min-h-11 w-full items-center justify-between rounded-xl border border-border px-4 text-sm font-medium outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"><span>Daily pace and numbers</span><ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', pacingOpen && 'rotate-180')} aria-hidden /></button>
           {pacingOpen && (
             <>
@@ -303,26 +246,7 @@ export default function BudgetPage() {
       ))}
 
 
-      {tab === 'overview' && (
-        <div className="space-y-5 md:hidden">
-          {([
-            ['Spending', [['transactions', 'Transactions'], ['calendar', 'Calendar'], ['review', 'Review']]],
-            ['Insights', [['monthly', 'Month by month'], ['summary', 'Summary'], ['stats', 'Stats'], ['cashflow', 'Cash flow']]],
-            ['Plan', [['budgets', 'Set budgets'], ['recurring', 'Recurring payments']]],
-          ] as const).map(([label, items]) => (
-            <section key={label}>
-              <h2 className="mb-1 px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</h2>
-              <ul className="surface-card divide-y divide-border px-4">
-                {items.map(([v, name]) => (
-                  <li key={v}><button type="button" onClick={() => setTab(v as typeof tab)} className="group flex min-h-12 w-full items-center justify-between gap-3 text-left text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring"><span>{name}</span><span className="flex items-center gap-2">{v === 'review' && reviewCount > 0 && <span className="rounded-full bg-primary/15 px-1.5 text-[11px] font-semibold text-primary">{reviewCount}</span>}<ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary" aria-hidden /></span></button></li>
-                ))}
-              </ul>
-            </section>))}
-        </div>
-      )}
 
-      {dlg?.kind === 'budget' && <BudgetForm ym={ym} row={budget} onClose={() => setDlg(null)} onSave={async (r) => { await save(db, 'budgets', r); toast.success('Budget saved') }} />}
-      {dlg?.kind === 'incomeBudget' && <IncomeBudgetForm ym={ym} plan={incomePlan} onClose={() => setDlg(null)} onSave={async (pl) => { await db.meta.put({ key: 'incomeBudgets', value: { ...incomePlans, [ym]: pl } }); toast.success('Income budget saved') }} />}
       {dlg?.kind === 'txn' && <TxnEntryDialog initialType={dlg.type} row={dlg.row} draft={dlg.draft} defaultMonth={ym} onClose={() => setDlg(null)} />}
       {splitFor && <SplitDialog expense={splitFor} onClose={() => setSplitFor(null)} />}
       <ConfirmDialog open={dlg?.kind === 'delmany'} onOpenChange={(o) => !o && setDlg(null)} title={`Delete ${dlg?.txs?.length ?? 0} transactions?`}
@@ -337,59 +261,5 @@ export default function BudgetPage() {
         description={dlg?.tx?.kind === 'transfer' ? 'Both balances are restored.' : dlg?.tx?.kind === 'income' ? 'The account balance is reduced by this amount again.' : 'The linked bank balance or card outstanding is restored.'} confirmLabel="Delete" variant="destructive"
         onConfirm={async () => { const t = dlg!.tx!; try { t.kind === 'expense' ? await deleteExpense(db, t.id) : t.kind === 'income' ? await deleteIncome(db, t.id) : await deleteTransfer(db, t.id); toast.success('Deleted') } catch (e) { toastProblem(e, 'Could not delete') } setDlg(null) }} />
     </div>
-  )
-}
-
-function BudgetForm({ ym, row, onClose, onSave }: { ym: string; row?: any; onClose: () => void; onSave: (r: any) => Promise<void> }) {
-  const { expense: EXPENSE_CATEGORIES } = useCategories()
-  const [total, setTotal] = useState(String(row?.total ?? ''))
-  const [cats, setCats] = useState<Record<string, string>>(Object.fromEntries(EXPENSE_CATEGORIES.map((c) => [c, String(row?.categories?.[c] ?? '')])))
-  const [rollover, setRollover] = useState(!!row?.rollover)
-  const [periods, setPeriods] = useState<Record<string, string>>(row?.periods || {})
-  const [ranges, setRanges] = useState<Record<string, { start: string; end: string }>>(row?.customRanges || {})
-  const [rollCats, setRollCats] = useState<string[]>(row?.rolloverCats || [])
-  const sum = EXPENSE_CATEGORIES.reduce((s, c) => s + (Number(cats[c]) || 0), 0)
-  return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title={`Budget for ${ym}`} wide
-      onSubmit={async () => { const t = Number(total); if (!(t > 0)) throw new Error('Monthly budget must be positive'); await onSave({ id: ym, total: t, categories: Object.fromEntries(EXPENSE_CATEGORIES.map((c) => [c, Number(cats[c]) || 0])), rollover, rolloverCats: rollCats.filter((c) => Number(cats[c]) > 0), periods: Object.fromEntries(Object.entries(periods).filter(([c, p]) => p !== 'monthly' && Number(cats[c]) > 0)), customRanges: Object.fromEntries(Object.entries(ranges).filter(([c, r]) => periods[c] === 'custom' && r.start && r.end && r.end >= r.start)) }) }}>
-      <Field label="Monthly budget (₹)" className="full">{(id) => <Input id={id} type="number" min="1" step="any" required value={total} onChange={(e) => setTotal(e.target.value)} />}</Field>
-      <div className="full">
-        <div className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-          <span className="flex-1">Category limits</span>
-          <InfoTip label="About budget periods">Choose how long each limit lasts. Monthly resets every month. Quarterly and Yearly are one limit for the whole quarter or year, and spending counts from its start. Custom is a date range of your own, such as a trip. Tick Roll over to carry what is unspent into next month (monthly limits).</InfoTip>
-        </div>
-        <ul className="space-y-2">
-          {EXPENSE_CATEGORIES.map((c) => {
-            const per = periods[c] || 'monthly'
-            const rng = ranges[c] || { start: '', end: '' }
-            return (
-              <li key={c} className="rounded-xl border border-border p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="min-w-0 truncate text-sm font-semibold">{c}</span>
-                  <div className="w-32 shrink-0"><Input aria-label={`${c} limit in rupees`} type="number" min="0" step="any" inputMode="decimal" placeholder="Limit" value={cats[c]} onChange={(e) => setCats((p) => ({ ...p, [c]: e.target.value }))} /></div>
-                </div>
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                  <div role="radiogroup" aria-label={`${c} budget period`} className="inline-flex rounded-lg border border-border bg-muted p-0.5"
-                    onKeyDown={(e) => { const order = ['monthly', 'quarterly', 'yearly', 'custom']; const i = order.indexOf(per); const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0; if (!d) return; e.preventDefault(); const next = order[(i + d + order.length) % order.length]; setPeriods((p) => ({ ...p, [c]: next })); requestAnimationFrame(() => (e.currentTarget.querySelector(`[data-period="${next}"]`) as HTMLElement | null)?.focus()) }}>
-                    {[['monthly', 'Monthly'], ['quarterly', 'Quarterly'], ['yearly', 'Yearly'], ['custom', 'Custom']].map(([v, l]) => (
-                      <button key={v} type="button" role="radio" data-period={v} tabIndex={per === v ? 0 : -1} aria-checked={per === v} onClick={() => setPeriods((p) => ({ ...p, [c]: v }))} className={cn('rounded-md px-2.5 py-1 text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-ring', per === v ? 'bg-primary text-primary-foreground shadow-card' : 'text-muted-foreground hover:text-foreground')}>{l}</button>
-                    ))}
-                  </div>
-                  {per === 'monthly' && <label className="flex items-center gap-1.5 text-xs text-muted-foreground"><Checkbox checked={rollCats.includes(c)} disabled={!(Number(cats[c]) > 0)} onChange={(e) => setRollCats((p) => (e.target.checked ? [...p, c] : p.filter((x) => x !== c)))} aria-label={`Roll over unspent ${c} budget`} />Roll over</label>}
-                </div>
-                {per === 'custom' && (
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    <label className="text-xs text-muted-foreground">From<DateInput aria-label={`${c} starts`} value={rng.start} onChange={(e) => setRanges((p) => ({ ...p, [c]: { ...rng, start: e.target.value } }))} /></label>
-                    <label className="text-xs text-muted-foreground">To<DateInput aria-label={`${c} ends`} value={rng.end} onChange={(e) => setRanges((p) => ({ ...p, [c]: { ...rng, end: e.target.value } }))} /></label>
-                  </div>
-                )}
-              </li>
-            )
-          })}
-        </ul>
-        <p className="mt-1.5 text-xs tabular-nums text-muted-foreground">Limits add up to {formatINR(sum)}{Number(total) ? ` · ${formatINR(Number(total) - sum)} unallocated` : ''}</p>
-      </div>
-      <label className="full flex items-center gap-2 text-sm"><Checkbox checked={rollover} onChange={(e) => setRollover(e.target.checked)} />Roll over the unspent total budget<InfoTip label="About total rollover">Adds whatever was left of last month's total budget to this month's.</InfoTip></label>
-    </FormDialog>
   )
 }

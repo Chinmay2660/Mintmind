@@ -1,5 +1,6 @@
 'use client'
 
+import { GrowwChart } from '@/components/wealth/GrowwChart'
 import { BackBar } from '@/components/shell/BackBar'
 import { BackLink } from '@/components/shell/BackLink'
 import Link from 'next/link'
@@ -87,13 +88,7 @@ export default function BankAccountDetail() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="Balance trend (12 months)">
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%"><AreaChart data={trend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid stroke={chartGrid} vertical={false} /><XAxis dataKey="label" {...chartAxis} minTickGap={20} /><YAxis {...chartAxis} width={48} tickFormatter={ax} />
-              <Tooltip {...chartTooltipStyle} formatter={(v: number) => (privacyMode ? '••••' : formatINR(v))} />
-              <Area type="monotone" dataKey="balance" name="Balance" connectNulls stroke={chartColor(1)} fill={chartColor(1)} fillOpacity={0.12} strokeWidth={2} />
-            </AreaChart></ResponsiveContainer>
-          </div>
+          <GrowwChart height={190} ariaLabel="Balance over twelve months" format={(v) => (privacyMode ? '••••' : formatINR(v))} data={trend.filter((t: any) => t.balance != null).map((t: any) => ({ x: t.label, y: Number(t.balance) }))} />
         </Panel>
         <Panel title="Money in vs out (6 months)">
           <div className="h-56">

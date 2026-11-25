@@ -1,5 +1,6 @@
 'use client'
 
+import { GrowwChart } from '@/components/wealth/GrowwChart'
 import { BackBar } from '@/components/shell/BackBar'
 import { BackLink } from '@/components/shell/BackLink'
 import Link from 'next/link'
@@ -74,15 +75,7 @@ export default function FundDetail() {
       </div>
       <Panel title="Performance">
         {perf.length < 2 ? <Empty title="Not enough history" /> : (
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%"><LineChart data={perf} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid stroke={chartGrid} vertical={false} /><XAxis dataKey="label" {...chartAxis} minTickGap={32} />
-              <YAxis {...chartAxis} width={56} tickFormatter={(v) => (privacyMode ? '••' : `${Math.round(v / 1000)}k`)} />
-              <Tooltip {...chartTooltipStyle} formatter={(v: number) => (privacyMode ? '••••' : formatINR(v))} />
-              <Line type="stepAfter" dataKey="invested" name="Invested" stroke={chartColor(3)} strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="value" name="Value" stroke={chartColor(1)} strokeWidth={2.5} dot={false} />
-            </LineChart></ResponsiveContainer>
-          </div>
+          <GrowwChart height={200} secondLabel="Invested" ariaLabel="Value of the fund against what was invested" format={(v) => (privacyMode ? '••••' : formatINR(v))} data={perf.map((p: any) => ({ x: String(p.label), y: Number(p.value), y2: Number(p.invested) }))} />
         )}
       </Panel>
       <div className="grid gap-4 lg:grid-cols-2">
