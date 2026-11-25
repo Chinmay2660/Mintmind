@@ -149,7 +149,7 @@ const SETUP: Record<string, { label: string; action: string; href: string; form?
   bank_accounts: { label: 'Bank Accounts', action: 'Add your first account', href: '', form: 'account', done: (d) => d.bankAccounts.length > 0 },
   mutual_funds: { label: 'Mutual Funds & SIPs', action: 'Add your investments', href: '', form: 'fund', done: (d) => d.funds.length > 0 },
   recurring: { label: 'Recurring payments (subscriptions, rent, SIPs)', action: 'Add a payment', href: '', form: 'subscription', done: (d) => d.sips.length > 0 || d.meta.some((m: any) => m.key === 'subscriptions' && m.value?.length > 0) },
-  credit_cards: { label: 'Cards', action: 'Add your cards', href: '/dashboard/credit-cards', done: (d) => d.cards.length > 0 },
+  credit_cards: { label: 'Credit cards', action: 'Add your cards', href: '/dashboard/credit-cards', done: (d) => d.cards.length > 0 },
   insurance: { label: 'Insurance', action: 'Add your policies', href: '/dashboard/insurance', done: (d) => d.policies.length > 0 },
   budget_expenses: { label: 'Budget & Expenses', action: 'Set your monthly budget', href: '/dashboard/budget', done: (d) => d.budgets.length > 0 },
   family_circle: { label: 'Family Circle', action: 'Invite a family member', href: '/dashboard/family', done: (d) => d.members.length > 1 },

@@ -2,7 +2,8 @@
 
 import { useBackToClose } from '@/lib/hooks/useBackToClose'
 import { toastProblem } from '@/lib/notify'
-import { Children, Fragment, isValidElement, useId, useRef, useState, type FormEvent, type ReactElement, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
+import { Children, Fragment, isValidElement, useEffect, useId, useRef, useState, type FormEvent, type ReactElement, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp, Check, ChevronDown, Info, Loader2, Minus, Plus } from 'lucide-react'
 import * as PopoverPrimitive from '@radix-ui/react-popover'
 import { usePageInfo } from '@/components/shell/DetailCrumb'
@@ -41,33 +42,45 @@ export interface PrimaryAction { label: string; onClick: () => void; disabled?: 
 export function PageHeader({ title, description, actions, primaryAction, secondaryAction }: { title?: string; description?: string; actions?: ReactNode; primaryAction?: PrimaryAction; /** a second floating button, stacked above the first */ secondaryAction?: PrimaryAction }) {
   // with no title here, the explanation goes to the top bar (beside the page name) instead of taking a row of its own
   usePageInfo(!title ? description : undefined)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3 empty:hidden">
-      {title && (
-        <div className="flex min-w-0 items-center gap-2">
-          <h2 className="retro-title text-xl font-semibold tracking-tight paper:text-[1.75rem] paper:font-bold paper:leading-tight">{title}</h2>
-          {description && <InfoTip label={title}>{description}</InfoTip>}
+    <>
+      {/* a header with only floating buttons has no row to draw: the buttons go to the page body, so they leave no empty gap in the page's spacing */}
+      {(title || actions) && (
+        <div className="flex flex-wrap items-end justify-between gap-3">
+        {title && (
+          <div className="flex min-w-0 items-center gap-2">
+            <h2 className="retro-title text-xl font-semibold tracking-tight paper:text-[1.75rem] paper:font-bold paper:leading-tight">{title}</h2>
+            {description && <InfoTip label={title}>{description}</InfoTip>}
+          </div>
+        )}
+        {/* The explanation lives behind an "i", so it takes no row of its own. With no title it sits beside the actions. */}
+        {actions && (
+          <div className="flex flex-wrap items-center gap-2 max-md:w-full max-md:[&>*]:flex-1 md:ml-auto">
+            {actions}
+          </div>
+        )}
         </div>
       )}
-      {/* The explanation lives behind an "i", so it takes no row of its own. With no title it sits beside the actions. */}
-      {actions && (
-        <div className="flex flex-wrap items-center gap-2 max-md:w-full max-md:[&>*]:flex-1 md:ml-auto">
-          {actions}
-        </div>
+      {mounted && createPortal(
+        <>
+          {secondaryAction && (
+            <button type="button" onClick={secondaryAction.onClick} disabled={secondaryAction.disabled} aria-label={secondaryAction.label}
+              className="fab fixed bottom-[calc(var(--mobile-fab-bottom)+8.5rem)] right-4 z-30 flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 outline-none transition-transform hover:bg-primary/90 active:scale-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 md:bottom-[8.75rem] md:px-5 paper:border paper:border-[hsl(var(--edge))] paper:shadow-[1.5px_3px_0_0_hsl(var(--drop))] print:hidden">
+              <Plus className="h-4 w-4" /><span>{secondaryAction.label}</span>
+            </button>
+          )}
+          {primaryAction && (
+            <button type="button" onClick={primaryAction.onClick} disabled={primaryAction.disabled} aria-label={primaryAction.label}
+              className="fab fixed bottom-[calc(var(--mobile-fab-bottom)+4.25rem)] right-4 z-30 flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 outline-none transition-transform hover:bg-primary/90 active:scale-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 md:bottom-[5.25rem] md:px-5 paper:border paper:border-[hsl(var(--edge))] paper:shadow-[1.5px_3px_0_0_hsl(var(--drop))] print:hidden">
+              <Plus className="h-4 w-4" /><span>{primaryAction.label}</span>
+            </button>
+          )}
+        </>,
+        document.body,
       )}
-      {secondaryAction && (
-        <button type="button" onClick={secondaryAction.onClick} disabled={secondaryAction.disabled} aria-label={secondaryAction.label}
-          className="fab fixed bottom-[calc(var(--mobile-fab-bottom)+8.5rem)] right-4 z-30 flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 outline-none transition-transform hover:bg-primary/90 active:scale-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 md:bottom-[8.75rem] md:px-5 paper:border paper:border-[hsl(var(--edge))] paper:shadow-[1.5px_3px_0_0_hsl(var(--drop))] print:hidden">
-          <Plus className="h-4 w-4" /><span>{secondaryAction.label}</span>
-        </button>
-      )}
-      {primaryAction && (
-        <button type="button" onClick={primaryAction.onClick} disabled={primaryAction.disabled} aria-label={primaryAction.label}
-          className="fab fixed bottom-[calc(var(--mobile-fab-bottom)+4.25rem)] right-4 z-30 flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 outline-none transition-transform hover:bg-primary/90 active:scale-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 md:bottom-[5.25rem] md:px-5 paper:border paper:border-[hsl(var(--edge))] paper:shadow-[1.5px_3px_0_0_hsl(var(--drop))] print:hidden">
-          <Plus className="h-4 w-4" /><span>{primaryAction.label}</span>
-        </button>
-      )}
-    </div>
+    </>
   )
 }
 

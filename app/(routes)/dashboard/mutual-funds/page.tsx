@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useAddParam } from '@/lib/hooks/useAddParam'
-import { ArrowLeft, Plus, RefreshCw, ChevronRight, Loader2 } from 'lucide-react'
+import { ArrowLeft, MoreVertical, Pencil, Plus, RefreshCw, ChevronRight, Loader2, Trash2 } from 'lucide-react'
 import { useDetailCrumb } from '@/components/shell/DetailCrumb'
 import axios from 'axios'
 import { lastMarketSync, refreshNavs } from '@/lib/market/client'
@@ -22,7 +22,8 @@ import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Pagination } from '@/components/ui/pagination'
 import { usePagination } from '@/lib/hooks/usePagination'
-import { Delta, Empty, Metric, LoadingBlock, PageHeader, Panel, Select, Stat } from '@/components/wealth/kit'
+import { Delta, Empty, Metric, LoadingBlock, PageHeader, Panel, Progress, Select, Stat } from '@/components/wealth/kit'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { FundForm, NavForm, SipForm } from '@/components/wealth/FundForms'
 import { cn } from '@/lib/utils'
 import { HoldingsTab } from '@/components/wealth/investments/HoldingsTab'
@@ -132,20 +133,53 @@ function MutualFundsTab() {
       <Panel title="SIPs" action={<Button size="sm" variant="outline" disabled={!data.funds.length} onClick={() => setDlg({ kind: 'sip' })}><Plus className="mr-1 h-4 w-4" />Add SIP</Button>}>
         {sips.length === 0 ? <Empty title="No SIPs" description={data.funds.length ? 'Add a SIP to track commitments.' : 'Add a fund first.'} /> : (
           <ul className="divide-y divide-border">
-            {sips.map((x) => (
-              <li key={x.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
-                <div className="min-w-0 flex-1"><p className="truncate font-medium">{x.fund?.name ?? 'Unknown fund'}</p>
-                  <p className="text-xs text-muted-foreground"><Money value={x.amount} /> · {cap(x.frequency)} · Debit day {x.debitDay} · {x.instalmentsCompleted}/{x.instalmentsTotal || '∞'} done · <span className="capitalize">{x.status}</span>{x.next ? ` · Next ${formatDate(x.next)}` : ''}{x.fund && x.status === 'active' ? ` · ₹${Math.round(monthlyEquivalent(x)).toLocaleString('en-IN')}/month` : ''}</p></div>
-                <div className="flex gap-2">
-                  {x.status === 'active' && <Button size="sm" variant="outline" onClick={async () => { await recordSipInstalment(db, x.id); toast.success('Instalment recorded at current NAV') }}>Mark paid</Button>}
-                  <Button size="sm" variant="outline" onClick={() => setDlg({ kind: 'sip', row: x })}>Edit</Button>
-                  <Button size="sm" variant="ghost" onClick={() => setDlg({ kind: 'delSip', row: x })}>Delete</Button>
-                </div>
-              </li>
-            ))}
+            {sips.map((x) => {
+              const total = Number(x.instalmentsTotal) || 0
+              const done = Number(x.instalmentsCompleted) || 0
+              const per = x.frequency === 'monthly' ? 'month' : x.frequency === 'weekly' ? 'week' : x.frequency === 'quarterly' ? 'quarter' : x.frequency === 'yearly' ? 'year' : String(x.frequency || '')
+              const monthly = x.fund && x.status === 'active' ? Math.round(monthlyEquivalent(x)) : 0
+              const active = x.status === 'active'
+              return (
+                <li key={x.id} className="py-4">
+                  {/* one card-like row: who and how much, how far along, what is next, and the one action people use */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium leading-snug">{x.fund?.name ?? 'Unknown fund'}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{cap(x.frequency)} · debit day {x.debitDay}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-sm font-semibold tabular-nums"><Money value={x.amount} /></p>
+                      <p className="text-xs text-muted-foreground">a {per}{monthly && x.frequency !== 'monthly' ? ` · ₹${monthly.toLocaleString('en-IN')}/month` : ''}</p>
+                    </div>
+                  </div>
+                  {total > 0 && (
+                    <div className="mt-3">
+                      <Progress value={Math.min(100, (done / total) * 100)} label={`${done} of ${total} instalments done`} />
+                      <p className="mt-1 text-xs tabular-nums text-muted-foreground">{done} of {total} done</p>
+                    </div>
+                  )}
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <p className="min-w-0 text-xs text-muted-foreground">
+                      <span className={cn('font-medium capitalize', active ? 'text-success' : 'text-muted-foreground')}>{x.status}</span>
+                      {x.next ? <> · Next {formatDate(x.next)}</> : null}
+                    </p>
+                    <div className="flex shrink-0 items-center gap-1">
+                      {active && <Button size="sm" variant="outline" onClick={async () => { await recordSipInstalment(db, x.id); toast.success('Instalment recorded at current NAV') }}>Mark paid</Button>}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="h-9 w-9" aria-label={`More for the ${x.fund?.name ?? 'SIP'} SIP`}><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setDlg({ kind: 'sip', row: x })}><Pencil className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setDlg({ kind: 'delSip', row: x })} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </li>
+              )
+            })}
           </ul>
         )}
-        {upcoming.length > 0 && <p className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground">Next SIP: {upcoming[0].fund?.name} on {formatDate(upcoming[0].next!)}</p>}
+        {upcoming.length > 0 && <p className="mt-1 border-t border-border pt-3 text-xs text-muted-foreground">Next SIP: {upcoming[0].fund?.name} on {formatDate(upcoming[0].next!)}</p>}
       </Panel>
 
       {dlg?.kind === 'fund' && <FundForm row={dlg.row} onClose={() => setDlg(null)} onSave={async (r) => { dlg.row ? await save(db, 'funds', r) : await addFund(db, r); toast.success('Fund saved') }} />}
@@ -157,48 +191,25 @@ function MutualFundsTab() {
 }
 
 type Tab = 'portfolio' | 'funds' | 'fd' | 'rd' | 'retirement' | 'market' | 'gold' | 'property'
+// Mutual funds first, as in an investing app; the allocation view is the last tab
 const TABS: { key: Tab; label: string }[] = [
-  { key: 'portfolio', label: 'Portfolio' }, { key: 'funds', label: 'Mutual funds' }, { key: 'fd', label: 'Fixed deposits' }, { key: 'rd', label: 'Recurring deposits' },
-  { key: 'retirement', label: 'EPF, PPF, NPS' }, { key: 'market', label: 'Stocks & ETFs' }, { key: 'gold', label: 'Gold' }, { key: 'property', label: 'Property & other' },
+  { key: 'funds', label: 'Mutual funds' }, { key: 'market', label: 'Stocks & ETFs' }, { key: 'fd', label: 'Fixed deposits' }, { key: 'rd', label: 'Recurring deposits' },
+  { key: 'retirement', label: 'EPF, PPF, NPS' }, { key: 'gold', label: 'Gold' }, { key: 'property', label: 'Property & other' }, { key: 'portfolio', label: 'Allocation' },
 ]
 
-/** Investments: the whole portfolio, and a section for each kind of holding. Property and other assets are the last section; loans live under Net worth. */
+/** Investments: your totals, then a tab for each kind of holding. It opens on Mutual funds. */
 export default function InvestmentsPage() {
   usePrivacyMode() // draws amounts again when balances are hidden or shown
-  const [tab, setTab] = useState<Tab>('portfolio')
-  const [phone, setPhone] = useState(false)
-  const router = useRouter()
-  const [fromLink, setFromLink] = useState(false) // opened straight to one section (from the Overview, say): Back returns there, not to the portfolio list
-  useEffect(() => { const mq = window.matchMedia('(max-width: 767px)'); const f = () => setPhone(mq.matches); f(); mq.addEventListener('change', f); return () => mq.removeEventListener('change', f) }, [])
-  // on a phone the Portfolio list is the way in: a row opens that kind of holding as its own page, and Back (the arrow, the browser or a swipe) returns to the list
-  const sectionLabel = TABS.find((x) => x.key === tab)?.label
-  useDetailCrumb(phone && tab !== 'portfolio' && !fromLink ? sectionLabel : null, () => setTab('portfolio'))
-  // a link such as ?add=fund lands on the section that can add it
-  // the address is read after mount so the server and the browser draw the same first screen
+  const [tab, setTab] = useState<Tab>('funds')
+  // a link such as ?tab=fd or ?add=fund lands on that tab (read after mount, so the server and the browser draw the same first screen)
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { const q = new URLSearchParams(window.location.search); const t = q.get('tab'); if (q.get('add') === 'fund') { setTab('funds'); setFromLink(true) } else if (t && TABS.some((x) => x.key === t)) { setTab(t as Tab); setFromLink(true) } }, [])
+  useEffect(() => { const q = new URLSearchParams(window.location.search); const t = q.get('tab'); if (q.get('add') === 'fund') setTab('funds'); else if (t && TABS.some((x) => x.key === t)) setTab(t as Tab) }, [])
   return (
     <div className="space-y-5">
-      {/* same order as Insurance: the totals first, then the section chips, then the section itself */}
-      {tab !== 'portfolio' && (
-        <div className="flex items-center gap-2 md:hidden">
-          <BackBar onBack={() => (fromLink ? router.back() : setTab('portfolio'))} />
-          <span className="text-sm font-semibold">{sectionLabel}</span>
-        </div>
-      )}
-      <div className={cn(tab !== 'portfolio' && 'max-md:hidden')}><PortfolioTab part="summary" onOpen={() => {}} /></div>
-      <div className="max-md:hidden"><TabBar label="Investment sections" tabs={TABS.map((t) => ({ key: t.key, label: t.label }))} value={tab} onChange={(k) => setTab(k as Tab)} /></div>
+      <BackBar phoneOnly />
+      <PortfolioTab part="summary" onOpen={() => {}} />
+      <TabBar label="Investment sections" tabs={TABS.map((t) => ({ key: t.key, label: t.label }))} value={tab} onChange={(k) => setTab(k as Tab)} />
       {tab === 'portfolio' && <PortfolioTab onOpen={(key) => setTab((key === 'mutualFunds' ? 'funds' : key) as Tab)} />}
-      {tab === 'portfolio' && (
-        <section className="surface-card px-4 py-1 md:hidden" aria-label="Add or open any kind of holding">
-          <h2 className="pt-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Add or open</h2>
-          <ul className="divide-y divide-border">
-            {TABS.filter((t) => t.key !== 'portfolio').map((t) => (
-              <li key={t.key}><button type="button" onClick={() => setTab(t.key)} className="flex min-h-12 w-full items-center justify-between gap-3 text-left text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring">{t.label}<ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden /></button></li>
-            ))}
-          </ul>
-        </section>
-      )}
       {tab === 'funds' && <MutualFundsTab />}
       {(tab === 'fd' || tab === 'rd' || tab === 'retirement' || tab === 'market' || tab === 'gold' || tab === 'property') && <HoldingsTab key={tab} kind={tab} />}
     </div>

@@ -49,6 +49,10 @@ export default function BankAccountsPage() {
           ))}
         </div>
       )}
+      <Link href="/dashboard/bank-accounts/debit-cards" className="surface-card flex items-center justify-between gap-3 p-4 outline-none transition-colors hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring">
+        <span className="min-w-0"><span className="block text-sm font-medium">Debit cards</span><span className="block text-xs text-muted-foreground">{data.debitCards.length ? `${data.debitCards.length} linked to your accounts` : 'Cards that spend from these accounts'}</span></span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+      </Link>
       {adding && <AccountForm onClose={() => setAdding(false)} onSave={async (rec) => { await save(db, 'bankAccounts', rec); await db.balanceHistory.add({ id: `bh_${Date.now()}`, accountId: rec.id, date: rec.lastUpdated, balance: rec.currentBalance, note: 'Opening balance' }); toast.success('Account added') }} />}
     </div>
   )

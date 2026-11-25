@@ -22,7 +22,6 @@ import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Empty, Field, FormDialog, StepFormDialog, LoadingBlock, PageHeader, Panel, Progress, Select, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForPct, toneForCredit, UsagePct } from '@/components/wealth/kit'
 import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
-import { DebitCardsTab } from '@/components/wealth/DebitCards'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { cn } from '@/lib/utils'
 import { DateInput } from '@/components/ui/pickers'
@@ -59,9 +58,9 @@ function CreditCardsTab() {
 
   return (
     <div className="space-y-5">
-      {!openCard && <BackBar phoneOnly />}
-      <PageHeader secondaryAction={{ label: 'Add transaction', disabled: data.cards.length === 0, onClick: () => setDlg({ kind: 'pay', row: card }) }} primaryAction={{ label: 'Add card', onClick: () => setDlg({ kind: 'card' }) }} />
-      <section aria-label="Summary" className="space-y-3 border-b border-border pb-5">
+      {openCard ? <BackBar onBack={closeSel} /> : <BackBar phoneOnly />}
+      <PageHeader secondaryAction={{ label: 'Add transaction', disabled: data.cards.length === 0, onClick: () => setDlg({ kind: 'pay', row: card }) }} primaryAction={openCard ? undefined : { label: 'Add card', onClick: () => setDlg({ kind: 'card' }) }} />
+      {!openCard && <section aria-label="Summary" className="space-y-3">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Total limit" value={<Money value={t.limit} />} />
         <Stat label="Outstanding" value={<Money value={t.outstanding} />} />
@@ -69,7 +68,7 @@ function CreditCardsTab() {
         <Stat label="Utilisation" value={<UsagePct value={t.util} />} hint={<Progress value={t.util} tone={toneForCredit(t.util)} label="Utilisation" />} />
       </div>
       <p className="text-xs text-muted-foreground">Card spend this month: <Money value={t.monthSpend} /></p>
-      </section>
+      </section>}
 
       {data.cards.length === 0 ? <Empty title="No credit cards" action={<Button onClick={() => setDlg({ kind: 'card' })}>Add card</Button>} /> : (
         <>
@@ -92,7 +91,6 @@ function CreditCardsTab() {
 
           {card && (
             <>
-              <BackBar onBack={closeSel} />
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-lg font-semibold">{card.bank} {card.cardName}</h2>
                 <div className="flex flex-wrap gap-2">
@@ -220,11 +218,10 @@ function CardTxnForm({ cards, card, accounts, onClose, onPay, onCharge }: { card
 }
 
 export default function CardsPage() {
-  const [tab, setTab] = useState<'Credit cards' | 'Debit cards'>('Credit cards')
+  // Credit cards are what you owe. Debit cards spend from a bank account, so they are under Bank accounts.
   return (
     <div className="space-y-5">
-      <TabBar label="Card type" tabs={[{ key: 'Credit cards', label: 'Credit cards' }, { key: 'Debit cards', label: 'Debit cards' }]} value={tab} onChange={(k) => setTab(k as typeof tab)} />
-      {tab === 'Credit cards' ? <CreditCardsTab /> : <DebitCardsTab />}
+      <CreditCardsTab />
     </div>
   )
 }

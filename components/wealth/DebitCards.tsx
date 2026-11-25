@@ -48,6 +48,7 @@ export function DebitCardsTab() {
 
   return (
     <div className="space-y-5">
+      {!card && <BackBar fallback="/dashboard/bank-accounts" />}
       <PageHeader secondaryAction={{ label: 'Add transaction', disabled: cards.length === 0, onClick: () => setDlg({ txn: true, row: card }) }} primaryAction={{ label: 'Add card', disabled: banks.length === 0, onClick: () => setDlg({}) }} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 border-b border-border pb-5">
         <Stat label="Debit cards" value={cards.length} />

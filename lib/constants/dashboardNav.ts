@@ -34,7 +34,7 @@ export const DASHBOARD_NAV_ALL: DashboardNavItem[] = [
   { id: 15, name: 'Loans', icon: Scale, path: '/dashboard/net-worth/loans' },
   { id: 3, name: 'Accounts', icon: Landmark, path: '/dashboard/bank-accounts' },
   { id: 4, name: 'Investments', icon: PieChart, path: '/dashboard/mutual-funds' },
-  { id: 5, name: 'Cards', icon: CreditCard, path: '/dashboard/credit-cards' },
+  { id: 5, name: 'Credit cards', icon: CreditCard, path: '/dashboard/credit-cards' },
   { id: 6, name: 'Insurance', icon: Shield, path: '/dashboard/insurance' },
   { id: 7, name: 'Transactions & Budgets', icon: Wallet, path: '/dashboard/budget' },
   { id: 8, name: 'Family Circle', icon: Users, path: '/dashboard/family' },

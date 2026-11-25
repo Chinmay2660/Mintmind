@@ -76,7 +76,7 @@ export default function DashboardPage() {
   const [hoverPt, setHoverPt] = useState<{ date: string; v: number } | null>(null) // the point being touched or hovered on the chart
   const [heroRange, setHeroRange] = useState<'1W' | '1M' | '3M' | '6M' | '1Y' | 'ALL'>('1M')
   const [moneyTab, setMoneyTab] = useState<'assets' | 'liabilities'>('assets')
-  const [moneySub, setMoneySub] = useState('') // which group's list is open under Assets or Liabilities
+  const [showAllRows, setShowAllRows] = useState(false) // the Assets / Liabilities list shows the five biggest; View more shows the rest
   const today = useMemo(() => new Date(), [])
   const layout = useDashboardLayout(DASHBOARD_BLOCKS)
 
@@ -169,43 +169,48 @@ export default function DashboardPage() {
   const groups = netWorthGroups({ assetBreakdown: netWorth.assetBreakdown as any, bankAccounts: data.bankAccounts, cards: data.cards, liabilities: data.liabilities, cover: isEnabled('insurance') ? m.cover.total : 0, coverCount: m.cover.activeCount, funds: data.funds, balanceHistory: data.balanceHistory, expenses: data.expenses, cardPayments: data.cardPayments, todayIso: toISO(today), policies: data.policies.filter((p: any) => !p.endDate || p.endDate >= toISO(today)), labels: ASSET_LABELS as any })
   const shownGroups = (moneyTab === 'assets' ? groups.assets : groups.liabilities).filter((g) => g.key !== 'banks' || isEnabled('bank_accounts')).filter((g) => g.key !== 'cards' || isEnabled('credit_cards'))
   const tabTotal = moneyTab === 'assets' ? netWorth.assets : netWorth.liabilities
-  const openGroup = shownGroups.find((g) => g.key === moneySub) ?? shownGroups[0]
-  const GroupIcon = openGroup ? GROUP_ICON[openGroup.key] ?? Wallet : Wallet
-  const groupRows = openGroup ? (openGroup.children.length ? openGroup.children : [{ key: openGroup.key, label: openGroup.label, value: openGroup.value, href: openGroup.href }]) : []
+  // every holding in the tab, biggest first. Insurance is cover, not money held, so it is not in this list (its chip opens it).
+  const allRows = shownGroups.filter((g) => !g.uncounted).flatMap((g) => (g.children.length ? g.children : [{ key: g.key, kind: g.key, label: g.label, value: g.value, href: g.href } as any]).map((r: any) => ({ ...r, groupKey: g.key }))).sort((x: any, y: any) => y.value - x.value)
+  const topRows = showAllRows ? allRows : allRows.slice(0, 5)
 
   const blocks: Record<string, React.ReactNode> = {
     accounts: (
       <section aria-label="Net worth breakdown" className="surface-card p-4 sm:p-5">
         <div role="tablist" aria-label="Assets or liabilities" className="flex gap-7 border-b border-border">
           {([['assets', 'Assets', netWorth.assets], ['liabilities', 'Liabilities', netWorth.liabilities]] as const).map(([k, l, v]) => (
-            <button key={k} type="button" role="tab" aria-selected={moneyTab === k} onClick={() => { setMoneyTab(k); setMoneySub('') }} className={cn('-mb-px border-b-2 pb-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring', moneyTab === k ? 'border-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
+            <button key={k} type="button" role="tab" aria-selected={moneyTab === k} onClick={() => { setMoneyTab(k); setShowAllRows(false) }} className={cn('-mb-px border-b-2 pb-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring', moneyTab === k ? 'border-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
               <span className="block text-xs font-medium">{l}</span><span className={cn('block text-lg font-semibold tabular-nums', moneyTab === k && 'text-foreground')}><Money value={v} /></span>
             </button>))}
         </div>
         {shownGroups.length === 0
           ? <p className="py-8 text-center text-sm text-muted-foreground">{moneyTab === 'assets' ? 'Add a bank account or an investment to start.' : 'No loans or card dues.'}</p>
           : <>
-              <div role="tablist" aria-label={moneyTab === 'assets' ? 'Kinds of assets' : 'Kinds of liabilities'} className="flex flex-wrap gap-2 py-3">
+              {/* each kind opens its own page, where what is in it is laid out as tabs */}
+              <nav aria-label={moneyTab === 'assets' ? 'Open a kind of asset' : 'Open a kind of liability'} className="flex flex-wrap gap-2 py-3">
                 {shownGroups.map((g) => (
-                  <button key={g.key} type="button" role="tab" aria-selected={openGroup?.key === g.key} onClick={() => setMoneySub(g.key)} className={cn('min-h-9 rounded-full border px-3.5 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', openGroup?.key === g.key ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{g.label}</button>
+                  <Link key={g.key} href={g.href} className="inline-flex min-h-9 items-center gap-1 rounded-full border border-border px-3.5 text-sm font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{g.label}<ChevronRight className="h-3.5 w-3.5 opacity-60" aria-hidden /></Link>
                 ))}
-              </div>
-              {openGroup && (
-                <div className="pb-1">
-                  <p className="text-xs text-muted-foreground">{openGroup.uncounted ? openGroup.note : tabTotal > 0 ? `${Math.round((openGroup.value / tabTotal) * 100)}% of ${moneyTab}` : ''}</p>
-                </div>
-              )}
+              </nav>
               <ul className="divide-y divide-border">
-                {groupRows.map((r) => (
-                  <li key={r.key}>
-                    <Link href={r.href} className="group flex min-h-14 items-center gap-3 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                      {(() => { const RowIcon = ('kind' in r && KIND_ICON[(r as any).kind]) || GroupIcon; return <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary" aria-hidden><RowIcon className="h-5 w-5" /></span> })()}
-                      <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{r.label}</span>{openGroup && openGroup.value > 0 && !openGroup.uncounted && <span className="block text-xs text-muted-foreground">{Math.round((r.value / openGroup.value) * 100)}% of {openGroup.label.toLowerCase()}</span>}</span>
-                      <span className="shrink-0 text-right"><span className="block text-sm font-semibold tabular-nums"><Money value={r.value} compact={!!openGroup?.uncounted} /></span>{'dayChange' in r && (r as any).dayChange != null && <span className="block text-xs tabular-nums"><Delta amount={(r as any).dayChange} pct={(r as any).dayPct} invertGood={!!(r as any).inverted} /> <span className="text-muted-foreground">1D</span></span>}</span>
-                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden />
-                    </Link>
-                  </li>))}
+                {topRows.map((r: any) => {
+                  const RowIcon = KIND_ICON[r.kind] || GROUP_ICON[r.groupKey] || Wallet
+                  return (
+                    <li key={`${r.groupKey}-${r.key}`}>
+                      <Link href={r.href} className="group flex min-h-14 items-center gap-3 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary" aria-hidden><RowIcon className="h-5 w-5" /></span>
+                        <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{r.label}</span>{tabTotal > 0 && <span className="block text-xs text-muted-foreground">{Math.round((r.value / tabTotal) * 100)}% of {moneyTab}</span>}</span>
+                        <span className="shrink-0 text-right"><span className="block text-sm font-semibold tabular-nums"><Money value={r.value} /></span>{r.dayChange != null && <span className="block text-xs tabular-nums"><Delta amount={r.dayChange} pct={r.dayPct} invertGood={!!r.inverted} /> <span className="text-muted-foreground">1D</span></span>}</span>
+                        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden />
+                      </Link>
+                    </li>
+                  )
+                })}
               </ul>
+              {allRows.length > 5 && (
+                <button type="button" aria-expanded={showAllRows} onClick={() => setShowAllRows((v) => !v)} className="mt-1 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+                  {showAllRows ? 'View less' : `View more (${allRows.length - 5})`}<ChevronDown className={cn('h-4 w-4 transition-transform', showAllRows && 'rotate-180')} aria-hidden />
+                </button>
+              )}
             </>}
       </section>
     ),
