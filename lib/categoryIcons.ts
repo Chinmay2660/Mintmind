@@ -25,7 +25,7 @@ const BUDGET_VIEW: Record<string, LucideIcon> = {
   transactions: List, calendar: CalendarDays, review: ClipboardCheck, monthly: BarChart3, summary: PieChart, stats: Activity, cashflow: ArrowLeftRight,
 }
 const INVEST: Record<string, LucideIcon> = {
-  portfolio: PieChart, funds: TrendingUp, fd: Landmark, rd: Repeat, retirement: PiggyBank, market: LineChart, gold: Coins,
+  portfolio: PieChart, funds: TrendingUp, fd: Landmark, rd: Repeat, retirement: PiggyBank, epf: PiggyBank, ppf: PiggyBank, nps: PiggyBank, esop: Briefcase, realEstate: Building2, vehicle: Car, market: LineChart, gold: Coins,
 }
 
 export const assetIcon = (k: string) => ASSET[k] ?? FALLBACK

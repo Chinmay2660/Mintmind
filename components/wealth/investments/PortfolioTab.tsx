@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { istNow } from '@/lib/wealth/calc'
 import { ChevronRight } from 'lucide-react'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { portfolioOverview } from '@/lib/wealth/portfolio'
@@ -15,18 +16,18 @@ const slot = (i: number) => (((i % 6) + 1) as Slot)
 /** part: 'summary' is the figures strip alone (shown above the section tabs, as on Insurance); 'body' is the breakdown below. */
 export function PortfolioTab({ onOpen, part = 'body' }: { onOpen: (key: string) => void; part?: 'summary' | 'body' }) {
   const { data } = useWealth()
-  const today = useMemo(() => new Date(), [])
+  const today = useMemo(() => istNow(), [])
   const p = useMemo(() => portfolioOverview({ funds: data.funds as any[], fundTxns: data.fundTxns as any[], sips: data.sips as any[], assets: data.assets as any[], today }), [data.funds, data.fundTxns, data.sips, data.assets, today])
   const rows = p.rows.filter((r) => r.count > 0)
   const realised = useMemo(() => portfolioRealised(data.funds as any[], data.fundTxns as any[]), [data.funds, data.fundTxns])
 
   if (part === 'summary') return (
     <section aria-label="Summary" className="surface-card px-4">
-      <dl className="divide-y divide-border text-sm">
+      <dl className="space-y-2.5 py-4 text-sm">
         <div className="flex items-center justify-between gap-3 py-3"><dt className="text-muted-foreground">Portfolio value</dt><dd className="font-semibold tabular-nums"><Money value={p.total} /></dd></div>
-        <div className="flex items-center justify-between gap-3 py-3"><dt className="text-muted-foreground">Invested value</dt><dd className="font-semibold tabular-nums"><Money value={p.invested} /></dd></div>
-        <div className="flex items-center justify-between gap-3 py-3"><dt className="text-muted-foreground">Gain</dt><dd>{p.invested > 0 ? <span className="flex items-center gap-1.5 font-semibold tabular-nums"><Metric amount={p.gain} compact={false} className="text-sm font-semibold" /><span>(<Metric pct={p.gainPct} className="text-sm font-semibold" />)</span></span> : '-'}</dd></div>
-        {realised.hasSales && <div className="flex items-center justify-between gap-3 py-3"><dt className="text-muted-foreground">Realised gain</dt><dd className="font-semibold tabular-nums"><Metric amount={realised.realised} compact={false} className="text-sm font-semibold" /></dd></div>}
+        <div className="flex items-center justify-between gap-3"><dt className="text-muted-foreground">Invested value</dt><dd className="font-semibold tabular-nums"><Money value={p.invested} /></dd></div>
+        <div className="flex items-center justify-between gap-3"><dt className="text-muted-foreground">Returns</dt><dd>{p.invested > 0 ? <span className="font-semibold tabular-nums"><Metric arrow={false} amount={p.gain} pct={p.gainPct} compact={false} className="text-sm font-semibold" /></span> : '-'}</dd></div>
+        {realised.hasSales && <div className="flex items-center justify-between gap-3"><dt className="text-muted-foreground">Realised gain</dt><dd className="font-semibold tabular-nums"><Metric amount={realised.realised} compact={false} className="text-sm font-semibold" /></dd></div>}
       </dl>
     </section>
   )

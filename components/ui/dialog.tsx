@@ -57,6 +57,8 @@ const DialogContent = React.forwardRef<
       )}
       {...props}
     >
+      {/* the grab bar of a bottom sheet on a phone: drag it, or anywhere on the sheet, downwards to close */}
+      <span aria-hidden className="absolute left-1/2 top-2 h-1.5 w-12 -translate-x-1/2 rounded-full bg-border sm:hidden" />
       {children}
       <DialogPrimitive.Close ref={closer} className="max-sm:hidden absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
         <X className="h-4 w-4" />

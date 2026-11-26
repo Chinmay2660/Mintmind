@@ -70,7 +70,6 @@ export function FinancialMetrics() {
       invest.push({ label: 'Current value', info: 'Units held multiplied by each fund\'s latest NAV.', value: <Money value={p.value} /> })
       invest.push({ label: 'Absolute return', info: 'Current value minus invested. Ignores how long the money was invested.', value: <Metric amount={p.absReturn} pct={p.absReturnPct} className="text-lg font-semibold sm:text-xl" /> })
       invest.push({ label: 'Unrealised gain', info: 'The gain on holdings you still own. Sales are not recorded in this app yet, so realised gains cannot be shown.', value: <Metric amount={p.absReturn} className="text-lg font-semibold sm:text-xl" />, hint: 'Realised gains: not tracked' })
-      if (p.xirrPct != null) invest.push({ label: 'XIRR', info: 'Your annualised return, taking into account when each rupee went in.', value: <Metric pct={p.xirrPct} digits={2} className="text-lg font-semibold sm:text-xl" /> })
     }
     return [
       { title: 'Net worth', items: net, empty: 'Add an account, fund or asset and your net worth figures appear here.' },

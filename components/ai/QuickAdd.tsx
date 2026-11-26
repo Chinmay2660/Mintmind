@@ -9,7 +9,7 @@ import { TxnEntryDialog } from '@/components/wealth/budget/TxnEntryDialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { formatINR, formatDate } from '@/lib/wealth/format'
-import { toISO } from '@/lib/wealth/calc'
+import { toISO, istNow } from '@/lib/wealth/calc'
 import { cn } from '@/lib/utils'
 
 const EXAMPLES = ['450 lunch with card yesterday', 'uber 1.2k cash', '2,500 groceries on 5 Jun', '300 petrol last monday']
@@ -39,7 +39,7 @@ export function QuickAdd() {
           {!draft.confident && draft.amount && <p className="text-xs text-warning sm:col-span-4">Category is a guess. You can change it on the next screen.</p>}
         </dl>
       )}
-      {open && draft && <TxnEntryDialog draft={{ amount: draft.amount, date: draft.date, category: draft.category, mode: draft.mode, note: draft.note }} defaultMonth={toISO(new Date()).slice(0, 7)} onClose={() => { setOpen(false); setText('') }} />}
+      {open && draft && <TxnEntryDialog draft={{ amount: draft.amount, date: draft.date, category: draft.category, mode: draft.mode, note: draft.note }} defaultMonth={toISO(istNow()).slice(0, 7)} onClose={() => { setOpen(false); setText('') }} />}
     </div>
   )
 }

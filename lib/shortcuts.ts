@@ -5,7 +5,7 @@ export interface ShortcutGroup { title: string; items: Shortcut[] }
 
 export const GO_TO: Record<string, { label: string; path: string }> = {
   d: { label: 'Overview', path: '/dashboard' },
-  n: { label: 'Net worth', path: '/dashboard/net-worth' },
+  n: { label: 'Goals and forecast', path: '/dashboard/net-worth' },
   a: { label: 'Accounts', path: '/dashboard/bank-accounts' },
   i: { label: 'Investments', path: '/dashboard/mutual-funds' },
   c: { label: 'Cards', path: '/dashboard/credit-cards' },

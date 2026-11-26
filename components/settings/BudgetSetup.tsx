@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { save } from '@/lib/wealth/actions'
-import { addMonths, toISO } from '@/lib/wealth/calc'
+import { addMonths, toISO, istNow } from '@/lib/wealth/calc'
 import { useCategories } from '@/lib/wealth/useCategories'
 import { groupCategories } from '@/lib/wealth/subcategories'
 import { planFor } from '@/lib/wealth/incomeBudget'
@@ -22,7 +22,7 @@ import type { IncomePlan } from '@/components/wealth/budget/IncomeBudget'
 export function BudgetSetup() {
   const { data, db } = useWealth()
   const { expense, income } = useCategories()
-  const curYm = toISO(new Date()).slice(0, 7)
+  const curYm = toISO(istNow()).slice(0, 7)
   const [ym, setYm] = useState(curYm)
   const [kind, setKind] = useState<'expense' | 'income'>('expense')
   const [advanced, setAdvanced] = useState(false)

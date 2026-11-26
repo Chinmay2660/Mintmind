@@ -27,7 +27,7 @@ const MODULES: { icon: LucideIcon; name: string; text: string }[] = [
   { icon: LayoutDashboard, name: 'Dashboard', text: 'Net worth, growth, allocation, dues and budget pace on one screen.' },
   { icon: TrendingUp, name: 'Net Worth & Goals', text: 'History, comparisons and goals like an emergency or marriage fund.' },
   { icon: Landmark, name: 'Bank Accounts', text: 'Savings and cash, minimum-balance aware, updated by every transaction.' },
-  { icon: PieChart, name: 'Mutual Funds', text: 'True XIRR, SIPs, fund history and weekly NAV updates.' },
+  { icon: PieChart, name: 'Mutual Funds', text: 'Returns, SIPs, fund history and weekly NAV updates.' },
   { icon: CreditCard, name: 'Cards', text: 'Credit and debit cards, utilisation, statements and dues.' },
   { icon: Shield, name: 'Insurance', text: 'Policies, premiums, renewals and family mapping.' },
   { icon: Wallet, name: 'Budget & Expenses', text: 'Day-wise pacing, categories, calendar and stats views.' },

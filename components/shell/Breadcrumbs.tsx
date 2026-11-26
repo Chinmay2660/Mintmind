@@ -18,7 +18,8 @@ export function Breadcrumbs() {
   const parts = pathname.split('/').filter(Boolean) // ['dashboard', 'bank-accounts', 'abc']
   const trail: { name: string; href: string; onClick?: () => void }[] = []
   if (open) {
-    trail.push({ name: DASHBOARD_NAV_ALL[0].name, href: '/dashboard' }, { name: pageTitle, href: pathname, onClick: open.onBack })
+    trail.push({ name: DASHBOARD_NAV_ALL[0].name, href: '/dashboard' })
+    if (pathname !== '/dashboard') trail.push({ name: pageTitle, href: pathname, onClick: open.onBack }) // not the Overview twice
   } else if (parts.length > 1) {
     trail.push({ name: DASHBOARD_NAV_ALL[0].name, href: '/dashboard' })
     const first = `/dashboard/${parts[1]}`
@@ -34,8 +35,8 @@ export function Breadcrumbs() {
       {trail.length > 0 && (
         <nav aria-label="Breadcrumb" className="hidden md:block">
           <ol className="flex items-center gap-1 text-[11px] text-muted-foreground">
-            {trail.map((t) => (
-              <li key={t.href + t.name} className="flex items-center gap-1">
+            {trail.map((t, i) => (
+              <li key={i + t.href + t.name} className="flex items-center gap-1">
                 <Link href={t.href} onClick={t.onClick ? (e) => { e.preventDefault(); t.onClick!() } : undefined} className="rounded outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">{t.name}</Link>
                 <ChevronRight className="h-3 w-3" />
               </li>

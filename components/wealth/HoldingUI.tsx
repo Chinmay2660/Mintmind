@@ -25,6 +25,19 @@ function Cell({ f, align }: { f: Fig; align: 'left' | 'center' | 'right' }) {
 
 const aligns = ['left', 'center', 'right'] as const
 
+/** The summary card of a page (the same on every investment tab, Banks and Insurance): one large figure, then a few labelled rows. */
+export function OverviewCard({ label, value, rows }: { label: string; value: ReactNode; rows: { label: string; value: ReactNode }[] }) {
+  return (
+    <section aria-label={`${label} overview`} className="surface-card px-4">
+      <p className="pt-4 text-sm text-muted-foreground">{label}</p>
+      <p className="text-3xl font-bold tabular-nums">{value}</p>
+      <dl className={cn('text-sm', rows.length ? 'space-y-2.5 py-4' : 'pb-4')}>
+        {rows.map((r) => <div key={r.label} className="flex items-center justify-between gap-3"><dt className="text-muted-foreground">{r.label}</dt><dd className="font-semibold tabular-nums">{r.value}</dd></div>)}
+      </dl>
+    </section>
+  )
+}
+
 /** The top of a section: what it is worth, how it moved, then up to three figures across. */
 export function SummaryHeader({ label, value, sub, stats }: { label: string; value: ReactNode; sub?: ReactNode; stats: Fig[] }) {
   return (
@@ -33,8 +46,9 @@ export function SummaryHeader({ label, value, sub, stats }: { label: string; val
       <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight">{value}</p>
       {sub && <div className="mt-1 text-sm">{sub}</div>}
       {stats.length > 0 && (
-        <div className="mt-4 grid grid-cols-3 gap-3">
-          {stats.slice(0, 3).map((s, i) => <Cell key={s.label} f={s} align={aligns[i]} />)}
+        <div className={cn('mt-4 grid gap-3', stats.length === 2 ? 'grid-cols-2' : 'grid-cols-3')}>
+          {/* two figures sit at the two ends; three have the middle one centred */}
+          {stats.slice(0, 3).map((s, i) => <Cell key={s.label} f={s} align={stats.length === 2 ? (i === 0 ? 'left' : 'right') : aligns[i]} />)}
         </div>
       )}
     </section>

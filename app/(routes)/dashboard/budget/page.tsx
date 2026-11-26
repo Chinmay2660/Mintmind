@@ -22,7 +22,7 @@ import { SplitDialog } from '@/components/wealth/budget/SplitDialog'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { deleteExpense, deleteIncome, deleteTransfer, save, setBookmarks } from '@/lib/wealth/actions'
-import { addMonths, budgetPacing, round2, toISO } from '@/lib/wealth/calc'
+import { addMonths, budgetPacing, round2, toISO, istNow } from '@/lib/wealth/calc'
 import { useCategories } from '@/lib/wealth/useCategories'
 import { buildTransactions, inMonth } from '@/lib/wealth/transactions'
 import { TxnEntryDialog, type TxnType } from '@/components/wealth/budget/TxnEntryDialog'
@@ -44,7 +44,7 @@ const TAB_ORDER = ['overview', 'transactions', 'calendar', 'review', 'monthly', 
 export default function BudgetPage() {
   const { ready, data, db } = useWealth()
   const { privacyMode } = usePrivacyMode()
-  const today = useMemo(() => new Date(), [])
+  const today = useMemo(() => istNow(), [])
   const curYm = toISO(today).slice(0, 7)
   const [ym, setYm] = useState(curYm)
   const [dlg, setDlg] = useState<null | { kind: 'categories' | 'txn' | 'del' | 'delmany'; row?: any; draft?: any; type?: TxnType; tx?: Tx; txs?: Tx[] }>(null)

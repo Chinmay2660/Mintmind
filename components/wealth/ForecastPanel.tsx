@@ -1,6 +1,7 @@
 'use client'
 
 import { GrowwChart } from '@/components/wealth/GrowwChart'
+import { istNow } from '@/lib/wealth/calc'
 import { useMemo, useState } from 'react'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { cashForecast, goalForecast, monthlyAverages } from '@/lib/wealth/forecast'
@@ -18,7 +19,7 @@ const YEARS = [1, 5, 10, 20] as const
 /** Three looks ahead, all from your own recent figures and clearly labelled as estimates: net worth, cash, and your goals. */
 export function ForecastPanel() {
   const { data, netWorth } = useWealth()
-  const today = useMemo(() => new Date(), [])
+  const today = useMemo(() => istNow(), [])
   const avg = useMemo(() => monthlyAverages({ expenses: data.expenses as any[], bankTxns: data.bankTxns as any[], today }), [data.expenses, data.bankTxns, today])
   const saving = Math.max(0, avg.income - avg.spend)
   const [growth, setGrowth] = useState(9)

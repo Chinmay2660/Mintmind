@@ -35,7 +35,7 @@ import { AiSettings } from '@/components/ai/AiSettings'
 import { MyAppFeatures } from '@/components/onboarding/MyAppFeatures'
 import { useFeatures } from '@/lib/features/FeaturesContext'
 import { cn } from '@/lib/utils'
-import { toISO } from '@/lib/wealth/calc'
+import { toISO, istNow } from '@/lib/wealth/calc'
 import { UI_STYLES, UI_STYLE_KEY, applyStyle, normaliseStyle } from '@/lib/uiStyle'
 import { Checkbox } from '@/components/ui/checkbox'
 import { InstallApp } from '@/components/shell/InstallApp'
@@ -180,17 +180,17 @@ function AccountTab() {
         {isDemo ? <p className="text-sm text-muted-foreground">Security settings are disabled in Demo Mode. Sign up for an account to use passwords and MFA.</p> : !sec ? <LoadingBlock className="h-24" /> : (
           <div className="space-y-6">
             {!changingPw ? (
-              <div className="flex items-center justify-between gap-3"><div><h4 className="text-sm font-semibold">{sec.hasPassword ? 'Password' : 'No password set'}</h4><p className="text-xs text-muted-foreground">{sec.hasPassword ? 'Protected with a password.' : 'Set one to sign in without a link.'}</p></div><Button type="button" size="sm" variant="outline" onClick={() => setChangingPw(true)}>{sec.hasPassword ? 'Change' : 'Set password'}</Button></div>
+              <div className="flex items-center justify-between gap-3"><div><h4 className="text-base font-semibold">{sec.hasPassword ? 'Password' : 'No password set'}</h4><p className="text-xs text-muted-foreground">{sec.hasPassword ? 'Protected with a password.' : 'Set one to sign in without a link.'}</p></div><Button type="button" size="sm" variant="outline" onClick={() => setChangingPw(true)}>{sec.hasPassword ? 'Change' : 'Set password'}</Button></div>
             ) : (
             <form className="space-y-3" onSubmit={async (e) => { e.preventDefault(); if (await call({ action: 'change-password', currentPassword: pw.current, newPassword: pw.next }, sec.hasPassword ? 'Password changed' : 'Password set')) setPw({ current: '', next: '' }) }}>
-              <h4 className="text-sm font-semibold">{sec.hasPassword ? 'Change password' : 'Set a password'}</h4>
+              <h4 className="text-base font-semibold">{sec.hasPassword ? 'Change password' : 'Set a password'}</h4>
               {sec.hasPassword && <Field label="Current password">{(id) => <Input id={id} type="password" required autoComplete="current-password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} />}</Field>}
               <Field label="New password" hint="At least 10 characters, mixing letters, numbers and symbols.">{(id) => <Input id={id} type="password" required minLength={10} autoComplete="new-password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} />}</Field>
               <div className="flex gap-2"><Button type="submit" variant="outline">Update password</Button><Button type="button" variant="ghost" onClick={() => { setChangingPw(false); setPw({ current: '', next: '' }) }}>Cancel</Button></div>
             </form>
             )}
             <div className="space-y-3 border-t border-border pt-5">
-              <h4 className="flex items-center gap-2 text-sm font-semibold"><ShieldCheck className="h-4 w-4" />Two-factor authentication (authenticator app)</h4>
+              <h4 className="flex items-center gap-2 text-base font-semibold"><ShieldCheck className="h-4 w-4" />Two-factor authentication (authenticator app)</h4>
               {sec.mfaEnabled ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-3"><p className="text-sm text-success">MFA is on.</p>{!disablingMfa && <Button type="button" size="sm" variant="outline" onClick={() => setDisablingMfa(true)}>Disable</Button>}</div>
@@ -238,7 +238,7 @@ function AppearanceTab() {
           )
         })}
       </div>
-      <h4 className="mb-2 mt-6 flex items-center gap-1.5 text-sm font-semibold">Look<InfoTip label="Look">Sage and Lavender are calm, light looks with a regular font. Ember is charcoal grey with orange, Ink is black, white and grey, and Violet is the default purple look. Ocean, Sunset, Rose and Forest are single-colour looks. Paper is a denser, warm paper style with a small monospace font. Your choice is remembered on this device, and Light, Dark and System work with all of them.</InfoTip></h4>
+      <h4 className="mb-2 mt-6 flex items-center gap-1.5 text-base font-semibold">Look<InfoTip label="Look">Sage and Lavender are calm, light looks with a regular font. Ember is charcoal grey with orange, Ink is black, white and grey, and Violet is the default purple look. Ocean, Sunset, Rose and Forest are single-colour looks. Paper is a denser, warm paper style with a small monospace font. Your choice is remembered on this device, and Light, Dark and System work with all of them.</InfoTip></h4>
       <div role="radiogroup" aria-label="Look" className="grid gap-3 sm:grid-cols-2">
         {UI_STYLES.map((o) => {
           const on = look === o.value
@@ -249,7 +249,7 @@ function AppearanceTab() {
           )
         })}
       </div>
-      <h4 className="mb-2 mt-6 text-sm font-semibold">Help</h4>
+      <h4 className="mb-2 mt-6 text-base font-semibold">Help</h4>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-4"><span className="text-sm"><span className="block font-medium">Cookies and storage</span><span className="block text-xs text-muted-foreground">Choose whether the app remembers your theme and layout between visits.</span></span><CookieSettingsButton /></div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-4"><span className="text-sm"><span className="block font-medium">Keyboard shortcuts</span><span className="block text-xs text-muted-foreground">Add things, jump between pages and search without the mouse. Press ? anywhere.</span></span><Button type="button" variant="outline" size="sm" onClick={() => window.dispatchEvent(new Event(SHOW_SHORTCUTS_EVENT))}>Show shortcuts</Button></div>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-4"><span className="text-sm"><span className="block font-medium">Product tour</span><span className="block text-xs text-muted-foreground">A short walk through net worth, investments, transactions, goals and reports.</span></span><Button type="button" variant="outline" size="sm" onClick={() => window.dispatchEvent(new Event(START_TOUR_EVENT))}>Restart tour</Button></div>
@@ -355,7 +355,7 @@ function DataTab() {
     for (const t of TABLES) out[t] = await db[t].toArray()
     out.vaultItems = [] // vault ciphertext is exported separately from the Vault page, never mixed into plain exports
     const url = URL.createObjectURL(new Blob([JSON.stringify({ app: 'mintmind', version: 1, exportedAt: new Date().toISOString(), tables: out }, null, 2)], { type: 'application/json' }))
-    const a = document.createElement('a'); a.href = url; a.download = `mintmind-backup-${toISO(new Date())}.json`; a.click(); URL.revokeObjectURL(url)
+    const a = document.createElement('a'); a.href = url; a.download = `mintmind-backup-${toISO(istNow())}.json`; a.click(); URL.revokeObjectURL(url)
   }
   const restore = async (file: File) => {
     try {

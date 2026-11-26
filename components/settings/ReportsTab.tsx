@@ -5,7 +5,7 @@ import { FileSpreadsheet, Printer } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { REPORTS, buildReport, sheetNames } from '@/lib/wealth/reports'
-import { toISO } from '@/lib/wealth/calc'
+import { toISO, istNow } from '@/lib/wealth/calc'
 import { Button } from '@/components/ui/button'
 import { DateInput, Panel } from '@/components/wealth/kit'
 import { toastProblem } from '@/lib/notify'
@@ -23,7 +23,7 @@ const fmt = (v: unknown) => (typeof v === 'number' ? v.toLocaleString('en-IN', {
  */
 export function ReportsTab() {
   const { data } = useWealth()
-  const today = useMemo(() => new Date(), [])
+  const today = useMemo(() => istNow(), [])
   const [from, setFrom] = useState(`${toISO(today).slice(0, 7)}-01`)
   const [to, setTo] = useState(toISO(today))
   const [printing, setPrinting] = useState<Report | null>(null)
@@ -109,7 +109,7 @@ export function ReportsTab() {
           <p className="mb-4 text-xs">{printing.note}</p>
           {printing.sheets.map((s) => (
             <section key={s.name} className="mb-6 break-inside-avoid-page">
-              <h2 className="mb-1 text-sm font-semibold">{s.name}</h2>
+              <h2 className="mb-1 text-base font-semibold">{s.name}</h2>
               <table className="w-full border-collapse text-[11px]">
                 <thead><tr>{s.columns.map((c: string) => <th key={c} className="border-b border-black px-1.5 py-1 text-left font-semibold">{c}</th>)}</tr></thead>
                 <tbody>{s.rows.map((row: unknown[], i: number) => <tr key={i}>{row.map((cell, j) => <td key={j} className={`border-b border-gray-300 px-1.5 py-1 ${typeof cell === 'number' ? 'text-right tabular-nums' : ''}`}>{fmt(cell)}</td>)}</tr>)}</tbody>

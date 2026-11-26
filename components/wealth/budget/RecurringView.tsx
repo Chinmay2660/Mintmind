@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Repeat } from 'lucide-react'
 import { detectRecurring } from '@/lib/ai/budgetAI'
-import { daysInMonth, toISO } from '@/lib/wealth/calc'
+import { daysInMonth, toISO, istNow } from '@/lib/wealth/calc'
 import { formatDate, formatINR } from '@/lib/wealth/format'
 import { Money } from '../Money'
 import { cn } from '@/lib/utils'
@@ -27,7 +27,7 @@ const title = (k: string) => k.replace(/\b\w/g, (c) => c.toUpperCase())
  */
 export function RecurringView({ expenses }: Props) {
   const [yearly, setYearly] = useState(false)
-  const today = useMemo(() => new Date(), [])
+  const today = useMemo(() => istNow(), [])
   const rows = useMemo(() => detectRecurring(expenses).map((r: any) => ({ ...r, next: nextDue(r.dayOfMonth, today) })).sort((a: any, b: any) => +a.next - +b.next), [expenses, today])
   const monthly = rows.reduce((n: number, r: any) => n + r.amount, 0)
   const soon = rows.filter((r: any) => +r.next - +today <= 7 * 86400000)

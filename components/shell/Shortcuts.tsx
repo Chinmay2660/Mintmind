@@ -67,7 +67,7 @@ export function Shortcuts() {
       else if (k === '?') { e.preventDefault(); setHelp(true) }
       else if (k === 'a') { e.preventDefault(); quick('txn') }
       else if (k === 'c') { e.preventDefault(); quick('account') }
-      else if (k === 'n') { e.preventDefault(); router.push('/dashboard/mutual-funds?tab=property&add=asset') }
+      else if (k === 'n') { e.preventDefault(); router.push('/dashboard/mutual-funds?tab=market&add=asset') }
       else if (k === 'i') { e.preventDefault(); router.push('/dashboard/mutual-funds?add=fund') }
       else if (k === 'l') { e.preventDefault(); router.push('/dashboard/net-worth/loans?add=liability') }
       else if (k === 'o') { e.preventDefault(); router.push('/dashboard/net-worth?add=goal') }

@@ -144,7 +144,7 @@ export default function OnboardingPage() {
 type FormKey = 'asset' | 'loan' | 'account' | 'fund' | 'subscription'
 const SETUP: Record<string, { label: string; action: string; href: string; form?: FormKey; done: (d: any) => boolean }> = {
   dashboard: { label: 'Dashboard & Net Worth', action: 'Ready', href: '/dashboard', done: () => true },
-  net_assets: { label: 'Assets (property, gold, EPF, stocks)', action: 'Add an asset', href: '', form: 'asset', done: (d) => d.assets.length > 0 },
+  net_assets: { label: 'Assets (property, gold, stocks, deposits)', action: 'Add an asset', href: '', form: 'asset', done: (d) => d.assets.length > 0 },
   net_liabilities: { label: 'Loans and other liabilities', action: 'Add a loan', href: '', form: 'loan', done: (d) => d.liabilities.length > 0 },
   bank_accounts: { label: 'Bank Accounts', action: 'Add your first account', href: '', form: 'account', done: (d) => d.bankAccounts.length > 0 },
   mutual_funds: { label: 'Mutual Funds & SIPs', action: 'Add your investments', href: '', form: 'fund', done: (d) => d.funds.length > 0 },
@@ -184,7 +184,7 @@ function QuickSetup({ selected, data, onOpen }: { selected: string[]; data: any;
       {/* the same forms the app pages use, opened here so setup does not send you away */}
       {form === 'subscription' && <SubscriptionForm onClose={() => setForm(null)} />}
       {form === 'account' && <AccountForm onClose={() => setForm(null)} onSave={async (rec) => { await save(db, 'bankAccounts', rec); await db.balanceHistory.add({ id: `bh_${Date.now()}`, accountId: rec.id, date: rec.lastUpdated, balance: rec.currentBalance, note: 'Opening balance' }); toast.success('Account added') }} />}
-      {form === 'asset' && <AssetForm row={null} category="epf" onClose={() => setForm(null)} onSave={async (rec) => { await save(db, 'assets', rec); toast.success('Asset added') }} />}
+      {form === 'asset' && <AssetForm row={null} category="realEstate" onClose={() => setForm(null)} onSave={async (rec) => { await save(db, 'assets', rec); toast.success('Asset added') }} />}
       {form === 'loan' && <ItemForm kind="liability" row={null} onClose={() => setForm(null)} onSave={async (rec) => { await save(db, 'liabilities', rec); toast.success('Loan added') }} />}
       {form === 'fund' && <FundForm onClose={() => setForm(null)} onSave={async (rec) => { await addFund(db, rec); toast.success('Fund added') }} />}
       <p className="text-xs text-muted-foreground">SIPs are added under Investments, once you have a fund.</p>

@@ -3,8 +3,8 @@
 import { useBackToClose } from '@/lib/hooks/useBackToClose'
 import { toastProblem } from '@/lib/notify'
 import { createPortal } from 'react-dom'
-import { Children, Fragment, isValidElement, useEffect, useId, useRef, useState, type FormEvent, type ReactElement, type ReactNode } from 'react'
-import { ArrowDown, ArrowUp, Check, ChevronDown, Info, Loader2, Minus, Plus } from 'lucide-react'
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { ArrowDown, ArrowUp, Check, Info, Loader2, Minus, Plus } from 'lucide-react'
 import * as PopoverPrimitive from '@radix-ui/react-popover'
 import { usePageInfo } from '@/components/shell/DetailCrumb'
 import { Button } from '@/components/ui/button'
@@ -107,7 +107,7 @@ export function Panel({
       {(title || action) && (
         <header className={cn('flex min-h-9 flex-wrap items-center justify-between gap-x-3 gap-y-1', card ? 'px-5 pt-4' : 'border-b border-border pb-2.5')}>
           <div className="flex min-w-0 items-center gap-1.5">
-            {title && <h3 className="flex items-center gap-2 text-sm font-semibold">{title}</h3>}
+            {title && <h3 className="flex items-center gap-2 text-base font-semibold">{title}</h3>}
             {title && description && <InfoTip label={typeof title === 'string' ? title : 'this section'}>{description}</InfoTip>}
           </div>
           {action && <div className="min-w-0 max-w-full shrink-0">{action}</div>}
@@ -158,14 +158,14 @@ export function Stat({ label, value, hint, info, className }: { label: string; v
 }
 
 /**
- * One way to show any change or return (gain, XIRR, percentage, day change).
+ * One way to show any change or return (gain, percentage, day change).
  * Direction is always shown three ways: a sign, an arrow and a tone, so it never depends on colour alone.
  * - positive: up arrow, lime/green; negative: down arrow, red; zero: flat dash, muted
  * - invertGood: for things where lower is better (liabilities, fees), so a fall reads as good news
  * - missing: pass null/undefined with a `hint` such as "Needs a previous NAV"
  */
-export function Metric({ amount, pct, invertGood, hint, pill, compact = true, decimals, digits = 1, className }: {
-  amount?: number | null; pct?: number | null; invertGood?: boolean; hint?: string; pill?: boolean; compact?: boolean; decimals?: boolean; digits?: number; className?: string
+export function Metric({ amount, pct, invertGood, hint, pill, compact = true, decimals, digits = 1, arrow = true, className }: {
+  amount?: number | null; pct?: number | null; invertGood?: boolean; hint?: string; pill?: boolean; compact?: boolean; decimals?: boolean; digits?: number; arrow?: boolean; className?: string
 }) {
   const v = amount ?? pct
   const t = metricTone({ amount, pct, invertGood })
@@ -185,7 +185,7 @@ export function Metric({ amount, pct, invertGood, hint, pill, compact = true, de
     <span className={cn('inline-flex items-center gap-1 whitespace-nowrap text-xs font-medium leading-none tabular-nums', pill && 'rounded-full px-2 py-0.5 font-semibold', tone, className)} title={hint}>
       {amount != null && <span>{sign}<Money value={Math.abs(amount)} compact={compact} decimals={decimals} /></span>}
       {pct != null && <span>{amount != null ? '(' : sign}{amount != null ? formatPct(pct, digits) : `${Math.abs(pct).toFixed(digits)}%`}{amount != null ? ')' : ''}</span>}
-      <Icon className="h-[1.05em] w-[1.05em] shrink-0" strokeWidth={2.5} aria-hidden />
+      {arrow && <Icon className="h-[1.05em] w-[1.05em] shrink-0" strokeWidth={2.5} aria-hidden />}
     </span>
   )
 }
@@ -213,10 +213,6 @@ export function RangeTabs({ value, onChange, options, label = 'Range' }: { value
     </div>
   )
 }
-
-/** A field that is not needed to save. Marked with `optional`, or recognised by its label: "(optional)", Note, Notes, Nickname. */
-const OPTIONAL_LABELS = new Set(['Note', 'Notes', 'Nickname'])
-const isOptionalField = (p: { label?: string; optional?: boolean }) => p.optional === true || /(optional)s*$/i.test(p.label ?? '') || OPTIONAL_LABELS.has(p.label ?? '')
 
 export function Field({ label, hint, error, children, className }: { label: string; hint?: string; error?: string; children: (id: string) => ReactNode; className?: string; optional?: boolean }) {
   const id = useId()
@@ -275,31 +271,9 @@ interface FormDialogProps {
 
 /** Standard create/edit modal: native validation, busy state, error toast. */
 // every Field inside the children, looking through fragments
-function flattenFields(children: ReactNode): ReactNode[] {
-  return Children.toArray(children).flatMap((c) => (isValidElement(c) && c.type === Fragment ? flattenFields((c as ReactElement<{ children?: ReactNode }>).props.children) : [c]))
-}
-
-/**
- * The fields of a form. The ones needed to save show; the optional ones (notes, nickname, "(optional)" fields) wait behind a
- * "More details" row, so a form opens short. When editing a record they start open, because they may already hold something.
- */
-export function FormFields({ children, startOpen = false }: { children: ReactNode; startOpen?: boolean }) {
-  const [open, setOpen] = useState(startOpen)
-  const items = flattenFields(children)
-  const optional = items.filter((c) => isValidElement(c) && c.type === Field && isOptionalField((c as ReactElement<{ label?: string; optional?: boolean }>).props))
-  if (optional.length === 0) return <FormGrid>{items}</FormGrid>
-  const main = items.filter((c) => !optional.includes(c))
-  return (
-    <>
-      <FormGrid>{main}</FormGrid>
-      <div className="space-y-3">
-        <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="inline-flex min-h-9 items-center gap-1.5 rounded text-sm font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
-          <ChevronDown className={cn('h-4 w-4 transition-transform', open && 'rotate-180')} aria-hidden />{open ? 'Fewer details' : 'More details'}
-        </button>
-        {open && <FormGrid>{optional}</FormGrid>}
-      </div>
-    </>
-  )
+/** The fields of a form, all in view. */
+export function FormFields({ children }: { children: ReactNode }) {
+  return <FormGrid>{children}</FormGrid>
 }
 
 /**
@@ -346,7 +320,7 @@ export function FormDialog({ open, onOpenChange, title, description, submitLabel
           <DialogDescription className="sr-only">{description || title}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4" {...guard.bind}>
-          <FormFields startOpen={/^edit/i.test(title)}>{children}</FormFields>
+          <FormFields>{children}</FormFields>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={() => guard.request(false)}>
               Cancel
@@ -417,7 +391,7 @@ export function StepFormDialog({ open, onOpenChange, title, description, steps, 
 
         <form onSubmit={submit} className="space-y-4" {...guard.bind}>
           <div><p className="text-xs text-muted-foreground">Step {i + 1} of {steps.length}</p><div className="flex items-center gap-2"><h3 className="text-base font-semibold">{cur.title}</h3>{cur.description && <InfoTip label={cur.title}>{cur.description}</InfoTip>}</div></div>
-          <div ref={body}><FormFields key={i} startOpen={/^edit/i.test(title)}>{cur.content}</FormFields></div>
+          <div ref={body}><FormFields key={i}>{cur.content}</FormFields></div>
           <DialogFooter className="gap-2 sm:justify-between sm:gap-0 sm:space-x-0">
             <Button type="button" variant="ghost" onClick={() => (i === 0 ? guard.request(false) : setI(i - 1))}>{i === 0 ? 'Cancel' : 'Back'}</Button>
             <Button type="submit" disabled={busy}>

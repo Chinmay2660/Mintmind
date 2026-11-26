@@ -1,19 +1,19 @@
 import axios from 'axios'
 import { updateNav } from '@/lib/wealth/actions'
-import { toISO } from '@/lib/wealth/calc'
+import { toISO, istNow } from '@/lib/wealth/calc'
 import { fundsToRefresh } from './freshness'
 
 // mfapi.in asks for sparing use and publishes one NAV a day, so a fund is looked up at most once a day.
 const DAY_KEY = 'mm-navs-day'
 const CONCURRENCY = 4
 
-export const pricesDue = () => { try { return localStorage.getItem(DAY_KEY) !== toISO(new Date()) } catch { return false } }
+export const pricesDue = () => { try { return localStorage.getItem(DAY_KEY) !== toISO(istNow()) } catch { return false } }
 
 export interface RefreshResult { changed: number; checked: number; failed: number; unlinked: number; alreadyToday: boolean }
 
 /** Fetches the latest NAV of every linked fund not yet looked up today. Only NAV and value change; units, invested amount and history never do. */
 export async function refreshNavs(db: any, funds: any[]): Promise<RefreshResult> {
-  const today = toISO(new Date())
+  const today = toISO(istNow())
   const linked = funds.filter((f) => f.schemeCode)
   const due = fundsToRefresh(funds, today)
   const out: RefreshResult = { changed: 0, checked: 0, failed: 0, unlinked: funds.length - linked.length, alreadyToday: linked.length > 0 && due.length === 0 }

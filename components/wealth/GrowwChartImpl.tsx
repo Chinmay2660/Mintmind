@@ -21,7 +21,7 @@ const DOWN = 'hsl(var(--destructive))'
  * an end marker, and a readout when you touch or hover. Green when it ends higher than it began, red when lower.
  * Wherever a figure is plotted over time, this is what draws it.
  */
-export function GrowwChartImpl({ data, format, height = 160, tone = 'auto', zero = false, secondLabel, ariaLabel, onHover, readout = true, className }: {
+export function GrowwChartImpl({ data, format, height = 160, tone = 'auto', zero = false, secondLabel, ariaLabel, onHover, readout = true, gain = false, className }: {
   data: GrowwPoint[]
   /** how a value reads, e.g. as rupees; it should hide the figure when balances are hidden */
   format: (v: number) => string
@@ -36,6 +36,8 @@ export function GrowwChartImpl({ data, format, height = 160, tone = 'auto', zero
   onHover?: (p: GrowwPoint | null) => void
   /** the small readout drawn inside the chart while touching; turn off when the page shows its own */
   readout?: boolean
+  /** also show the difference between the two lines (value less what was put in) and its percentage */
+  gain?: boolean
   className?: string
 }) {
   const gid = 'gc' + useId().replace(/[^a-zA-Z0-9]/g, '')
@@ -52,19 +54,22 @@ export function GrowwChartImpl({ data, format, height = 160, tone = 'auto', zero
 
   if (data.length < 2) return <p className="flex items-center justify-center text-sm text-muted-foreground" style={{ height }}>Not enough history yet.</p>
   const last = data.reduce((n, d, i) => (d.y != null ? i : n), 0)
+  // the chart library reports which point is under the finger as an index (it no longer hands over the point itself)
+  const track = (st: any) => { const i = Number(st?.activeTooltipIndex); const pt = Number.isInteger(i) ? data[i] : undefined; if (pt) move(pt) }
   const move = (pt: GrowwPoint | null) => { setHover((cur) => (cur?.x === pt?.x ? cur : pt)); onHover?.(pt) }
 
   return (
     <div className={cn('relative select-none', className)} style={{ height }} role="img" aria-label={ariaLabel}>
       {readout && hover && (
-        <div className="pointer-events-none absolute left-0 top-0 z-10 rounded-md bg-card/90 px-2 py-1 text-xs shadow-card backdrop-blur" aria-live="polite">
-          <span className="text-muted-foreground">{hover.x}</span> {hover.y != null && <span className="font-semibold tabular-nums">{format(hover.y)}</span>}
-          {hover.y2 != null && secondLabel && <span className="ml-2 text-muted-foreground">{secondLabel} <span className="tabular-nums">{format(hover.y2)}</span></span>}
+        <div className="pointer-events-none absolute left-0 top-0 z-10 rounded-lg bg-card/90 px-2 py-1 text-xs leading-snug shadow-card backdrop-blur" aria-live="polite">
+          <p className="text-muted-foreground">{hover.x}</p>
+          <p className="tabular-nums">{hover.y != null && <strong className="font-semibold">{format(hover.y)}</strong>}{hover.y2 != null && secondLabel && <span className="text-muted-foreground"> · {secondLabel} <span className="tabular-nums">{format(hover.y2)}</span></span>}</p>
+          {gain && hover.y != null && hover.y2 != null && (() => { const d = hover.y - hover.y2; const t = d > 0 ? 'text-success' : d < 0 ? 'text-destructive' : 'text-muted-foreground'; return <p className={`font-semibold tabular-nums ${t}`}>{d > 0 ? '+' : d < 0 ? '-' : ''}{format(Math.abs(d))}{hover.y2 > 0 ? ` (${d > 0 ? '+' : d < 0 ? '-' : ''}${Math.abs((d / hover.y2) * 100).toFixed(2)}%)` : ''}</p> })()}
         </div>
       )}
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 10, right: 8, left: 8, bottom: 6 }}
-          onMouseMove={(st: any) => { const pt = st?.activePayload?.[0]?.payload; if (pt) move(pt) }} onMouseLeave={() => move(null)}>
+          onMouseMove={track} onTouchMove={track} onMouseLeave={() => move(null)} onTouchEnd={() => move(null)}>
           <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity={0.22} /><stop offset="100%" stopColor={color} stopOpacity={0} /></linearGradient></defs>
           <XAxis dataKey="x" hide />
           <YAxis hide domain={domain} />

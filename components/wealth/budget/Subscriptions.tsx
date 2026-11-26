@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { Plus, Repeat } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
-import { toISO } from '@/lib/wealth/calc'
+import { toISO, istNow } from '@/lib/wealth/calc'
 import { uid } from '@/lib/wealth/db'
 import { formatDate } from '@/lib/wealth/format'
 import { SUB_FREQUENCIES, monthlyCost, nextSubscriptionDate } from '@/lib/wealth/subscriptions'
@@ -30,7 +30,7 @@ export function SubscriptionForm({ row, onClose }: { row?: Subscription | null; 
   const [name, setName] = useState(row?.name ?? '')
   const [amount, setAmount] = useState(row ? String(row.amount) : '')
   const [frequency, setFrequency] = useState(row?.frequency ?? 'monthly')
-  const [startDate, setStartDate] = useState(row?.startDate ?? toISO(new Date()))
+  const [startDate, setStartDate] = useState(row?.startDate ?? toISO(istNow()))
   const [category, setCategory] = useState(row?.category ?? 'Bills')
   return (
     <FormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit recurring payment' : 'Add a recurring payment'} description="A subscription, rent, a premium or any fixed payment that repeats. You get its next due date. SIPs are added under Investments."
@@ -57,7 +57,7 @@ export function SubscriptionsPanel() {
   const { db } = useWealth()
   const list = useSubscriptions()
   const [dlg, setDlg] = useState<null | { kind: 'form' | 'del'; row?: Subscription }>(null)
-  const today = useMemo(() => new Date(), [])
+  const today = useMemo(() => istNow(), [])
   const rows = list.map((s) => ({ s, next: nextSubscriptionDate(s, today) })).sort((a, b) => (a.next ?? '9').localeCompare(b.next ?? '9'))
   const monthly = list.reduce((n, s) => n + monthlyCost(s), 0)
   return (

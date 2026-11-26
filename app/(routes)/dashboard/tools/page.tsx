@@ -4,7 +4,7 @@ import { TabBar } from '@/components/ui/tab-bar'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { useMemo, useState } from 'react'
 import { useWealth } from '@/lib/wealth/WealthContext'
-import { availableBalance, toISO } from '@/lib/wealth/calc'
+import { availableBalance, toISO, istNow } from '@/lib/wealth/calc'
 import { emergencyFund, loanPayoff, retirementCorpus, termCover } from '@/lib/calculators'
 import { formatINR } from '@/lib/wealth/format'
 import { Num, Result, ASSUME, num } from '@/components/tools/kit'
@@ -45,7 +45,7 @@ export default function PlanningToolsPage() {
 }
 
 function Emergency({ data }: { data: any }) {
-  const ym = toISO(new Date()).slice(0, 7)
+  const ym = toISO(istNow()).slice(0, 7)
   const liquid = (data.bankAccounts || []).reduce((s: number, a: any) => s + availableBalance(a), 0)
   const [exp, setExp] = useState(fromData(data.budgets?.find((b: any) => b.id === ym)?.total || 0))
   const [sav, setSav] = useState(fromData(liquid))

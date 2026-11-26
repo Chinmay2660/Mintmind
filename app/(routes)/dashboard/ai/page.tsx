@@ -43,9 +43,9 @@ export default function AiPage() {
             <div className="flex flex-wrap items-end gap-3"><span className="text-5xl font-semibold">{health.score ?? '-'}</span><span className="pb-1 text-muted-foreground">/ 100 · {health.label}</span></div>
             <p className="mt-2 text-xs text-muted-foreground">{health.disclaimer}</p>
             <div className="mt-4 grid gap-4 md:grid-cols-3">
-              <div><h3 className="mb-1.5 text-sm font-semibold">Strengths</h3>{health.strengths.length ? <ul className="list-disc space-y-1 pl-5 text-sm">{health.strengths.map((s) => <li key={s}>{s}</li>)}</ul> : <p className="text-sm text-muted-foreground">None yet.</p>}</div>
-              <div><h3 className="mb-1.5 text-sm font-semibold">Areas to improve</h3>{health.improvements.length ? <ul className="list-disc space-y-1 pl-5 text-sm">{health.improvements.map((s) => <li key={s}>{s}</li>)}</ul> : <p className="text-sm text-muted-foreground">Nothing flagged.</p>}</div>
-              <div><h3 className="mb-1.5 text-sm font-semibold">Suggested actions</h3>{health.actions.length ? <ul className="list-disc space-y-1 pl-5 text-sm">{health.actions.map((s) => <li key={s}>{s}</li>)}</ul> : <p className="text-sm text-muted-foreground">Keep it up.</p>}</div>
+              <div><h3 className="mb-1.5 text-base font-semibold">Strengths</h3>{health.strengths.length ? <ul className="list-disc space-y-1 pl-5 text-sm">{health.strengths.map((s) => <li key={s}>{s}</li>)}</ul> : <p className="text-sm text-muted-foreground">None yet.</p>}</div>
+              <div><h3 className="mb-1.5 text-base font-semibold">Areas to improve</h3>{health.improvements.length ? <ul className="list-disc space-y-1 pl-5 text-sm">{health.improvements.map((s) => <li key={s}>{s}</li>)}</ul> : <p className="text-sm text-muted-foreground">Nothing flagged.</p>}</div>
+              <div><h3 className="mb-1.5 text-base font-semibold">Suggested actions</h3>{health.actions.length ? <ul className="list-disc space-y-1 pl-5 text-sm">{health.actions.map((s) => <li key={s}>{s}</li>)}</ul> : <p className="text-sm text-muted-foreground">Keep it up.</p>}</div>
             </div>
           </Panel>
           <Panel title="How the score is calculated">
