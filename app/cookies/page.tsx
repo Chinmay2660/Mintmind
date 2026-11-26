@@ -10,7 +10,7 @@ const Row = ({ name, kind, what, how }: { name: string; kind: string; what: stri
   </tr>
 )
 const Table = ({ children }: { children: React.ReactNode }) => (
-  <div className="overflow-x-auto"><table className="w-full text-left text-xs sm:min-w-[34rem] max-sm:[&_tbody]:block"><thead className="text-[11px] uppercase tracking-wide text-muted-foreground max-sm:sr-only"><tr><th className="pb-2 pr-3 font-bold">Name</th><th className="pb-2 pr-3 font-bold">Type</th><th className="pb-2 pr-3 font-bold">What it is for</th><th className="pb-2 font-bold">How long</th></tr></thead><tbody>{children}</tbody></table></div>
+  <div className="overflow-x-auto"><table className="w-full text-left text-xs sm:min-w-[34rem] max-sm:[&_tbody]:block"><thead className="text-[11px] tracking-wide text-muted-foreground max-sm:sr-only"><tr><th className="pb-2 pr-3 font-bold">Name</th><th className="pb-2 pr-3 font-bold">Type</th><th className="pb-2 pr-3 font-bold">What it is for</th><th className="pb-2 font-bold">How long</th></tr></thead><tbody>{children}</tbody></table></div>
 )
 
 export default function CookiesPage() {
@@ -25,6 +25,7 @@ export default function CookiesPage() {
         <Row name="auth-token" kind="Cookie, HTTP only" what="Keeps you signed in. It cannot be read by scripts on the page." how="Up to 30 days, or until you sign out" />
         <Row name="mm-demo" kind="Cookie, HTTP only" what="Remembers that you are exploring the sample family." how="12 hours, or until you exit the demo" />
         <Row name="Your records" kind="Browser database (IndexedDB)" what="A local copy of your accounts, transactions, funds and goals, kept in step with your account on our server so it works on every device." how="Until you erase them or clear site data" />
+        <Row name="mm-theme, mm-ui-style" kind="Local storage" what="The light, dark or system mode and the colour look you chose. You asked for them, so they are kept." how="Until you clear it" />
         <Row name="mm-vault-fails" kind="Local storage" what="Counts failed vault unlock attempts so guessing slows down." how="Until the lock clears" />
         <Row name="App files cache" kind="Service worker cache" what="Lets the app open offline." how="Replaced on each update" />
       </Table>
@@ -32,7 +33,6 @@ export default function CookiesPage() {
       <h2>Preferences (only with your OK)</h2>
       <p>These only remember how you like the app to look. If you decline, the app works the same and simply forgets them when you leave.</p>
       <Table>
-        <Row name="mm-theme" kind="Local storage" what="Light, dark or system mode." how="Until you clear it" />
         <Row name="mm-sidebar-collapsed, mm-sidebar-open" kind="Local storage" what="Whether the sidebar is collapsed and which folders are open." how="Until you clear it" />
         <Row name="mm-device-notify, mm-device-notify-seen" kind="Local storage" what="Your choice about device notifications and which ones you have seen." how="Until you clear it" />
       </Table>

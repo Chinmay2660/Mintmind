@@ -17,7 +17,7 @@ function Tile({ className, title, icon: Icon, hint, children }: { className?: st
       <span aria-hidden className="pointer-events-none absolute inset-0 bg-primary/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       <div className="relative flex h-9 items-center justify-between gap-3">
         <div className="flex items-center gap-2.5"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary"><Icon className="h-[18px] w-[18px]" aria-hidden /></span><h3 className="truncate text-sm font-semibold">{title}</h3></div>
-        <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Sample</span>
+        <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-medium tracking-wide text-muted-foreground">Sample</span>
       </div>
       <p className="relative mt-2 line-clamp-2 min-h-[2rem] text-xs text-muted-foreground">{hint}</p>
       <div className="relative mt-4 flex min-h-0 flex-1 flex-col">{children}</div>

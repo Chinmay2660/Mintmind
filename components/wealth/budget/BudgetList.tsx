@@ -23,7 +23,7 @@ function CategoryRow({ r, label, now, onOpen, compact = false }: { r: any; label
   return (
     <>
       <button type="button" onClick={onOpen} aria-label={`${label}, show expenses`} className="flex min-h-9 w-full items-baseline justify-between gap-3 rounded text-left outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        <span className={cn('min-w-0 truncate font-semibold', compact ? 'text-xs' : 'text-sm')}>{label}{r.period && r.period !== 'monthly' && <span className="ml-2 rounded-full border border-border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{r.period}</span>}</span>
+        <span className={cn('min-w-0 truncate font-semibold', compact ? 'text-xs' : 'text-sm')}>{label}{r.period && r.period !== 'monthly' && <span className="ml-2 rounded-full border border-border px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-muted-foreground">{r.period}</span>}</span>
         {r.limit > 0
           ? <span className={cn('shrink-0 font-bold tabular-nums', compact ? 'text-xs' : 'text-sm', r.status === 'exceeded' ? 'text-destructive' : 'text-foreground')}>{r.status === 'exceeded' ? 'Over ' : ''}<Money value={Math.abs(r.remaining)} />{r.status === 'exceeded' ? '' : ' left'}</span>
           : <span className={cn('shrink-0 tabular-nums', compact ? 'text-xs' : 'text-sm')}><Money value={r.spent} /></span>}
@@ -36,7 +36,7 @@ function CategoryRow({ r, label, now, onOpen, compact = false }: { r: any; label
             </div>
             {now && (
               <>
-                <span aria-hidden style={{ position: 'absolute', top: 0, left: `${pace}%`, transform: 'translateX(-50%)', zIndex: 3, fontSize: 10, fontWeight: 700, lineHeight: '12px', letterSpacing: '0.04em', textTransform: 'uppercase', whiteSpace: 'nowrap' }} className="text-foreground">Today</span>
+                <span aria-hidden style={{ position: 'absolute', top: 0, left: `${pace}%`, transform: 'translateX(-50%)', zIndex: 3, fontSize: 10, fontWeight: 700, lineHeight: '12px', letterSpacing: '0.04em', whiteSpace: 'nowrap' }} className="text-foreground">Today</span>
                 <svg aria-hidden width="12" height="8" viewBox="0 0 12 8" style={{ position: 'absolute', top: 13, left: `${pace}%`, marginLeft: -6, zIndex: 3 }}><path d="M1 1h10L6 7z" fill="hsl(var(--foreground))" stroke="hsl(var(--background))" strokeWidth="1.2" strokeLinejoin="round" /></svg>
                 <span aria-hidden style={{ position: 'absolute', top: 20, bottom: 0, left: `${pace}%`, width: 3, marginLeft: -1.5, borderRadius: 2, zIndex: 3, background: 'hsl(var(--foreground))', boxShadow: '0 0 0 1px hsl(var(--background))' }} />
               </>

@@ -1,5 +1,6 @@
 'use client'
 
+import { NetWorthSide } from '@/components/wealth/NetWorthSide'
 import { TabBar } from '@/components/ui/tab-bar'
 import { useEffect, useMemo, useState } from 'react'
 import { Building2, Check, Flag, Plus, Scale, StickyNote, TrendingUp } from 'lucide-react'
@@ -37,7 +38,8 @@ const EVENT_STYLE: Record<string, { color: string; icon: typeof Flag; label: str
   note: { color: 'hsl(var(--muted-foreground))', icon: StickyNote, label: 'Your note' },
 }
 
-function NetWorthOverview() {
+/** `summary`: the totals. `trends`: the history chart, what changed and the journal. */
+function NetWorthOverview({ part }: { part: 'summary' | 'trends' }) {
   const { ready, data, netWorth } = useWealth()
   const { privacyMode } = usePrivacyMode()
   const [view, setView] = useState<(typeof VIEWS)[number]>('Monthly')
@@ -77,7 +79,7 @@ function NetWorthOverview() {
 
   return (
     <div className="space-y-5">
-      <PageHeader
+      {part === 'summary' && <PageHeader
         description="Assets minus liabilities, updated automatically. The breakdown by kind is on the Overview."
         actions={
           <QuickTiles label="Net worth shortcuts" items={[
@@ -86,16 +88,16 @@ function NetWorthOverview() {
             { key: 'loans', label: 'Loans', icon: Scale, href: '/dashboard/net-worth/loans' },
           ]} />
         }
-      />
+      />}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 border-b border-border pb-5">
+      {part === 'summary' && <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 border-b border-border pb-5">
         <Stat label="Net worth" value={<Money value={netWorth.netWorth} />} />
         <Stat label="Total assets" value={<Money value={netWorth.assets} />} />
         <Stat label="Total liabilities" value={<Money value={netWorth.liabilities} />} />
         <Stat label="Debt to assets" value={`${netWorth.assets ? Math.round((netWorth.liabilities / netWorth.assets) * 1000) / 10 : 0}%`} />
-      </div>
+      </div>}
 
-      <Panel
+      {part === 'trends' && <><Panel
         title="History"
         action={<RangeTabs value={view} onChange={setView} options={VIEWS as readonly (typeof VIEWS)[number][]} label="Granularity" />}
       >
@@ -124,11 +126,7 @@ function NetWorthOverview() {
           const label = SERIES.find((x) => x.k === key)!.label
           return (
             <>
-              <div role="tablist" aria-label="What the chart shows" className="mb-2 flex gap-5 border-b border-border">
-                {SERIES.map((x) => (
-                  <button key={x.k} type="button" role="tab" aria-selected={key === x.k} onClick={() => pick(x.k)} className={cn('-mb-px min-h-11 border-b-2 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', key === x.k ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}>{x.label}</button>
-                ))}
-              </div>
+              <TabBar label="What the chart shows" className="mx-0 mb-2" value={key} onChange={(k) => pick(k as 'netWorth' | 'assets' | 'liabilities')} tabs={SERIES.map((x) => ({ key: x.k, label: x.label }))} />
               <GrowwChart height={256} tone={key === 'liabilities' ? 'neutral' : 'auto'} ariaLabel={`${label} over the chosen range`}
                 data={chart.map((c: any) => ({ x: c.label, y: c[key] }))} format={(v) => (privacyMode ? '••••' : formatINR(v))} />
             </>
@@ -147,21 +145,28 @@ function NetWorthOverview() {
       </Panel>
 
       <WhyChanged />
-      <NetWorthJournal />
+      <NetWorthJournal /></>}
 
     </div>
   )
 }
 
 
+type NwTab = 'Overview' | 'Assets' | 'Liabilities' | 'Trends' | 'Goals' | 'Forecast'
+const NW_TABS: NwTab[] = ['Overview', 'Assets', 'Liabilities', 'Trends', 'Goals', 'Forecast']
+
 export default function NetWorthPage() {
-  const [tab, setTab] = useState<'Overview' | 'Goals' | 'Forecast'>('Overview')
+  const [tab, setTab] = useState<NwTab>('Overview')
   // a link like ?add=goal lands on the Goals tab (set after mount, so the server and browser render the same first paint)
   useEffect(() => { if (new URLSearchParams(window.location.search).get('add') === 'goal') setTab('Goals') }, [])
   return (
     <div className="space-y-5">
-      <TabBar label="Net worth views" tabs={[{ key: 'Overview', label: 'Overview' }, { key: 'Goals', label: 'Goals' }, { key: 'Forecast', label: 'Forecast' }]} value={tab} onChange={(k) => setTab(k as typeof tab)} />
-      {tab === 'Overview' ? <><NetWorthOverview /><AllocationLeverage /><FinancialMetrics /><LimitsPanel /></> : tab === 'Goals' ? <GoalsPanel /> : <ForecastPanel />}
+      <TabBar label="Net worth views" tabs={NW_TABS.map((t) => ({ key: t, label: t }))} value={tab} onChange={(k) => setTab(k as NwTab)} />
+      {tab === 'Overview' ? <><NetWorthOverview part="summary" /><AllocationLeverage /><FinancialMetrics /></>
+        : tab === 'Assets' ? <><NetWorthSide side="assets" /><LimitsPanel /></>
+        : tab === 'Liabilities' ? <NetWorthSide side="liabilities" />
+        : tab === 'Trends' ? <NetWorthOverview part="trends" />
+        : tab === 'Goals' ? <GoalsPanel /> : <ForecastPanel />}
     </div>
   )
 }

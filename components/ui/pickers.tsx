@@ -3,9 +3,10 @@
 import { Children, Fragment, isValidElement, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from 'react'
 import * as PopoverPrimitive from '@radix-ui/react-popover'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Search, X } from 'lucide-react'
+import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useIsMobile } from '@/lib/hooks/useIsMobile'
+import { useSwipeDismiss } from '@/lib/hooks/useSwipeDismiss'
 
 /*
  * Mintmind pickers: replacements for the browser's built-in <select> and <input type="date">.
@@ -13,12 +14,17 @@ import { useIsMobile } from '@/lib/hooks/useIsMobile'
  * so forms use them without changes. On phones they open as a bottom sheet; on larger screens as a popover.
  */
 
+/** A picked value is not a native input event, so every picker announces it; a form that is open uses it to know something was changed. */
+export const FIELD_EVENT = 'mm-field-change'
+const announce = () => { try { window.dispatchEvent(new Event(FIELD_EVENT)) } catch { /* no window */ } }
+
 const triggerBase =
   'group relative flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 text-left text-sm outline-none transition-colors hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50 data-[state=open]:border-primary data-[state=open]:ring-2 data-[state=open]:ring-ring/30'
 
 /** A popover on desktop, a bottom sheet on phones. */
 function Surface({ open, onOpenChange, title, trigger, children, width = 'trigger', fixedParts }: { open: boolean; onOpenChange: (o: boolean) => void; title: string; trigger: ReactNode; children: ReactNode; width?: 'trigger' | 'auto'; fixedParts?: boolean }) {
   const mobile = useIsMobile()
+  const swipe = useSwipeDismiss(() => onOpenChange(false))
   if (mobile) {
     return (
       <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -26,13 +32,13 @@ function Surface({ open, onOpenChange, title, trigger, children, width = 'trigge
         <DialogPrimitive.Portal>
           <DialogPrimitive.Overlay className="fixed inset-0 z-[70] bg-foreground/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
           <DialogPrimitive.Content
+            ref={swipe}
             aria-describedby={undefined}
             className="fixed inset-x-0 bottom-0 z-[71] flex max-h-[80dvh] flex-col rounded-t-3xl border border-b-0 border-border bg-popover text-popover-foreground shadow-elevated outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom"
           >
             <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border" aria-hidden />
-            <div className="flex items-center justify-between px-5 pb-2 pt-3">
+            <div className="px-5 pb-2 pt-3">
               <DialogPrimitive.Title className="text-base font-semibold">{title}</DialogPrimitive.Title>
-              <DialogPrimitive.Close className="rounded-full p-1.5 text-muted-foreground hover:bg-muted" aria-label="Close"><X className="h-4 w-4" /></DialogPrimitive.Close>
             </div>
             <div className={cn('min-h-0 flex-1 overscroll-contain px-3 pb-[calc(1rem+env(safe-area-inset-bottom))]', fixedParts ? 'flex flex-col overflow-hidden' : 'overflow-y-auto')}>{children}</div>
           </DialogPrimitive.Content>
@@ -129,7 +135,7 @@ export function Select({ id, value, onChange, className, disabled, required, chi
     return () => clearTimeout(t)
   }, [open])
 
-  const pick = (v: string) => { onChange?.(fakeEvent<HTMLSelectElement>(v)); setOpen(false) }
+  const pick = (v: string) => { onChange?.(fakeEvent<HTMLSelectElement>(v)); announce(); setOpen(false) }
   const move = (e: KeyboardEvent) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
     const items = Array.from(listRef.current?.querySelectorAll<HTMLElement>('[role="option"]:not([disabled])') ?? [])
@@ -215,15 +221,15 @@ export function DateInput({ id, value = '', onChange, min, max, required, disabl
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const blocked = (s: string) => (!!min && s < min) || (!!max && s > max)
-  const pick = (s: string) => { if (blocked(s)) return; onChange?.(fakeEvent<HTMLInputElement>(s)); setOpen(false) }
+  const pick = (s: string) => { if (blocked(s)) return; onChange?.(fakeEvent<HTMLInputElement>(s)); announce(); setOpen(false) }
   const go = (by: number) => setView((v) => { const t = new Date(v.y, v.m + by, 1); return { y: t.getFullYear(), m: t.getMonth() } })
 
-  // Monday-first grid with leading blanks.
+  // Monday-first grid of exactly six weeks (42 days), so every month is the same size. Days of the neighbouring months are shown faded and cannot be picked.
   const first = (new Date(view.y, view.m, 1).getDay() + 6) % 7
-  const days = new Date(view.y, view.m + 1, 0).getDate()
-  const cells: (number | null)[] = [...Array(first).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)]
+  const cells = Array.from({ length: 42 }, (_, i) => { const t = new Date(view.y, view.m, 1 - first + i); return { s: iso(t.getFullYear(), t.getMonth(), t.getDate()), d: t.getDate(), inMonth: t.getMonth() === view.m } })
   const today = todayIso()
-  const quick = [{ l: 'Today', v: today }, { l: 'Yesterday', v: shiftDay(today, -1) }].filter((q) => !blocked(q.v))
+  // shown even when they cannot be chosen (greyed), so the row never changes
+  const quick = [{ l: 'Today', v: today }, { l: 'Yesterday', v: shiftDay(today, -1) }]
 
   return (
     <div className="relative">
@@ -247,33 +253,32 @@ export function DateInput({ id, value = '', onChange, min, max, required, disabl
           </div>
 
           {mode === 'months' ? (
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid h-[17.5rem] grid-cols-3 grid-rows-4 gap-1.5">
               {MONTHS.map((n, i) => (
-                <button key={n} type="button" onClick={() => { setView((v) => ({ ...v, m: i })); setMode('days') }} className={cn('h-11 rounded-lg text-sm hover:bg-muted', i === view.m && 'bg-accent font-semibold text-accent-foreground')}>{n.slice(0, 3)}</button>
+                <button key={n} type="button" onClick={() => { setView((v) => ({ ...v, m: i })); setMode('days') }} className={cn('h-full rounded-lg text-sm hover:bg-muted', i === view.m && 'bg-accent font-semibold text-accent-foreground')}>{n.slice(0, 3)}</button>
               ))}
             </div>
           ) : (
-            <>
-              <div className="grid grid-cols-7 text-center text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{WEEKDAYS.map((w) => <span key={w} className="py-1">{w}</span>)}</div>
-              <div className="grid grid-cols-7 gap-y-0.5" role="grid" aria-label={`${MONTHS[view.m]} ${view.y}`}>
-                {cells.map((d, i) => {
-                  if (d === null) return <span key={`b${i}`} />
-                  const s = iso(view.y, view.m, d)
-                  const sel = s === value, isToday = s === today, off = blocked(s)
+            <div className="h-[17.5rem]">
+              <div className="grid grid-cols-7 text-center text-[11px] font-medium tracking-wide text-muted-foreground">{WEEKDAYS.map((w) => <span key={w} className="py-1">{w}</span>)}</div>
+              <div className="grid grid-cols-7 grid-rows-6 gap-y-0.5" role="grid" aria-label={`${MONTHS[view.m]} ${view.y}`}>
+                {cells.map(({ s: cs, d, inMonth }) => {
+                  if (!inMonth) return <span key={cs} aria-hidden className="mx-auto flex h-10 w-10 items-center justify-center text-sm tabular-nums text-muted-foreground/35">{d}</span>
+                  const sel = cs === value, isToday = cs === today, off = blocked(cs)
                   return (
-                    <button key={s} type="button" disabled={off} onClick={() => pick(s)} aria-pressed={sel} aria-label={formatPickedDate(s)} aria-current={isToday ? 'date' : undefined}
+                    <button key={cs} type="button" disabled={off} onClick={() => pick(cs)} aria-pressed={sel} aria-label={formatPickedDate(cs)} aria-current={isToday ? 'date' : undefined}
                       className={cn('mx-auto flex h-10 w-10 items-center justify-center rounded-full text-sm tabular-nums outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', sel ? 'bg-primary font-semibold text-primary-foreground' : 'hover:bg-muted', isToday && !sel && 'font-semibold text-primary ring-1 ring-primary/40', off && 'pointer-events-none opacity-30')}>
                       {d}
                     </button>
                   )
                 })}
               </div>
-            </>
+            </div>
           )}
 
           <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-border pt-2">
-            {quick.map((q) => <button key={q.l} type="button" onClick={() => pick(q.v)} className="rounded-full border border-border px-3 py-1 text-xs font-medium hover:bg-muted">{q.l}</button>)}
-            {!required && value && <button type="button" onClick={() => { onChange?.(fakeEvent<HTMLInputElement>('')); setOpen(false) }} className="ml-auto rounded-full px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted">Clear</button>}
+            {quick.map((q) => <button key={q.l} type="button" disabled={blocked(q.v)} onClick={() => pick(q.v)} className="rounded-full border border-border px-3 py-1 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent">{q.l}</button>)}
+            {!required && <button type="button" disabled={!value} onClick={() => { onChange?.(fakeEvent<HTMLInputElement>('')); announce(); setOpen(false) }} className="ml-auto rounded-full px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent">Clear</button>}
           </div>
         </div>
       </Surface>
@@ -333,7 +338,7 @@ export function MultiSelect({ id, options, selected, onToggle, placeholder = 'Ch
         {shown.map((o) => {
           const on = selected.includes(o.value)
           return (
-            <button key={o.value} type="button" role="option" aria-selected={on} onClick={() => onToggle(o.value)}
+            <button key={o.value} type="button" role="option" aria-selected={on} onClick={() => { onToggle(o.value); announce() }}
               className={cn('flex min-h-12 w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm outline-none transition-colors hover:bg-muted focus-visible:bg-muted', on && 'bg-primary/10 font-medium')}>
               <span aria-hidden className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border-2 transition-colors', on ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/60 bg-transparent')}>{on && <Check className="h-3.5 w-3.5" strokeWidth={3} />}</span>
               <span className="min-w-0 flex-1"><span className="line-clamp-2 break-words">{o.label}</span>{o.hint && <span className="block text-xs text-muted-foreground">{o.hint}</span>}</span>
@@ -382,7 +387,7 @@ export function MonthPicker({ value, onChange, max, className, 'aria-label': ari
             const k = key(i)
             const off = !!max && k > max
             const on = k === value
-            return <button key={n} type="button" disabled={off} onClick={() => { onChange(k); setOpen(false) }} aria-pressed={on} className={cn('h-11 rounded-lg text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-30', on && 'bg-primary font-semibold text-primary-foreground hover:bg-primary')}>{n.slice(0, 3)}</button>
+            return <button key={n} type="button" disabled={off} onClick={() => { onChange(k); announce(); setOpen(false) }} aria-pressed={on} className={cn('h-11 rounded-lg text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-30', on && 'bg-primary font-semibold text-primary-foreground hover:bg-primary')}>{n.slice(0, 3)}</button>
           })}
         </div>
       </div>

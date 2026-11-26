@@ -55,7 +55,7 @@ export function AutomationManager() {
         {rules.length === 0 ? <Empty title="No automations" description="Start from a template, e.g. “Card payment due reminder”." /> : (
           <ul className="divide-y divide-border">{rules.map((r) => (
             <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
-              <div className="min-w-0 flex-1"><p className="flex items-center gap-2 font-medium"><Zap className={cn('h-3.5 w-3.5', r.enabled ? 'text-primary' : 'text-muted-foreground')} />{r.name}{!r.enabled && <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">Paused</span>}</p>
+              <div className="min-w-0 flex-1"><p className="flex items-center gap-2 font-medium"><Zap className={cn('h-3.5 w-3.5', r.enabled ? 'text-primary' : 'text-muted-foreground')} />{r.name}{!r.enabled && <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">Paused</span>}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">{TEMPLATES[r.templateId]?.group} · {cap(r.frequency)} · {Object.keys(r.channels).filter((c) => r.channels[c]).map(humanize).join(', ') || 'No channel'} · Last run {r.lastRunAt ? formatDate(r.lastRunAt.slice(0, 10)) : 'never'} · Next {r.enabled ? (r.nextRunAt && r.nextRunAt > toISO(new Date()) ? formatDate(r.nextRunAt) : 'due now') : '-'}</p></div>
               <div className="flex shrink-0 gap-1">
                 <Button size="icon" variant="ghost" className="h-8 w-8" aria-label={r.enabled ? `Pause ${r.name}` : `Resume ${r.name}`} title={r.enabled ? 'Pause' : 'Resume'} onClick={() => save(db, 'automations', { ...r, enabled: !r.enabled })}>{r.enabled ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}</Button>
@@ -68,7 +68,7 @@ export function AutomationManager() {
       <Panel title="History" action={<History className="h-4 w-4 text-muted-foreground" />}>
         {runs.length === 0 ? <Empty title="Nothing has run yet" /> : (
           <ul className="max-h-80 divide-y divide-border overflow-y-auto">{runs.map((r) => (
-            <li key={r.id} className="py-2.5 text-sm"><div className="flex items-center justify-between gap-2"><span className="font-medium">{r.ruleName}</span><span className={cn('rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase', r.status === 'failed' ? 'bg-destructive/15 text-destructive' : r.fired ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground')}>{r.status === 'failed' ? 'Failed' : r.fired ? 'Triggered' : 'No action'}</span></div>
+            <li key={r.id} className="py-2.5 text-sm"><div className="flex items-center justify-between gap-2"><span className="font-medium">{r.ruleName}</span><span className={cn('rounded px-1.5 py-0.5 text-[10px] font-semibold', r.status === 'failed' ? 'bg-destructive/15 text-destructive' : r.fired ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground')}>{r.status === 'failed' ? 'Failed' : r.fired ? 'Triggered' : 'No action'}</span></div>
               <p className="text-xs text-muted-foreground">{formatDate(r.at.slice(0, 10))} · {r.body}</p>
               {r.deliveries && <p className="text-[11px] text-muted-foreground">Delivery: {Object.entries(r.deliveries).map(([k, v]) => `${humanize(k)} ${String(v).replace(/_/g, ' ')}`).join(', ')}</p>}</li>))}</ul>
         )}
@@ -77,7 +77,7 @@ export function AutomationManager() {
       {picker && (
         <FormDialog open onOpenChange={(o) => !o && setPicker(false)} title="Choose a template" submitLabel="Continue" onSubmit={async () => {}} wide>
           <div className="full space-y-4">{GROUPS.map((g) => (
-            <div key={g}><p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{g}</p>
+            <div key={g}><p className="mb-1.5 text-xs font-semibold tracking-wide text-muted-foreground">{g}</p>
               <div className="grid gap-1.5 sm:grid-cols-2">{Object.entries(TEMPLATES).filter(([, t]) => t.group === g).map(([id, t]) => (
                 <button key={id} type="button" className="rounded-lg border border-border px-3 py-2 text-left text-sm transition-colors hover:bg-muted" onClick={() => { setPicker(false); setDlg({ rule: newRule(id), isNew: true }) }}>{t.label}</button>))}</div></div>))}
             <p className="text-xs text-muted-foreground">Digital Legacy reminders and contact notifications are managed on the Digital Legacy page.</p></div>

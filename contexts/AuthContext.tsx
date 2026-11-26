@@ -1,7 +1,6 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import { clearCachedUser, getCachedUser, setCachedUser } from '@/lib/offline/session'
 import { clearPrivateCaches } from '@/lib/pwa'
@@ -21,7 +20,6 @@ function normalizeUser(userData: User | null): User | null {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const router = useRouter()
   const checkingRef = useRef(false)
   const mountedRef = useRef(true)
   const sessionFetchedRef = useRef(false)
@@ -91,7 +89,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       sessionFetchedRef.current = false
     }
 
-    router.push('/auth/signin')
+    // A full page load, replacing this history entry: Back cannot return to a signed-in screen, and nothing from the session (data held in
+    // memory, an unlocked vault, cached pages) survives into the sign-in page.
+    window.location.replace('/auth/signin')
   }
 
   return (

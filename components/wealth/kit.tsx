@@ -148,7 +148,7 @@ export function Stat({ label, value, hint, info, className }: { label: string; v
   return (
     <div className={cn('surface-card flex min-w-0 flex-col px-4 py-3.5', className)}>
       <div className="flex min-h-5 items-center justify-between gap-2">
-        <p className="min-w-0 truncate text-xs font-medium text-muted-foreground paper:text-[11px] paper:uppercase paper:tracking-[0.08em]">{label}</p>
+        <p className="min-w-0 truncate text-xs font-medium text-muted-foreground paper:text-[11px] paper:tracking-[0.08em]">{label}</p>
         {info && <InfoTip label={label}>{info}</InfoTip>}
       </div>
       <div className="mt-1 flex min-h-7 items-center truncate text-lg font-semibold leading-7 sm:text-xl tracking-tight">{value}</div>
@@ -235,6 +235,8 @@ export function Field({ label, hint, error, children, className }: { label: stri
 
 // Custom (non-native) dropdown and date picker; same props as <select> / <input type="date">.
 export { Select, DateInput } from '@/components/ui/pickers'
+import { FIELD_EVENT } from '@/components/ui/pickers'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 export function Progress({ value, tone = 'primary', label }: { value: number; tone?: 'primary' | 'warning' | 'danger'; label?: string }) {
   const v = Math.max(0, Math.min(100, value))
@@ -300,8 +302,28 @@ export function FormFields({ children, startOpen = false }: { children: ReactNod
   )
 }
 
+/**
+ * Closing a form that has unsaved changes asks first. Every way out goes through it: Cancel, tapping outside, Esc, a swipe down and the
+ * browser's Back. Typing marks the form as changed, and so does picking a value in one of the app's pickers.
+ */
+function useDiscardGuard(open: boolean, onOpenChange: (o: boolean) => void) {
+  const [dirty, setDirty] = useState(false)
+  const [ask, setAsk] = useState(false)
+  useEffect(() => {
+    if (!open) { setDirty(false); setAsk(false); return }
+    const on = () => setDirty(true)
+    window.addEventListener(FIELD_EVENT, on)
+    return () => window.removeEventListener(FIELD_EVENT, on)
+  }, [open])
+  const request = (o: boolean) => { if (!o && dirty) setAsk(true); else onOpenChange(o) }
+  const bind = { onInputCapture: () => setDirty(true), onChangeCapture: () => setDirty(true) }
+  const confirm = <ConfirmDialog open={ask} onOpenChange={setAsk} title="Discard your changes?" description="What you entered here has not been saved." confirmLabel="Discard" variant="destructive" onConfirm={() => { setAsk(false); onOpenChange(false) }} />
+  return { request, bind, confirm }
+}
+
 export function FormDialog({ open, onOpenChange, title, description, submitLabel = 'Save', onSubmit, children, wide }: FormDialogProps) {
-  useBackToClose(open, () => onOpenChange(false))
+  const guard = useDiscardGuard(open, onOpenChange)
+  useBackToClose(open, () => guard.request(false))
   const [busy, setBusy] = useState(false)
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -316,17 +338,17 @@ export function FormDialog({ open, onOpenChange, title, description, submitLabel
     }
   }
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <><Dialog open={open} onOpenChange={guard.request}>
       <DialogContent className={wide ? 'max-w-2xl' : undefined}>
         <DialogHeader>
           {/* the explanation sits behind an "i" beside the title; screen readers still get it as the description */}
           <div className="flex items-center gap-2"><DialogTitle>{title}</DialogTitle>{description && <InfoTip label={title}>{description}</InfoTip>}</div>
           <DialogDescription className="sr-only">{description || title}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="space-y-4" {...guard.bind}>
           <FormFields startOpen={/^edit/i.test(title)}>{children}</FormFields>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => guard.request(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={busy}>
@@ -337,6 +359,7 @@ export function FormDialog({ open, onOpenChange, title, description, submitLabel
         </form>
       </DialogContent>
     </Dialog>
+    {guard.confirm}</>
   )
 }
 
@@ -350,7 +373,8 @@ export interface FormStep { title: string; description?: string; content: ReactN
 export function StepFormDialog({ open, onOpenChange, title, description, steps, submitLabel = 'Save', onSubmit, wide }: {
   open: boolean; onOpenChange: (o: boolean) => void; title: string; description?: string; steps: FormStep[]; submitLabel?: string; onSubmit: () => Promise<void>; wide?: boolean
 }) {
-  useBackToClose(open, () => onOpenChange(false))
+  const guard = useDiscardGuard(open, onOpenChange)
+  useBackToClose(open, () => guard.request(false))
   const [i, setI] = useState(0)
   const [busy, setBusy] = useState(false)
   const body = useRef<HTMLDivElement>(null)
@@ -371,7 +395,7 @@ export function StepFormDialog({ open, onOpenChange, title, description, steps, 
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <><Dialog open={open} onOpenChange={guard.request}>
       <DialogContent className={wide ? 'max-w-2xl' : undefined}>
         <DialogHeader>
           <div className="flex items-center gap-2"><DialogTitle>{title}</DialogTitle>{description && <InfoTip label={title}>{description}</InfoTip>}</div>
@@ -391,11 +415,11 @@ export function StepFormDialog({ open, onOpenChange, title, description, steps, 
           ))}
         </ol>
 
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="space-y-4" {...guard.bind}>
           <div><p className="text-xs text-muted-foreground">Step {i + 1} of {steps.length}</p><div className="flex items-center gap-2"><h3 className="text-base font-semibold">{cur.title}</h3>{cur.description && <InfoTip label={cur.title}>{cur.description}</InfoTip>}</div></div>
           <div ref={body}><FormFields key={i} startOpen={/^edit/i.test(title)}>{cur.content}</FormFields></div>
           <DialogFooter className="gap-2 sm:justify-between sm:gap-0 sm:space-x-0">
-            <Button type="button" variant="ghost" onClick={() => (i === 0 ? onOpenChange(false) : setI(i - 1))}>{i === 0 ? 'Cancel' : 'Back'}</Button>
+            <Button type="button" variant="ghost" onClick={() => (i === 0 ? guard.request(false) : setI(i - 1))}>{i === 0 ? 'Cancel' : 'Back'}</Button>
             <Button type="submit" disabled={busy}>
               {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{last ? submitLabel : 'Next'}
             </Button>
@@ -403,6 +427,7 @@ export function StepFormDialog({ open, onOpenChange, title, description, steps, 
         </form>
       </DialogContent>
     </Dialog>
+    {guard.confirm}</>
   )
 }
 

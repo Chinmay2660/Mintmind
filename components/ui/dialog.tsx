@@ -4,6 +4,7 @@ import * as React from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useSwipeDismiss } from '@/lib/hooks/useSwipeDismiss'
 
 const Dialog = DialogPrimitive.Root
 const DialogPortal = DialogPrimitive.Portal
@@ -35,11 +36,16 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 const DialogContent = React.forwardRef<
   React.ComponentRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+>(({ className, children, ...props }, ref) => {
+  const closer = React.useRef<HTMLButtonElement | null>(null)
+  // on a phone the dialog is a bottom sheet: a swipe down closes it, the same way as the backdrop, Esc or Cancel would
+  const swipe = useSwipeDismiss(() => closer.current?.click())
+  const setRef = (node: HTMLDivElement | null) => { swipe(node); if (typeof ref === 'function') ref(node); else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node }
+  return (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
-      ref={ref}
+      ref={setRef}
       // On a touch screen don't pop the keyboard the moment a dialog opens: it would cover the form. Focus the dialog; tapping a field opens the keyboard.
       onOpenAutoFocus={(e) => {
         if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) { e.preventDefault(); (e.currentTarget as HTMLElement).focus() }
@@ -52,13 +58,14 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+      <DialogPrimitive.Close ref={closer} className="max-sm:hidden absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPortal>
-))
+  )
+})
 DialogContent.displayName = DialogPrimitive.Content.displayName
 
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (

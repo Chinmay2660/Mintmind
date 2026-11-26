@@ -27,6 +27,7 @@ export default function Providers({ children }: ProvidersProps) {
       attribute="class"
       defaultTheme="light"
       storageKey="mm-theme"
+      disableTransitionOnChange
       enableSystem
       scriptProps={themeScriptProps}
     >

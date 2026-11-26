@@ -125,7 +125,7 @@ export function AssistantChat({ compact = false }: { compact?: boolean }) {
             {QUESTION_MENU.map((g, gi) => (
               <div key={g.group}>
                 {gi > 0 && <DropdownMenuSeparator />}
-                <DropdownMenuLabel className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{g.group}</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground">{g.group}</DropdownMenuLabel>
                 {g.items.map((it) => <DropdownMenuItem key={it} disabled={!facts || busy} onSelect={() => ask(it)} className="cursor-pointer whitespace-normal py-2 text-sm">{it}</DropdownMenuItem>)}
               </div>
             ))}

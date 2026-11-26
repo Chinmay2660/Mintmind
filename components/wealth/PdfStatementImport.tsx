@@ -87,7 +87,7 @@ export function PdfStatementImport({ label = 'Import PDF' }: { label?: string })
     if (!mine.length) return null
     return (
       <div className="space-y-1.5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
+        <p className="text-xs font-semibold tracking-wide text-muted-foreground">{title}</p>
         <ul className="divide-y divide-border rounded-xl border border-border">
           {mine.map((r) => (
             <li key={r.id} className="flex items-center gap-3 px-3 py-2.5">
@@ -128,7 +128,7 @@ export function PdfStatementImport({ label = 'Import PDF' }: { label?: string })
             <div className="max-h-[55dvh] space-y-4 overflow-y-auto pr-1">
               {groups.length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Mutual funds</p>
+                  <p className="text-xs font-semibold tracking-wide text-muted-foreground">Mutual funds</p>
                   <label className="flex items-center gap-3 text-sm"><Checkbox checked={fundsOn} onChange={(e) => setFundsOn(e.target.checked)} />Import {res?.txns.length} transactions across {groups.length} fund{groups.length === 1 ? '' : 's'}. Ones you already have are skipped.</label>
                   <ul className="divide-y divide-border rounded-xl border border-border">
                     {groups.map((g: any) => { const p = positionFrom(g.txns); return (

@@ -193,7 +193,7 @@ export function TransactionsView({ initialCategory = '', initialKind = 'all', li
               <header className="flex items-center justify-between gap-3 border-y border-border bg-muted/50 px-4 py-1.5 first:border-t-0">
                 <span className="flex items-center gap-2">
                   <span className="text-xl font-semibold tabular-nums leading-none">{g.date.slice(8, 10)}</span>
-                  <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-primary">{new Date(g.date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short' })}</span>
+                  <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold tracking-wide text-primary">{new Date(g.date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short' })}</span>
                   <span className="text-xs text-muted-foreground tabular-nums">{new Date(g.date + 'T00:00:00').toLocaleDateString('en-IN', { month: 'long' })}, {g.date.slice(0, 4)}</span>
                 </span>
                 <span className="flex gap-3 text-xs font-medium tabular-nums">{g.income > 0 && <span className="text-income">+{formatINR(g.income)}</span>}{g.expense > 0 && <span className="text-expense">-{formatINR(g.expense)}</span>}</span>
@@ -372,9 +372,9 @@ export function MonthlyView({ all, ym, curYm, onPick }: { all: Tx[]; ym: string;
                 <span className="w-24 shrink-0 text-sm font-medium">{m.label}</span>
                 {empty ? <span className="flex-1 text-xs text-muted-foreground">{future ? 'Upcoming' : 'No transactions'}</span> : (
                   <span className="grid flex-1 grid-cols-3 gap-2 text-right text-xs tabular-nums">
-                    <span><span className="block text-[10px] uppercase text-muted-foreground">In</span><Money value={m.s.income} compact /></span>
-                    <span><span className="block text-[10px] uppercase text-muted-foreground">Out</span><Money value={m.s.expense} compact /></span>
-                    <span><span className="block text-[10px] uppercase text-muted-foreground">Total</span><span className="font-semibold"><Money value={m.s.net} compact signed /></span></span>
+                    <span><span className="block text-[10px] text-muted-foreground">In</span><Money value={m.s.income} compact /></span>
+                    <span><span className="block text-[10px] text-muted-foreground">Out</span><Money value={m.s.expense} compact /></span>
+                    <span><span className="block text-[10px] text-muted-foreground">Total</span><span className="font-semibold"><Money value={m.s.net} compact signed /></span></span>
                   </span>
                 )}
                 <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />

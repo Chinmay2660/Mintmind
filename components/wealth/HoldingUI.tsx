@@ -29,7 +29,7 @@ const aligns = ['left', 'center', 'right'] as const
 export function SummaryHeader({ label, value, sub, stats }: { label: string; value: ReactNode; sub?: ReactNode; stats: Fig[] }) {
   return (
     <section aria-label={label} className="border-b border-border pb-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-xs font-medium tracking-wide text-muted-foreground">{label}</p>
       <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight">{value}</p>
       {sub && <div className="mt-1 text-sm">{sub}</div>}
       {stats.length > 0 && (

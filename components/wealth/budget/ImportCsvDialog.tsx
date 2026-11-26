@@ -109,7 +109,7 @@ export function ImportCsvDialog({ open, onOpenChange }: { open: boolean; onOpenC
           <div className="space-y-4">
             <p className="flex items-center gap-2 text-sm"><FileSpreadsheet className="h-4 w-4" /><span className="min-w-0 truncate font-medium">{name}</span><span className="text-muted-foreground">{rows.length} rows</span><button type="button" onClick={reset} className="ml-auto rounded text-xs underline outline-none focus-visible:ring-2 focus-visible:ring-ring">Choose another</button></p>
 
-            <fieldset className="space-y-2"><legend className="mb-1 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">Which column is which</legend>
+            <fieldset className="space-y-2"><legend className="mb-1 text-[11px] font-bold tracking-[0.08em] text-muted-foreground">Which column is which</legend>
               <div className="grid gap-2 sm:grid-cols-3">{FIELDS.map(([k, l]) => colSelect(k, l))}</div>
               {noColumns && <p role="alert" className="text-xs text-destructive">Choose a Date column and either an Amount column or Money out and Money in columns.</p>}
             </fieldset>
@@ -135,7 +135,7 @@ export function ImportCsvDialog({ open, onOpenChange }: { open: boolean; onOpenC
                 <div className="hidden overflow-x-auto rounded-xl border border-border sm:block">
                   <table className="w-full min-w-[34rem] text-left text-xs">
                     <caption className="sr-only">Preview of the first rows</caption>
-                    <thead className="bg-muted/60 text-[11px] uppercase tracking-wide text-muted-foreground"><tr><th scope="col" className="px-2 py-1.5">Date</th><th scope="col" className="px-2 py-1.5">Description</th><th scope="col" className="px-2 py-1.5">Category</th><th scope="col" className="px-2 py-1.5 text-right">Amount</th><th scope="col" className="px-2 py-1.5">Note</th></tr></thead>
+                    <thead className="bg-muted/60 text-[11px] tracking-wide text-muted-foreground"><tr><th scope="col" className="px-2 py-1.5">Date</th><th scope="col" className="px-2 py-1.5">Description</th><th scope="col" className="px-2 py-1.5">Category</th><th scope="col" className="px-2 py-1.5 text-right">Amount</th><th scope="col" className="px-2 py-1.5">Note</th></tr></thead>
                     <tbody>
                       {result.items.slice(0, 8).map((i, n) => (
                         <tr key={n} className="border-t border-border">

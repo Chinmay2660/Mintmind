@@ -15,7 +15,7 @@ const MAX = 3
  * balances), most urgent first. It reads the same reminders as the bell, honours the same switches and dismissals, and shows
  * nothing at all when there is nothing to do. Amber, never red: a due date is information, not an alarm.
  */
-export function AttentionStrip() {
+export function useAttentionItems() {
   const { data, ready } = useWealth()
   const { isEnabled } = useFeatures()
   const items = useMemo(() => {
@@ -31,7 +31,11 @@ export function AttentionStrip() {
     const urgent = list.filter((n: any) => n.severity !== 'low')
     return (urgent.length ? urgent : list).slice(0, MAX)
   }, [ready, data, isEnabled])
+  return items
+}
 
+export function AttentionStrip() {
+  const items = useAttentionItems()
   if (items.length === 0) return null
   return (
     <section aria-label="Needs attention" className="rounded-xl border border-warning/40 bg-warning/5 p-4">

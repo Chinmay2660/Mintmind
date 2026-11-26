@@ -34,7 +34,7 @@ export function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40">
-        <DropdownMenuRadioGroup value={mounted ? theme : 'system'} onValueChange={setTheme}>
+        <DropdownMenuRadioGroup value={mounted ? theme : 'light'} onValueChange={setTheme}>
           {THEME_OPTIONS.map(({ value, label, icon: I }) => (
             <DropdownMenuRadioItem key={value} value={value} className="cursor-pointer">
               <I className="mr-2 h-4 w-4" />

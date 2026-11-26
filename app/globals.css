@@ -635,9 +635,11 @@
   [data-style='paper']:not(.dark) .text-primary { color: hsl(134 49% 28%); }
   [data-style='paper'].dark .text-primary { color: hsl(114 38% 62%); }
   /* the type scale of the reference: a 13px body, small caps labels, a heavy title, ligatures off */
-  html[data-retro] { font-size: 87.5%; }
-  [data-style='paper'] body { font-size: 13px; line-height: 1.4; font-feature-settings: 'calt' 0, 'liga' 0; letter-spacing: 0; }
-  [data-style='paper'] h1, [data-style='paper'] h2, [data-style='paper'] h3, [data-style='paper'] h4 { font-family: var(--font-heading); letter-spacing: -0.015em; }
+  /* One type scale for every look, taken from Paper: a 14px root (so text-sm is 12px and text-xs 10.5px), a 13px body at 1.4, ligatures off, tight headings. */
+  html { font-size: 87.5%; }
+  body { font-size: 13px; line-height: 1.4; font-feature-settings: 'calt' 0, 'liga' 0; letter-spacing: 0; }
+  h1, h2, h3, h4 { letter-spacing: -0.015em; }
+  [data-style='paper'] h1, [data-style='paper'] h2, [data-style='paper'] h3, [data-style='paper'] h4 { font-family: var(--font-heading); }
   [data-style='paper'] svg.lucide { stroke-width: 1.75; }
   /* Layout stability: the scrollbar gutter is always reserved so content changes never shift the page sideways, and
    long rows skip layout and paint until they are near the screen (the size is remembered once seen). */
@@ -650,11 +652,6 @@ button > svg, a > svg, [role='tab'] > svg { flex-shrink: 0; }
 }
 /* the app scrolls inside its own container, so the page itself never rubber-bands or pulls to refresh */
 html, body { overscroll-behavior-y: none; }
-/* Phones: larger type. Everything sized in rem (text-sm, text-xs, spacing) grows about 6%, and Retro's 13px body gets a readable size. */
-@media (max-width: 767px) {
-  html { font-size: 106.25%; }
-  [data-style='paper'] body { font-size: 15px; }
-}
 @media (prefers-reduced-motion: reduce) { .fab { transition: none; } }
 .cv-auto { content-visibility: auto; contain-intrinsic-size: auto 4.5rem; }
 
@@ -904,11 +901,11 @@ html, body { overscroll-behavior-y: none; }
   }
 
   .mm-section-title {
-    @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground;
+    @apply text-[11px] font-semibold tracking-[0.12em] text-muted-foreground;
   }
 
   .mm-stat-label {
-    @apply text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground;
+    @apply text-[11px] font-medium tracking-[0.1em] text-muted-foreground;
   }
 
   .mm-stat-value {
@@ -940,7 +937,7 @@ html, body { overscroll-behavior-y: none; }
 
   /* ── Navigation ── */
   .nav-section-label {
-    @apply px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60 first:pt-1;
+    @apply px-3 pb-1 pt-3 text-[10px] font-semibold tracking-[0.14em] text-muted-foreground/60 first:pt-1;
   }
 
   .nav-item-active {

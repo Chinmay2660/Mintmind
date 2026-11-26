@@ -24,7 +24,7 @@ const path = (pts: number[], w = 100, h = 60, pad = 6) => {
   return pts.map((v, i) => `${i ? 'L' : 'M'}${((i / (pts.length - 1)) * w).toFixed(1)},${(h - pad - ((v - min) / (max - min || 1)) * (h - pad * 2)).toFixed(1)}`).join(' ')
 }
 
-const Label = ({ children }: { children: ReactNode }) => <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">{children}</p>
+const Label = ({ children }: { children: ReactNode }) => <p className="text-[9px] font-bold tracking-[0.12em] text-muted-foreground">{children}</p>
 
 function Screen({ tab, compact }: { tab: Tab; compact?: boolean }) {
   if (tab === 'networth') {
@@ -107,8 +107,8 @@ export function ProductMockups() {
         <div style={{ flex: '1 1 30rem', minWidth: 0 }} className="overflow-hidden rounded-xl border-2 border-[hsl(var(--edge))] bg-card shadow-elevated">
           <div className="flex items-center gap-2 border-b border-border bg-muted/60 px-3 py-2">
             <span className="flex gap-1.5" aria-hidden>{['bg-destructive/70', 'bg-warning/70', 'bg-primary'].map((c) => <i key={c} className={cn('h-2.5 w-2.5 rounded-full border border-[hsl(var(--edge))]', c)} />)}</span>
-            <span className="mx-auto text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Mintmind · {TABS.find((t) => t.key === tab)!.label}</span>
-            <span className="rounded-full border border-border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">Sample</span>
+            <span className="mx-auto text-[10px] font-bold tracking-[0.12em] text-muted-foreground">Mintmind · {TABS.find((t) => t.key === tab)!.label}</span>
+            <span className="rounded-full border border-border px-2 py-0.5 text-[9px] font-bold tracking-wide text-muted-foreground">Sample</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '3.25rem minmax(0, 1fr)' }}>
             <nav aria-hidden style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }} className="border-r border-border bg-sidebar py-3">

@@ -55,7 +55,6 @@ export default function InsurancePage() {
 
   return (
     <div className="space-y-5">
-      {!detail && <BackBar phoneOnly />}
       <PageHeader description="Coverage is protection, not wealth. It is never counted in your net worth." primaryAction={{ label: 'Add policy', onClick: () => setDlg({ kind: 'edit' }) }} />
       <SummaryHeader label="Total coverage" value={<Money value={cover.total} compact />}
         stats={[{ label: 'Active policies', value: cover.activeCount }, { label: 'Annual premium', value: <Money value={annual} compact /> }, ...Object.entries(cover.byType).slice(0, 1).map(([k, v]) => ({ label: `${typeLabel(k)} cover`, value: <Money value={v as number} compact /> }))]} />

@@ -37,7 +37,7 @@ function Card({ k, active, onActive, z, x, y, w, h, delay, children }: { k: Key;
   )
 }
 
-const Tag = ({ children }: { children: ReactNode }) => <p className="text-[8px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{children}</p>
+const Tag = ({ children }: { children: ReactNode }) => <p className="text-[8px] font-semibold tracking-[0.14em] text-muted-foreground">{children}</p>
 
 export function IsometricHero() {
   const [active, setActive] = useState<Key | null>(null)
@@ -63,7 +63,7 @@ export function IsometricHero() {
               </svg>
             </div>
             {/* blueprint dimension marks */}
-            <p aria-hidden className="absolute -bottom-6 left-0 right-0 text-center font-mono text-[8px] uppercase tracking-[0.2em] text-muted-foreground" style={{ transform: 'translateZ(1px)' }}>Fig. 01 · Your financial workspace</p>
+            <p aria-hidden className="absolute -bottom-6 left-0 right-0 text-center font-mono text-[8px] tracking-[0.2em] text-muted-foreground" style={{ transform: 'translateZ(1px)' }}>Fig. 01 · Your financial workspace</p>
 
             <Card k="networth" active={active} onActive={setActive} z={64} x={14} y={14} w={176} h={104} delay={0}>
               <Tag>Net worth</Tag>

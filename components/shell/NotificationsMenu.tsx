@@ -93,7 +93,7 @@ export function NotificationsMenu() {
                 <li key={n.key} className={cn('group flex items-start gap-2 px-3 py-2.5 transition-colors hover:bg-muted/60', !isRead ? 'border-l-2 border-primary bg-primary/[0.07]' : 'border-l-2 border-transparent')}>
                   <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', dot[n.severity as keyof typeof dot])} aria-hidden />
                   <Link href={n.href} onClick={() => !isRead && mark(n.key, true)} className="min-w-0 flex-1 outline-none focus-visible:underline">
-                    <span className="block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{n.module}</span>
+                    <span className="block text-[11px] font-medium tracking-wide text-muted-foreground">{n.module}</span>
                     <span className={cn('block truncate text-sm', isRead ? 'text-muted-foreground' : 'font-medium')}>{n.title}</span>
                     <span className="block text-xs text-muted-foreground">
                       {n.date && formatDate(n.date) !== '-' ? `${n.daysLeft < 0 ? 'Overdue since' : n.daysLeft === 0 ? 'Due today' : 'Due'} ${formatDate(n.date)}` : n.daysLeft === 0 ? 'Due today' : 'Review'}

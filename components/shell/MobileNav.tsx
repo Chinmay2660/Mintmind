@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Menu, Sparkles } from 'lucide-react'
+import { ChevronRight, LifeBuoy, Menu, ShieldCheck, Sparkles, UserRound } from 'lucide-react'
 import { OVERVIEW_DRILL_PATHS, isDashboardNavActive } from '@/lib/constants/dashboardNav'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
@@ -13,6 +13,16 @@ import { NotificationsMenu } from './NotificationsMenu'
 
 // One short word per tab. "Budget & Expenses" reads as "Expenses" because that is what people look for.
 const tabLabel = (name: string) => (/transaction|expense/i.test(name) ? 'Spend' : name.split(' ')[0])
+
+const MORE_SECTIONS = [
+  { label: 'Account', items: [
+    { name: 'Profile and personal details', hint: 'Your name, email and phone', path: '/dashboard/settings?tab=account', icon: UserRound },
+    { name: 'Security', hint: 'Password and two-step sign-in', path: '/dashboard/settings?tab=account', icon: ShieldCheck },
+  ] },
+  { label: 'Help', items: [
+    { name: 'Help and support', hint: 'Contact us, cookies and terms', path: '/contact', icon: LifeBuoy },
+  ] },
+]
 
 export function MobileNav() {
   const pathname = usePathname()
@@ -109,6 +119,24 @@ export function MobileNav() {
                 )
               })}
             </div>
+            <nav aria-label="Your account and help" className="mt-5 space-y-4">
+              {MORE_SECTIONS.map((g) => (
+                <div key={g.label}>
+                  <h3 className="mb-1 px-1 text-xs font-semibold tracking-wide text-muted-foreground">{g.label}</h3>
+                  <ul className="divide-y divide-border rounded-xl border border-border">
+                    {g.items.map((it) => (
+                      <li key={it.name}>
+                        <Link href={it.path} onClick={() => setOpen(false)} className="flex min-h-12 items-center gap-3 px-3 py-2 text-sm outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring">
+                          <it.icon className="h-[18px] w-[18px] shrink-0 text-muted-foreground" strokeWidth={1.9} aria-hidden />
+                          <span className="min-w-0 flex-1"><span className="block font-medium">{it.name}</span><span className="block truncate text-xs text-muted-foreground">{it.hint}</span></span>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </nav>
           </SheetContent>
         </Sheet>
       </div>

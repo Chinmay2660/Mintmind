@@ -86,7 +86,7 @@ export function PlanAhead({ netWorth, monthlySave, age = 0, monthlyExpense = 0, 
         <div className="mt-2 h-72">
           <ResponsiveContainer width="100%" height="100%"><LineChart data={rows} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid stroke={chartGrid} strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="year" {...chartAxis} interval="preserveStartEnd" /><YAxis {...chartAxis} width={64} tickFormatter={(v) => formatCompactINR(v)} />
+            <XAxis dataKey="year" {...chartAxis} interval="preserveStartEnd" /><YAxis {...chartAxis} width={84} tickFormatter={(v) => formatCompactINR(v)} />
             <Tooltip {...chartTooltipStyle} formatter={(v: number) => formatCompactINR(v)} />
             <Line dataKey="base" name="Today's path" stroke="hsl(var(--foreground) / 0.6)" strokeDasharray="5 4" strokeWidth={2} dot={false} isAnimationActive={false} />
             <Line dataKey="plan" name="With the changes" stroke={chartColor(1)} strokeWidth={3} dot={false} />
