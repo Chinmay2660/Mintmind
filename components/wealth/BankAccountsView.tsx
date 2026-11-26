@@ -3,8 +3,6 @@
 import { OverviewCard } from '@/components/wealth/HoldingUI'
 import { TabBar } from '@/components/ui/tab-bar'
 import { DebitCardsTab } from '@/components/wealth/DebitCards'
-import { HoldingsTab } from '@/components/wealth/investments/HoldingsTab'
-import { LedgerView } from '@/components/wealth/LedgerView'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -17,7 +15,7 @@ import { availableBalance, mabShortfall } from '@/lib/wealth/calc'
 import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { Empty, LoadingBlock, PageHeader } from '@/components/wealth/kit'
-import { AccountForm, ACCOUNT_TYPES } from '@/components/wealth/AccountForm'
+import { AccountForm } from '@/components/wealth/AccountForm'
 
 /** Bank and cash accounts as tabs. */
 export function BankAccountsView() {
@@ -25,22 +23,22 @@ export function BankAccountsView() {
   const { ready, data, db } = useWealth()
   const [adding, setAdding] = useState(false)
   const [tab, setTab] = useState('all') // All, then each kind of account you have, then Debit cards
-  useAddParam((what) => { if (what === 'account') setAdding(true) })
+  const [addDebit, setAddDebit] = useState(false) // opened from the Overview's Add: the Debit cards tab, with its form open
+  useAddParam((what) => { if (what === 'account') setAdding(true); if (what === 'debit') { setTab('debit'); setAddDebit(true) } if (what === 'debits') setTab('debit') })
   if (!ready) return <LoadingBlock className="h-64" />
   const total = data.bankAccounts.reduce((s, b) => s + b.currentBalance, 0)
-  const kinds = ACCOUNT_TYPES.filter((t) => data.bankAccounts.some((b: any) => b.type === t.value))
-  const active = ['debit', 'fd', 'txns'].includes(tab) || kinds.some((k) => k.value === tab) ? tab : 'all'
-  const shown = active === 'all' ? data.bankAccounts : data.bankAccounts.filter((b: any) => b.type === active)
+  const active = tab === 'debit' ? tab : 'all'
+  const shown = data.bankAccounts
 
   return (
     <div className="space-y-5">
-      <PageHeader primaryAction={['debit', 'fd', 'txns'].includes(active) ? undefined : { label: 'Add account', onClick: () => setAdding(true) }} />
-      {active !== 'fd' && active !== 'txns' && <OverviewCard label="Total balance" value={<Money value={total} />} rows={[{ label: 'Available balance', value: <Money value={data.bankAccounts.reduce((n: number, b: any) => n + (b.type === 'cash' ? b.currentBalance : availableBalance(b)), 0)} /> }, { label: 'Accounts', value: data.bankAccounts.length }]} />}
-      <TabBar label="Kinds of account" value={active} onChange={setTab} tabs={[{ key: 'all', label: 'All', badge: data.bankAccounts.length }, ...kinds.map((k) => ({ key: k.value, label: k.label, badge: data.bankAccounts.filter((b: any) => b.type === k.value).length })), { key: 'debit', label: 'Debit cards', badge: data.debitCards.length }, { key: 'fd', label: 'Fixed deposits' }, { key: 'txns', label: 'Transactions' }]} />
-      {active === 'debit' ? <DebitCardsTab /> : active === 'fd' ? <HoldingsTab kind="fd" /> : active === 'txns' ? <LedgerView /> : data.bankAccounts.length === 0 ? (
+      <PageHeader primaryAction={active === 'debit' ? undefined : { label: 'Add account', onClick: () => setAdding(true) }} />
+      <OverviewCard label="Total balance" value={<Money value={total} />} rows={[{ label: 'Available balance', value: <Money value={data.bankAccounts.reduce((n: number, b: any) => n + (b.type === 'cash' ? b.currentBalance : availableBalance(b)), 0)} /> }]} />
+      <TabBar label="Accounts sections" value={active} onChange={setTab} tabs={[{ key: 'all', label: 'Accounts' }, { key: 'debit', label: 'Debit cards' }]} />
+      {active === 'debit' ? <DebitCardsTab startAdd={addDebit} /> : data.bankAccounts.length === 0 ? (
         <Empty title="No bank accounts yet" description="Add your savings accounts to track balances and history." action={<Button onClick={() => setAdding(true)}>Add account</Button>} />
       ) : (
-        <ul className="divide-y divide-border border-y border-border">
+        <ul className="divide-y divide-border border-b border-border">
           {shown.map((b) => (
             <li key={b.id}>
               <Link href={`/dashboard/bank-accounts/${b.id}`} aria-label={`${b.nickname || b.bankName}, open details`} className="flex min-h-[4.25rem] items-center gap-3 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring">

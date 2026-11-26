@@ -1,7 +1,5 @@
 'use client'
 
-import { BankAccountsView } from '@/components/wealth/BankAccountsView'
-import { PortfolioTab } from '@/components/wealth/investments/PortfolioTab'
 import Link from 'next/link'
 import { BackBar } from '@/components/shell/BackBar'
 import { IncomeProgressPanel, type IncomePlan } from '@/components/wealth/budget/IncomeBudget'
@@ -56,7 +54,6 @@ export default function BudgetPage() {
   const [txnCat, setTxnCat] = useState('') // category the Transactions list opens on, when you came from a category
   const [pacingOpen, setPacingOpen] = useState(false) // the pace chart and detail numbers are one tap away, not on the page by default
   const router = useRouter()
-  const [extra, setExtra] = useState<null | 'accounts' | 'investments'>(null) // Accounts and Investments sit beside the spending tabs
   const params = useSearchParams()
   const fromCategory = useRef(false)
   // a category opens that month's expense list as its own history step, so Back goes to the Overview or Budgets you came from
@@ -129,19 +126,10 @@ export default function BudgetPage() {
   }
 
   const sectionBar = (
-    <TabBar label="Spend sections" value={extra ?? groupOf(tab)}
-      onChange={(k) => { if (k === 'accounts' || k === 'investments') setExtra(k); else { setExtra(null); openGroup(k) } }}
-      tabs={[{ key: 'accounts', label: 'Accounts' }, { key: 'investments', label: 'Investments' }, ...GROUPS.map((g) => ({ key: g.key, label: g.label, badge: g.key === 'transactions' ? reviewCount : undefined }))]} />
+    <TabBar label="Spend sections" value={groupOf(tab)}
+      onChange={(k) => openGroup(k)}
+      tabs={[...GROUPS.map((g) => ({ key: g.key, label: g.label, badge: g.key === 'transactions' ? reviewCount : undefined }))]} />
   )
-  if (extra) {
-    return (
-      <div className="space-y-5">
-        {sectionBar}
-        {extra === 'accounts' ? <BankAccountsView /> : <PortfolioTab onOpen={(key) => router.push(`/dashboard/mutual-funds?tab=${key === 'mutualFunds' ? 'funds' : key}`)} />}
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-5">
       <PageHeader

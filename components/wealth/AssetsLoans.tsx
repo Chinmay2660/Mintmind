@@ -43,7 +43,7 @@ export function AssetsLoans({ view }: { view: 'loans' }) {
         })()}
         {data.liabilities.length > 0 && (() => {
           const present = [...new Set<string>(data.liabilities.map((l: any) => l.category))]
-          return present.length > 1 ? <TabBar label="Kinds of loan" value={present.includes(loanKind) ? loanKind : 'all'} onChange={setLoanKind} tabs={[{ key: 'all', label: 'All', badge: data.liabilities.length }, ...present.map((k) => ({ key: k, label: LIABILITY_LABELS[k as keyof typeof LIABILITY_LABELS] ?? k, badge: data.liabilities.filter((l: any) => l.category === k).length }))]} /> : null
+          return present.length > 1 ? <TabBar label="Kinds of loan" value={present.includes(loanKind) ? loanKind : 'all'} onChange={setLoanKind} tabs={[{ key: 'all', label: 'All' }, ...present.map((k) => ({ key: k, label: LIABILITY_LABELS[k as keyof typeof LIABILITY_LABELS] ?? k }))]} /> : null
         })()}
         {data.liabilities.length === 0 ? <Empty title="No loans added" description="Add a home, car or personal loan, or a card balance you carry, and it is taken off your net worth." /> : (
           <ul className="grid gap-3 md:grid-cols-2">{data.liabilities.filter((l: any) => loanKind === 'all' || l.category === loanKind).map((l: any) => (

@@ -1,7 +1,9 @@
 'use client'
 
 import { GrowwChart } from '@/components/wealth/GrowwChart'
-import { BackBar } from '@/components/shell/BackBar'
+import { shortAccountName } from '@/lib/wealth/accountName'
+import { HistoryList } from '@/components/wealth/HistoryList'
+import { CategoryHeader } from '@/components/wealth/CategoryHeader'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
@@ -12,13 +14,14 @@ import { useWealth } from '@/lib/wealth/WealthContext'
 import { deleteBankAccount, save, setBankBalance } from '@/lib/wealth/actions'
 import { TxnEntryDialog, type TxnType } from '@/components/wealth/budget/TxnEntryDialog'
 import { availableBalance, mabShortfall } from '@/lib/wealth/calc'
+import { assetValue } from '@/lib/wealth/holdings'
 import { cap, formatCompactINR, formatDate, formatINR, modeLabel } from '@/lib/wealth/format'
 import { lastMonths, monthKey, monthLabel } from '@/lib/wealth/selectors'
 import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, LoadingBlock, Metric, Panel, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle } from '@/components/wealth/kit'
+import { Empty, Field, FormDialog, LoadingBlock, Metric, Panel, chartAxis, chartColor, chartGrid, chartTooltipStyle } from '@/components/wealth/kit'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { CopyValue } from '@/components/wealth/CopyButton'
 import { AccountForm, ACCOUNT_TYPES } from '@/components/wealth/AccountForm'
@@ -57,9 +60,9 @@ export default function BankAccountDetail() {
 
   return (
     <div className="space-y-5">
-      <BackBar fallback="/dashboard/bank-accounts" />
+      <CategoryHeader tabsLabel="Your bank accounts" items={data.bankAccounts.map((b: any) => ({ key: b.id, label: shortAccountName(b, data.bankAccounts) }))} active={acc.id} onPick={(k) => router.push(`/dashboard/bank-accounts/${k}`)} />
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div><h2 className="text-xl font-semibold">{acc.nickname || acc.bankName}</h2><p className="text-sm text-muted-foreground">{acc.type === 'cash' ? 'Cash wallet' : `${acc.bankName} · ${ACCOUNT_TYPES.find((t) => t.value === acc.type)?.label}`}</p></div>
+        <div><p className="text-sm text-muted-foreground">{acc.type === 'cash' ? 'Cash wallet' : `${acc.bankName} · ${ACCOUNT_TYPES.find((t) => t.value === acc.type)?.label}`}</p></div>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" onClick={() => setDlg('balance')}><RefreshCw className="mr-1.5 h-4 w-4" />Update balance</Button>
           <Button size="sm" variant="outline" onClick={() => setEntry('income')}><Plus className="mr-1.5 h-4 w-4" />Income</Button>
@@ -69,21 +72,29 @@ export default function BankAccountDetail() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Current balance" value={<Money value={acc.currentBalance} />} />
-        {acc.type !== 'cash' && <Stat label="Available balance" value={<Money value={availableBalance(acc)} />} hint={mabShortfall(acc) > 0 ? <span className="text-warning">₹{mabShortfall(acc).toLocaleString('en-IN')} below MAB</span> : `Current − MAB (${acc.mab ? '₹' + Number(acc.mab).toLocaleString('en-IN') : 'none set'})`} />}
-        <Stat label="Last updated" value={formatDate(acc.lastUpdated)} />
-        {acc.type === 'joint' && <Stat label="Joint holders" value={<CopyValue value={acc.holderName} label="Account holder" />} />}
-      </div>
-      {acc.type !== 'cash' && <Panel title="Account details" action={<Button size="sm" variant="outline" onClick={() => { const t = [`Bank: ${acc.bankName}`, acc.holderName ? `Account holder: ${acc.holderName}` : '', `Account number: ${acc.accountNumber}`, acc.ifsc ? `IFSC: ${acc.ifsc}` : ''].filter(Boolean).join('\n'); navigator.clipboard.writeText(t).then(() => toast.success('Bank details copied'), () => toast.error('Could not copy')) }}>Copy all details</Button>}>
+      {(() => {
+        // the fixed and recurring deposits held with this bank
+        const deps = (data.assets as any[]).filter((a) => (a.category === 'fd' || a.category === 'rd') && a.bankAccountId === acc.id)
+        return deps.length > 0 ? (
+          <Panel title="Deposits with this bank">
+            <ul className="divide-y divide-border">{deps.map((a) => <li key={a.id}><Link href={`/dashboard/mutual-funds/asset/${a.id}`} className="flex items-center justify-between gap-3 py-2.5 text-sm outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"><span className="min-w-0"><span className="block truncate font-medium">{a.name}</span><span className="text-xs text-muted-foreground">{a.category === 'fd' ? 'Fixed deposit' : 'Recurring deposit'}</span></span><Money value={assetValue(a)} className="font-medium" /></Link></li>)}</ul>
+          </Panel>
+        ) : null
+      })()}
+      <Panel title={acc.type === 'cash' ? 'Wallet details' : 'Account details'} action={acc.type === 'cash' ? undefined : <Button size="sm" variant="outline" onClick={() => { const t = [`Bank: ${acc.bankName}`, acc.holderName ? `Account holder: ${acc.holderName}` : '', `Account number: ${acc.accountNumber}`, acc.ifsc ? `IFSC: ${acc.ifsc}` : ''].filter(Boolean).join('\n'); navigator.clipboard.writeText(t).then(() => toast.success('Bank details copied'), () => toast.error('Could not copy')) }}>Copy all details</Button>}>
         <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          <div><dt className="text-xs text-muted-foreground">Current balance</dt><dd className="font-semibold"><Money value={acc.currentBalance} /></dd></div>
+          {acc.type !== 'cash' && <div><dt className="text-xs text-muted-foreground">Available balance</dt><dd className="font-semibold"><Money value={availableBalance(acc)} />{mabShortfall(acc) > 0 && <span className="ml-1.5 text-xs font-normal text-warning">₹{mabShortfall(acc).toLocaleString('en-IN')} below MAB</span>}</dd></div>}
+          <div><dt className="text-xs text-muted-foreground">Last updated</dt><dd>{formatDate(acc.lastUpdated)}</dd></div>
+          {acc.type !== 'cash' && <>
           <div><dt className="text-xs text-muted-foreground">Bank</dt><dd><CopyValue value={acc.bankName} label="Bank name" /></dd></div>
           {acc.type === 'joint' && <div><dt className="text-xs text-muted-foreground">Joint holders</dt><dd><CopyValue value={acc.holderName} label="Joint holders" /></dd></div>}
           <div><dt className="text-xs text-muted-foreground">Account number</dt><dd><CopyValue value={acc.accountNumber} label="Account number" mono /></dd></div>
           <div><dt className="text-xs text-muted-foreground">IFSC</dt><dd><CopyValue value={acc.ifsc} label="IFSC" mono /></dd></div>
           <div className="sm:col-span-2 lg:col-span-4"><dt className="text-xs text-muted-foreground">Notes</dt><dd>{acc.notes || '-'}</dd></div>
+          </>}
         </dl>
-      </Panel>}
+      </Panel>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="Balance trend (12 months)">
@@ -102,28 +113,20 @@ export default function BankAccountDetail() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="Transactions">
-          {txns.length === 0 ? <Empty title="No transactions" /> : (
-            <ul className="max-h-96 divide-y divide-border overflow-y-auto">
-              {withBalance.map((t) => (
-                <li key={t.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                  <span className="min-w-0"><span className="block truncate font-medium">{t.desc}</span><span className="text-xs text-muted-foreground">{cap(t.kind)} · {formatDate(t.date)}</span></span>
-                  <span className="flex shrink-0 flex-col items-end"><Money value={t.amount} signed className="font-medium" /><span className="text-xs text-muted-foreground">Balance <Money value={t.after} /></span></span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <HistoryList rows={withBalance} getKey={(t) => t.id} empty={<Empty title="No transactions" />}>
+            {(t) => <>
+              <span className="min-w-0"><span className="block truncate font-medium">{t.desc}</span><span className="text-xs text-muted-foreground">{cap(t.kind)} · {formatDate(t.date)}</span></span>
+              <span className="flex shrink-0 flex-col items-end"><Money value={t.amount} signed className="font-medium" /><span className="text-xs text-muted-foreground">Balance <Money value={t.after} /></span></span>
+            </>}
+          </HistoryList>
         </Panel>
         <Panel title="Balance history">
-          {history.length === 0 ? <Empty title="No history" /> : (
-            <ul className="max-h-96 divide-y divide-border overflow-y-auto">
-              {history.map((h, i) => ({ h, prev: i > 0 ? history[i - 1].balance : null })).reverse().map(({ h, prev }) => (
-                <li key={h.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                  <span className="min-w-0"><span className="block">{formatDate(h.date)}</span><span className="block truncate text-xs text-muted-foreground">{h.note}</span></span>
-                  <span className="flex shrink-0 flex-col items-end gap-0.5"><Money value={h.balance} className="font-medium" />{prev == null ? <span className="text-xs text-muted-foreground">Opening balance</span> : <Metric amount={h.balance - prev} pct={prev > 0 ? ((h.balance - prev) / prev) * 100 : null} />}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <HistoryList rows={history.map((h, i) => ({ h, prev: i > 0 ? history[i - 1].balance : null })).reverse()} getKey={(r) => r.h.id} empty={<Empty title="No history" />}>
+            {({ h, prev }) => <>
+              <span className="min-w-0"><span className="block">{formatDate(h.date)}</span><span className="block truncate text-xs text-muted-foreground">{h.note}</span></span>
+              <span className="flex shrink-0 flex-col items-end gap-0.5"><Money value={h.balance} className="font-medium" />{prev == null ? <span className="text-xs text-muted-foreground">Opening balance</span> : <Metric amount={h.balance - prev} pct={prev > 0 ? ((h.balance - prev) / prev) * 100 : null} />}</span>
+            </>}
+          </HistoryList>
         </Panel>
       </div>
 

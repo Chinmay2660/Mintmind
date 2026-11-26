@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { HistoryList } from '@/components/wealth/HistoryList'
 import Link from 'next/link'
 import axios from 'axios'
 import { toast } from 'sonner'
@@ -140,7 +141,7 @@ export function LegacyView() {
       </div>
 
       <Panel title="Access log">
-        {plan.accessLog.length === 0 ? <Empty title="No events yet" /> : <ul className="max-h-72 divide-y divide-border overflow-y-auto">{plan.accessLog.map((l: any, i: number) => <li key={i} className="flex justify-between gap-3 py-2 text-sm"><span><span className="font-medium">{humanize(l.action)}</span>{l.note ? ` · ${l.note}` : ''}<span className="block text-xs text-muted-foreground">by {l.by}</span></span><span className="shrink-0 text-xs text-muted-foreground">{formatDate(String(l.at).slice(0, 10))}</span></li>)}</ul>}
+        {plan.accessLog.length === 0 ? <Empty title="No events yet" /> : <HistoryList rows={[...plan.accessLog].reverse()} getKey={(l: any) => String(l.at) + String(l.action)} itemClass="flex justify-between gap-3 py-2 text-sm">{(l: any) => <><span><span className="font-medium">{humanize(l.action)}</span>{l.note ? ` · ${l.note}` : ''}<span className="block text-xs text-muted-foreground">by {l.by}</span></span><span className="shrink-0 text-xs text-muted-foreground">{formatDate(String(l.at).slice(0, 10))}</span></>}</HistoryList>}
       </Panel>
 
       {dlg === 'contact' && <ContactForm count={plan.contacts.length} onClose={() => setDlg(null)} onSave={async (v) => {
