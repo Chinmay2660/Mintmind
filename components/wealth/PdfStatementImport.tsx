@@ -47,10 +47,11 @@ export function PdfStatementImport({ label = 'Import PDF' }: { label?: string })
       const list: Row[] = [
         ...parsed.holdings.map((h: any, i: number) => ({ id: `s${i}`, category: 'stocks' as const, name: h.name, value: String(h.value), notes: `${h.units != null ? `${h.units} units` : 'Units not read'}${h.price ? ` at ${formatINR(h.price)}` : ''}. ISIN ${h.isin}. Imported from a statement.`, asOf: null, on: true })),
         ...parsed.nps.map((a: any, i: number) => ({ id: `n${i}`, category: 'nps' as const, name: a.name, value: String(a.value), notes: 'Imported from an NPS statement.', asOf: a.asOf, on: true })),
-        ...parsed.epf.map((a: any, i: number) => ({ id: `e${i}`, category: 'epf' as const, name: a.name, value: String(a.total), notes: `Employee ${formatINR(a.employee)} + employer ${formatINR(a.employer)}. Pension (EPS) ${formatINR(a.pension)}.`, asOf: a.asOf, on: true, extra: { memberId: a.memberId || undefined, employerName: a.establishment || undefined, employeeShare: a.employee, employerShare: a.employer, epsShare: a.pension, interestEarned: a.interest ?? undefined, invested: a.invested ?? undefined, manualValue: false, imported: true } })),
+        ...parsed.epf.map((a: any, i: number) => ({ id: `e${i}`, category: 'epf' as const, name: ((data.assets as any[]).find((x) => x.category === 'epf' && x.memberId && x.memberId === a.memberId)?.name) ?? a.name, value: String(a.total), notes: `Employee ${formatINR(a.employee)} + employer ${formatINR(a.employer)}. Pension (EPS) ${formatINR(a.pension)}.`, asOf: a.asOf, on: true, extra: { memberId: a.memberId || undefined, employerName: a.establishment || undefined, employeeShare: a.employee, employerShare: a.employer, epsShare: a.pension, interestEarned: a.interest ?? undefined, contributedYear: a.contributedYear ?? undefined, fy: a.fy ?? undefined, invested: undefined, manualValue: false, imported: true } })),
       ]
       setName(file.name); setRes(parsed); setRows(list); setFundsOn(true)
-    } catch {
+    } catch (e) {
+      console.error('PDF read failed', e)
       toast.error('Could not read that PDF. If it is a scan or image, text cannot be extracted.')
     } finally { setBusy(false) }
   }
@@ -73,7 +74,7 @@ export function PdfStatementImport({ label = 'Import PDF' }: { label?: string })
       const chosen = rows.filter((r) => r.on && Number(r.value) > 0)
       if (chosen.length) {
         const r = await importHoldings(db, chosen.map((c) => ({ category: c.category, name: c.name, value: Number(c.value), notes: c.notes, asOf: c.asOf, extra: c.extra })))
-        out.push(`${r.added} added and ${r.updated} updated under Net Worth assets`)
+        out.push(`${r.added} added and ${r.updated} updated under Net Worth assets${r.removed ? `; ${r.removed} EPF ${r.removed === 1 ? 'entry' : 'entries'} not from a passbook replaced` : ''}`)
       }
       toast.success(out.length ? `Imported: ${out.join('; ')}` : 'Nothing selected to import')
       setRes(null)
@@ -93,13 +94,13 @@ export function PdfStatementImport({ label = 'Import PDF' }: { label?: string })
             <li key={r.id} className="space-y-2 px-3 py-3">
               <div className="flex items-start gap-3">
                 <Checkbox checked={r.on} onChange={(e) => setRows((rs) => rs.map((x) => (x.id === r.id ? { ...x, on: e.target.checked } : x)))} aria-label={`Include ${r.name}`} />
-                <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{r.name}</span>{r.asOf && <span className="text-xs text-muted-foreground">as on {formatDate(r.asOf)}</span>}</span>
+                <span className="min-w-0 flex-1"><Input aria-label="Employer name" placeholder="Employer name" className="h-9 text-sm font-semibold" value={r.name} onChange={(e) => setRows((rs) => rs.map((x) => (x.id === r.id ? { ...x, name: e.target.value } : x)))} />{r.asOf && <span className="text-xs text-muted-foreground">{r.extra.fy ? `FY ${r.extra.fy} · ` : ''}as on {formatDate(r.asOf)}</span>}{r.extra.memberId && <span className="block truncate text-xs text-muted-foreground">Member ID {String(r.extra.memberId)}</span>}</span>
                 <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${(data.assets as any[]).some((a) => a.category === 'epf' && a.memberId && a.memberId === r.extra?.memberId) ? 'bg-warning/15 text-warning' : 'bg-accent text-accent-foreground'}`}>{(data.assets as any[]).some((a) => a.category === 'epf' && a.memberId && a.memberId === r.extra?.memberId) ? 'Replaces saved' : 'New'}</span>
               </div>
               <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 pl-7 text-sm">
                 <div><dt className="text-xs text-muted-foreground">EPF balance</dt><dd className="font-semibold tabular-nums">{formatINR(Number(r.extra.employeeShare) + Number(r.extra.employerShare))}</dd></div>
                 <div><dt className="text-xs text-muted-foreground">EPS balance</dt><dd className="font-semibold tabular-nums">{formatINR(Number(r.extra.epsShare))}</dd></div>
-                {r.extra.invested != null && <div><dt className="text-xs text-muted-foreground">Contributed</dt><dd className="font-semibold tabular-nums">{formatINR(Number(r.extra.invested))}</dd></div>}
+                {r.extra.contributedYear != null && <div><dt className="text-xs text-muted-foreground">Contributed this year</dt><dd className="font-semibold tabular-nums">{formatINR(Number(r.extra.contributedYear))}</dd></div>}
                 {r.extra.interestEarned != null && <div><dt className="text-xs text-muted-foreground">Interest earned</dt><dd className="font-semibold tabular-nums text-success">{formatINR(Number(r.extra.interestEarned))}</dd></div>}
               </dl>
             </li>
@@ -155,6 +156,7 @@ export function PdfStatementImport({ label = 'Import PDF' }: { label?: string })
               {section('NPS', 'nps')}
               {section('EPF', 'epf')}
               {res && res.mfUnitsSkipped > 0 && <p className="text-xs text-muted-foreground">{res.mfUnitsSkipped} mutual fund holding{res.mfUnitsSkipped === 1 ? '' : 's'} inside the demat were not imported here. Use the CAMS or KFintech CAS for fund transactions.</p>}
+              {rows.some((r) => r.category === 'epf' && r.on && r.extra) && (data.assets as any[]).some((a) => a.category === 'epf' && !a.imported) && <p className="rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning">EPF entries that did not come from a passbook ({(data.assets as any[]).filter((a) => a.category === 'epf' && !a.imported).length}) will be removed, because the passbook replaces them.</p>}
               <FootNote>Stocks and NPS are saved as Net Worth assets at the value shown. EPF is saved exactly as in the passbook, with EPF and EPS kept apart. Importing again replaces the saved figures for the same employer; nothing is added twice.</FootNote>
             </div>
           )}

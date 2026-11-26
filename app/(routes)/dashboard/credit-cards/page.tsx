@@ -1,9 +1,12 @@
 'use client'
 
+import { useParams, useRouter } from 'next/navigation'
 import { SummaryHeader } from '@/components/wealth/HoldingUI'
 import { shortAccountName } from '@/lib/wealth/accountName'
 import { TabBar } from '@/components/ui/tab-bar'
 import { useEffect, useMemo, useState } from 'react'
+import { useAddParam } from '@/lib/hooks/useAddParam'
+import { HistoryList } from '@/components/wealth/HistoryList'
 import { useDetailCrumb } from '@/components/shell/DetailCrumb'
 import { ChevronRight, CreditCard, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -30,10 +33,14 @@ const NETWORKS = ['Visa', 'Mastercard', 'RuPay', 'American Express', 'Diners Clu
 function CreditCardsTab() {
   const { ready, data, db } = useWealth()
   const { privacyMode } = usePrivacyMode()
-  const [sel, setSel] = useState<string | null>(null)
-  const [fromLink, setFromLink] = useState(false) // opened straight to one card (from the Overview): Back returns there
-  useEffect(() => { const id = new URLSearchParams(window.location.search).get('card'); if (id) { setSel(id); setFromLink(true) } }, [])
+  // a card opens on its own page, /credit-cards/<id>; the list is /credit-cards
+  const router = useRouter()
+  const sel = (useParams<{ id?: string }>()?.id as string | undefined) ?? null
+  const setSel = (k: string | null) => router.push(k ? `/dashboard/credit-cards/${k}` : '/dashboard/credit-cards')
+  const fromLink = false
+  useEffect(() => { const id = new URLSearchParams(window.location.search).get('card'); if (id) router.replace(`/dashboard/credit-cards/${id}`) }, [router])
   const [dlg, setDlg] = useState<null | { kind: 'card' | 'pay' | 'del'; row?: any }>(null)
+  useAddParam((what) => { if (what === 'card') setDlg({ kind: 'card' }) })
   const today = useMemo(() => istNow(), [])
   const t = useMemo(() => {
     const limit = data.cards.reduce((s, c) => s + c.limit, 0)
@@ -56,7 +63,7 @@ function CreditCardsTab() {
   return (
     <div className="space-y-5">
       <PageHeader secondaryAction={{ label: 'Add transaction', disabled: data.cards.length === 0, onClick: () => setDlg({ kind: 'pay', row: card }) }} primaryAction={openCard ? undefined : { label: 'Add card', onClick: () => setDlg({ kind: 'card' }) }} />
-      {data.cards.length > 1 && <TabBar label="Cards" value={sel ?? 'all'} onChange={(k) => setSel(k === 'all' ? null : k)} tabs={[{ key: 'all', label: 'All cards', badge: data.cards.length }, ...data.cards.map((c) => ({ key: c.id, label: `${c.bank} ${c.cardName}` }))]} />}
+      {data.cards.length > 1 && <TabBar label="Cards" value={sel ?? 'all'} onChange={(k) => setSel(k === 'all' ? null : k)} tabs={[{ key: 'all', label: 'All cards' }, ...data.cards.map((c) => ({ key: c.id, label: `${c.bank} ${c.cardName}` }))]} />}
       {!openCard && <section aria-label="Summary" className="space-y-3">
       <SummaryHeader label="Outstanding" value={<Money value={t.outstanding} />}
         sub={<span className="text-muted-foreground">Utilisation <UsagePct value={t.util} /></span>}
@@ -133,7 +140,7 @@ const Item = ({ k, v }: { k: string; v: React.ReactNode }) => <div><dt className
 
 function List({ items, empty }: { items: { id: string; a: string; b: string; v: number; plain?: boolean }[]; empty: string }) {
   if (!items.length) return <Empty title={empty} />
-  return <ul className="max-h-80 divide-y divide-border overflow-y-auto">{items.map((i) => <li key={i.id} className="flex items-center justify-between gap-3 py-2.5 text-sm"><span className="min-w-0"><span className="block truncate">{i.a}</span><span className="text-xs capitalize text-muted-foreground">{i.b}</span></span><Money value={i.v} signed={!i.plain} className="shrink-0 font-medium" /></li>)}</ul>
+  return <HistoryList rows={items} getKey={(i) => i.id}>{(i) => <><span className="min-w-0"><span className="block truncate">{i.a}</span><span className="text-xs capitalize text-muted-foreground">{i.b}</span></span><Money value={i.v} signed={!i.plain} className="shrink-0 font-medium" /></>}</HistoryList>
 }
 
 function CardForm({ row, onClose, onSave }: { row?: any; onClose: () => void; onSave: (r: any) => Promise<void> }) {

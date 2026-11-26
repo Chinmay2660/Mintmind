@@ -13,6 +13,7 @@ import { ASSET_LABELS } from '@/lib/wealth/labels'
 import { formatDate, formatINR } from '@/lib/wealth/format'
 import { istNow, toISO } from '@/lib/wealth/calc'
 import { LIMITS, fyLabel, fyStart, limitStatus } from '@/lib/wealth/limits'
+import { shortAccountName } from '@/lib/wealth/accountName'
 import { useDetailCrumb } from '@/components/shell/DetailCrumb'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -22,6 +23,7 @@ import { AssetForm } from '@/components/wealth/AssetForm'
 import { ContributionForm } from '@/components/wealth/LimitsPanel'
 import { Empty, LoadingBlock, Metric, Panel, Progress } from '@/components/wealth/kit'
 import { DetailRows, SummaryHeader } from '@/components/wealth/HoldingUI'
+import { CategoryHeader } from '@/components/wealth/CategoryHeader'
 
 /** One holding on its own page, the same page as a fund: name, one main action, Edit and Delete in the three dots, the figures, the details. */
 export default function HoldingDetail() {
@@ -35,12 +37,16 @@ export default function HoldingDetail() {
   const open = (data.assets as any[]).find((a) => a.id === id)
   const tab = open ? [...GROUPS, ...PROPERTY_GROUPS].find((g) => g.cats.includes(open.category))?.key ?? 'other' : 'other'
   const list = ['realEstate', 'vehicle', 'other'].includes(tab) ? '/dashboard' : `/dashboard/mutual-funds?tab=${tab}` // those live in the Overview's Assets
-  useDetailCrumb(open?.name, () => router.push(list))
+  const heading = open ? [...GROUPS, ...PROPERTY_GROUPS].find((g) => g.cats.includes(open.category))?.label ?? null : null // the kind it belongs to, not its own name
+  useDetailCrumb(heading, () => router.push(list))
   if (!ready) return <LoadingBlock className="h-64" />
   if (!open) return <Empty title="Holding not found" action={<Link className="text-primary underline" href="/dashboard/mutual-funds">Go to investments</Link>} />
   const facts = assetFacts(open, today)
+  const group = [...GROUPS, ...PROPERTY_GROUPS].find((g) => g.cats.includes(open.category))
+  const kin = (data.assets as any[]).filter((a) => group?.cats.includes(a.category))
   return (
     <div className="space-y-5">
+      <CategoryHeader tabsLabel={`Your ${(group?.label ?? 'holdings').toLowerCase()}`} items={kin.map((a) => ({ key: a.id, label: a.name }))} active={open.id} onPick={(k) => router.push(`/dashboard/mutual-funds/asset/${k}`)} />
       {(() => {
         // the same page as a fund: the name, one main action under it (when there is one), Edit and Delete in the three dots, then the figures
         const renew = renewFd(open, today)
@@ -57,7 +63,7 @@ export default function HoldingDetail() {
         return (
           <>
             <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0"><p className="text-sm text-muted-foreground">{[ASSET_LABELS[open.category as keyof typeof ASSET_LABELS] ?? open.category, open.category === 'vehicle' ? open.vehicleType : open.category === 'commodity' ? open.commodityType : null].filter(Boolean).join(' · ')}</p></div>
+              <div className="min-w-0">{(() => { const more = [open.category !== 'epf' && (ASSET_LABELS[open.category as keyof typeof ASSET_LABELS] ?? open.category) !== group?.label && (ASSET_LABELS[open.category as keyof typeof ASSET_LABELS] ?? open.category), open.category === 'vehicle' ? open.vehicleType : open.category === 'commodity' ? open.commodityType : null].filter(Boolean).join(' · '); return more ? <p className="text-sm text-muted-foreground">{more}</p> : null })()}</div>
               {!primary && menu}
             </div>
             {primary && <div className="flex items-center gap-2"><Button className="flex-1 sm:flex-none" onClick={primary.run}><primary.Icon className="mr-1.5 h-4 w-4" />{primary.label}</Button>{menu}</div>}
@@ -95,7 +101,7 @@ export default function HoldingDetail() {
           </Panel>
         )
       })()}
-      <DetailRows title="Details" rows={facts.filter((f) => open.category !== 'epf' || ['Employer', 'Member ID', 'Updated', 'Notes'].includes(f.label)).map((f) => ({ label: f.label, value: typeof f.value === 'object' ? ('money' in f.value ? <Money value={(f.value as any).money} /> : formatDate((f.value as any).date)) : String(f.value) }))} />
+      <DetailRows title="Details" rows={[...(open.bankAccountId && data.bankAccounts.some((b: any) => b.id === open.bankAccountId) ? [{ label: 'Bank', value: <Link href={`/dashboard/bank-accounts/${open.bankAccountId}`} className="text-primary hover:underline">{shortAccountName(data.bankAccounts.find((b: any) => b.id === open.bankAccountId), data.bankAccounts)}</Link> }] : []), ...facts.filter((f) => open.category !== 'epf' || ['Employer', 'Member ID', 'Updated', 'Notes'].includes(f.label)).map((f) => ({ label: f.label, value: typeof f.value === 'object' ? ('money' in f.value ? <Money value={(f.value as any).money} /> : formatDate((f.value as any).date)) : String(f.value) }))]} />
       {form && <AssetForm row={form.row} category={form.row?.category} onClose={() => setForm(null)} onSave={async (rec) => { await save(db, 'assets', rec); toast.success(form.row?.renewals?.length ? 'Renewed. Set the new maturity date if you know it.' : 'Saved') }} />}
       {contrib && (open.category === 'ppf' || open.category === 'nps') && <ContributionForm kind={open.category} assets={[open]} onClose={() => setContrib(false)} onSave={async (a) => { await save(db, 'assets', a); toast.success('Contribution added') }} />}
       <ConfirmDialog open={!!del} onOpenChange={(o) => !o && setDel(null)} title="Delete this holding?" description="It is removed from your portfolio and your net worth." confirmLabel="Delete" variant="destructive" onConfirm={async () => { await remove(db, 'assets', del.id); setDel(null); toast.success('Deleted'); router.push(list) }} />

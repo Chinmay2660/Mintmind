@@ -1,7 +1,9 @@
 'use client'
 
 import { BackBar } from '@/components/shell/BackBar'
-import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
+import { HistoryList } from '@/components/wealth/HistoryList'
 import { useDetailCrumb } from '@/components/shell/DetailCrumb'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { ChevronRight, CreditCard, Pencil, Trash2 } from 'lucide-react'
@@ -26,11 +28,15 @@ import { DateInput } from '@/components/ui/pickers'
 const NETWORKS = ['Visa', 'Mastercard', 'RuPay', 'Maestro']
 
 /** Debit cards: each one spends straight from its linked bank account, so every purchase lowers that balance. */
-export function DebitCardsTab() {
+export function DebitCardsTab({ startAdd = false, selectedId = null }: { startAdd?: boolean; selectedId?: string | null }) {
+  const router = useRouter()
   const { data, db } = useWealth()
   const { privacyMode } = usePrivacyMode()
-  const [sel, setSel] = useState<string | null>(null)
+  // a debit card opens on its own page, /bank-accounts/debit/<id>
+  const sel = selectedId
+  const setSel = (k: string | null) => router.push(k ? `/dashboard/bank-accounts/debit/${k}` : '/dashboard/bank-accounts?add=debits')
   const [dlg, setDlg] = useState<null | { row?: any; del?: boolean; txn?: boolean }>(null)
+  useEffect(() => { if (startAdd) setDlg({}) }, [startAdd])
   const banks = data.bankAccounts.filter((a: any) => !isCash(a))
   const cards: any[] = data.debitCards
   const card = sel ? cards.find((c) => c.id === sel) : undefined
@@ -98,7 +104,7 @@ export function DebitCardsTab() {
                 </Panel>
                 <Panel title="Transactions">
                   {txns.length === 0 ? <Empty title="No transactions on this card" /> : (
-                    <ul className="max-h-64 divide-y divide-border overflow-y-auto">{txns.map((e: any) => <li key={e.id} className="flex items-center justify-between gap-3 py-2.5 text-sm"><span className="min-w-0"><span className="block truncate font-medium">{e.note || e.category}</span><span className="text-xs text-muted-foreground">{e.category} · {formatDate(e.date)} · {modeLabel(e.mode)}</span></span><Money value={-e.amount} signed className="shrink-0 font-medium" /></li>)}</ul>
+                    <HistoryList rows={txns} getKey={(e: any) => e.id}>{(e: any) => <><span className="min-w-0"><span className="block truncate font-medium">{e.note || e.category}</span><span className="text-xs text-muted-foreground">{e.category} · {formatDate(e.date)} · {modeLabel(e.mode)}</span></span><Money value={-e.amount} signed className="shrink-0 font-medium" /></>}</HistoryList>
                   )}
                 </Panel>
               </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { HistoryList } from '@/components/wealth/HistoryList'
 import { FlaskConical, History, Pause, Pencil, Play, Plus, Trash2, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
@@ -67,10 +68,9 @@ export function AutomationManager() {
       </Panel>
       <Panel title="History" action={<History className="h-4 w-4 text-muted-foreground" />}>
         {runs.length === 0 ? <Empty title="Nothing has run yet" /> : (
-          <ul className="max-h-80 divide-y divide-border overflow-y-auto">{runs.map((r) => (
-            <li key={r.id} className="py-2.5 text-sm"><div className="flex items-center justify-between gap-2"><span className="font-medium">{r.ruleName}</span><span className={cn('rounded px-1.5 py-0.5 text-[10px] font-semibold', r.status === 'failed' ? 'bg-destructive/15 text-destructive' : r.fired ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground')}>{r.status === 'failed' ? 'Failed' : r.fired ? 'Triggered' : 'No action'}</span></div>
+          <HistoryList rows={runs} getKey={(r) => r.id} itemClass="block py-2.5 text-sm">{(r) => <><div className="flex items-center justify-between gap-2"><span className="font-medium">{r.ruleName}</span><span className={cn('rounded px-1.5 py-0.5 text-[10px] font-semibold', r.status === 'failed' ? 'bg-destructive/15 text-destructive' : r.fired ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground')}>{r.status === 'failed' ? 'Failed' : r.fired ? 'Triggered' : 'No action'}</span></div>
               <p className="text-xs text-muted-foreground">{formatDate(r.at.slice(0, 10))} · {r.body}</p>
-              {r.deliveries && <p className="text-[11px] text-muted-foreground">Delivery: {Object.entries(r.deliveries).map(([k, v]) => `${humanize(k)} ${String(v).replace(/_/g, ' ')}`).join(', ')}</p>}</li>))}</ul>
+              {r.deliveries && <p className="text-[11px] text-muted-foreground">Delivery: {Object.entries(r.deliveries).map(([k, v]) => `${humanize(k)} ${String(v).replace(/_/g, ' ')}`).join(', ')}</p>}</>}</HistoryList>
         )}
       </Panel>
 

@@ -4,7 +4,7 @@ import { DetailRows, SummaryHeader } from '@/components/wealth/HoldingUI'
 import { GrowwChart } from '@/components/wealth/GrowwChart'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react'
 import axios from 'axios'
 import { toast } from 'sonner'
@@ -22,42 +22,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Empty, Metric, LoadingBlock, Panel } from '@/components/wealth/kit'
 import { FundForm, InvestmentForm } from '@/components/wealth/FundForms'
 import { useDetailCrumb } from '@/components/shell/DetailCrumb'
+import { HistoryList } from '@/components/wealth/HistoryList'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 
 const RANGES = ['1M', '3M', '6M', '1Y', 'All'] as const
-const FIRST = 5, MORE = 20
-
-/** The investment history: the latest five at first; View all opens the rest in a list that loads more as it is scrolled. */
-function History({ rows, folioOf }: { rows: any[]; folioOf?: (id: string) => string | null }) {
-  const [all, setAll] = useState(false)
-  const [n, setN] = useState(MORE)
-  const box = useRef<HTMLUListElement>(null)
-  const end = useRef<HTMLLIElement>(null)
-  useEffect(() => {
-    const el = end.current
-    if (!all || !el) return
-    const io = new IntersectionObserver((e) => { if (e[0].isIntersecting) setN((v) => v + MORE) }, { root: box.current })
-    io.observe(el)
-    return () => io.disconnect()
-  }, [all, n])
-  if (rows.length === 0) return <Empty title="No transactions" />
-  const shown = all ? rows.slice(0, n) : rows.slice(0, FIRST)
-  return (
-    <>
-      <ul ref={box} className={all ? 'max-h-96 divide-y divide-border overflow-y-auto' : 'divide-y divide-border'}>
-        {shown.map((t) => (
-          <li key={t.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-            <span><span className="block capitalize">{t.type}</span><span className="text-xs text-muted-foreground">{formatDate(t.date)} · {t.units} units @ ₹{t.nav}{folioOf?.(t.fundId) ? ` · ${folioOf(t.fundId)}` : ''}</span></span>
-            <Money value={t.amount} className="font-medium" />
-          </li>
-        ))}
-        {all && n < rows.length && <li ref={end} aria-hidden className="h-6" />}
-      </ul>
-      {rows.length > FIRST && <button type="button" onClick={() => { setAll((v) => !v); setN(MORE) }} className="mt-2 flex min-h-10 w-full items-center justify-center text-sm font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">{all ? 'Show less' : `View all (${rows.length})`}</button>}
-    </>
-  )
-}
-
 export default function FundDetail() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
@@ -202,7 +170,11 @@ export default function FundDetail() {
       ]} />
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Investment history"><History rows={[...txns].reverse()} folioOf={folioName} /></Panel>
+        <Panel title="Investment history">
+          <HistoryList rows={[...txns].reverse()} getKey={(t: any) => t.id} empty={<Empty title="No transactions" />}>
+            {(t: any) => <><span><span className="block capitalize">{t.type}</span><span className="text-xs text-muted-foreground">{formatDate(t.date)} · {t.units} units @ ₹{t.nav}{folioName(t.fundId) ? ` · ${folioName(t.fundId)}` : ''}</span></span><Money value={t.amount} className="font-medium" /></>}
+          </HistoryList>
+        </Panel>
         <Panel title="SIP">
           {sips.length === 0 ? <Empty title="No SIP on this fund" /> : (
             <ul className="divide-y divide-border">{sips.map((s) => {

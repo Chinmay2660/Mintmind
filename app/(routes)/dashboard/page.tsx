@@ -1,7 +1,10 @@
 'use client'
 
 import { UpcomingRow } from '@/components/wealth/UpcomingRow'
-import { HoldingsTab } from '@/components/wealth/investments/HoldingsTab'
+import { AssetForm } from '@/components/wealth/AssetForm'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { toast } from 'sonner'
+import { save } from '@/lib/wealth/actions'
 import { buildUpcoming } from '@/lib/wealth/upcoming'
 import { TabBar } from '@/components/ui/tab-bar'
 import { FEATURE_KEYS } from '@/lib/features'
@@ -9,7 +12,7 @@ import { GrowwChart } from '@/components/wealth/GrowwChart'
 import { netWorthGroups } from '@/lib/wealth/netWorthGroups'
 import { InstallBanner } from '@/components/shell/InstallApp'
 import Link from 'next/link'
-import { ArrowRight, BarChart3, Banknote, Car, ChevronDown, ChevronRight, Coins, GraduationCap, PiggyBank, TrendingUp, User, CreditCard, Home, Percent, Landmark, PieChart as PieIcon, ShieldCheck, Wallet, type LucideIcon, CalendarClock, ReceiptText } from 'lucide-react'
+import { ArrowRight, Plus, BarChart3, Banknote, Car, ChevronDown, ChevronRight, Coins, GraduationCap, PiggyBank, TrendingUp, User, CreditCard, Home, Percent, Landmark, PieChart as PieIcon, ShieldCheck, Wallet, type LucideIcon, CalendarClock, ReceiptText } from 'lucide-react'
 import { AttentionStrip, useAttentionItems } from '@/components/dashboard/AttentionStrip'
 import { SnapCarousel } from '@/components/ui/snap-carousel'
 import { TxnRow } from '@/components/wealth/budget/TxnRow'
@@ -88,7 +91,7 @@ type OverviewTab = 'dashboard' | 'activity'
 const OVERVIEW_BLOCKS: Record<OverviewTab, string[]> = { dashboard: ['accounts', 'summary', 'networth', 'allocation', 'spending'], activity: ['payments'] }
 
 export default function DashboardPage() {
-  const { ready, data, netWorth, isDemo } = useWealth()
+  const { ready, data, db, netWorth, isDemo } = useWealth()
   const { privacyMode } = usePrivacyMode()
   const ai = useAi()
   const { isEnabled } = useFeatures()
@@ -223,7 +226,11 @@ export default function DashboardPage() {
     ? (openGroup.children.length ? openGroup.children : [{ key: openGroup.key, kind: openGroup.key, label: openGroup.label, value: openGroup.value, href: openGroup.href }]).map((r: any) => ({ ...r, groupKey: openGroup.key })).sort((x: any, y: any) => (openGroup.key === 'invest' || openGroup.key === 'insurance' ? 0 : y.value - x.value))
     : []
   const topRows = showAllRows ? allRows : allRows.slice(0, 5)
-  const embedKind = moneyTab === 'assets' && openGroup && ['realEstate', 'vehicle', 'other'].includes(openGroup.key) ? (openGroup.key as 'realEstate' | 'vehicle' | 'other') : null // managed right here
+  // each kind ends with a row to add one: a page that has its own form is opened with its add link, real estate and vehicles are added here
+  const ADD: Record<string, { label: string; href?: string; second?: { label: string; href: string }; open?: { label: string; href: string } }> = { invest: { label: 'Add investment' }, banks: { label: 'Add account', href: '/dashboard/bank-accounts?add=account', second: { label: 'Add debit card', href: '/dashboard/bank-accounts?add=debit' }, open: { label: 'All accounts', href: '/dashboard/bank-accounts' } }, insurance: { label: 'Add policy', href: '/dashboard/insurance?add=policy' }, realEstate: { label: 'Add property' }, vehicle: { label: 'Add vehicle' }, other: { label: 'Add asset' }, cards: { label: 'Add credit card', href: '/dashboard/credit-cards?add=card' }, loans: { label: 'Add loan', href: '/dashboard/net-worth/loans?add=liability' } }
+  const [addAsset, setAddAsset] = useState<null | { category: string; categories: string[] }>(null)
+  const [pickInvest, setPickInvest] = useState(false) // what kind of investment, before its form
+  const addRow = openGroup && ADD[openGroup.key] ? { ...ADD[openGroup.key], run: () => (openGroup.key === 'invest' ? setPickInvest(true) : setAddAsset({ category: openGroup.key, categories: [openGroup.key] })) } : null
 
   const blocks: Record<string, React.ReactNode> = {
     accounts: (
@@ -238,7 +245,21 @@ export default function DashboardPage() {
                   <button key={g.key} type="button" role="tab" aria-selected={openGroup?.key === g.key} onClick={() => { holdHeight(); setMoneySub(g.key); setShowAllRows(false) }} className={cn('min-h-9 rounded-full border px-3.5 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', openGroup?.key === g.key ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{g.label}</button>
                 ))}
               </div>
-              {embedKind ? <HoldingsTab kind={embedKind} embedded /> : <>
+              <>
+              <Sheet open={pickInvest} onOpenChange={setPickInvest}>
+                <SheetContent side="bottom" className="rounded-t-2xl pb-8">
+                  <SheetHeader className="text-left"><SheetTitle>Add investment</SheetTitle><SheetDescription className="sr-only">Choose what kind of investment to add</SheetDescription></SheetHeader>
+                  <ul className="mt-3 divide-y divide-border">
+                    {([{ label: 'Mutual funds', href: '/dashboard/mutual-funds?add=fund' }, { label: 'Stocks and ETFs', pick: { category: 'stocks', categories: ['stocks', 'etf'] } }, { label: 'Fixed deposits', pick: { category: 'fd', categories: ['fd'] } }, { label: 'Recurring deposits', pick: { category: 'rd', categories: ['rd'] } }, { label: 'EPF', href: '/dashboard/mutual-funds?tab=epf' }, { label: 'PPF', pick: { category: 'ppf', categories: ['ppf'] } }, { label: 'NPS', pick: { category: 'nps', categories: ['nps'] } }, { label: 'Commodities', pick: { category: 'gold', categories: ['gold', 'commodity'] } }, { label: 'ESOPs/RSUs', pick: { category: 'esop', categories: ['esop'] } }] as { label: string; href?: string; pick?: { category: string; categories: string[] } }[]).map((k) => (
+                      <li key={k.label}>
+                        {k.href ? <Link href={k.href} className="flex min-h-12 items-center justify-between py-3 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring">{k.label}<ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden /></Link>
+                          : <button type="button" onClick={() => { setPickInvest(false); setAddAsset(k.pick!) }} className="flex min-h-12 w-full items-center justify-between py-3 text-left text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring">{k.label}<ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden /></button>}
+                      </li>
+                    ))}
+                  </ul>
+                </SheetContent>
+              </Sheet>
+              {addAsset && <AssetForm row={null} category={addAsset.category} categories={addAsset.categories} onClose={() => setAddAsset(null)} onSave={async (rec) => { await save(db, 'assets', rec); toast.success('Saved') }} />}
               <ul className="divide-y divide-border">
                 {topRows.map((r: any) => {
                   const RowIcon = KIND_ICON[r.kind] || GROUP_ICON[r.groupKey] || Wallet
@@ -254,12 +275,17 @@ export default function DashboardPage() {
                   )
                 })}
               </ul>
-              {allRows.length > 5 && (
-                <button type="button" aria-expanded={showAllRows} onClick={() => setShowAllRows((v) => !v)} className="mt-1 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+              {(addRow || allRows.length > 5) && (
+                <div className="mt-1 flex flex-wrap items-center gap-x-3">
+                  {addRow?.second && <Link href={addRow.second.href} className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-dashed border-primary/60 px-4 text-sm font-medium text-primary outline-none transition-colors hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-ring"><Plus className="h-4 w-4" aria-hidden />{addRow.second.label}</Link>}
+                  {addRow && (addRow.href ? <Link href={addRow.href} className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-dashed border-primary/60 px-4 text-sm font-medium text-primary outline-none transition-colors hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-ring"><Plus className="h-4 w-4" aria-hidden />{addRow.label}</Link> : <button type="button" onClick={addRow.run} className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-dashed border-primary/60 px-4 text-sm font-medium text-primary outline-none transition-colors hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-ring"><Plus className="h-4 w-4" aria-hidden />{addRow.label}</button>)}
+                  {addRow?.open && <Link href={addRow.open.href} className="ml-auto inline-flex min-h-11 items-center gap-1 rounded-lg px-1 text-sm font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">{addRow.open.label}<ChevronRight className="h-4 w-4" aria-hidden /></Link>}
+                  {allRows.length > 5 && <button type="button" aria-expanded={showAllRows} onClick={() => setShowAllRows((v) => !v)} className={cn('inline-flex min-h-11 items-center gap-1.5 rounded-lg px-1 text-sm font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring', !addRow?.open && 'ml-auto')}>
                   {showAllRows ? 'View less' : `View more (${allRows.length - 5})`}<ChevronDown className={cn('h-4 w-4 transition-transform', showAllRows && 'rotate-180')} aria-hidden />
-                </button>
+                </button>}
+                </div>
               )}
-              </>}
+              </>
             </>}
         </div></div>
       </section>

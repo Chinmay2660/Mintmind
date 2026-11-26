@@ -1,5 +1,7 @@
 'use client'
 
+import { useWealth } from '@/lib/wealth/WealthContext'
+import { shortAccountName } from '@/lib/wealth/accountName'
 import { useState } from 'react'
 import { toISO, istNow } from '@/lib/wealth/calc'
 import { ASSET_LABELS, COMMODITY_TYPES, MANUAL_ASSET_CATEGORIES, VEHICLE_TYPES } from '@/lib/wealth/labels'
@@ -13,7 +15,9 @@ const num = (v: string) => (v.trim() === '' ? 0 : Number(v))
 
 /** The asset form. Each kind of asset asks for the details it really has: an FD its rate and dates, EPF its three balances, and so on. */
 export function AssetForm({ row, category: startCategory, commodity: startCommodity, categories, onClose, onSave }: { row: any; category?: string; commodity?: string; /** the kinds this form may add (a tab offers only its own) */ categories?: string[]; onClose: () => void; onSave: (r: any) => Promise<void> }) {
+  const { data } = useWealth()
   const [f, setF] = useState({
+    bankAccountId: row?.bankAccountId || '',
     name: row?.name || (startCommodity ? `${startCommodity} purchase` : ''), category: row?.category || startCategory || 'fd', notes: row?.notes || '',
     value: String(row?.value ?? ''),
     // fixed deposit and recurring deposit
@@ -54,7 +58,7 @@ export function AssetForm({ row, category: startCategory, commodity: startCommod
       onSubmit={async () => {
         const name = f.name.trim()
         if (!name) throw new Error('Give it a name')
-        const rec: any = { ...row, name, category: c, notes: f.notes, updated: today }
+        const rec: any = { ...row, name, category: c, notes: f.notes, updated: today, ...(c === 'fd' || c === 'rd' ? { bankAccountId: f.bankAccountId || null } : {}) }
         if (c === 'fd') {
           if (!(num(f.principal) > 0)) throw new Error('Enter the amount you deposited')
           if (!f.startDate) throw new Error('Choose the start date')
@@ -104,6 +108,7 @@ export function AssetForm({ row, category: startCategory, commodity: startCommod
 
         </>) },
         { title: "Details", content: (<>
+      {(c === 'fd' || c === 'rd') && <Field label="Bank" hint="The bank account this deposit is with. It then shows under that bank." className="full">{(id) => <Select id={id} value={f.bankAccountId} onChange={set('bankAccountId')}><option value="">Not linked</option>{data.bankAccounts.filter((a: any) => a.type !== 'cash').map((a: any) => <option key={a.id} value={a.id}>{shortAccountName(a, data.bankAccounts)}</option>)}</Select>}</Field>}
       {c === 'fd' && <>
         {input('principal', 'Amount deposited (₹)')}
         {input('ratePct', 'Interest rate (%)', 'Compounded quarterly, as most banks do.')}

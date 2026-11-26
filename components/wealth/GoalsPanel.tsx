@@ -1,6 +1,7 @@
 'use client'
 
 import { toISO, istNow } from '@/lib/wealth/calc'
+import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { useDetailCrumb } from '@/components/shell/DetailCrumb'
 import { useAddParam } from '@/lib/hooks/useAddParam'
@@ -25,11 +26,14 @@ import { DateInput } from '@/components/ui/pickers'
 type GoalLink = { type: 'bank' | 'fund' | 'asset'; id: string; pct: number }
 
 /** Goals: earmark existing accounts, funds and assets. Nothing is moved and net worth is unchanged. */
-export function GoalsPanel() {
+export function GoalsPanel({ selectedId = null }: { selectedId?: string | null }) {
+  const router = useRouter()
   const { data, db, netWorth } = useWealth()
   const [dlg, setDlg] = useState<null | { row?: any; del?: boolean }>(null)
   useAddParam((what) => { if (what === 'goal') setDlg({}) })
-  const [detail, setDetail] = useState<string | null>(null)
+  // a goal opens on its own page, /net-worth/goals/<id>
+  const detail = selectedId
+  const setDetail = (k: string | null) => router.push(k ? `/dashboard/net-worth/goals/${k}` : '/dashboard/net-worth')
   useDetailCrumb(detail ? data.goals.find((x: any) => x.id === detail)?.name ?? null : null, () => setDetail(null))
   const goals = data.goals
   const progress = useMemo(() => goals.map((g: any) => ({ g, p: goalProgress(g, data) })), [goals, data])
