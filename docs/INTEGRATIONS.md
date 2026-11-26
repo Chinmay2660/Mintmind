@@ -44,27 +44,12 @@ Until then the workflow falls back to email, so the confirmation step is never s
 Call once a day: `GET /api/legacy-plan/cron` with header `Authorization: Bearer $CRON_SECRET`
 (Vercel Cron, GitHub Actions, cron-job.org…). Set `CRON_SECRET` to a long random string.
 
-## Market prices: daily NAV sync (internal, Zerodha Kite optional)
-Not a user feature. A server job keeps a shared price cache; the app reads it once a day to refresh fund NAVs.
+## Mutual fund search and NAVs (mfapi.in)
+No setup and no key. The server calls the free public API https://api.mfapi.in:
+* `GET /mf/search?q=` when someone types a fund name in Add fund (typing waits 400 ms, needs three letters, answers are cached for an hour, and this app allows 30 searches a minute per person).
+* `GET /mf/{schemeCode}/latest` for a linked fund's current NAV (cached for six hours). Each fund is looked up at most once a day, from the daily automatic refresh or the Refresh NAVs button.
 
-**Schedule it** once a day, in the evening IST after AMFI publishes (cron-job.org, GitHub Actions, Vercel Cron…):
-`GET /api/internal/market-sync` with header `Authorization: Bearer $CRON_SECRET`. The response is the status report
-(counts per source, errors, and `kite: ok | login_required | not_configured`).
-
-Sources (each fails independently):
-* **AMFI NAV file** (public, no login): always fetched. Covers every mutual fund; this alone keeps NAVs current.
-* **Zerodha Kite** (optional, **off unless `KITE_ENABLED=1`**): Zerodha's terms restrict redistributing its data to other people and its free tier excludes market data, so enable it only on a single-owner install. Users are never served Kite prices while it is off. The full MF list with last prices, plus last traded prices for equities in
-  `MARKET_EQUITY_SYMBOLS` (e.g. `NSE:NIFTYBEES,NSE:RELIANCE`) to check progress. Needs `KITE_API_KEY`, `KITE_API_SECRET`.
-  Create the app at https://developers.kite.trade with Redirect URL `${APP_URL}/api/internal/kite/callback`.
-
-**Kite sign-in (owner only).** Kite access tokens expire around 6 AM IST every day and there is no refresh token, so the
-owner opens `${APP_URL}/api/internal/kite/login?key=$CRON_SECRET` on the day the job should use Kite. If no valid
-session exists the job still runs on AMFI and reports `kite: "login_required"`. The token is stored encrypted and never leaves the server.
-
-**In the app.** Once a day, when someone opens the dashboard, the browser sends its fund names/ISINs to
-`POST /api/market/prices` and updates only NAV and value (source `market`). Units, invested amounts and transactions are never changed.
-Matching uses ISIN / symbol / scheme code first, then an exact normalised name; ambiguous names are skipped, never guessed. When AMFI and Kite both describe a fund, the newest price date wins and AMFI wins a tie. Each fund shows its NAV date and when it was last refreshed, and a NAV more than four business days old is marked "May be out of date".
-A fund can carry an optional `isin`, `symbol` or `schemeCode` field to make matching exact.
+mfapi.in asks to be called sparingly and does not publish its limits, so the app caches and never polls. If it is down, funds keep their last NAV and the screen says how old it is.
 
 ---
 

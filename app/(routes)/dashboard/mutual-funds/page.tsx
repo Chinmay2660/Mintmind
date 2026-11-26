@@ -9,11 +9,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAddParam } from '@/lib/hooks/useAddParam'
 import { MoreVertical, Pencil, Plus, RefreshCw, Loader2, Trash2 } from 'lucide-react'
 import axios from 'axios'
-import { lastMarketSync, refreshNavs } from '@/lib/market/client'
+import { refreshNavs } from '@/lib/market/client'
 import { agoLabel, navFreshness } from '@/lib/market/freshness'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
-import { addFund, recordSipInstalment, save, remove, updateNav } from '@/lib/wealth/actions'
+import { addFund, recordSipInstalment, save, remove } from '@/lib/wealth/actions'
 import { fundMetrics, nextSipDate, portfolioSummary, monthlyEquivalent, toISO } from '@/lib/wealth/calc'
 import { cap, formatDate, formatINR } from '@/lib/wealth/format'
 import { Money } from '@/components/wealth/Money'
@@ -23,14 +23,14 @@ import { Pagination } from '@/components/ui/pagination'
 import { usePagination } from '@/lib/hooks/usePagination'
 import { Delta, Empty, Metric, LoadingBlock, PageHeader, Panel, Progress, Select, Stat } from '@/components/wealth/kit'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { FundForm, NavForm, SipForm } from '@/components/wealth/FundForms'
+import { FundForm, SipForm } from '@/components/wealth/FundForms'
 import { cn } from '@/lib/utils'
 import { HoldingsTab } from '@/components/wealth/investments/HoldingsTab'
 import { PortfolioTab } from '@/components/wealth/investments/PortfolioTab'
 
 function MutualFundsTab() {
   const { ready, data, db } = useWealth()
-  const [dlg, setDlg] = useState<null | { kind: 'fund' | 'nav' | 'sip' | 'delSip'; row?: any }>(null)
+  const [dlg, setDlg] = useState<null | { kind: 'fund' | 'sip' | 'delSip'; row?: any }>(null)
   useAddParam((what) => { if (what === 'fund') setDlg({ kind: 'fund' }) })
   const today = useMemo(() => new Date(), [])
   const ranked = useMemo(() => data.funds.map((f: any) => ({ f, m: fundMetrics(f, data.fundTxns, today) })).filter((x: any) => x.m.invested > 0).sort((a: any, b: any) => b.m.absReturnPct - a.m.absReturnPct), [data.funds, data.fundTxns, today])
@@ -52,7 +52,7 @@ function MutualFundsTab() {
 
   return (
     <div className="space-y-5">
-      <PageHeader actions={<><Button variant="outline" disabled={syncing || data.funds.length === 0} onClick={async () => { setSyncing(true); try { const n = await refreshNavs(db, data.funds); toast.success(n ? `${n} ${n === 1 ? 'NAV' : 'NAVs'} updated` : 'NAVs are already up to date') } catch (e) { toast.error(axios.isAxiosError(e) && e.response?.data?.error ? String(e.response.data.error) : 'Could not refresh NAVs. Try again later.') } finally { setSyncing(false) } }}>{syncing ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}Refresh NAVs</Button></>} primaryAction={{ label: 'Add fund', onClick: () => setDlg({ kind: 'fund' }) }} />
+      <PageHeader actions={<><Button variant="outline" disabled={syncing || data.funds.length === 0} onClick={async () => { setSyncing(true); try { const r = await refreshNavs(db, data.funds); if (r.alreadyToday) toast.info('NAVs were already updated today. The next update is tomorrow.'); else if (!r.checked && r.unlinked) toast.info('No fund is linked yet. Open a fund, tap Edit and search for it to link it.'); else toast.success(r.changed ? `${r.changed} ${r.changed === 1 ? 'NAV' : 'NAVs'} updated${r.unlinked ? ` · ${r.unlinked} not linked` : ''}` : 'NAVs are already up to date'); if (r.failed) toast.error(`${r.failed} ${r.failed === 1 ? 'fund' : 'funds'} could not be checked. Try again later.`) } catch (e) { toast.error(axios.isAxiosError(e) && e.response?.data?.error ? String(e.response.data.error) : 'Could not refresh NAVs. Try again later.') } finally { setSyncing(false) } }}>{syncing ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}Refresh NAVs</Button></>} primaryAction={{ label: 'Add fund', onClick: () => setDlg({ kind: 'fund' }) }} />
 
       <SummaryHeader label="Current value" value={<Money value={s.value} />}
         sub={<span className="flex flex-wrap items-center gap-x-2 text-muted-foreground">1 day change <Metric amount={s.todayGain} compact={false} hint="Needs previous NAV" className="text-sm font-semibold" /></span>}
@@ -98,7 +98,7 @@ function MutualFundsTab() {
           </ul>
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[720px] text-sm">
-              <thead><tr className="border-b border-border text-left text-xs text-muted-foreground"><th className="py-2 pr-3 font-medium">Fund</th><th className="px-3 text-right font-medium">Invested</th><th className="px-3 text-right font-medium">Value</th><th className="px-3 text-right font-medium">Return</th><th className="px-3 text-right font-medium">XIRR</th><th className="px-3 text-right font-medium">NAV</th><th className="pl-3" /></tr></thead>
+              <thead><tr className="border-b border-border text-left text-xs text-muted-foreground"><th className="py-2 pr-3 font-medium">Fund</th><th className="px-3 text-right font-medium">Invested</th><th className="px-3 text-right font-medium">Value</th><th className="px-3 text-right font-medium">Return</th><th className="px-3 text-right font-medium">XIRR</th><th className="px-3 text-right font-medium">NAV</th></tr></thead>
               <tbody className="divide-y divide-border">
                 {pg.slice.map((f: any) => {
                   const m = fundMetrics(f, data.fundTxns, today)
@@ -110,7 +110,6 @@ function MutualFundsTab() {
                       <td className="px-3 text-right"><Delta amount={m.absReturn} pct={m.absReturnPct} /></td>
                       <td className="px-3 text-right"><Metric pct={m.xirrPct} hint="Needs at least two dated cashflows" /></td>
                       <td className="px-3 text-right tabular-nums">{f.currentNav}<span className="block text-xs text-muted-foreground">{formatDate(f.navDate)}</span>{navFreshness(f.navDate, toISO(today)).stale && <span className="block text-xs text-warning">May be out of date</span>}</td>
-                      <td className="pl-3 text-right"><Button size="sm" variant="outline" onClick={() => setDlg({ kind: 'nav', row: f })}><RefreshCw className="mr-1 h-3.5 w-3.5" />NAV</Button></td>
                     </tr>
                   )
                 })}
@@ -175,7 +174,6 @@ function MutualFundsTab() {
       </Panel>
 
       {dlg?.kind === 'fund' && <FundForm row={dlg.row} onClose={() => setDlg(null)} onSave={async (r) => { dlg.row ? await save(db, 'funds', r) : await addFund(db, r); toast.success('Fund saved') }} />}
-      {dlg?.kind === 'nav' && <NavForm fund={dlg.row} onClose={() => setDlg(null)} onSave={async (nav, date) => { await updateNav(db, dlg.row.id, nav, date); toast.success('NAV updated') }} />}
       {dlg?.kind === 'sip' && <SipForm row={dlg.row} funds={data.funds} onClose={() => setDlg(null)} onSave={async (r) => { await save(db, 'sips', r); toast.success('SIP saved') }} />}
       <ConfirmDialog open={dlg?.kind === 'delSip'} onOpenChange={(o) => !o && setDlg(null)} title="Delete this SIP?" description="Past investments are kept." confirmLabel="Delete" variant="destructive" onConfirm={async () => { await remove(db, 'sips', dlg!.row.id); setDlg(null); toast.success('SIP deleted') }} />
     </div>
@@ -211,7 +209,7 @@ export default function InvestmentsPage() {
 /** One line under the holdings heading: the newest NAV date, how many funds look out of date, and when NAVs were last refreshed. */
 function NavFreshness({ funds }: { funds: any[] }) {
   const [ago, setAgo] = useState('')
-  useEffect(() => { const t = funds.map((f) => f.navFetchedAt).filter(Boolean).sort().pop() || lastMarketSync(); setAgo(t ? agoLabel(t) : '') }, [funds])
+  useEffect(() => { const t = funds.map((f) => f.navFetchedAt).filter(Boolean).sort().pop(); setAgo(t ? agoLabel(t) : '') }, [funds])
   const todayISO = toISO(new Date())
   const dates = funds.map((f) => f.navDate).filter(Boolean).sort()
   const stale = funds.filter((f) => navFreshness(f.navDate, todayISO).stale).length
@@ -219,7 +217,7 @@ function NavFreshness({ funds }: { funds: any[] }) {
   return (
     <p className="mb-2 text-xs text-muted-foreground">
       Latest NAV {formatDate(dates[dates.length - 1])}{ago ? ` · refreshed ${ago}` : ''}
-      {stale > 0 && <span className="text-warning"> · {stale} {stale === 1 ? 'fund looks' : 'funds look'} out of date. Tap Refresh NAVs, or update by hand.</span>}
+      {stale > 0 && <span className="text-warning"> · {stale} {stale === 1 ? 'fund looks' : 'funds look'} out of date. Tap Refresh NAVs, or link the fund in Edit.</span>}
     </p>
   )
 }

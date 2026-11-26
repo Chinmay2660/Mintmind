@@ -51,12 +51,12 @@ out by default; the success message offers Undo. Review has select-all, set-cate
 
 ### Investments: what is what
 
-- **Mutual funds:** units, invested amount and transactions are yours; **NAV** comes from AMFI's public daily file, shown
-  with its date and when it was last refreshed, flagged "may be out of date" after four business days. A refresh changes
-  only NAV and derived value, never units, invested amount or history (unit-tested).
+- **Mutual funds:** you pick the scheme from a search (free public API, https://www.mfapi.in) and type your units, average NAV and invested amount. The **current NAV cannot be edited by hand**: it is fetched
+  for each linked fund at most once a day, with its date, and flagged "may be out of date" after four business days. A refresh changes
+  only NAV and derived value, never units, invested amount or history (unit-tested). Funds not linked to a scheme (for example from a
+  statement import) keep their last NAV until you link them in Edit.
 - **FD and RD values** are formulas (quarterly compounding) from the rate and dates you enter. **EPF, PPF, NPS** balances are
   what you enter. Neither is fetched from any provider.
-- Zerodha Kite can supply prices but is **off by default** (`KITE_ENABLED`) because its terms limit redistributing data.
 
 ### Keyboard and touch
 
@@ -102,7 +102,7 @@ and restore. Demo data stays in the browser.
   recovery key cannot be reset. Biometric unlock is per device.
 - Stored tokens and shared family figures are encrypted at rest with `ENCRYPTION_KEY`. In production `ENCRYPTION_KEY` and
   `JWT_SECRET` must be set or the app refuses to run.
-- Requests that change data are refused when their `Origin` is another site. Security headers are set in `middleware.ts`.
+- Requests that change data are refused when their `Origin` is another site. Security headers are set in `proxy.ts`.
 - "Hide balances" masks every amount drawn as text and in charts; the AI assistant works from real figures.
 - Not done: email verification at sign-up, an app-wide PIN, restricting script sources in the CSP, a shared rate-limit store.
 
@@ -116,8 +116,8 @@ MongoDB with Mongoose, WebCrypto, Radix UI primitives, `pdfjs-dist` and `xlsx` f
 - **Client:** pages under `app/(routes)/dashboard`, read from IndexedDB through `WealthContext` (`lib/wealth/WealthContext.tsx`).
   Pure calculation modules in `lib/wealth` (net worth, XIRR, budgets, holdings, import) with unit tests.
 - **Sync:** `lib/wealth/sync.js` to `/api/sync` (one `SyncDoc` per record per user).
-- **Server:** route handlers in `app/api`, Mongoose models in `models/`, `middleware.ts` for origin checks, rate limits and headers.
-- **Market data:** a daily job (`/api/internal/market-sync`) fills a shared price cache from AMFI; the app reads it once a day.
+- **Server:** route handlers in `app/api`, Mongoose models in `models/`, `proxy.ts` for origin checks, rate limits and headers.
+- **Market data:** fund search and latest NAVs come from the public mfapi.in API, called from the server and cached; each fund is looked up at most once a day.
 - **Documents:** Google Drive through `lib/google/drive.js` with the `drive.file` scope; metadata in MongoDB, bytes in Drive.
 - **Offline/PWA:** `public/sw.js`, `public/manifest.json`.
 
@@ -164,13 +164,12 @@ integration blank to switch it off.
 | `NEXT_PUBLIC_DEMO_MODE` | No | Shows the sample-family demo |
 | `CRON_SECRET` | For scheduled jobs | Protects `/api/internal/*` |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | No | Google sign-in and Drive |
-| `KITE_ENABLED`, `KITE_API_KEY`, `KITE_API_SECRET`, `MARKET_EQUITY_SYMBOLS` | No | Zerodha prices; off unless `KITE_ENABLED=1` |
 | `AI_PROVIDER`, `AI_API_KEY`, `AI_MODEL`, `AI_DAILY_LIMIT` | No | AI assistant (`none`, `anthropic`, `openai`) |
 | `RESEND_API_KEY`, `RESEND_FROM` | No | Password-reset, invitation and legacy emails |
 | `SMS_PROVIDER`, `TWILIO_*`, `LEGACY_NOTIFY_WEBHOOK` | No | Legacy SMS and webhook |
 | `UPLOAD_DIR`, `UPLOAD_MAX_BYTES` | No | Local uploads |
 
-Google Drive, SMS, push and Kite setup: [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
+Google Drive, SMS and push setup: [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
 
 ## Testing
 
@@ -182,8 +181,7 @@ automated browser test suite.
 ## Deployment
 
 Any Node host works; the live app runs on Vercel. Set the production variables, point `MONGODB_URI` at a backed-up
-database, and schedule `GET {APP_URL}/api/internal/market-sync` daily in the evening IST with
-`Authorization: Bearer $CRON_SECRET` for fresh NAVs. Serverless hosts limit request body size, which can affect large
+database. Serverless hosts limit request body size, which can affect large
 document uploads that go through the server.
 
 ## Current limitations
@@ -191,7 +189,7 @@ document uploads that go through the server.
 - Documents are not attachable to funds, FDs, loans or accounts (only insurance); no Drive picker or direct upload.
 - Family sharing is one set of choices for the whole circle, not per member.
 - No email verification at sign-up; no app-wide PIN.
-- No bank feeds and no live market data beyond the daily AMFI NAV file; stocks and gold are entered by hand.
+- No bank feeds and no live market data beyond the daily mutual fund NAV from mfapi.in; stocks and gold are entered by hand.
 - Multi-currency is not built. FD maturity uses a 365-day year, which differs by about ₹20 per ₹1 lakh on a leap-year term.
 - Mutual fund realised gains are not calculated.
 - Screen-reader, real-device and load testing have not been done.

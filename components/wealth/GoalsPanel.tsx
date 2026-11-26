@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useDetailCrumb } from '@/components/shell/DetailCrumb'
 import { useAddParam } from '@/lib/hooks/useAddParam'
-import { ArrowLeft, ChevronRight, Pencil, Target, Trash2, TriangleAlert, X } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Pencil, Target, Trash2, TriangleAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
@@ -18,7 +18,8 @@ import { TabBar } from '@/components/ui/tab-bar'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Empty, Field, StepFormDialog, PageHeader, Progress, Select } from './kit'
-import { DateInput, MultiSelect } from '@/components/ui/pickers'
+import { Checkbox } from '@/components/ui/checkbox'
+import { DateInput } from '@/components/ui/pickers'
 
 type GoalLink = { type: 'bank' | 'fund' | 'asset'; id: string; pct: number }
 
@@ -109,14 +110,56 @@ function GoalDetail({ g, p, onClose, onEdit, onDelete }: { g: any; p: any; onClo
   )
 }
 
+type Source = { type: GoalLink['type']; id: string; name: string; group: 'accounts' | 'funds' | 'other'; value: number }
+const LINK_GROUPS: { key: Source['group']; label: string }[] = [{ key: 'accounts', label: 'Accounts' }, { key: 'funds', label: 'Funds' }, { key: 'other', label: 'Deposits & other' }]
+const SEARCH_ABOVE = 6 // a short list needs no search box
+
+/** Pick what backs a goal: a tab per kind, one row per item, and the share you count right on the row once it is ticked. */
+function LinkPicker({ sources, links, onToggle, onShare }: { sources: Source[]; links: GoalLink[]; onToggle: (s: Source) => void; onShare: (s: Source, pct: number) => void }) {
+  const [tab, setTab] = useState<Source['group']>(() => LINK_GROUPS.find((g) => sources.some((s) => s.group === g.key && links.some((l) => l.type === s.type && l.id === s.id)))?.key ?? 'accounts')
+  const [q, setQ] = useState('')
+  const linked = (s: Source) => links.find((l) => l.type === s.type && l.id === s.id)
+  const counted = links.reduce((n, l) => { const s = sources.find((x) => x.type === l.type && x.id === l.id); return n + (s ? (s.value * (Number(l.pct) || 0)) / 100 : 0) }, 0)
+  const inTab = sources.filter((s) => s.group === tab)
+  const rows = inTab.filter((s) => !q.trim() || s.name.toLowerCase().includes(q.trim().toLowerCase()))
+  return (
+    <div className="full space-y-3">
+      <p className="text-sm" aria-live="polite">
+        {links.length ? <><strong className="font-semibold">{links.length} linked</strong> <span className="text-muted-foreground">· {formatINR(Math.round(counted))} counts towards this goal. Nothing is moved.</span></> : <span className="text-muted-foreground">Tick what backs this goal. Nothing is moved.</span>}
+      </p>
+      <TabBar label="Kinds of holding" value={tab} onChange={(k) => { setTab(k as Source['group']); setQ('') }}
+        tabs={LINK_GROUPS.map((g) => ({ key: g.key, label: g.label, badge: links.filter((l) => sources.some((s) => s.group === g.key && s.type === l.type && s.id === l.id)).length || undefined }))} />
+      {inTab.length > SEARCH_ABOVE && <Input aria-label="Search this list" placeholder="Search" value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" />}
+      {inTab.length === 0 ? <p className="py-4 text-sm text-muted-foreground">Nothing here yet. Add one from its own page first.</p>
+        : rows.length === 0 ? <p className="py-4 text-sm text-muted-foreground">No match.</p>
+        : (
+          <ul className="max-h-72 divide-y divide-border overflow-y-auto rounded-xl border border-border">
+            {rows.map((s) => {
+              const l = linked(s)
+              return (
+                <li key={`${s.type}:${s.id}`} className="flex min-h-14 items-center gap-3 px-3 py-2">
+                  <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+                    <Checkbox checked={!!l} onChange={() => onToggle(s)} aria-label={`Link ${s.name}`} />
+                    <span className="min-w-0"><span className="block truncate text-sm">{s.name}</span><span className="text-xs tabular-nums text-muted-foreground">{formatINR(s.value)}</span></span>
+                  </label>
+                  {l && <div className="w-24 shrink-0"><Select aria-label={`Share of ${s.name} that counts`} className="h-9 text-xs" value={l.pct} onChange={(e) => onShare(s, Number(e.target.value))}>{[100, 75, 50, 25].map((p) => <option key={p} value={p}>{p}%</option>)}</Select></div>}
+                </li>
+              )
+            })}
+          </ul>
+        )}
+    </div>
+  )
+}
+
 function GoalForm({ row, suggested, onClose, onSave }: { row?: any; suggested: number; onClose: () => void; onSave: (r: any) => Promise<void> }) {
   const { data } = useWealth()
   const [f, setF] = useState({ name: row?.name || 'Emergency fund', target: String(row?.target ?? ''), targetDate: row?.targetDate || '', notes: row?.notes || '' })
   const [links, setLinks] = useState<GoalLink[]>(row?.links || [])
-  const sources: { type: GoalLink['type']; id: string; label: string; value: number }[] = [
-    ...data.bankAccounts.map((a: any) => ({ type: 'bank' as const, id: a.id, label: `${a.type === 'cash' ? 'Cash' : 'Bank'}: ${a.nickname || a.bankName}`, value: a.currentBalance })),
-    ...data.funds.map((x: any) => ({ type: 'fund' as const, id: x.id, label: `Fund: ${x.name}`, value: x.currentValue })),
-    ...data.assets.map((x: any) => ({ type: 'asset' as const, id: x.id, label: `Asset: ${x.name}`, value: assetValue(x) })),
+  const sources: Source[] = [
+    ...data.bankAccounts.map((a: any) => ({ type: 'bank' as const, id: a.id, group: 'accounts' as const, name: `${a.nickname || a.bankName}${a.type === 'cash' ? ' (cash)' : ''}`, value: a.currentBalance })),
+    ...data.funds.map((x: any) => ({ type: 'fund' as const, id: x.id, group: 'funds' as const, name: x.name, value: x.currentValue })),
+    ...data.assets.map((x: any) => ({ type: 'asset' as const, id: x.id, group: 'other' as const, name: x.name, value: assetValue(x) })),
   ]
   const find = (s: { type: string; id: string }) => links.find((l) => l.type === s.type && l.id === s.id)
   const toggle = (s: { type: GoalLink['type']; id: string }) => setLinks((ls) => (find(s) ? ls.filter((l) => !(l.type === s.type && l.id === s.id)) : [...ls, { type: s.type, id: s.id, pct: 100 }]))
@@ -138,24 +181,7 @@ function GoalForm({ row, suggested, onClose, onSave }: { row?: any; suggested: n
         </> },
         { title: "What backs it", description: "Pick the accounts, funds and assets that count towards it. Nothing is moved.", content: <>
       <Field label="Notes">{(id) => <Input id={id} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} />}</Field>
-      <div className="full space-y-2">
-        <Field label="Linked to" hint="Pick the accounts, funds and assets that back this goal. Nothing is moved.">{(id) => sources.length === 0
-          ? <p className="text-xs text-muted-foreground">Add bank accounts, funds or assets first.</p>
-          : <MultiSelect id={id} aria-label="Linked accounts, funds and assets" placeholder="Choose what backs this goal" summaryLabel="linked"
-              options={sources.map((x) => ({ value: `${x.type}:${x.id}`, label: x.label, hint: formatINR(x.value) }))}
-              selected={links.map((l) => `${l.type}:${l.id}`)}
-              onToggle={(v) => { const x = sources.find((y) => `${y.type}:${y.id}` === v); if (x) toggle(x) }} />}</Field>
-        {links.length > 0 && (
-          <ul className="divide-y divide-border rounded-xl border border-border">
-            {links.map((l) => { const x = sources.find((y) => y.type === l.type && y.id === l.id); if (!x) return null; return (
-              <li key={`${l.type}:${l.id}`} className="flex items-center gap-2 px-3 py-2">
-                <span className="min-w-0 flex-1"><span className="block truncate text-sm">{x.label}</span><span className="text-xs text-muted-foreground">{formatINR(x.value)}</span></span>
-                <div className="w-24 shrink-0"><Select aria-label={`Share of ${x.label}`} className="h-9 text-xs" value={l.pct} onChange={(e) => setPct(x, Number(e.target.value))}>{[100, 75, 50, 25].map((p) => <option key={p} value={p}>{p}%</option>)}</Select></div>
-                <button type="button" onClick={() => toggle(x)} aria-label={`Remove ${x.label}`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"><X className="h-4 w-4" /></button>
-              </li>) })}
-          </ul>
-        )}
-      </div>
+      <LinkPicker sources={sources} links={links} onToggle={toggle} onShare={setPct} />
         </> },
       ]} />
   )
