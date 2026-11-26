@@ -28,7 +28,7 @@ export function TopBar() {
 
       {isDemo && (
         <div className="ml-2 hidden items-center gap-1.5 min-[420px]:flex">
-          <span className="shrink-0 whitespace-nowrap rounded-md bg-warning/15 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-warning"><span className="sm:hidden">Demo</span><span className="max-sm:hidden">Demo mode</span></span>
+          <span className="shrink-0 whitespace-nowrap rounded-md bg-warning/15 px-2 py-1 text-[11px] font-bold tracking-wide text-warning"><span className="sm:hidden">Demo</span><span className="max-sm:hidden">Demo mode</span></span>
           <Button
             variant="ghost"
             size="sm"

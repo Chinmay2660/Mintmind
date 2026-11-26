@@ -91,7 +91,7 @@ export default function SettingsPage() {
           <div className="space-y-5 md:hidden print:hidden">
             {GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => sections.includes(i.t)) })).filter((g) => g.items.length).map((g) => (
               <section key={g.label}>
-                <h2 className="mb-1 px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{g.label}</h2>
+                <h2 className="mb-1 px-1 text-xs font-medium tracking-wide text-muted-foreground">{g.label}</h2>
                 <ul className="surface-card divide-y divide-border px-4">
                   {g.items.map(({ t, hint }) => (
                     <li key={t}><button type="button" onClick={() => setTab(t)} className="group flex min-h-14 w-full items-center justify-between gap-3 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className="min-w-0"><span className="block text-sm font-medium">{t}</span><span className="block truncate text-xs text-muted-foreground">{hint}</span></span><ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary" aria-hidden /></button></li>

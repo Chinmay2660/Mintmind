@@ -86,7 +86,7 @@ export function FinancialMetrics() {
       <div className="space-y-6">
         {groups.map((g) => (
           <section key={g.title} aria-label={g.title}>
-            <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">{g.title}</h4>
+            <h4 className="mb-2 text-[11px] font-semibold tracking-[0.1em] text-muted-foreground">{g.title}</h4>
             {g.items.length === 0 ? <Empty title={g.empty} /> : (
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{g.items.map((i) => <Stat key={i.label} label={i.label} info={i.info} value={i.value} hint={i.hint} />)}</div>
             )}

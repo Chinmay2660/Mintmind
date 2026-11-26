@@ -1,7 +1,6 @@
 'use client'
 
 import { SummaryHeader } from '@/components/wealth/HoldingUI'
-import { BackBar } from '@/components/shell/BackBar'
 import { shortAccountName } from '@/lib/wealth/accountName'
 import { TabBar } from '@/components/ui/tab-bar'
 import { useEffect, useMemo, useState } from 'react'
@@ -56,7 +55,6 @@ function CreditCardsTab() {
 
   return (
     <div className="space-y-5">
-      <BackBar phoneOnly />
       <PageHeader secondaryAction={{ label: 'Add transaction', disabled: data.cards.length === 0, onClick: () => setDlg({ kind: 'pay', row: card }) }} primaryAction={openCard ? undefined : { label: 'Add card', onClick: () => setDlg({ kind: 'card' }) }} />
       {data.cards.length > 1 && <TabBar label="Cards" value={sel ?? 'all'} onChange={(k) => setSel(k === 'all' ? null : k)} tabs={[{ key: 'all', label: 'All cards', badge: data.cards.length }, ...data.cards.map((c) => ({ key: c.id, label: `${c.bank} ${c.cardName}` }))]} />}
       {!openCard && <section aria-label="Summary" className="space-y-3">
@@ -104,7 +102,7 @@ function CreditCardsTab() {
               <div className="grid gap-4 lg:grid-cols-2">
                 <Panel title="Monthly card spend">
                   <div className="h-52"><ResponsiveContainer width="100%" height="100%"><BarChart data={spendTrend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid stroke={chartGrid} vertical={false} /><XAxis dataKey="label" {...chartAxis} /><YAxis {...chartAxis} width={44} tickFormatter={(v) => (privacyMode ? '••' : formatCompactINR(v).replace('₹', ''))} />
+                    <CartesianGrid stroke={chartGrid} vertical={false} /><XAxis dataKey="label" {...chartAxis} /><YAxis {...chartAxis} width={84} tickFormatter={(v) => (privacyMode ? '••' : formatCompactINR(v).replace('₹', ''))} />
                     <Tooltip {...chartTooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => (privacyMode ? '••••' : formatINR(v))} /><Bar dataKey="Spend" fill={chartColor(2)} radius={[4, 4, 0, 0]} />
                   </BarChart></ResponsiveContainer></div>
                 </Panel>

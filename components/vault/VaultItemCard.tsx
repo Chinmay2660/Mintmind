@@ -16,7 +16,7 @@ export interface VaultItemView {
 function Row({ label, children, actions }: { label: string; children: React.ReactNode; actions?: React.ReactNode }) {
   return (
     <div className="flex min-w-0 items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5">
-      <div className="min-w-0 flex-1"><p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p><div className="truncate text-sm">{children}</div></div>
+      <div className="min-w-0 flex-1"><p className="text-[11px] tracking-wide text-muted-foreground">{label}</p><div className="truncate text-sm">{children}</div></div>
       {actions && <div className="flex shrink-0 items-center">{actions}</div>}
     </div>
   )

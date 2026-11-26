@@ -1,5 +1,6 @@
 'use client'
 
+import { TabBar } from '@/components/ui/tab-bar'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
@@ -11,7 +12,6 @@ import { planFor } from '@/lib/wealth/incomeBudget'
 import { MonthPicker } from '@/components/ui/pickers'
 import { BudgetEditor, type EditorGroup } from '@/components/wealth/budget/BudgetEditor'
 import { BudgetForm } from '@/components/wealth/budget/BudgetForm'
-import { cn } from '@/lib/utils'
 import type { IncomePlan } from '@/components/wealth/budget/IncomeBudget'
 
 /**
@@ -45,11 +45,7 @@ export function BudgetSetup() {
           <button type="button" aria-label="Next month" onClick={() => step(1)} className="flex h-10 w-10 items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-foreground">›</button>
         </div>
       </div>
-      <div role="tablist" aria-label="Which budget" className="grid grid-cols-2 rounded-xl border border-border bg-muted p-1">
-        {([['expense', 'Expense'], ['income', 'Income']] as const).map(([k, l]) => (
-          <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => setKind(k)} className={cn('min-h-10 rounded-lg px-3 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', kind === k ? 'bg-card shadow-card' : 'text-muted-foreground hover:text-foreground')}>{l}</button>
-        ))}
-      </div>
+      <TabBar label="Which budget" className="mx-0" value={kind} onChange={(k) => setKind(k as 'expense' | 'income')} tabs={[{ key: 'expense', label: 'Expense' }, { key: 'income', label: 'Income' }]} />
       <p className="px-1 text-xs text-muted-foreground">Setting the budget for <strong className="font-semibold text-foreground">{monthName}</strong>.</p>
       {kind === 'expense' ? (
         <BudgetEditor

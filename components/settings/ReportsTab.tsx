@@ -64,7 +64,7 @@ export function ReportsTab() {
     <>
       <div className="space-y-4 print:hidden">
         <section>
-          <h2 className="mb-1 px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Import</h2>
+          <h2 className="mb-1 px-1 text-xs font-medium tracking-wide text-muted-foreground">Import</h2>
           <ul className="surface-card divide-y divide-border px-4">
             <li className="flex flex-wrap items-center justify-between gap-3 py-3">
               <div className="min-w-0 flex-1"><p className="text-sm font-medium">Transactions</p><p className="text-xs text-muted-foreground">From a bank or card statement saved as CSV.</p></div>
@@ -80,7 +80,7 @@ export function ReportsTab() {
             </li>
           </ul>
         </section>
-        <h2 className="-mb-2 px-1 pt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Export</h2>
+        <h2 className="-mb-2 px-1 pt-2 text-xs font-medium tracking-wide text-muted-foreground">Export</h2>
         <Panel title="Period" description="Used by Transactions, Budget (the month of the end date) and Everything. The other reports are as of today.">
           <div className="grid grid-cols-2 gap-3 sm:max-w-md">
             <label className="min-w-0 text-xs text-muted-foreground">From<div className="mt-0.5"><DateInput aria-label="From date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} /></div></label>

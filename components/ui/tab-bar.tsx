@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export interface TabItem { key: string; label: string; icon?: LucideIcon; badge?: number }
+export interface TabItem { key: string; label: string; icon?: LucideIcon; badge?: number; /** a figure shown under the name, such as the total the tab covers */ sub?: ReactNode }
 
 /**
  * The one tab row used by every page. Two or three tabs share the width evenly on phones; longer rows scroll sideways
@@ -63,14 +63,14 @@ export function TabBar({ label, tabs, value, onChange, className }: { label: str
               tabIndex={on ? 0 : -1}
               onClick={() => onChange(t.key)}
               className={cn(
-                'relative flex min-h-11 shrink-0 snap-start items-center justify-center gap-2 whitespace-nowrap px-3.5 text-sm font-medium outline-none transition-colors focus-visible:bg-muted',
+                'relative flex shrink-0 snap-start items-center justify-center gap-2 whitespace-nowrap px-3.5 text-sm font-medium outline-none transition-colors focus-visible:bg-muted', t.sub != null ? 'min-h-14 py-1.5' : 'min-h-11',
                 even && 'max-md:flex-1',
                 on ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
               )}
             >
               {Icon && <Icon className="h-4 w-4" aria-hidden />}
-              {t.label}
-              {t.badge ? <span className="rounded-full bg-primary/15 px-1.5 text-[11px] font-semibold leading-5 text-primary" aria-label={`${t.badge} waiting`}>{t.badge}</span> : null}
+              {t.sub != null ? <span className="flex flex-col items-center leading-tight"><span>{t.label}</span><span className={cn('text-base font-semibold tabular-nums', on ? 'text-foreground' : 'text-muted-foreground')}>{t.sub}</span></span> : t.label}
+              {t.badge ? <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/25 px-1.5 text-xs font-semibold tabular-nums leading-none text-foreground">{t.badge}</span> : null}
               <span aria-hidden className={cn('absolute inset-x-2 bottom-0 h-0.5 rounded-full transition-colors', on ? 'bg-primary' : 'bg-transparent')} />
             </button>
           )

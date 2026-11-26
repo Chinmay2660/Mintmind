@@ -1,21 +1,23 @@
 'use client'
 
+import { TabBar } from '@/components/ui/tab-bar'
+import { FEATURE_KEYS } from '@/lib/features'
 import { GrowwChart } from '@/components/wealth/GrowwChart'
 import { netWorthGroups } from '@/lib/wealth/netWorthGroups'
 import { InstallBanner } from '@/components/shell/InstallApp'
 import Link from 'next/link'
-import { ArrowRight, BarChart3, Banknote, Car, ChevronDown, ChevronRight, Coins, GraduationCap, PiggyBank, TrendingUp, User, CreditCard, Home, Percent, Landmark, PieChart as PieIcon, ShieldCheck, Wallet, type LucideIcon } from 'lucide-react'
-import { AttentionStrip } from '@/components/dashboard/AttentionStrip'
+import { ArrowRight, BarChart3, Banknote, Car, ChevronDown, ChevronRight, Coins, GraduationCap, PiggyBank, TrendingUp, User, CreditCard, Home, Percent, Landmark, PieChart as PieIcon, ShieldCheck, Wallet, type LucideIcon, CalendarClock, ReceiptText } from 'lucide-react'
+import { AttentionStrip, useAttentionItems } from '@/components/dashboard/AttentionStrip'
 import { SnapCarousel } from '@/components/ui/snap-carousel'
 import { TxnRow } from '@/components/wealth/budget/TxnRow'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { toISO } from '@/lib/wealth/calc'
 import { budgetPacing, dayChange, growthVs, healthScore, portfolioSummary, rangeStart, cardUtilisation } from '@/lib/wealth/calc'
 import { ASSET_LABELS, LIABILITY_LABELS } from '@/lib/wealth/labels'
 import { coverageTotals, incomeVsExpenses, monthLabel } from '@/lib/wealth/selectors'
-import { upcomingCardDues, upcomingPremiums, upcomingSips } from '@/lib/wealth/reminders'
+import { upcomingCardDues, upcomingPremiums, upcomingSips, upcomingSubscriptions } from '@/lib/wealth/reminders'
 import { cn } from '@/lib/utils'
 import { assetValue } from '@/lib/wealth/holdings'
 import { formatCompactINR, formatDate, formatINR } from '@/lib/wealth/format'
@@ -67,6 +69,22 @@ function Widget({ title, href, icon: Icon, tint, children, spark }: { title: str
 }
 
 
+
+/** A section heading with its own icon and colour, so two lists on one screen are never mistaken for each other. */
+function SectionHead({ icon: Icon, tone, title, hint, action }: { icon: LucideIcon; tone: 'warning' | 'primary'; title: string; hint: string; action?: React.ReactNode }) {
+  return (
+    <div className="mb-1 flex items-center gap-2.5 border-b border-border pb-2">
+      <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', tone === 'warning' ? 'bg-warning/15 text-warning' : 'bg-primary/15 text-primary')}><Icon className="h-4 w-4" aria-hidden /></span>
+      <div className="min-w-0 flex-1"><h2 className="text-sm font-semibold leading-tight">{title}</h2><p className="text-xs text-muted-foreground">{hint}</p></div>
+      {action}
+    </div>
+  )
+}
+
+type OverviewTab = 'dashboard' | 'activity'
+// Dashboard: the money picture. Recent activity: what is due and what just happened. The optional charts (off by default) sit on the Dashboard tab.
+const OVERVIEW_BLOCKS: Record<OverviewTab, string[]> = { dashboard: ['accounts', 'summary', 'networth', 'allocation', 'spending'], activity: ['payments'] }
+
 export default function DashboardPage() {
   const { ready, data, netWorth, isDemo } = useWealth()
   const { privacyMode } = usePrivacyMode()
@@ -78,8 +96,27 @@ export default function DashboardPage() {
   const [moneyTab, setMoneyTab] = useState<'assets' | 'liabilities'>('assets')
   const [moneySub, setMoneySub] = useState('') // which kind is open under Assets or Liabilities; empty means the first
   const [showAllRows, setShowAllRows] = useState(false) // the Assets / Liabilities list shows the five biggest; View more shows the rest
+  const [ovTab, setOvTab] = useState<OverviewTab>('dashboard')
+  const [chartOpen, setChartOpen] = useState<boolean | null>(null) // the net worth chart: shut on a phone to save room, open on a wide screen, then whatever was chosen
   const today = useMemo(() => new Date(), [])
   const layout = useDashboardLayout(DASHBOARD_BLOCKS)
+  // The Assets and Liabilities lists are different lengths. The area keeps the height of the tallest list seen (not counting View more), so
+  // switching tabs or kinds never makes the page below jump up or down. A resize starts the measuring again.
+  const listInner = useRef<HTMLDivElement>(null)
+  const [listFloor, setListFloor] = useState(0)
+  useEffect(() => {
+    if (showAllRows) return
+    const h = listInner.current?.offsetHeight ?? 0
+    setListFloor((f) => (h > f ? h : f))
+  })
+  useEffect(() => { const reset = () => setListFloor(0); window.addEventListener('resize', reset); return () => window.removeEventListener('resize', reset) }, [])
+  const attention = useAttentionItems() // the divider above Assets and liabilities only exists when the attention box does
+  useEffect(() => {
+    let saved: string | null = null
+    try { saved = localStorage.getItem('mm-nw-chart') } catch { /* private window */ }
+    setChartOpen(saved === '1' ? true : saved === '0' ? false : window.matchMedia('(min-width: 768px)').matches)
+  }, [])
+  const toggleChart = () => setChartOpen((o) => { const next = !(o ?? false); try { localStorage.setItem('mm-nw-chart', next ? '1' : '0') } catch { /* private window */ } return next })
 
   const m = useMemo(() => {
     if (!ready) return null
@@ -114,7 +151,8 @@ export default function DashboardPage() {
       ...upcomingCardDues(data.cards, today),
       ...upcomingPremiums(data.policies, today),
       ...upcomingSips(data.sips, data.funds, today),
-    ].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3)
+      ...upcomingSubscriptions((data.meta.find((x: any) => x.key === 'subscriptions')?.value ?? []) as any[], today),
+    ].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5)
     const assetPie = Object.entries(netWorth.assetBreakdown).filter(([, v]) => v > 0).map(([k, v]) => ({ key: k, name: ASSET_LABELS[k as keyof typeof ASSET_LABELS] ?? k, value: v }))
     const liabPie = Object.entries(netWorth.liabilityBreakdown).filter(([, v]) => v > 0).map(([k, v]) => ({ key: k, name: LIABILITY_LABELS[k as keyof typeof LIABILITY_LABELS] ?? k, value: v }))
     const recent = [
@@ -160,6 +198,7 @@ export default function DashboardPage() {
   // Assets | Liabilities, and under each a tab for every group (Investments, Banks, Insurance ... / Credit cards, Loans).
   // The open group lists what is in it; each row opens its page.
   // each row gets an icon of its own kind (a fund, a deposit, gold, a car loan...); the group's icon is the fallback
+
   const KIND_ICON: Record<string, LucideIcon> = {
     mutualFunds: PieIcon, stocks: TrendingUp, etf: BarChart3, fd: Landmark, rd: Banknote, epf: PiggyBank, ppf: PiggyBank, nps: PiggyBank, gold: Coins,
     realEstate: Home, vehicle: Car, other: Wallet, bank: Landmark, cash: Banknote, card: CreditCard,
@@ -178,13 +217,9 @@ export default function DashboardPage() {
 
   const blocks: Record<string, React.ReactNode> = {
     accounts: (
-      <section aria-label="Net worth breakdown" className="surface-card p-4 sm:p-5">
-        <div role="tablist" aria-label="Assets or liabilities" className="flex gap-7 border-b border-border">
-          {([['assets', 'Assets', netWorth.assets], ['liabilities', 'Liabilities', netWorth.liabilities]] as const).map(([k, l, v]) => (
-            <button key={k} type="button" role="tab" aria-selected={moneyTab === k} onClick={() => { setMoneyTab(k); setMoneySub(''); setShowAllRows(false) }} className={cn('-mb-px border-b-2 pb-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring', moneyTab === k ? 'border-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}>
-              <span className="block text-xs font-medium">{l}</span><span className={cn('block text-lg font-semibold tabular-nums', moneyTab === k && 'text-foreground')}><Money value={v} /></span>
-            </button>))}
-        </div>
+      <section aria-label="Net worth breakdown" className={attention.length > 0 ? 'border-t border-border pt-5' : undefined}>
+        <TabBar label="Assets or liabilities" value={moneyTab} onChange={(k) => { setMoneyTab(k as 'assets' | 'liabilities'); setMoneySub(''); setShowAllRows(false) }} tabs={[{ key: 'assets', label: 'Assets', sub: <Money value={netWorth.assets} /> }, { key: 'liabilities', label: 'Liabilities', sub: <Money value={netWorth.liabilities} /> }]} />
+        <div style={{ minHeight: listFloor || undefined }}><div ref={listInner}>
         {shownGroups.length === 0
           ? <p className="py-8 text-center text-sm text-muted-foreground">{moneyTab === 'assets' ? 'Add a bank account or an investment to start.' : 'No loans or card dues.'}</p>
           : <>
@@ -214,6 +249,7 @@ export default function DashboardPage() {
                 </button>
               )}
             </>}
+        </div></div>
       </section>
     ),
     summary: (
@@ -279,7 +315,7 @@ export default function DashboardPage() {
               <BarChart data={m.cashflow} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke={chartGrid} vertical={false} />
                 <XAxis dataKey="month" {...chartAxis} />
-                <YAxis {...chartAxis} width={48} tickFormatter={(v) => (privacyMode ? '••' : formatCompactINR(v).replace('₹', ''))} />
+                <YAxis {...chartAxis} width={84} tickFormatter={(v) => (privacyMode ? '••' : formatCompactINR(v).replace('₹', ''))} />
                 <Tooltip {...chartTooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => (privacyMode ? '••••' : formatINR(v))} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Bar dataKey="income" name="Income" fill={chartColor(1)} radius={[4, 4, 0, 0]} />
@@ -309,62 +345,71 @@ export default function DashboardPage() {
       </div>
     ),
     payments: (
-      <div className="grid gap-4 lg:grid-cols-2">
-        {(isEnabled('credit_cards') || isEnabled('insurance') || isEnabled('mutual_funds')) && <Panel title="Coming up">
-          {m.dues.length === 0 ? <Empty title="Nothing due soon" /> : (
-            <ul className="divide-y divide-border">
-              {m.dues.map((d) => (
-                <li key={`${d.kind}-${d.id}`}>
-                  <Link href={d.href} className="flex items-center justify-between gap-3 py-2.5 text-sm hover:text-primary">
-                    <span className="min-w-0"><span className="block truncate font-medium">{d.title}</span><span className="text-xs text-muted-foreground">{d.kind === 'card' ? 'Card payment' : d.kind === 'premium' ? 'Premium' : 'SIP'} · {formatDate(d.date)}</span></span>
-                    <Money value={d.amount} className="shrink-0 font-medium" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>}
-        <Panel title="Recent transactions" action={<Link className="-my-2 inline-flex min-h-11 shrink-0 items-center gap-1 whitespace-nowrap px-1 text-xs font-medium text-primary hover:underline" href="/dashboard/ledger">See all<ArrowRight className="h-3 w-3" aria-hidden /></Link>}>
+      <div>
+        {(isEnabled('credit_cards') || isEnabled('insurance') || isEnabled('mutual_funds')) && (
+          <section aria-label="Coming up">
+            <SectionHead icon={CalendarClock} tone="warning" title="Coming up" hint="Cards, premiums, SIPs and recurring payments" />
+            {m.dues.length === 0 ? <Empty title="Nothing due soon" /> : (
+              <ul className="divide-y divide-border">
+                {m.dues.map((d) => (
+                  <li key={`${d.kind}-${d.id}`}>
+                    <Link href={d.href} className="flex items-center justify-between gap-3 py-2.5 text-sm hover:text-primary">
+                      <span className="min-w-0"><span className="block truncate font-medium">{d.title}</span><span className="text-xs text-muted-foreground">{d.kind === 'card' ? 'Card payment' : d.kind === 'premium' ? 'Premium' : d.kind === 'recurring' ? 'Recurring payment' : 'SIP'} · due {formatDate(d.date)}</span></span>
+                      <Money value={d.amount} className="shrink-0 font-medium" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+        <section aria-label="Recent transactions" className="mt-5 border-t border-border pt-5">
+          <SectionHead icon={ReceiptText} tone="primary" title="Recent transactions" hint="Already happened" action={<Link className="inline-flex min-h-9 shrink-0 items-center gap-1 whitespace-nowrap px-1 text-xs font-medium text-primary hover:underline" href="/dashboard/budget?tab=transactions">See all<ArrowRight className="h-3 w-3" aria-hidden /></Link>} />
           {m.recent.length === 0 ? <Empty title="No transactions yet" /> : (
             <ul className="divide-y divide-border">
-              {m.recent.map((t) => <TxnRow key={t.id} kind={t.amount < 0 ? 'expense' : 'income'} title={t.title} category={t.sub} meta={`${t.sub} · ${formatDate(t.date)}`} amount={t.amount} />)}
+              {m.recent.slice(0, 5).map((t) => <TxnRow key={t.id} kind={t.amount < 0 ? 'expense' : 'income'} title={t.title} category={t.sub} meta={`${t.sub} · ${formatDate(t.date)}`} amount={t.amount} />)}
             </ul>
           )}
-        </Panel>
+        </section>
       </div>
     ),
   }
-  const visible = layout.order.filter((id) => !layout.hidden.includes(id))
+  const visible = layout.order.filter((id) => !layout.hidden.includes(id) && OVERVIEW_BLOCKS[ovTab].includes(id))
 
   return (
     <div className="space-y-5">
       <InstallBanner />
       <section className="surface-card relative overflow-hidden p-5 sm:p-6" aria-label="Net worth summary">
         <div className="relative flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary"><Wallet className="h-5 w-5" /></span>
-              <p className="flex items-center gap-1 text-sm font-medium text-muted-foreground">Net worth</p>
+              <p className="flex min-w-0 flex-1 items-center gap-1 text-sm font-medium text-muted-foreground">Net worth</p>
+              {hero && (
+                <button type="button" aria-expanded={!!chartOpen} aria-controls="net-worth-chart" aria-label={chartOpen ? 'Hide net worth chart' : 'Show net worth chart'} onClick={toggleChart} className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring', chartOpen ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>
+                  <TrendingUp className="h-5 w-5" aria-hidden />
+                </button>
+              )}
             </div>
             <p className="mt-3 text-4xl font-semibold tracking-tight tabular-nums md:text-5xl"><Money value={netWorth.netWorth} /></p>
             {/* the headline change is today's; the chart below has its own range, with that range's change */}
             <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-              <span className="inline-flex items-center gap-2"><Delta pill amount={m.dayMove.diff} pct={m.dayMove.pct} /><span className="text-xs text-muted-foreground">today</span></span>
+              <span className="inline-flex items-center gap-2"><Delta pill amount={m.dayMove.diff} pct={m.dayMove.pct} /><span className="text-xs text-muted-foreground">Today</span></span>
             </div>
           </div>
         </div>
         {hero && (
-          <div className="mt-5">
+          <div id="net-worth-chart" className={cn('mt-3', chartOpen === null ? 'max-md:hidden' : !chartOpen && 'hidden')}>
             {(() => {
               const up = hero.diff >= 0
               const LABEL = { '1W': 'Past week', '1M': 'Past month', '3M': 'Past 3 months', '6M': 'Past 6 months', '1Y': 'Past year', ALL: 'All time' }[heroRange]
               return (
                 <>
                   {/* one readout line above the chart: the range's change, or the touched point (so nothing covers the line) */}
-                  <div className="flex min-h-7 items-center gap-2 text-xs text-muted-foreground" aria-live="polite">
+                  <div className="flex min-h-9 flex-wrap items-center justify-start gap-x-2 gap-y-1 text-xs text-muted-foreground" aria-live="polite">
                     {hoverPt
                       ? <><span className="font-semibold tabular-nums text-foreground">{privacyMode ? '••••' : formatINR(hoverPt.v)}</span><span>{formatDate(hoverPt.date)}</span><Delta pill amount={hoverPt.v - hero.base} pct={hero.base ? ((hoverPt.v - hero.base) / Math.abs(hero.base)) * 100 : null} /></>
-                      : <>{LABEL}<Delta pill amount={hero.diff} pct={hero.pct} /></>}
+                      : <><Delta pill amount={hero.diff} pct={hero.pct} /><span>{LABEL}</span></>}
                   </div>
                   <GrowwChart height={160} readout={false} ariaLabel={`Net worth over the ${LABEL.toLowerCase()}, ${up ? 'up' : 'down'} ${formatINR(Math.abs(hero.diff))}`} format={(v) => (privacyMode ? '••••' : formatINR(v))} data={hero.series.map((pt) => ({ x: pt.date, y: pt.v }))} onHover={(pt) => setHoverPt(pt ? { date: pt.x, v: pt.y } : null)} />
                   <div role="tablist" aria-label="Chart range" className="mt-1 flex items-center justify-between">
@@ -383,7 +428,8 @@ export default function DashboardPage() {
         <Empty title="Nothing tracked yet" description="Add a bank account or mutual fund to start building your net worth." action={<Link className="text-sm font-medium text-primary underline" href="/dashboard/bank-accounts">Add a bank account</Link>} />
       )}
 
-      <AttentionStrip />
+      <TabBar label="Overview sections" value={ovTab} onChange={(k) => setOvTab(k as OverviewTab)} tabs={[{ key: 'dashboard', label: 'Dashboard' }, { key: 'activity', label: 'Recent activity' }]} />
+      {ovTab === 'dashboard' && <AttentionStrip />}
       <div className="grid gap-5 lg:grid-cols-2">{visible.map((id) => <div key={id} className={cn('min-w-0', layout.half.includes(id) ? '[&>div.grid]:!grid-cols-1 [&>div.grid>*]:!col-span-1' : 'lg:col-span-2')}>{blocks[id]}</div>)}</div>
 
 
@@ -391,7 +437,7 @@ export default function DashboardPage() {
 
 
 
-      <p className="text-center text-sm"><Link href="/dashboard/settings?tab=features" className="inline-flex min-h-11 items-center font-medium text-primary hover:underline">Explore more features</Link></p>
+      {FEATURE_KEYS.some((k) => !isEnabled(k)) && <p className="text-center text-sm"><Link href="/dashboard/settings?tab=features" className="inline-flex min-h-11 items-center font-medium text-primary hover:underline">Explore more features</Link></p>}
 
       {isDemo && <FootNote label="Sample data" className="justify-center">You are viewing sample data. Changes stay in this browser only.</FootNote>}
     </div>

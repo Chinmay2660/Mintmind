@@ -11,6 +11,7 @@ export const ACCOUNT_TYPES = [
   { value: 'savings', label: 'Savings' },
   { value: 'joint', label: 'Joint savings' },
   { value: 'salary', label: 'Salary account' },
+  { value: 'current', label: 'Current account' },
   { value: 'cash', label: 'Cash' }, // the one built-in Cash account; it is not offered when adding
 ]
 

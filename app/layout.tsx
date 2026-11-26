@@ -32,7 +32,8 @@ export const metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: [{ media: "(prefers-color-scheme: light)", color: "#F6F6F8" }, { media: "(prefers-color-scheme: dark)", color: "#120F1A" }],
+  // Light is the default for everyone, whatever the phone or computer is set to. ThemeColor follows the app's own theme (see LookIcon).
+  themeColor: "#F6F6F8",
   viewportFit: "cover",
   // Chrome on Android resizes the page when the keyboard opens, so bottom sheets stay above it (iOS is handled by KeyboardAware)
   interactiveWidget: "resizes-content",

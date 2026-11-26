@@ -46,11 +46,14 @@ export function FeaturesProvider({ children }: { children: ReactNode }) {
     return { ready: !!remote, enabled: new Set(remote ? normaliseSelection(remote.enabled) : FEATURE_KEYS), onboardingCompleted: remote?.onboardingCompleted ?? true, profile: remote?.profile ?? null }
   }, [isDemo, wealthReady, demoFeatures, demoOnboarding, remote])
 
-  // the chosen theme follows the account to other devices
+  // the chosen theme follows the account to a new device. A theme already saved on this device is the person's own choice and is never replaced:
+  // doing so after load was what flipped the page to another theme a moment after it appeared.
   useEffect(() => {
     if (!state.ready || themed.current || !state.profile?.preferredTheme || !state.onboardingCompleted) return
     themed.current = true
-    setTheme(state.profile.preferredTheme)
+    let saved: string | null = null
+    try { saved = localStorage.getItem('mm-theme') } catch { /* private window */ }
+    if (!saved) setTheme(state.profile.preferredTheme)
   }, [state, setTheme])
 
   const setFeature = useCallback(async (key: string, on: boolean) => {

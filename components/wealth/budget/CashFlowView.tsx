@@ -29,7 +29,7 @@ export function CashFlowView({ list, ym }: { list: any[]; ym: string }) {
         <ul className="space-y-3">
           {r.series.map((m) => (
             <li key={m.ym} style={{ display: 'grid', gridTemplateColumns: '2.75rem minmax(0, 1fr) auto', alignItems: 'center', columnGap: 12 }} className="text-xs">
-              <span className="font-bold uppercase text-muted-foreground">{label(m.ym)}</span>
+              <span className="font-bold text-muted-foreground">{label(m.ym)}</span>
               <span className="space-y-1">
                 <span className="block h-2 rounded-full bg-success" style={{ width: `${Math.sqrt(m.income / max) * 100}%`, minWidth: m.income ? 4 : 0 }} />
                 <span className="block h-2 rounded-full bg-destructive" style={{ width: `${Math.sqrt(m.expense / max) * 100}%`, minWidth: m.expense ? 4 : 0 }} />

@@ -276,7 +276,7 @@ export function TxnEntryDialog({ initialType = 'expense', row, draft, defaultMon
                 className={cn('h-12 w-full rounded-xl border border-input bg-background pl-8 pr-3 text-2xl font-semibold tabular-nums outline-none placeholder:text-muted-foreground/50 focus-visible:ring-2 focus-visible:ring-ring/40', tone.text)} /></div>
           </section>
           <section className="shrink-0 px-6 pb-3 pt-2 text-center md:hidden">
-            <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">{verb.verb}</p>
+            <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground">{verb.verb}</p>
             <p role="button" tabIndex={0} aria-label="Amount, show keypad" onClick={() => { setPanel(null); (document.activeElement as HTMLElement | null)?.blur() }} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPanel(null) } }} className={cn('mt-1 flex cursor-pointer items-baseline justify-center gap-1 tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring', tone.text)}>
               <span className="text-2xl font-medium opacity-70">₹</span>
               <span className={cn('font-semibold tracking-tight', (expr.length > 11 ? 'text-3xl' : expr.length > 8 ? 'text-4xl' : 'text-5xl'), !expr && 'opacity-30')}>{expr ? displayExpr(expr) : '0'}</span>

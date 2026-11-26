@@ -41,7 +41,7 @@ export function InviteReady({ info, onClose, onRefresh }: { info: InviteInfo; on
 
         {info.demo && <p className="rounded-lg border border-warning/50 bg-warning/10 px-3 py-2 text-xs">Demo account: this is a sample code and link. They count down like real ones, but they cannot be used to join, because the demo has no server.</p>}
         <div className="rounded-xl border border-border p-4 text-center">
-          <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">Code</p>
+          <p className="text-[11px] font-bold tracking-[0.08em] text-muted-foreground">Code</p>
           <p className={`mt-1 text-4xl font-bold tabular-nums tracking-[0.2em] ${expired ? 'text-muted-foreground line-through' : ''}`} aria-label={`Code ${info.otp.split('').join(' ')}`}>{info.otp.slice(0, 3)} {info.otp.slice(3)}</p>
           <p className={`mt-2 text-sm tabular-nums ${expired ? 'font-semibold text-destructive' : 'text-muted-foreground'}`} role="timer" aria-live="off">{expired ? 'Expired' : `Valid for ${clock(left)}`}</p>
         </div>

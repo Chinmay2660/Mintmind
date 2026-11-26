@@ -89,7 +89,7 @@ export default function OnboardingPage() {
       <div aria-hidden className="pointer-events-none absolute left-1/2 top-[-12rem] h-[28rem] w-[48rem] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
       <header className="relative border-b border-border/60 backdrop-blur"><div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Wallet className="h-4 w-4" /></span><span className="font-semibold">Mintmind</span></Link>
-        {isDemo && <span className="rounded-md bg-warning/15 px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-warning">Demo mode</span>}
+        {isDemo && <span className="rounded-md bg-warning/15 px-2 py-1 text-[11px] font-bold tracking-wide text-warning">Demo mode</span>}
       </div></header>
 
       <main className="relative mx-auto my-auto w-full max-w-4xl rounded-2xl border border-border bg-card/80 px-5 py-8 shadow-[var(--shadow-elevated)] backdrop-blur sm:px-10 sm:py-10">
@@ -172,7 +172,7 @@ function QuickSetup({ selected, data, onOpen }: { selected: string[]; data: any;
       {/* the first useful result: as soon as one item is added, show what it adds up to */}
       {(netWorth.assets > 0 || netWorth.liabilities > 0) && (
         <div className="rounded-xl border border-primary/40 bg-primary/5 p-4" role="status">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Your net worth so far</p>
+          <p className="text-xs font-medium tracking-wide text-muted-foreground">Your net worth so far</p>
           <p className="mt-1 text-3xl font-semibold tabular-nums"><Money value={netWorth.netWorth} /></p>
           <p className="mt-1 text-xs text-muted-foreground">Assets <Money value={netWorth.assets} /> minus loans <Money value={netWorth.liabilities} />. It updates as you add more.</p>
         </div>

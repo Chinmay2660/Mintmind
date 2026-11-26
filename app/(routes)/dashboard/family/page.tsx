@@ -105,7 +105,7 @@ export default function FamilyPage() {
         <Panel title="Net worth by member" className="lg:col-span-1">
           {chart.length === 0 ? <Empty title="Nothing shared yet" /> : (
             <div className="h-56"><ResponsiveContainer width="100%" height="100%"><BarChart data={chart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid stroke={chartGrid} vertical={false} /><XAxis dataKey="name" {...chartAxis} /><YAxis {...chartAxis} width={44} tickFormatter={(v) => (privacyMode ? '••' : formatCompactINR(v).replace('₹', ''))} />
+              <CartesianGrid stroke={chartGrid} vertical={false} /><XAxis dataKey="name" {...chartAxis} /><YAxis {...chartAxis} width={84} tickFormatter={(v) => (privacyMode ? '••' : formatCompactINR(v).replace('₹', ''))} />
               <Tooltip {...chartTooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => (privacyMode ? '••••' : formatINR(v))} />
               <Bar dataKey="netWorth" name="Net worth" radius={[4, 4, 0, 0]}>{chart.map((_, i) => <Cell key={i} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />)}</Bar></BarChart></ResponsiveContainer></div>
           )}

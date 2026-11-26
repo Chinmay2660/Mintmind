@@ -97,7 +97,7 @@ export function ProductTour() {
       <div ref={cardRef} tabIndex={-1} className="absolute rounded-2xl border border-border bg-popover p-4 text-popover-foreground shadow-elevated outline-none" style={style}>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Step {step + 1} of {STEPS.length}</p>
+            <p className="text-[11px] font-medium tracking-wide text-muted-foreground">Step {step + 1} of {STEPS.length}</p>
             <h3 className="mt-0.5 text-base font-semibold">{s.title}</h3>
           </div>
           <button type="button" onClick={finish} aria-label="Skip tour" className="-mr-1 -mt-1 rounded-full p-1.5 text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>

@@ -92,7 +92,7 @@ export default function BankAccountDetail() {
         <Panel title="Money in vs out (6 months)">
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%"><BarChart data={flow} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid stroke={chartGrid} vertical={false} /><XAxis dataKey="label" {...chartAxis} /><YAxis {...chartAxis} width={48} tickFormatter={ax} />
+              <CartesianGrid stroke={chartGrid} vertical={false} /><XAxis dataKey="label" {...chartAxis} /><YAxis {...chartAxis} width={84} tickFormatter={ax} />
               <Tooltip {...chartTooltipStyle} cursor={{ fill: 'hsl(var(--muted))' }} formatter={(v: number) => (privacyMode ? '••••' : formatINR(v))} />
               <Bar dataKey="In" fill={chartColor(1)} radius={[4, 4, 0, 0]} /><Bar dataKey="Out" fill={chartColor(3)} radius={[4, 4, 0, 0]} />
             </BarChart></ResponsiveContainer>

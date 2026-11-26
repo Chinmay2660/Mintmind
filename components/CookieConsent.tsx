@@ -11,7 +11,7 @@ import { OPEN_COOKIE_SETTINGS, clearPreferenceKeys, readConsent, writeConsent } 
 
 /**
  * Asks once. Essential storage is always on; remembering preferences needs a yes. Reject keeps the app fully working,
- * it just forgets theme and layout between visits. The choice can be changed from the footer or Settings.
+ * it just forgets layout between visits (the theme you choose is always kept). The choice can be changed from the footer or Settings.
  */
 export default function CookieConsent() {
   const [decided, setDecided] = useState<boolean | null>(null) // null until we have looked
@@ -46,7 +46,7 @@ export default function CookieConsent() {
             <div className="min-w-0 flex-1">
               <h2 className="text-sm font-bold">Cookies and local storage</h2>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Essential storage keeps you signed in and holds a local copy of your records, so it is always on. With your OK we also remember your theme, sidebar and planning inputs between visits.
+                Essential storage keeps you signed in and holds a local copy of your records, so it is always on. With your OK we also remember your sidebar and planning inputs between visits.
                 We don&apos;t use advertising or analytics cookies and nothing goes to a third party. <Link href="/cookies" className="font-medium text-foreground underline">What exactly is stored</Link>.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">

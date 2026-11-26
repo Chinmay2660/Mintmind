@@ -71,7 +71,7 @@ function NavPanel({ collapsed = false, drawer = false, onNavigate, onToggleRail 
           <>
             {sections.map((sec, n) => (
               <div key={sec.label ?? 'main'} className={cn(n > 0 && 'mt-4')}>
-                {sec.label && <p className="mb-1 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{sec.label}</p>}
+                {sec.label && <p className="mb-1 px-2.5 text-[11px] font-semibold tracking-wider text-muted-foreground">{sec.label}</p>}
                 <ul className="space-y-0.5">
                   {sec.items.map((i) => <li key={i.id}>{row(i)}</li>)}
                   {n === 0 && aiOn && (
