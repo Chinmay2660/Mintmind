@@ -1,12 +1,12 @@
 'use client'
 
+import { SummaryHeader } from '@/components/wealth/HoldingUI'
 import { BackBar } from '@/components/shell/BackBar'
-import { useRouter } from 'next/navigation'
 import { shortAccountName } from '@/lib/wealth/accountName'
 import { TabBar } from '@/components/ui/tab-bar'
 import { useEffect, useMemo, useState } from 'react'
 import { useDetailCrumb } from '@/components/shell/DetailCrumb'
-import { ArrowLeft, ChevronRight, CreditCard, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ChevronRight, CreditCard, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useWealth } from '@/lib/wealth/WealthContext'
@@ -20,8 +20,8 @@ import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, StepFormDialog, LoadingBlock, PageHeader, Panel, Progress, Select, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForPct, toneForCredit, UsagePct } from '@/components/wealth/kit'
-import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
+import { Empty, Field, FormDialog, StepFormDialog, LoadingBlock, PageHeader, Panel, Progress, Select, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForCredit, UsagePct } from '@/components/wealth/kit'
+import { CopyValue } from '@/components/wealth/CopyButton'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { cn } from '@/lib/utils'
 import { DateInput } from '@/components/ui/pickers'
@@ -32,10 +32,8 @@ function CreditCardsTab() {
   const { ready, data, db } = useWealth()
   const { privacyMode } = usePrivacyMode()
   const [sel, setSel] = useState<string | null>(null)
-  const router = useRouter()
   const [fromLink, setFromLink] = useState(false) // opened straight to one card (from the Overview): Back returns there
   useEffect(() => { const id = new URLSearchParams(window.location.search).get('card'); if (id) { setSel(id); setFromLink(true) } }, [])
-  const closeSel = () => { if (fromLink) router.back(); else setSel(null) }
   const [dlg, setDlg] = useState<null | { kind: 'card' | 'pay' | 'del'; row?: any }>(null)
   const today = useMemo(() => new Date(), [])
   const t = useMemo(() => {
@@ -62,13 +60,9 @@ function CreditCardsTab() {
       <PageHeader secondaryAction={{ label: 'Add transaction', disabled: data.cards.length === 0, onClick: () => setDlg({ kind: 'pay', row: card }) }} primaryAction={openCard ? undefined : { label: 'Add card', onClick: () => setDlg({ kind: 'card' }) }} />
       {data.cards.length > 1 && <TabBar label="Cards" value={sel ?? 'all'} onChange={(k) => setSel(k === 'all' ? null : k)} tabs={[{ key: 'all', label: 'All cards', badge: data.cards.length }, ...data.cards.map((c) => ({ key: c.id, label: `${c.bank} ${c.cardName}` }))]} />}
       {!openCard && <section aria-label="Summary" className="space-y-3">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Total limit" value={<Money value={t.limit} />} />
-        <Stat label="Outstanding" value={<Money value={t.outstanding} />} />
-        <Stat label="Available credit" value={<Money value={t.available} />} />
-        <Stat label="Utilisation" value={<UsagePct value={t.util} />} hint={<Progress value={t.util} tone={toneForCredit(t.util)} label="Utilisation" />} />
-      </div>
-      <p className="text-xs text-muted-foreground">Card spend this month: <Money value={t.monthSpend} /></p>
+      <SummaryHeader label="Outstanding" value={<Money value={t.outstanding} />}
+        sub={<span className="text-muted-foreground">Utilisation <UsagePct value={t.util} /></span>}
+        stats={[{ label: 'Total limit', value: <Money value={t.limit} compact /> }, { label: 'Available', value: <Money value={t.available} compact /> }, { label: 'Spent this month', value: <Money value={t.monthSpend} compact /> }]} />
       </section>}
 
       {data.cards.length === 0 ? <Empty title="No credit cards" action={<Button onClick={() => setDlg({ kind: 'card' })}>Add card</Button>} /> : (

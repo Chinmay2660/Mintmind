@@ -2,18 +2,15 @@
 
 import { TabBar } from '@/components/ui/tab-bar'
 import { useEffect, useMemo, useState } from 'react'
-import { Area, AreaChart, CartesianGrid, ReferenceDot, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Building2, Check, Download, FileSpreadsheet, FileText, Flag, Plus, Scale, StickyNote, TrendingUp } from 'lucide-react'
+import { Building2, Check, Flag, Plus, Scale, StickyNote, TrendingUp } from 'lucide-react'
 import { useWealth } from '@/lib/wealth/WealthContext'
-import { growthVs, toISO } from '@/lib/wealth/calc'
-import { ASSET_LABELS, LIABILITY_LABELS } from '@/lib/wealth/labels'
-import { formatCompactINR, formatDate, formatINR } from '@/lib/wealth/format'
+import { toISO } from '@/lib/wealth/calc'
+import { formatCompactINR, formatINR } from '@/lib/wealth/format'
 import { monthLabel } from '@/lib/wealth/selectors'
 import { Money } from '@/components/wealth/Money'
-import { Button } from '@/components/ui/button'
 import { QuickTiles } from '@/components/ui/quick-tiles'
-import { Input } from '@/components/ui/input'
-import { Delta, Empty, LoadingBlock, PageHeader, Panel, RangeTabs, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle } from '@/components/wealth/kit'
+import { GrowwChart } from '@/components/wealth/GrowwChart'
+import { Empty, LoadingBlock, PageHeader, Panel, RangeTabs, Stat } from '@/components/wealth/kit'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { GoalsPanel } from '@/components/wealth/GoalsPanel'
 import { ForecastPanel } from '@/components/wealth/ForecastPanel'
@@ -22,10 +19,7 @@ import { FinancialMetrics } from '@/components/wealth/FinancialMetrics'
 import { LimitsPanel } from '@/components/wealth/LimitsPanel'
 import { WhyChanged } from '@/components/wealth/WhyChanged'
 import { NetWorthJournal } from '@/components/wealth/NetWorthJournal'
-import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { assetValue } from '@/lib/wealth/holdings'
-import { byAccountType } from '@/lib/wealth/accountTypes'
 import { netWorthEvents } from '@/lib/wealth/nwEvents'
 import { DateInput } from '@/components/ui/pickers'
 
@@ -42,7 +36,6 @@ const EVENT_STYLE: Record<string, { color: string; icon: typeof Flag; label: str
   'asset-up': { color: 'hsl(var(--chart-2))', icon: TrendingUp, label: 'Asset up' },
   note: { color: 'hsl(var(--muted-foreground))', icon: StickyNote, label: 'Your note' },
 }
-type Kind = 'asset' | 'liability'
 
 function NetWorthOverview() {
   const { ready, data, netWorth } = useWealth()
@@ -61,7 +54,6 @@ function NetWorthOverview() {
     setCustomRange(false); setTo('')
     setFrom(r.months > 0 ? monthsAgoISO(r.months) : '')
   }
-  const today = useMemo(() => new Date(), [])
 
   const snapshots = useMemo(() => {
     let s = [...data.snapshots].sort((a, b) => a.date.localeCompare(b.date))
@@ -126,42 +118,24 @@ function NetWorthOverview() {
           )}
         </div>
         {chart.length < 2 ? <Empty title="Not enough snapshots for this range" /> : (() => {
-          const SERIES = [{ k: 'netWorth', label: 'Net worth', color: chartColor(1) }, { k: 'assets', label: 'Assets', color: chartColor(2) }, { k: 'liabilities', label: 'Liabilities', color: chartColor(5) }] as const
-          const active = SERIES.filter((x) => show[x.k])
-          // the scale follows what is drawn, with room above and below, so the movement is visible instead of squashed against zero
-          const vals = chart.flatMap((c) => active.map((x) => c[x.k]))
-          const lo = Math.min(...vals), hi = Math.max(...vals), pad = Math.max(1, (hi - lo) * 0.12)
-          const toggle = (k: 'netWorth' | 'assets' | 'liabilities') => setShow((cur) => (cur[k] && SERIES.filter((x) => cur[x.k]).length === 1 ? cur : { ...cur, [k]: !cur[k] }))
+          const SERIES = [{ k: 'netWorth', label: 'Net worth' }, { k: 'assets', label: 'Assets' }, { k: 'liabilities', label: 'Liabilities' }] as const
+          const key = SERIES.find((x) => show[x.k])?.k ?? 'netWorth'
+          const pick = (k: 'netWorth' | 'assets' | 'liabilities') => setShow({ netWorth: k === 'netWorth', assets: k === 'assets', liabilities: k === 'liabilities' })
+          const label = SERIES.find((x) => x.k === key)!.label
           return (
             <>
-              <div role="group" aria-label="Lines on the chart" className="mb-2 flex flex-wrap gap-2">
+              <div role="tablist" aria-label="What the chart shows" className="mb-2 flex gap-5 border-b border-border">
                 {SERIES.map((x) => (
-                  <button key={x.k} type="button" aria-pressed={show[x.k]} onClick={() => toggle(x.k)} className={cn('inline-flex min-h-9 items-center gap-2 rounded-full border px-3 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', show[x.k] ? 'border-border bg-card text-foreground' : 'border-border text-muted-foreground')}>
-                    <i className="h-2.5 w-2.5 rounded-full" style={{ background: show[x.k] ? x.color : 'transparent', boxShadow: `inset 0 0 0 1.5px ${x.color}` }} aria-hidden />{x.label}
-                  </button>
+                  <button key={x.k} type="button" role="tab" aria-selected={key === x.k} onClick={() => pick(x.k)} className={cn('-mb-px min-h-11 border-b-2 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', key === x.k ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}>{x.label}</button>
                 ))}
               </div>
-              <div className="h-64 sm:h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chart} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                    <defs><linearGradient id="nwHistFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={chartColor(1)} stopOpacity={0.25} /><stop offset="100%" stopColor={chartColor(1)} stopOpacity={0} /></linearGradient></defs>
-                    <CartesianGrid stroke={chartGrid} vertical={false} strokeDasharray="3 3" />
-                    <XAxis dataKey="label" {...chartAxis} minTickGap={36} axisLine={false} tickLine={false} />
-                    <YAxis {...chartAxis} width={68} axisLine={false} tickLine={false} domain={[lo - pad, hi + pad]} tickFormatter={(v) => (privacyMode ? '••' : formatCompactINR(v).replace('₹', ''))} />
-                    <Tooltip {...chartTooltipStyle} cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, strokeDasharray: '3 3', strokeOpacity: 0.6 }} formatter={(v: number, n: string) => [privacyMode ? '••••' : formatINR(v), n]} />
-                    {show.liabilities && <Area type="monotone" dataKey="liabilities" name="Liabilities" stroke={chartColor(5)} strokeWidth={2} fill="none" dot={false} activeDot={{ r: 4 }} />}
-                    {show.assets && <Area type="monotone" dataKey="assets" name="Assets" stroke={chartColor(2)} strokeWidth={2} fill="none" dot={false} activeDot={{ r: 4 }} />}
-                    {show.netWorth && <Area type="monotone" dataKey="netWorth" name="Net worth" stroke={chartColor(1)} strokeWidth={2.5} fill="url(#nwHistFill)" dot={false} activeDot={{ r: 5, stroke: 'hsl(var(--card))', strokeWidth: 2 }} />}
-                    {/* Recharts must see these as direct children of the chart, so they are a flat list and not wrapped in a group */}
-                    {shownEvents.flatMap((e) => { const pt = chart.find((c) => c.ym === e.ym); if (!pt) return []; const st = EVENT_STYLE[e.kind]; return [<ReferenceLine key={`${e.id}-l`} x={pt.label} stroke={st.color} strokeDasharray="2 4" strokeOpacity={0.6} />, <ReferenceDot key={`${e.id}-d`} x={pt.label} y={pt.netWorth} r={6} fill={st.color} stroke="hsl(var(--card))" strokeWidth={2} />] })}
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              <GrowwChart height={256} tone={key === 'liabilities' ? 'neutral' : 'auto'} ariaLabel={`${label} over the chosen range`}
+                data={chart.map((c: any) => ({ x: c.label, y: c[key] }))} format={(v) => (privacyMode ? '••••' : formatINR(v))} />
             </>
           )
         })()}
         {shownEvents.length > 0 && (
-          <ol className="mt-4 grid gap-x-6 gap-y-2.5 border-t border-border pt-3 sm:grid-cols-2" aria-label="Milestones on the chart">
+          <ol className="mt-4 grid gap-x-6 gap-y-2.5 border-t border-border pt-3 sm:grid-cols-2" aria-label="Milestones">
             {shownEvents.map((e) => { const st = EVENT_STYLE[e.kind]; const Icon = st.icon; return (
               <li key={e.id} className="flex items-start gap-2.5 text-sm">
                 <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white" style={{ background: st.color }} aria-hidden><Icon className="h-3.5 w-3.5" strokeWidth={2.5} /></span>

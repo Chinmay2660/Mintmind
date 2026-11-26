@@ -4,12 +4,11 @@ import Link from 'next/link'
 import { BackBar } from '@/components/shell/BackBar'
 import { IncomeProgressPanel, type IncomePlan } from '@/components/wealth/budget/IncomeBudget'
 import { planFor } from '@/lib/wealth/incomeBudget'
-import { useDetailCrumb } from '@/components/shell/DetailCrumb'
 import { toastProblem } from '@/lib/notify'
 import { TabBar } from '@/components/ui/tab-bar'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, Plus, Settings2, TriangleAlert } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, TriangleAlert } from 'lucide-react'
 import { useKeys } from '@/lib/hooks/useKeys'
 import { RecurringView } from '@/components/wealth/budget/RecurringView'
 import { SubscriptionsPanel } from '@/components/wealth/budget/Subscriptions'
@@ -19,28 +18,24 @@ import { BudgetList } from '@/components/wealth/budget/BudgetList'
 import { expenseParts } from '@/lib/wealth/splits'
 import { SplitDialog } from '@/components/wealth/budget/SplitDialog'
 import { toast } from 'sonner'
-import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { deleteExpense, deleteIncome, deleteTransfer, save, setBookmarks } from '@/lib/wealth/actions'
-import { addMonths, availableBalance, budgetPacing, round2, toISO } from '@/lib/wealth/calc'
+import { addMonths, budgetPacing, round2, toISO } from '@/lib/wealth/calc'
 import { useCategories } from '@/lib/wealth/useCategories'
-import { childOf, groupCategories } from '@/lib/wealth/subcategories'
 import { buildTransactions, inMonth } from '@/lib/wealth/transactions'
 import { TxnEntryDialog, type TxnType } from '@/components/wealth/budget/TxnEntryDialog'
 import { CalendarView, MonthlyView, StatsView, SummaryStrip, SummaryView, TransactionsView, type Tx } from '@/components/wealth/budget/Views'
 import { MonthPicker } from '@/components/ui/pickers'
-import { categoryTotals, monthKey, monthTotal } from '@/lib/wealth/selectors'
-import { formatCompactINR, formatDate, formatINR } from '@/lib/wealth/format'
+import { categoryTotals, monthTotal } from '@/lib/wealth/selectors'
+import { formatINR } from '@/lib/wealth/format'
 import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, InfoTip, Metric, Progress, Select, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForPct, UsagePct } from '@/components/wealth/kit'
+import { GrowwChart } from '@/components/wealth/GrowwChart'
+import { Empty, LoadingBlock, PageHeader, Panel, Metric, Select, Stat, UsagePct } from '@/components/wealth/kit'
 import { cn } from '@/lib/utils'
-import { DateInput } from '@/components/ui/pickers'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { GROUPS, VIEW_LABEL, groupOf, viewFor, KEY_GROUPS } from '@/lib/wealth/budgetTabs'
-import { Checkbox } from '@/components/ui/checkbox'
 
 const TAB_ORDER = ['overview', 'transactions', 'calendar', 'review', 'monthly', 'summary', 'stats', 'cashflow', 'recurring'] as const
 
@@ -52,16 +47,13 @@ export default function BudgetPage() {
   const [ym, setYm] = useState(curYm)
   const [dlg, setDlg] = useState<null | { kind: 'categories' | 'txn' | 'del' | 'delmany'; row?: any; draft?: any; type?: TxnType; tx?: Tx; txs?: Tx[] }>(null)
   const [tab, setTab] = useState<'overview' | 'transactions' | 'calendar' | 'monthly' | 'summary' | 'recurring' | 'stats' | 'cashflow' | 'review'>('overview')
-  const { expense: EXPENSE_CATEGORIES, income: INCOME_CATEGORIES } = useCategories()
+  const { expense: EXPENSE_CATEGORIES } = useCategories()
   const [catFilter, setCatFilter] = useState('')
   const lastTabBeforeCategory = useRef<'overview'>('overview')
   const [txnKind, setTxnKind] = useState<'all' | 'expense' | 'income' | 'transfer'>('all') // which kind the Transactions list opens on, when you came from a summary card
   const [txnCat, setTxnCat] = useState('') // category the Transactions list opens on, when you came from a category
   const [pacingOpen, setPacingOpen] = useState(false) // the pace chart and detail numbers are one tap away, not on the page by default
-  const [openKids, setOpenKids] = useState<Set<string>>(new Set()) // parents whose sub-categories are showing in Category budgets
   const router = useRouter()
-  const [phone, setPhone] = useState(false)
-  useEffect(() => { const mq = window.matchMedia('(max-width: 767px)'); const f = () => setPhone(mq.matches); f(); mq.addEventListener('change', f); return () => mq.removeEventListener('change', f) }, [])
   const params = useSearchParams()
   const fromCategory = useRef(false)
   // a category opens that month's expense list as its own history step, so Back goes to the Overview or Budgets you came from
@@ -120,7 +112,6 @@ export default function BudgetPage() {
     '[': () => setYm((cur) => addMonths(`${cur}-01`, -1).slice(0, 7)),
     ']': () => setYm((cur) => { const next = addMonths(`${cur}-01`, 1).slice(0, 7); return next > curYm ? cur : next }),
   })
-  const step = (by: number) => setYm((cur) => { const next = addMonths(`${cur}-01`, by).slice(0, 7); return next > curYm ? cur : next })
   const askDelete = (t: Tx) => setDlg({ kind: 'del', tx: t })
   if (!ready) return <LoadingBlock className="h-64" />
 
@@ -223,21 +214,9 @@ export default function BudgetPage() {
             <button type="button" onClick={() => setMoreStats((v) => !v)} aria-expanded={moreStats} className="-mt-2 flex w-full items-center justify-center gap-1 py-1 text-xs font-medium text-primary md:hidden">{moreStats ? 'Fewer numbers' : 'More numbers'}<ChevronDown className={cn('h-3.5 w-3.5 transition-transform', moreStats && 'rotate-180')} /></button>
 
             <Panel title={catFilter ? `Daily pacing: ${catFilter}` : 'Daily pacing'}>
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={p.series} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                    <CartesianGrid stroke={chartGrid} vertical={false} />
-                    <XAxis dataKey="day" {...chartAxis} label={{ value: 'Day of month', position: 'insideBottom', offset: 0, fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} height={44} />
-                    <YAxis {...chartAxis} width={52} tickFormatter={(v) => (privacyMode ? '••' : formatCompactINR(v).replace('₹', ''))} />
-                    <Tooltip {...chartTooltipStyle} labelFormatter={(d) => `Day ${d}`} formatter={(v: number, n: string) => [privacyMode ? '••••' : formatINR(v), n]} />
-                    <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
-                    {scopeBudget > 0 && <ReferenceLine y={scopeBudget} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" label={{ value: 'Budget', fill: 'hsl(var(--muted-foreground))', fontSize: 11, position: 'insideTopLeft' }} />}
-                    {ym === curYm && <ReferenceLine x={p.dayToday} stroke="hsl(var(--border))" />}
-                    <Line type="monotone" dataKey="expected" name="Expected cumulative" stroke={chartColor(2)} strokeWidth={2} strokeDasharray="6 3" dot={false} />
-                    <Line type="monotone" dataKey="actual" name="Actual cumulative" stroke={chartColor(3)} strokeWidth={2.5} dot={false} connectNulls={false} activeDot={{ r: 4 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+              <GrowwChart height={256} tone="neutral" secondLabel="Expected" ariaLabel="Spending so far this month against the expected pace"
+                data={p.series.map((x: any) => ({ x: `Day ${x.day}`, y: x.actual, y2: x.expected }))} format={(v) => (privacyMode ? '••••' : formatINR(v))} />
+              <p className="mt-2 text-xs text-muted-foreground">Solid line: spent so far. Dashed line: the even pace to the month end{scopeBudget > 0 ? `, where it reaches the ${formatINR(scopeBudget)} budget` : ''}.</p>
             </Panel>
 
             </>

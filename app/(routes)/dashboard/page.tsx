@@ -4,12 +4,12 @@ import { GrowwChart } from '@/components/wealth/GrowwChart'
 import { netWorthGroups } from '@/lib/wealth/netWorthGroups'
 import { InstallBanner } from '@/components/shell/InstallApp'
 import Link from 'next/link'
-import { ArrowRight, BarChart3, Banknote, Car, ChevronDown, ChevronRight, Coins, GraduationCap, PiggyBank, TrendingUp, User, CreditCard, Home, Percent, Plus, Landmark, PieChart as PieIcon, ShieldCheck, Wallet, type LucideIcon } from 'lucide-react'
+import { ArrowRight, BarChart3, Banknote, Car, ChevronDown, ChevronRight, Coins, GraduationCap, PiggyBank, TrendingUp, User, CreditCard, Home, Percent, Landmark, PieChart as PieIcon, ShieldCheck, Wallet, type LucideIcon } from 'lucide-react'
 import { AttentionStrip } from '@/components/dashboard/AttentionStrip'
 import { SnapCarousel } from '@/components/ui/snap-carousel'
 import { TxnRow } from '@/components/wealth/budget/TxnRow'
 import { useMemo, useState } from 'react'
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { toISO } from '@/lib/wealth/calc'
 import { budgetPacing, dayChange, growthVs, healthScore, portfolioSummary, rangeStart, cardUtilisation } from '@/lib/wealth/calc'
@@ -18,13 +18,12 @@ import { coverageTotals, incomeVsExpenses, monthLabel } from '@/lib/wealth/selec
 import { upcomingCardDues, upcomingPremiums, upcomingSips } from '@/lib/wealth/reminders'
 import { cn } from '@/lib/utils'
 import { assetValue } from '@/lib/wealth/holdings'
-import { formatCompactINR, formatDate, formatINR, formatPct } from '@/lib/wealth/format'
+import { formatCompactINR, formatDate, formatINR } from '@/lib/wealth/format'
 import { Money } from '@/components/wealth/Money'
 import { CHART_PALETTE, Delta, Empty, InfoTip, Metric, UsagePct, LoadingBlock, Panel, Progress, RangeTabs, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForPct, FootNote } from '@/components/wealth/kit'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { useAi } from '@/components/ai/useAi'
 import { useFeatures } from '@/lib/features/FeaturesContext'
-import dynamic from 'next/dynamic'
 
 // drag and drop (framer-motion) is only needed once someone opens Customize
 import { useDashboardLayout, DASHBOARD_BLOCKS } from '@/components/dashboard/useDashboardLayout'
@@ -170,7 +169,6 @@ export default function DashboardPage() {
   const GROUP_ICON: Record<string, LucideIcon> = { invest: PieIcon, banks: Landmark, property: Home, insurance: ShieldCheck, cards: CreditCard, loans: Percent }
   const groups = netWorthGroups({ assetBreakdown: netWorth.assetBreakdown as any, bankAccounts: data.bankAccounts, cards: data.cards, liabilities: data.liabilities, cover: isEnabled('insurance') ? m.cover.total : 0, coverCount: m.cover.activeCount, funds: data.funds, balanceHistory: data.balanceHistory, expenses: data.expenses, cardPayments: data.cardPayments, todayIso: toISO(today), policies: data.policies.filter((p: any) => !p.endDate || p.endDate >= toISO(today)), labels: ASSET_LABELS as any })
   const shownGroups = (moneyTab === 'assets' ? groups.assets : groups.liabilities).filter((g) => g.key !== 'banks' || isEnabled('bank_accounts')).filter((g) => g.key !== 'cards' || isEnabled('credit_cards'))
-  const tabTotal = moneyTab === 'assets' ? netWorth.assets : netWorth.liabilities
   // the first kind is open by default; its holdings are listed biggest first, five at a time
   const openGroup = shownGroups.find((g) => g.key === moneySub) ?? shownGroups[0]
   const allRows: any[] = openGroup
@@ -244,17 +242,7 @@ export default function DashboardPage() {
           {m.series.length < 2 ? (
             <Empty title="Not enough history yet" description="Net worth snapshots build up automatically as your data changes." />
           ) : (
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={m.series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid stroke={chartGrid} vertical={false} />
-                  <XAxis dataKey="label" {...chartAxis} minTickGap={24} />
-                  <YAxis {...chartAxis} width={56} tickFormatter={(v) => (privacyMode ? '••' : formatCompactINR(v).replace('₹', ''))} />
-                  <Tooltip {...chartTooltipStyle} formatter={(v: number) => [privacyMode ? '••••' : formatINR(v), 'Net worth']} />
-                  <Line type="monotone" dataKey="netWorth" stroke={chartColor(1)} strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <GrowwChart height={256} ariaLabel="Net worth over time" data={m.series.map((x: any) => ({ x: x.label, y: x.netWorth }))} format={(v) => (privacyMode ? '••••' : formatINR(v))} />
           )}
         </Panel>
 
@@ -336,7 +324,7 @@ export default function DashboardPage() {
             </ul>
           )}
         </Panel>}
-        <Panel title="Recent transactions" action={<Link className="-my-2 inline-flex shrink-0 items-center gap-1 whitespace-nowrap py-2 text-xs font-medium text-primary hover:underline" href="/dashboard/ledger">See all<ArrowRight className="h-3 w-3" aria-hidden /></Link>}>
+        <Panel title="Recent transactions" action={<Link className="-my-2 inline-flex min-h-11 shrink-0 items-center gap-1 whitespace-nowrap px-1 text-xs font-medium text-primary hover:underline" href="/dashboard/ledger">See all<ArrowRight className="h-3 w-3" aria-hidden /></Link>}>
           {m.recent.length === 0 ? <Empty title="No transactions yet" /> : (
             <ul className="divide-y divide-border">
               {m.recent.map((t) => <TxnRow key={t.id} kind={t.amount < 0 ? 'expense' : 'income'} title={t.title} category={t.sub} meta={`${t.sub} · ${formatDate(t.date)}`} amount={t.amount} />)}
@@ -369,7 +357,6 @@ export default function DashboardPage() {
           <div className="mt-5">
             {(() => {
               const up = hero.diff >= 0
-              const col = up ? 'hsl(var(--chart-up, var(--success)))' : 'hsl(var(--destructive))'
               const LABEL = { '1W': 'Past week', '1M': 'Past month', '3M': 'Past 3 months', '6M': 'Past 6 months', '1Y': 'Past year', ALL: 'All time' }[heroRange]
               return (
                 <>
@@ -404,7 +391,7 @@ export default function DashboardPage() {
 
 
 
-      <p className="text-center text-sm"><Link href="/dashboard/settings?tab=features" className="font-medium text-primary hover:underline">Explore more features</Link></p>
+      <p className="text-center text-sm"><Link href="/dashboard/settings?tab=features" className="inline-flex min-h-11 items-center font-medium text-primary hover:underline">Explore more features</Link></p>
 
       {isDemo && <FootNote label="Sample data" className="justify-center">You are viewing sample data. Changes stay in this browser only.</FootNote>}
     </div>

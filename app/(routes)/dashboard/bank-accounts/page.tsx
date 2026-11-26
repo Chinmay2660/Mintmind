@@ -1,5 +1,6 @@
 'use client'
 
+import { SummaryHeader } from '@/components/wealth/HoldingUI'
 import { TabBar } from '@/components/ui/tab-bar'
 import { DebitCardsTab } from '@/components/wealth/DebitCards'
 import { BackBar } from '@/components/shell/BackBar'
@@ -11,11 +12,11 @@ import { ChevronRight, Landmark } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { save } from '@/lib/wealth/actions'
-import { availableBalance, mabShortfall, toISO } from '@/lib/wealth/calc'
+import { availableBalance, mabShortfall } from '@/lib/wealth/calc'
 import { formatDate } from '@/lib/wealth/format'
 import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
-import { Empty, LoadingBlock, PageHeader, Stat } from '@/components/wealth/kit'
+import { Empty, LoadingBlock, PageHeader } from '@/components/wealth/kit'
 import { AccountForm, ACCOUNT_TYPES } from '@/components/wealth/AccountForm'
 
 export default function BankAccountsPage() {
@@ -34,10 +35,7 @@ export default function BankAccountsPage() {
     <div className="space-y-5">
       <BackBar phoneOnly />
       <PageHeader primaryAction={tab === 'debit' ? undefined : { label: 'Add account', onClick: () => setAdding(true) }} />
-      <section aria-label="Summary" className="grid grid-cols-2 gap-3 border-b border-border pb-5 lg:grid-cols-3">
-        <Stat label="Total balance" value={<Money value={total} />} />
-        <Stat label="Accounts" value={data.bankAccounts.length} />
-      </section>
+      <SummaryHeader label="Total balance" value={<Money value={total} />} stats={[{ label: 'Accounts', value: data.bankAccounts.length }]} />
       <TabBar label="Kinds of account" value={active} onChange={setTab} tabs={[{ key: 'all', label: 'All', badge: data.bankAccounts.length }, ...kinds.map((k) => ({ key: k.value, label: k.label, badge: data.bankAccounts.filter((b: any) => b.type === k.value).length })), { key: 'debit', label: 'Debit cards', badge: data.debitCards.length }]} />
       {active === 'debit' ? <DebitCardsTab /> : data.bankAccounts.length === 0 ? (
         <Empty title="No bank accounts yet" description="Add your savings accounts to track balances and history." action={<Button onClick={() => setAdding(true)}>Add account</Button>} />

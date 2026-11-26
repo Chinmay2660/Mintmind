@@ -20,7 +20,7 @@ export async function GET(request, { params }) {
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': doc.mimeType || 'application/octet-stream',
-        'Content-Disposition': `inline; filename="${doc.fileName || 'document'}"`,
+        'Content-Disposition': `inline; filename="${String(doc.fileName || 'document').replace(/[^\w. -]/g, '_')}"`,
         'Content-Length': String(buffer.length),
       },
     });

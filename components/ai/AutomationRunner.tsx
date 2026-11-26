@@ -34,14 +34,13 @@ export function AutomationRunner() {
       if (!rules.length) return
       const { runs, rules: next } = runDueRules(rules, f, d, new Date())
       if (!runs.length) return
-      const profile = d.meta.find((m: any) => m.key === 'profile')?.value
       for (const r0 of runs) {
         const r: any = r0
         const rule = next.find((x: any) => x.id === r.ruleId)
         if (r.fired && rule && !demo) {
           const external = Object.keys(rule.channels).filter((c) => rule.channels[c] && (c === 'email' || c === 'sms'))
           if (external.length) {
-            try { const res = await axios.post('/api/automation/notify', { title: r.title, body: r.body, channels: external, mobile: profile?.phone }); r.deliveries = res.data.deliveries } catch { r.deliveries = { email: 'failed' } }
+            try { const res = await axios.post('/api/automation/notify', { title: r.title, body: r.body, channels: external }); r.deliveries = res.data.deliveries } catch { r.deliveries = { email: 'failed' } }
           }
         }
         await db.automationRuns.put(r)

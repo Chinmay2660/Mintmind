@@ -1,25 +1,24 @@
 'use client'
 
+import { DetailRows, SummaryHeader } from '@/components/wealth/HoldingUI'
 import { GrowwChart } from '@/components/wealth/GrowwChart'
 import { BackBar } from '@/components/shell/BackBar'
-import { BackLink } from '@/components/shell/BackLink'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { ArrowLeft, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { addFundInvestment, deleteFund, redeemFund, save, updateNav } from '@/lib/wealth/actions'
 import { realisedGains } from '@/lib/wealth/realised'
 import { fundMetrics, nextSipDate } from '@/lib/wealth/calc'
-import { cap, formatDate, formatINR, formatPct } from '@/lib/wealth/format'
+import { cap, formatDate, formatINR } from '@/lib/wealth/format'
 import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Delta, Empty, Metric, LoadingBlock, Panel, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle } from '@/components/wealth/kit'
+import { Empty, Metric, LoadingBlock, Panel } from '@/components/wealth/kit'
 import { FundForm, InvestmentForm, NavForm, RedeemForm } from '@/components/wealth/FundForms'
-import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
+import { CopyValue } from '@/components/wealth/CopyButton'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 
 export default function FundDetail() {
@@ -54,30 +53,28 @@ export default function FundDetail() {
       <BackBar fallback="/dashboard/mutual-funds" />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0"><h2 className="text-xl font-semibold">{f.name}</h2><p className="flex flex-wrap items-center gap-x-1 text-sm text-muted-foreground">Folio <CopyValue value={f.folio} label="Folio number" mono /></p></div>
-        <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+        <div className="grid w-full grid-cols-[1fr_1fr_auto_auto] gap-2 sm:flex sm:w-auto sm:flex-wrap">
           <Button size="sm" className="max-sm:h-10" onClick={() => setDlg('nav')}><RefreshCw className="mr-1.5 h-4 w-4" />Update NAV</Button>
           <Button size="sm" variant="outline" className="hidden sm:inline-flex" onClick={() => setDlg('inv')}><Plus className="mr-1.5 h-4 w-4" />Add investment</Button>
           <Button size="sm" variant="outline" disabled={!(f.units > 0)} onClick={() => setDlg('sell')}>Record sale</Button>
-          <Button size="sm" variant="outline" onClick={() => setDlg('edit')}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button>
-          <Button size="sm" variant="outline" onClick={() => setDlg('del')}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button>
+          <Button size="sm" variant="outline" onClick={() => setDlg('edit')}><Pencil className="h-4 w-4 sm:mr-1.5" /><span className="max-sm:sr-only">Edit</span></Button>
+          <Button size="sm" variant="outline" onClick={() => setDlg('del')}><Trash2 className="h-4 w-4 sm:mr-1.5" /><span className="max-sm:sr-only">Delete</span></Button>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Invested" value={<Money value={m.invested} />} />
-        <Stat label="Current value" value={<Money value={m.value} />} />
-        <Stat label="Return" value={<Metric amount={m.absReturn} pct={m.absReturnPct} className="text-base" />} />
-        <Stat label="XIRR" value={<Metric pct={m.xirrPct} hint="Needs at least two dated cashflows" className="text-xl font-semibold" />} />
-        {real.hasSales && <Stat label="Realised gain" info="Profit or loss on units you have already sold, at your average cost. Tax statements use FIFO lots, so they can differ." value={<Metric amount={real.realised} compact={false} className="text-xl font-semibold" />} hint={real.incomplete ? 'Some purchase history is missing, so this is partial' : `from ${real.sells.length} ${real.sells.length === 1 ? 'sale' : 'sales'}`} />}
-        <Stat label="Units" value={f.units} />
-        <Stat label="Average NAV" value={`₹${m.avgNav}`} />
-        <Stat label="Current NAV" value={`₹${f.currentNav}`} hint={`as of ${formatDate(f.navDate)} (${f.navSource})`} />
-        <Stat label="Day change" value={<Metric amount={f.prevNav > 0 ? (f.currentNav - f.prevNav) * f.units : null} compact={false} decimals hint="Needs previous NAV" className="text-xl font-semibold" />} hint={f.prevNav > 0 ? `prev NAV ₹${f.prevNav}` : 'Needs previous NAV'} />
-      </div>
+      <SummaryHeader label="Current value" value={<Money value={m.value} />}
+        sub={f.prevNav > 0 ? <span className="flex flex-wrap items-center gap-x-2 text-muted-foreground">NAV ₹{f.currentNav} · 1 day <Metric amount={(f.currentNav - f.prevNav) * f.units} compact={false} decimals className="text-sm font-semibold" /></span> : <span className="text-muted-foreground">NAV ₹{f.currentNav}</span>}
+        stats={[{ label: 'Invested', value: <Money value={m.invested} compact /> }, { label: 'Returns', value: <Metric amount={m.absReturn} className="text-sm font-semibold" />, sub: <Metric pct={m.absReturnPct} className="text-xs" /> }, { label: 'XIRR', value: <Metric pct={m.xirrPct} hint="Needs at least two dated cashflows" className="text-sm font-semibold" /> }]} />
       <Panel title="Performance">
         {perf.length < 2 ? <Empty title="Not enough history" /> : (
           <GrowwChart height={200} secondLabel="Invested" ariaLabel="Value of the fund against what was invested" format={(v) => (privacyMode ? '••••' : formatINR(v))} data={perf.map((p: any) => ({ x: String(p.label), y: Number(p.value), y2: Number(p.invested) }))} />
         )}
       </Panel>
+      <DetailRows title="Holding details" rows={[
+        { label: 'Units', value: f.units },
+        { label: 'Average NAV', value: `₹${m.avgNav}` },
+        { label: 'Current NAV', value: `₹${f.currentNav} · ${formatDate(f.navDate)}` },
+        ...(real.hasSales ? [{ label: 'Realised gain', value: <Metric amount={real.realised} compact={false} className="text-sm font-semibold" /> }] : []),
+      ]} />
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="Investment history">
           {txns.length === 0 ? <Empty title="No transactions" /> : (

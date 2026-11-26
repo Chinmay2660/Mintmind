@@ -1,9 +1,11 @@
 'use client'
 
+import { weightedRate } from '@/lib/wealth/holdingsTotals'
+import { SummaryHeader } from '@/components/wealth/HoldingUI'
 import { TabBar } from '@/components/ui/tab-bar'
 import { useState } from 'react'
 import { useAddParam } from '@/lib/hooks/useAddParam'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { remove, save } from '@/lib/wealth/actions'
@@ -14,8 +16,7 @@ import { Money } from './Money'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, PageHeader, StepFormDialog, Panel, Select } from './kit'
-import { PdfStatementImport } from '@/components/wealth/PdfStatementImport'
+import { Empty, Field, PageHeader, StepFormDialog, Select } from './kit'
 import { AssetForm } from './AssetForm'
 
 type Kind = 'asset' | 'liability'
@@ -34,7 +35,12 @@ export function AssetsLoans({ view }: { view: 'loans' }) {
       <PageHeader description="What you owe. Net worth is worked out from these." primaryAction={{ label: 'Add loan', onClick: () => setEdit({ kind: 'liability', row: null }) }} />
       {view === 'loans' && <section aria-label="Loans" className="space-y-3">
         {/* the page is already called Loans, so no extra box: the total, then the cards */}
-        {data.liabilities.length > 0 && <div><p className="text-xs text-muted-foreground">Total outstanding</p><p className="text-xl font-semibold tabular-nums"><Money value={data.liabilities.reduce((n: number, l: any) => n + (Number(l.outstanding) || 0), 0)} /></p></div>}
+        {data.liabilities.length > 0 && (() => {
+          const L = data.liabilities as any[]
+          const out = L.reduce((n, l) => n + (Number(l.outstanding) || 0), 0), emi = L.reduce((n, l) => n + (Number(l.emi) || 0), 0)
+          const avg = weightedRate(L)
+          return <SummaryHeader label="Total outstanding" value={<Money value={out} />} stats={[{ label: 'Monthly EMI', value: emi > 0 ? <Money value={emi} compact /> : '-' }, { label: 'Loans', value: L.length }, { label: 'Avg rate', value: avg != null ? `${avg.toFixed(2)}%` : '-' }]} />
+        })()}
         {data.liabilities.length > 0 && (() => {
           const present = [...new Set<string>(data.liabilities.map((l: any) => l.category))]
           return present.length > 1 ? <TabBar label="Kinds of loan" value={present.includes(loanKind) ? loanKind : 'all'} onChange={setLoanKind} tabs={[{ key: 'all', label: 'All', badge: data.liabilities.length }, ...present.map((k) => ({ key: k, label: LIABILITY_LABELS[k as keyof typeof LIABILITY_LABELS] ?? k, badge: data.liabilities.filter((l: any) => l.category === k).length }))]} /> : null
@@ -52,13 +58,11 @@ export function AssetsLoans({ view }: { view: 'loans' }) {
                   <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Delete ${l.name}`} onClick={() => setDel({ kind: 'liability', id: l.id, name: l.name })}><Trash2 className="h-4 w-4" /></Button>
                 </div>
               </div>
-              <div className="mt-3"><p className="text-[11px] uppercase tracking-[0.06em] text-muted-foreground">Outstanding</p><p className="text-2xl font-semibold tabular-nums"><Money value={l.outstanding} /></p></div>
-              {(l.emi > 0 || l.rate > 0) && (
-                <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border pt-3">
-                  {l.emi > 0 && <div className="min-w-0"><dt className="text-[11px] uppercase tracking-[0.06em] text-muted-foreground">EMI</dt><dd className="mt-0.5 break-words text-sm font-medium tabular-nums">{formatINR(l.emi)}</dd></div>}
-                  {l.rate > 0 && <div className="min-w-0"><dt className="text-[11px] uppercase tracking-[0.06em] text-muted-foreground">Interest rate</dt><dd className="mt-0.5 break-words text-sm font-medium tabular-nums">{l.rate}%</dd></div>}
-                </dl>
-              )}
+              <div className="mt-3 grid grid-cols-3 gap-3">
+                {[{ label: 'Outstanding', value: <Money value={l.outstanding} compact /> }, { label: 'EMI', value: l.emi > 0 ? formatINR(l.emi) : '-' }, { label: 'Rate', value: l.rate > 0 ? `${l.rate}%` : '-' }].map((x, i) => (
+                  <div key={x.label} className={i === 1 ? 'text-center' : i === 2 ? 'text-right' : ''}><p className="text-xs text-muted-foreground">{x.label}</p><p className="mt-0.5 whitespace-nowrap text-sm font-semibold tabular-nums">{x.value}</p></div>
+                ))}
+              </div>
             </li>))}</ul>
         )}
       </section>}

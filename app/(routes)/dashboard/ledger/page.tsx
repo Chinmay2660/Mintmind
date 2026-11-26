@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { shortAccountName } from '@/lib/wealth/accountName'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { useMemo, useState } from 'react'
-import { Download, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { formatDate, formatINR } from '@/lib/wealth/format'
 import { matchesAll } from '@/lib/search'
@@ -51,12 +51,6 @@ export default function LedgerPage() {
   const totalOut = shown.reduce((n, l) => n + ((l.change ?? 0) < 0 ? -(l.change as number) : 0), 0)
   const totalIn = shown.reduce((n, l) => n + ((l.change ?? 0) > 0 ? (l.change as number) : 0), 0)
 
-  const exportCsv = () => {
-    const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`
-    const rows = ['Date,Account,Description,Money out,Money in,Balance', ...shown.map((l) => [l.date, l.account, l.note || (l.change == null ? 'Opening balance' : 'Balance update'), (l.change ?? 0) < 0 ? -(l.change as number) : '', (l.change ?? 0) > 0 ? l.change : '', l.balance].map(esc).join(','))]
-    const url = URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' }))
-    const a = document.createElement('a'); a.href = url; a.download = 'ledger.csv'; a.click(); URL.revokeObjectURL(url)
-  }
 
   if (!ready) return <LoadingBlock className="h-64" />
 

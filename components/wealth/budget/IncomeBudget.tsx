@@ -1,11 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Field, FormDialog, Panel, Progress } from '@/components/wealth/kit'
+import { Panel, Progress } from '@/components/wealth/kit'
 import { Money } from '@/components/wealth/Money'
-import { useCategories } from '@/lib/wealth/useCategories'
 import { incomeProgress } from '@/lib/wealth/incomeBudget'
 import { cn } from '@/lib/utils'
 

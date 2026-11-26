@@ -9,7 +9,6 @@ import { emergencyFund, loanPayoff, retirementCorpus, termCover } from '@/lib/ca
 import { formatINR } from '@/lib/wealth/format'
 import { Num, Result, ASSUME, num } from '@/components/tools/kit'
 import { LoadingBlock, PageHeader, Select, FootNote } from '@/components/wealth/kit'
-import { cn } from '@/lib/utils'
 import { moneyCheckup } from '@/lib/planning'
 import { AboutYou } from '@/components/planning/AboutYou'
 import { PlanAhead } from '@/components/planning/PlanAhead'

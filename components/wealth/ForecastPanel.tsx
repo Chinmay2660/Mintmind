@@ -2,14 +2,13 @@
 
 import { GrowwChart } from '@/components/wealth/GrowwChart'
 import { useMemo, useState } from 'react'
-import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { cashForecast, goalForecast, monthlyAverages } from '@/lib/wealth/forecast'
 import { goalProgress } from '@/lib/wealth/goals'
 import { projectPlan } from '@/lib/planning'
 import { formatCompactINR, formatINR } from '@/lib/wealth/format'
 import { Money } from './Money'
-import { Empty, InfoTip, Metric, Panel, Stat, chartAxis, chartColor, chartGrid, chartTooltipStyle } from './kit'
+import { Empty, InfoTip, Metric, Panel, Stat } from './kit'
 import { Slider } from '@/components/ui/slider'
 import { cn } from '@/lib/utils'
 

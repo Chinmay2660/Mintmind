@@ -1,22 +1,4 @@
-import {
-  Sparkles,
-  LayoutDashboard,
-  TrendingUp,
-  Landmark,
-  Building2,
-  Scale,
-  PieChart,
-  CreditCard,
-  Shield,
-  Wallet,
-  Users,
-  KeyRound,
-  FileText,
-  HeartHandshake,
-  Settings,
-  BookText,
-  type LucideIcon,
-} from 'lucide-react'
+import { Sparkles, LayoutDashboard, TrendingUp, Landmark, Scale, PieChart, CreditCard, Shield, Wallet, Users, KeyRound, FileText, HeartHandshake, Settings, BookText, type LucideIcon } from 'lucide-react'
 
 export const APP_NAME = 'Mintmind'
 
