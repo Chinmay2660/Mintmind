@@ -3,6 +3,7 @@
 import { HoldingsView } from '@/components/wealth/investments/HoldingsView'
 import { TabBar } from '@/components/ui/tab-bar'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
+import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useAddParam } from '@/lib/hooks/useAddParam'
 import { MoreVertical, Pencil, RefreshCw, Loader2, Trash2 } from 'lucide-react'
@@ -102,29 +103,29 @@ function MutualFundsTab() {
   )
 }
 
-type Tab = 'portfolio' | 'funds' | 'market' | 'fd' | 'rd' | 'epf' | 'ppf' | 'nps' | 'gold' | 'esop' | 'realEstate' | 'vehicle' | 'other'
+type Tab = 'portfolio' | 'funds' | 'market' | 'fd' | 'rd' | 'epf' | 'ppf' | 'nps' | 'gold' | 'esop'
 // Allocation first (where it all sits), then a tab for each kind of holding, in the order a person thinks of them
 const TABS: { key: Tab; label: string }[] = [
   { key: 'portfolio', label: 'Allocation' }, { key: 'funds', label: 'Mutual funds' }, { key: 'market', label: 'Stocks and ETFs' }, { key: 'fd', label: 'Fixed deposits' },
-  { key: 'rd', label: 'Recurring deposits' }, { key: 'epf', label: 'EPF' }, { key: 'ppf', label: 'PPF' }, { key: 'nps', label: 'NPS' }, { key: 'gold', label: 'Gold' },
-  { key: 'esop', label: 'ESOPs/RSUs' }, { key: 'realEstate', label: 'Real estate' }, { key: 'vehicle', label: 'Vehicle' }, { key: 'other', label: 'Other assets' },
+  { key: 'rd', label: 'Recurring deposits' }, { key: 'epf', label: 'EPF' }, { key: 'ppf', label: 'PPF' }, { key: 'nps', label: 'NPS' }, { key: 'gold', label: 'Commodities' },
+  { key: 'esop', label: 'ESOPs/RSUs' },
 ]
 // links made before the tabs were split still land somewhere sensible
-const TAB_ALIAS: Record<string, Tab> = { retirement: 'epf', property: 'realEstate' }
+const TAB_ALIAS: Record<string, Tab> = { retirement: 'epf' }
+const MOVED = ['property', 'realEstate', 'vehicle', 'other'] // now managed from the Overview's Assets
 
 /** Investments: your totals, then a tab for each kind of holding. It opens on the first tab, Allocation. */
 export default function InvestmentsPage() {
   usePrivacyMode() // draws amounts again when balances are hidden or shown
   const [tab, setTab] = useState<Tab>('portfolio')
-  const { data } = useWealth()
-  const hasOther = (data.assets as any[]).some((a) => a.category === 'other') // the catch-all tab only exists when something is in it
+  const router = useRouter()
   // a link such as ?tab=fd or ?add=fund lands on that tab (read after mount, so the server and the browser draw the same first screen)
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { const q = new URLSearchParams(window.location.search); const t = q.get('tab'); if (q.get('add') === 'fund') setTab('funds'); else if (t && TAB_ALIAS[t]) setTab(TAB_ALIAS[t]); else if (t && TABS.some((x) => x.key === t)) setTab(t as Tab) }, [])
+  useEffect(() => { const q = new URLSearchParams(window.location.search); const t = q.get('tab'); if (q.get('add') === 'fund') setTab('funds'); else if (t && MOVED.includes(t)) router.replace('/dashboard'); else if (t && TAB_ALIAS[t]) setTab(TAB_ALIAS[t]); else if (t && TABS.some((x) => x.key === t)) setTab(t as Tab) }, [])
   return (
     <div className="space-y-5">
       <PortfolioTab part="summary" onOpen={() => {}} />
-      <TabBar label="Investment sections" tabs={TABS.filter((t) => t.key !== 'other' || hasOther || tab === 'other').map((t) => ({ key: t.key, label: t.label }))} value={tab} onChange={(k) => setTab(k as Tab)} />
+      <TabBar label="Investment sections" tabs={TABS.map((t) => ({ key: t.key, label: t.label }))} value={tab} onChange={(k) => setTab(k as Tab)} />
       {tab === 'portfolio' && <PortfolioTab onOpen={(key) => setTab((key === 'mutualFunds' ? 'funds' : key) as Tab)} />}
       {tab === 'funds' && <MutualFundsTab />}
       {tab !== 'portfolio' && tab !== 'funds' && <HoldingsTab key={tab} kind={tab} />}

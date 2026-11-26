@@ -74,7 +74,7 @@ export function DebitCardsTab() {
             <>
               <BackBar onBack={() => setSel(null)} />
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-lg font-semibold">{card.bank} {card.cardName}</h2>
+                <span />
                 <div className="flex gap-2"><Button size="sm" onClick={() => setDlg({ txn: true, row: card })}>Add transaction</Button><Button size="sm" variant="outline" onClick={() => setDlg({ row: card })}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button><Button size="sm" variant="outline" onClick={() => setDlg({ row: card, del: true })}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button></div>
               </div>
               <Panel title="Card details">

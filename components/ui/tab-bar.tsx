@@ -42,7 +42,7 @@ export function TabBar({ label, tabs, value, onChange, className }: { label: str
 
   const even = tabs.length <= 3
   return (
-    <div className={cn('relative -mx-4 border-b border-border md:mx-0', className)}>
+    <div className={cn('sticky top-0 z-20 -mx-4 border-b border-border bg-background md:mx-0', className)}>
       <div
         ref={row}
         role="tablist"

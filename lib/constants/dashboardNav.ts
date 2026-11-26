@@ -12,7 +12,7 @@ export interface DashboardNavItem {
 /** The 12 product modules — the only navigable top-level destinations. */
 export const DASHBOARD_NAV_ALL: DashboardNavItem[] = [
   { id: 1, name: 'Overview', icon: LayoutDashboard, path: '/dashboard' },
-  { id: 2, name: 'Net Worth', icon: TrendingUp, path: '/dashboard/net-worth' },
+  { id: 2, name: 'Goals & Forecast', icon: TrendingUp, path: '/dashboard/net-worth' },
   { id: 15, name: 'Loans', icon: Scale, path: '/dashboard/net-worth/loans' },
   { id: 3, name: 'Accounts', icon: Landmark, path: '/dashboard/bank-accounts' },
   { id: 4, name: 'Investments', icon: PieChart, path: '/dashboard/mutual-funds' },

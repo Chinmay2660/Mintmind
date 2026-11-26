@@ -1,6 +1,6 @@
 'use client'
 
-import { SummaryHeader } from '@/components/wealth/HoldingUI'
+import { OverviewCard } from '@/components/wealth/HoldingUI'
 import { BackBar } from '@/components/shell/BackBar'
 import { useRouter } from 'next/navigation'
 import { toastProblem } from '@/lib/notify'
@@ -54,8 +54,7 @@ export default function InsurancePage() {
   return (
     <div className="space-y-5">
       <PageHeader description="Coverage is protection, not wealth. It is never counted in your net worth." primaryAction={{ label: 'Add policy', onClick: () => setDlg({ kind: 'edit' }) }} />
-      <SummaryHeader label="Total coverage" value={<Money value={cover.total} compact />}
-        stats={[{ label: 'Active policies', value: cover.activeCount }, { label: 'Annual premium', value: <Money value={annual} compact /> }, ...Object.entries(cover.byType).slice(0, 1).map(([k, v]) => ({ label: `${typeLabel(k)} cover`, value: <Money value={v as number} compact /> }))]} />
+      <OverviewCard label="Total coverage" value={<Money value={cover.total} />} rows={[{ label: 'Active policies', value: cover.activeCount }, { label: 'Annual premium', value: <Money value={annual} /> }]} />
 
       {!detail && (kinds.length === 0 ? <Empty title="No policies" action={<Button onClick={() => setDlg({ kind: 'edit' })}>Add policy</Button>} /> : (
         <ul className="divide-y divide-border border-y border-border" aria-label="Kinds of policy">
@@ -82,7 +81,7 @@ export default function InsurancePage() {
 
 
       {detail && (() => { const p = data.policies.find((x: any) => x.id === detail); return p ? (
-        <PolicyDetail p={p} today={today} doc={data.documents.find((x: any) => x.id === p.documentId)} history={data.premiums.filter((h: any) => h.policyId === p.id).sort((x: any, y: any) => y.date.localeCompare(x.date)).slice(0, 5)}
+        <PolicyDetail showTitle={fromLink} p={p} today={today} doc={data.documents.find((x: any) => x.id === p.documentId)} history={data.premiums.filter((h: any) => h.policyId === p.id).sort((x: any, y: any) => y.date.localeCompare(x.date)).slice(0, 5)}
           onClose={closeDetail}
           onPaid={async () => { try { await recordPremiumPaid(db, p.id); toast.success('Premium recorded; next due date moved forward') } catch (e) { toastProblem(e, 'Could not record the premium') } }}
           onEdit={() => { setDetail(null); setDlg({ kind: 'edit', row: p }) }}
@@ -129,7 +128,7 @@ function PolicyCard({ p, today, onOpen }: { p: any; today: Date; onOpen: () => v
 }
 
 /** Everything else about one policy, on its own sheet with tabs. */
-function PolicyDetail({ p, today, doc, history, onClose, onPaid, onEdit, onDelete }: { p: any; today: Date; doc?: any; history: any[]; onClose: () => void; onPaid: () => Promise<void>; onEdit: () => void; onDelete: () => void }) {
+function PolicyDetail({ p, today, doc, history, showTitle, onClose, onPaid, onEdit, onDelete }: { showTitle?: boolean; p: any; today: Date; doc?: any; history: any[]; onClose: () => void; onPaid: () => Promise<void>; onEdit: () => void; onDelete: () => void }) {
   const [tab, setTab] = useState<'details' | 'premium'>('details')
   const [busy, setBusy] = useState(false)
   const st = premiumStatus(p, today)
@@ -140,7 +139,7 @@ function PolicyDetail({ p, today, doc, history, onClose, onPaid, onEdit, onDelet
     <section className="space-y-3">
       <BackBar onBack={onClose} />
       <div className="surface-card space-y-4 p-5">
-        <div><h3 className="text-xl font-semibold">{p.policyName}</h3><p className="text-sm text-muted-foreground">{p.company} · {typeLabel(p.type)}</p></div>
+        <div>{showTitle && <h3 className="text-xl font-semibold">{p.policyName}</h3>}<p className="text-sm text-muted-foreground">{p.company} · {typeLabel(p.type)}</p></div>
         <div className="flex items-end justify-between gap-3">
           <div><p className="text-xs text-muted-foreground">Sum assured</p><p className="text-2xl font-semibold tabular-nums"><Money value={p.sumAssured} /></p></div>
           <span className={cn('rounded-full px-2.5 py-1 text-xs font-medium', st.cls)}>{st.label}</span>

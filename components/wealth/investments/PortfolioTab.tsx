@@ -23,11 +23,11 @@ export function PortfolioTab({ onOpen, part = 'body' }: { onOpen: (key: string) 
 
   if (part === 'summary') return (
     <section aria-label="Summary" className="surface-card px-4">
-      <dl className="divide-y divide-border text-sm">
+      <dl className="space-y-2.5 py-4 text-sm">
         <div className="flex items-center justify-between gap-3 py-3"><dt className="text-muted-foreground">Portfolio value</dt><dd className="font-semibold tabular-nums"><Money value={p.total} /></dd></div>
-        <div className="flex items-center justify-between gap-3 py-3"><dt className="text-muted-foreground">Invested value</dt><dd className="font-semibold tabular-nums"><Money value={p.invested} /></dd></div>
-        <div className="flex items-center justify-between gap-3 py-3"><dt className="text-muted-foreground">Gain</dt><dd>{p.invested > 0 ? <span className="flex items-center gap-1.5 font-semibold tabular-nums"><Metric amount={p.gain} compact={false} className="text-sm font-semibold" /><span>(<Metric pct={p.gainPct} className="text-sm font-semibold" />)</span></span> : '-'}</dd></div>
-        {realised.hasSales && <div className="flex items-center justify-between gap-3 py-3"><dt className="text-muted-foreground">Realised gain</dt><dd className="font-semibold tabular-nums"><Metric amount={realised.realised} compact={false} className="text-sm font-semibold" /></dd></div>}
+        <div className="flex items-center justify-between gap-3"><dt className="text-muted-foreground">Invested value</dt><dd className="font-semibold tabular-nums"><Money value={p.invested} /></dd></div>
+        <div className="flex items-center justify-between gap-3"><dt className="text-muted-foreground">Returns</dt><dd>{p.invested > 0 ? <span className="font-semibold tabular-nums"><Metric arrow={false} amount={p.gain} pct={p.gainPct} compact={false} className="text-sm font-semibold" /></span> : '-'}</dd></div>
+        {realised.hasSales && <div className="flex items-center justify-between gap-3"><dt className="text-muted-foreground">Realised gain</dt><dd className="font-semibold tabular-nums"><Metric amount={realised.realised} compact={false} className="text-sm font-semibold" /></dd></div>}
       </dl>
     </section>
   )

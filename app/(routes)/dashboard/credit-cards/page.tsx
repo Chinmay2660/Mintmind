@@ -85,7 +85,7 @@ function CreditCardsTab() {
           {card && (
             <>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-lg font-semibold">{card.bank} {card.cardName}</h2>
+                {fromLink ? <h2 className="text-lg font-semibold">{card.bank} {card.cardName}</h2> : <span />}
                 <div className="flex flex-wrap gap-2">
                   <Button size="sm" onClick={() => setDlg({ kind: 'pay', row: card })}>Add transaction</Button>
                   <Button size="sm" variant="outline" onClick={() => setDlg({ kind: 'card', row: card })}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button>

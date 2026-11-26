@@ -21,7 +21,7 @@ export function NetWorthSide({ side }: { side: 'assets' | 'liabilities' }) {
   const groups = useMemo(() => {
     if (!ready) return null
     const cover = coverageTotals(data.policies, today)
-    const g = netWorthGroups({ assetBreakdown: netWorth.assetBreakdown as any, bankAccounts: data.bankAccounts, cards: data.cards, liabilities: data.liabilities, cover: isEnabled('insurance') ? cover.total : 0, coverCount: cover.activeCount, funds: data.funds, balanceHistory: data.balanceHistory, expenses: data.expenses, cardPayments: data.cardPayments, todayIso: toISO(today), policies: data.policies.filter((p: any) => !p.endDate || p.endDate >= toISO(today)), labels: ASSET_LABELS as any })
+    const g = netWorthGroups({ assets: data.assets, assetBreakdown: netWorth.assetBreakdown as any, bankAccounts: data.bankAccounts, cards: data.cards, liabilities: data.liabilities, cover: isEnabled('insurance') ? cover.total : 0, coverCount: cover.activeCount, funds: data.funds, balanceHistory: data.balanceHistory, expenses: data.expenses, cardPayments: data.cardPayments, todayIso: toISO(today), policies: data.policies.filter((p: any) => !p.endDate || p.endDate >= toISO(today)), labels: ASSET_LABELS as any })
     return (side === 'assets' ? g.assets : g.liabilities).filter((x: any) => x.key !== 'banks' || isEnabled('bank_accounts')).filter((x: any) => x.key !== 'cards' || isEnabled('credit_cards'))
   }, [ready, data, netWorth, today, side, isEnabled])
   if (!groups) return <LoadingBlock className="h-64" />

@@ -79,7 +79,7 @@ function GoalDetail({ g, p, onClose, onEdit, onDelete }: { g: any; p: any; onClo
     <section className="space-y-3">
       <button type="button" onClick={onClose} className="inline-flex items-center gap-1 rounded text-sm md:hidden text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="h-4 w-4" />All goals</button>
       <div className="surface-card space-y-4 p-5">
-        <div><h3 className="text-xl font-semibold">{g.name}</h3><p className="text-sm text-muted-foreground">{g.targetDate ? `Target date ${formatDate(g.targetDate)}` : 'No target date'}</p></div>
+        <div><p className="text-sm text-muted-foreground">{g.targetDate ? `Target date ${formatDate(g.targetDate)}` : 'No target date'}</p></div>
         <div>
           <div className="flex items-baseline justify-between"><span className="text-2xl font-semibold tabular-nums"><Money value={p.current} /></span><span className="text-sm text-muted-foreground">of <Money value={p.target} /></span></div>
           <div className="mt-2"><Progress value={p.pct} tone={p.achieved ? 'primary' : p.pct < 40 ? 'warning' : 'primary'} label={`${g.name} progress`} /></div>

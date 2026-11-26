@@ -1,6 +1,7 @@
 'use client'
 
 import { UpcomingRow } from '@/components/wealth/UpcomingRow'
+import { HoldingsTab } from '@/components/wealth/investments/HoldingsTab'
 import { buildUpcoming } from '@/lib/wealth/upcoming'
 import { TabBar } from '@/components/ui/tab-bar'
 import { FEATURE_KEYS } from '@/lib/features'
@@ -110,6 +111,8 @@ export default function DashboardPage() {
     const h = listInner.current?.offsetHeight ?? 0
     setListFloor((f) => (h > f ? h : f))
   })
+  // leaving a list that was opened with View more for another one: keep its height, so the page below stays where it is
+  const holdHeight = () => { if (showAllRows) { const h = listInner.current?.offsetHeight ?? 0; setListFloor((f) => Math.max(f, h)) } }
   useEffect(() => { const reset = () => setListFloor(0); window.addEventListener('resize', reset); return () => window.removeEventListener('resize', reset) }, [])
   const attention = useAttentionItems() // the divider above Assets and liabilities only exists when the attention box does
   useEffect(() => {
@@ -212,7 +215,7 @@ export default function DashboardPage() {
     homeLoan: Home, carLoan: Car, personalLoan: User, educationLoan: GraduationCap, otherLoan: Percent,
   }
   const GROUP_ICON: Record<string, LucideIcon> = { invest: PieIcon, banks: Landmark, realEstate: Home, vehicle: Car, other: Home, insurance: ShieldCheck, cards: CreditCard, loans: Percent }
-  const groups = netWorthGroups({ assetBreakdown: netWorth.assetBreakdown as any, bankAccounts: data.bankAccounts, cards: data.cards, liabilities: data.liabilities, cover: isEnabled('insurance') ? m.cover.total : 0, coverCount: m.cover.activeCount, funds: data.funds, balanceHistory: data.balanceHistory, expenses: data.expenses, cardPayments: data.cardPayments, todayIso: toISO(today), policies: data.policies.filter((p: any) => !p.endDate || p.endDate >= toISO(today)), labels: ASSET_LABELS as any })
+  const groups = netWorthGroups({ assets: data.assets, assetBreakdown: netWorth.assetBreakdown as any, bankAccounts: data.bankAccounts, cards: data.cards, liabilities: data.liabilities, cover: isEnabled('insurance') ? m.cover.total : 0, coverCount: m.cover.activeCount, funds: data.funds, balanceHistory: data.balanceHistory, expenses: data.expenses, cardPayments: data.cardPayments, todayIso: toISO(today), policies: data.policies.filter((p: any) => !p.endDate || p.endDate >= toISO(today)), labels: ASSET_LABELS as any })
   const shownGroups = (moneyTab === 'assets' ? groups.assets : groups.liabilities).filter((g) => g.key !== 'banks' || isEnabled('bank_accounts')).filter((g) => g.key !== 'cards' || isEnabled('credit_cards'))
   // the first kind is open by default; its holdings are listed biggest first, five at a time
   const openGroup = shownGroups.find((g) => g.key === moneySub) ?? shownGroups[0]
@@ -220,20 +223,22 @@ export default function DashboardPage() {
     ? (openGroup.children.length ? openGroup.children : [{ key: openGroup.key, kind: openGroup.key, label: openGroup.label, value: openGroup.value, href: openGroup.href }]).map((r: any) => ({ ...r, groupKey: openGroup.key })).sort((x: any, y: any) => (openGroup.key === 'invest' || openGroup.key === 'insurance' ? 0 : y.value - x.value))
     : []
   const topRows = showAllRows ? allRows : allRows.slice(0, 5)
+  const embedKind = moneyTab === 'assets' && openGroup && ['realEstate', 'vehicle', 'other'].includes(openGroup.key) ? (openGroup.key as 'realEstate' | 'vehicle' | 'other') : null // managed right here
 
   const blocks: Record<string, React.ReactNode> = {
     accounts: (
       <section aria-label="Net worth breakdown" className={attention.length > 0 ? 'border-t border-border pt-5' : undefined}>
-        <TabBar label="Assets or liabilities" value={moneyTab} onChange={(k) => { setMoneyTab(k as 'assets' | 'liabilities'); setMoneySub(''); setShowAllRows(false) }} tabs={[{ key: 'assets', label: 'Assets', sub: <Money value={netWorth.assets} /> }, { key: 'liabilities', label: 'Liabilities', sub: <Money value={netWorth.liabilities} /> }]} />
+        <TabBar label="Assets or liabilities" value={moneyTab} onChange={(k) => { holdHeight(); setMoneyTab(k as 'assets' | 'liabilities'); setMoneySub(''); setShowAllRows(false) }} tabs={[{ key: 'assets', label: 'Assets', sub: <Money value={netWorth.assets} /> }, { key: 'liabilities', label: 'Liabilities', sub: <Money value={netWorth.liabilities} /> }]} />
         <div style={{ minHeight: listFloor || undefined }}><div ref={listInner}>
         {shownGroups.length === 0
           ? <p className="py-8 text-center text-sm text-muted-foreground">{moneyTab === 'assets' ? 'Add a bank account or an investment to start.' : 'No loans or card dues.'}</p>
           : <>
               <div role="tablist" aria-label={moneyTab === 'assets' ? 'Kinds of assets' : 'Kinds of liabilities'} className="flex flex-wrap gap-2 py-3">
                 {shownGroups.map((g) => (
-                  <button key={g.key} type="button" role="tab" aria-selected={openGroup?.key === g.key} onClick={() => { setMoneySub(g.key); setShowAllRows(false) }} className={cn('min-h-9 rounded-full border px-3.5 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', openGroup?.key === g.key ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{g.label}</button>
+                  <button key={g.key} type="button" role="tab" aria-selected={openGroup?.key === g.key} onClick={() => { holdHeight(); setMoneySub(g.key); setShowAllRows(false) }} className={cn('min-h-9 rounded-full border px-3.5 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring', openGroup?.key === g.key ? 'border-primary bg-accent text-accent-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>{g.label}</button>
                 ))}
               </div>
+              {embedKind ? <HoldingsTab kind={embedKind} embedded /> : <>
               <ul className="divide-y divide-border">
                 {topRows.map((r: any) => {
                   const RowIcon = KIND_ICON[r.kind] || GROUP_ICON[r.groupKey] || Wallet
@@ -254,6 +259,7 @@ export default function DashboardPage() {
                   {showAllRows ? 'View less' : `View more (${allRows.length - 5})`}<ChevronDown className={cn('h-4 w-4 transition-transform', showAllRows && 'rotate-180')} aria-hidden />
                 </button>
               )}
+              </>}
             </>}
         </div></div>
       </section>

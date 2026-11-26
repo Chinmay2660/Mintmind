@@ -25,7 +25,7 @@ export function QuickActions() {
   const items = [
     { key: 'txn', label: 'Add transaction', hint: 'A', icon: ArrowLeftRight, run: () => setDlg('txn') },
     { key: 'account', label: 'Add account', hint: 'C', icon: Landmark, run: () => setDlg('account') },
-    { key: 'asset', label: 'Add asset', hint: 'N', icon: Wallet, run: () => go('/dashboard/mutual-funds?tab=property&add=asset') },
+    { key: 'asset', label: 'Add asset', hint: 'N', icon: Wallet, run: () => go('/dashboard/mutual-funds?tab=market&add=asset') },
     { key: 'invest', label: 'Add investment', hint: 'I', icon: LineChart, run: () => go('/dashboard/mutual-funds?add=fund') },
     { key: 'liab', label: 'Add liability', hint: 'L', icon: Scale, run: () => go('/dashboard/net-worth/loans?add=liability') },
     { key: 'goal', label: 'Create financial goal', hint: 'O', icon: Target, run: () => go('/dashboard/net-worth?add=goal') },

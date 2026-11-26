@@ -10,6 +10,10 @@ import { expectSelfPop, isSelfPop, markDialogPop } from '@/lib/navHistory'
  * React may run an effect twice in a row while developing: an entry that is already there is reused, and one is only removed
  * once no newer run has taken over.
  */
+// Two dialogs can close in the same moment (a form and its "Discard your changes?" question). They share the one history entry, so only the
+// first may take it off; a second back() would leave the page altogether, which is how a discard once landed on the home page.
+let removing = false
+
 export function useBackToClose(open: boolean, close: () => void) {
   const closeRef = useRef(close)
   closeRef.current = close
@@ -27,7 +31,12 @@ export function useBackToClose(open: boolean, close: () => void) {
       ours = false
       setTimeout(() => {
         if (run.current !== mine || !was) return
-        if ((window.history.state as { mmDialog?: boolean } | null)?.mmDialog) { expectSelfPop(); window.history.back() }
+        if (removing) return
+        if ((window.history.state as { mmDialog?: boolean } | null)?.mmDialog) {
+          removing = true
+          expectSelfPop(); window.history.back()
+          setTimeout(() => { removing = false }, 400)
+        }
       }, 0)
     }
   }, [open])
