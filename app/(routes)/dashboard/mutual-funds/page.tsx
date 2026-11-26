@@ -1,14 +1,13 @@
 'use client'
 
+import { HoldingCard, SummaryHeader } from '@/components/wealth/HoldingUI'
 import { BackBar } from '@/components/shell/BackBar'
 import { TabBar } from '@/components/ui/tab-bar'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useAddParam } from '@/lib/hooks/useAddParam'
-import { ArrowLeft, MoreVertical, Pencil, Plus, RefreshCw, ChevronRight, Loader2, Trash2 } from 'lucide-react'
-import { useDetailCrumb } from '@/components/shell/DetailCrumb'
+import { MoreVertical, Pencil, Plus, RefreshCw, Loader2, Trash2 } from 'lucide-react'
 import axios from 'axios'
 import { lastMarketSync, refreshNavs } from '@/lib/market/client'
 import { agoLabel, navFreshness } from '@/lib/market/freshness'
@@ -16,7 +15,7 @@ import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { addFund, recordSipInstalment, save, remove, updateNav } from '@/lib/wealth/actions'
 import { fundMetrics, nextSipDate, portfolioSummary, monthlyEquivalent, toISO } from '@/lib/wealth/calc'
-import { cap, formatDate, formatINR, formatPct } from '@/lib/wealth/format'
+import { cap, formatDate, formatINR } from '@/lib/wealth/format'
 import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -55,12 +54,11 @@ function MutualFundsTab() {
     <div className="space-y-5">
       <PageHeader actions={<><Button variant="outline" disabled={syncing || data.funds.length === 0} onClick={async () => { setSyncing(true); try { const n = await refreshNavs(db, data.funds); toast.success(n ? `${n} ${n === 1 ? 'NAV' : 'NAVs'} updated` : 'NAVs are already up to date') } catch (e) { toast.error(axios.isAxiosError(e) && e.response?.data?.error ? String(e.response.data.error) : 'Could not refresh NAVs. Try again later.') } finally { setSyncing(false) } }}>{syncing ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}Refresh NAVs</Button></>} primaryAction={{ label: 'Add fund', onClick: () => setDlg({ kind: 'fund' }) }} />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 border-b border-border pb-5">
-        <Stat label="Invested" value={<Money value={s.invested} />} />
-        <Stat label="Current value" value={<Money value={s.value} />} />
-        <Stat label="Absolute return" value={<Metric amount={s.absReturn} pct={s.absReturnPct} className="text-lg font-semibold sm:text-xl" />} />
+      <SummaryHeader label="Current value" value={<Money value={s.value} />}
+        sub={<span className="flex flex-wrap items-center gap-x-2 text-muted-foreground">1 day change <Metric amount={s.todayGain} compact={false} hint="Needs previous NAV" className="text-sm font-semibold" /></span>}
+        stats={[{ label: 'Invested', value: <Money value={s.invested} compact /> }, { label: 'Returns', value: <Metric amount={s.absReturn} className="text-sm font-semibold" /> }, { label: 'Returns %', value: <Metric pct={s.absReturnPct} className="text-sm font-semibold" /> }]} />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="XIRR" info="Your annualised return, taking into account when each rupee went in. It describes the past and does not predict future returns. Needs at least two dated cashflows." value={<Metric pct={s.xirrPct} digits={2} hint="Needs at least two dated cashflows" className="text-lg font-semibold sm:text-xl" />} />
-        <Stat label="Today's gain / loss" value={<Metric amount={s.todayGain} compact={false} hint="Needs previous NAV" className="text-lg font-semibold sm:text-xl" />} />
         <Stat label="Funds" value={s.fundCount} />
         <Stat label="Active SIPs" value={s.activeSips} />
         <Stat label="Monthly SIP commitment" value={<Money value={s.monthlySipCommitment} />} />
@@ -87,19 +85,13 @@ function MutualFundsTab() {
         {data.funds.length === 0 ? <Empty title="No mutual funds yet" description="Add a fund manually from your statement." action={<Button onClick={() => setDlg({ kind: 'fund' })}>Add fund</Button>} /> : (
           <>
           <NavFreshness funds={data.funds} />
-          <ul className="space-y-2 md:hidden">
+          <ul className="space-y-3 md:hidden">
             {pg.slice.map((f: any) => {
               const m = fundMetrics(f, data.fundTxns, today)
               return (
                 <li key={f.id}>
-                  <Link href={`/dashboard/mutual-funds/${f.id}`} className="surface-card flex items-center gap-3 p-4 outline-none transition-colors hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring">
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium">{f.name}</span>
-                      <span className="mt-1 block text-lg font-semibold tabular-nums"><Money value={m.value} /></span>
-                    </span>
-                    <Delta pill amount={m.absReturn} pct={m.absReturnPct} />
-                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  </Link>
+                  <HoldingCard href={`/dashboard/mutual-funds/${f.id}`} title={f.name} tag={f.category || undefined}
+                    figs={[{ label: 'Invested', value: <Money value={m.invested} compact /> }, { label: 'Current', value: <Money value={m.value} compact /> }, { label: 'Returns', value: <Metric amount={m.absReturn} className="text-sm font-semibold" />, sub: <Metric pct={m.absReturnPct} className="text-xs" /> }]} />
                 </li>
               )
             })}

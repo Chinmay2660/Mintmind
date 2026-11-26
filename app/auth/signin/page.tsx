@@ -226,6 +226,7 @@ function SignInContent() {
               {busy === 'google' ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleIcon />}
               Continue with Google
             </Button>
+            <p className="text-center text-xs text-muted-foreground">If you already have a password account with this email, signing in with Google replaces its password. Use "Forgot password" to set one again.</p>
             <Button type="button" variant="secondary" className="w-full" onClick={demo} disabled={busy !== null}>
               {busy === 'demo' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Explore Demo Account

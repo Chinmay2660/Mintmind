@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { toISO } from '@/lib/wealth/calc'
 import { Input } from '@/components/ui/input'
-import { Field, FormDialog, Select, StepFormDialog } from './kit'
+import { Field, Select, StepFormDialog } from './kit'
 import { POPULAR_BANKS } from '@/lib/wealth/banks'
 import { useWealth } from '@/lib/wealth/WealthContext'
 

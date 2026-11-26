@@ -6,18 +6,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import axios from 'axios'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Cloud, Folder, Lock, RefreshCw, Search, Upload } from 'lucide-react'
+import { Cloud, Lock, RefreshCw, Search, Upload } from 'lucide-react'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { uid } from '@/lib/wealth/db'
 import { toISO } from '@/lib/wealth/calc'
-import { formatDate } from '@/lib/wealth/format'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { DocumentCard } from '@/components/wealth/DocumentCard'
 import { Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Progress, Select } from '@/components/wealth/kit'
-import { cn } from '@/lib/utils'
 import { Pagination } from '@/components/ui/pagination'
 import { usePagination, useServerPagination } from '@/lib/hooks/usePagination'
 import { matchesAll } from '@/lib/search'
@@ -33,7 +31,7 @@ const fmtSize = (n = 0) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${
 
 export function DocumentsView() {
   const { ready, isDemo, db, data } = useWealth()
-  const [remote, setRemote] = useState<Doc[] | null>(null)
+  const [, setRemote] = useState<Doc[] | null>(null)
   const [drive, setDrive] = useState<{ configured: boolean; connected: boolean; reason?: string } | null>(null)
   // one category at a time. It opens on the first one that has documents (the newest document's, for a real account), until you pick one.
   const [picked, setPicked] = useState<string | null>(null)

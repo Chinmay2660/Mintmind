@@ -5,7 +5,7 @@ import { toISO } from '@/lib/wealth/calc'
 import { ASSET_LABELS, MANUAL_ASSET_CATEGORIES } from '@/lib/wealth/labels'
 import { epfTotal, etfDetails, fdValue, goldValue, KARAT, rdValue } from '@/lib/wealth/holdings'
 import { Input } from '@/components/ui/input'
-import { DateInput, Field, FormDialog, Select, StepFormDialog } from './kit'
+import { DateInput, Field, Select, StepFormDialog } from './kit'
 
 // how each kind reads in the title: acronyms stay in capitals
 const TITLE_NOUN: Record<string, string> = { fd: 'fixed deposit', rd: 'recurring deposit', epf: 'EPF', gold: 'physical gold', etf: 'ETF', stocks: 'stocks', ppf: 'PPF', nps: 'NPS', realEstate: 'property', vehicle: 'vehicle', other: 'asset' }

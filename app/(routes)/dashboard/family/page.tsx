@@ -5,13 +5,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import axios from 'axios'
 import { toast } from 'sonner'
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Check, ChevronRight, Copy, Lock, MoreVertical, Plus, Trash2, UserPlus } from 'lucide-react'
+import { Check, ChevronRight, Copy, Lock, MoreVertical, Trash2, UserPlus } from 'lucide-react'
 import Link from 'next/link'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { uid } from '@/lib/wealth/db'
-import { growthVs, portfolioSummary } from '@/lib/wealth/calc'
-import { coverageTotals } from '@/lib/wealth/selectors'
 import { familyTotals, visibleSummary } from '@/lib/family/visibility'
 import { formatCompactINR, formatINR, formatPct } from '@/lib/wealth/format'
 import { Money } from '@/components/wealth/Money'
@@ -19,9 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { CHART_PALETTE, Empty, Field, FormDialog, LoadingBlock, PageHeader, Panel, Select, Stat, chartAxis, chartGrid, chartTooltipStyle } from '@/components/wealth/kit'
-import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
-import { Checkbox } from '@/components/ui/checkbox'
 import { InviteReady, JoinWithCode, demoInvite, type InviteInfo } from '@/components/family/InviteCodes'
 
 const ROLES = [{ v: 'admin', l: 'Admin' }, { v: 'member', l: 'Member' }, { v: 'emergency_contact', l: 'Emergency Contact' }]
@@ -30,7 +26,7 @@ const roleLabel = (r: string) => ROLES.find((x) => x.v === r)?.l ?? r
 interface VM { id: string; name: string; relation?: string; role: string; status: string; self: boolean; email?: string; permissions?: Record<string, boolean>; summary: any }
 
 export default function FamilyPage() {
-  const { ready, isDemo, db, data, netWorth } = useWealth()
+  const { ready, isDemo, db, data } = useWealth()
   const { privacyMode } = usePrivacyMode()
   const [circle, setCircle] = useState<{ id: string; name: string; me: any; members: VM[] } | null | undefined>(undefined)
   const [dlg, setDlg] = useState<null | 'invite' | { del: VM }>(null)
@@ -88,7 +84,6 @@ export default function FamilyPage() {
   // Admins first, then members, then emergency contacts; you first within a role; pending invites last
   const roleRank: Record<string, number> = { admin: 0, member: 1, emergency_contact: 2 }
   const sortedMembers = [...circle.members].sort((a, b) => Number(a.status === 'invited' || a.status === 'pending') - Number(b.status === 'invited' || b.status === 'pending') || (roleRank[a.role] ?? 9) - (roleRank[b.role] ?? 9) || Number(b.self) - Number(a.self) || a.name.localeCompare(b.name))
-  const self = circle.members.find((m) => m.self)
 
   const setRole = async (m: VM, role: string) => {
     if (isDemo) await db.members.update(m.id, { role }); else await api({ action: 'update-member', memberId: m.id, role }, 'Role updated')

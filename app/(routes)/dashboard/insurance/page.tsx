@@ -1,14 +1,13 @@
 'use client'
 
+import { SummaryHeader } from '@/components/wealth/HoldingUI'
 import { BackBar } from '@/components/shell/BackBar'
 import { useRouter } from 'next/navigation'
 import { toastProblem } from '@/lib/notify'
 import { shortAccountName } from '@/lib/wealth/accountName'
-import { policyIcon } from '@/lib/categoryIcons'
-import { CategoryCarousel } from '@/components/ui/category-carousel'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Check, ChevronRight, Paperclip, Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react'
+import { Check, ChevronRight, Paperclip, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { deletePolicy, recordPremiumPaid, save } from '@/lib/wealth/actions'
@@ -22,13 +21,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useDetailCrumb } from '@/components/shell/DetailCrumb'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { Empty, Field, FormDialog, InfoTip, StepFormDialog, LoadingBlock, PageHeader, Panel, Select, Stat } from '@/components/wealth/kit'
-import { CopyButton, CopyValue } from '@/components/wealth/CopyButton'
+import { Empty, Field, InfoTip, StepFormDialog, LoadingBlock, PageHeader, Select } from '@/components/wealth/kit'
+import { CopyValue } from '@/components/wealth/CopyButton'
 import { cn } from '@/lib/utils'
 import { FieldSet } from '@/components/ui/layout'
 import { DateInput } from '@/components/ui/pickers'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { TabBar } from '@/components/ui/tab-bar'
 
 const typeLabel = (v: string) => POLICY_TYPES.find((t) => t.value === v)?.label ?? v
@@ -59,11 +57,8 @@ export default function InsurancePage() {
     <div className="space-y-5">
       {!detail && <BackBar phoneOnly />}
       <PageHeader description="Coverage is protection, not wealth. It is never counted in your net worth." primaryAction={{ label: 'Add policy', onClick: () => setDlg({ kind: 'edit' }) }} />
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 border-b border-border pb-5">
-        <Stat label="Total coverage" value={<Money value={cover.total} compact />} hint={`${cover.activeCount} active`} />
-        <Stat label="Annual premium" value={<Money value={annual} />} />
-        {Object.entries(cover.byType).slice(0, 2).map(([k, v]) => <Stat key={k} label={`${typeLabel(k)} cover`} value={<Money value={v} compact />} />)}
-      </div>
+      <SummaryHeader label="Total coverage" value={<Money value={cover.total} compact />}
+        stats={[{ label: 'Active policies', value: cover.activeCount }, { label: 'Annual premium', value: <Money value={annual} compact /> }, ...Object.entries(cover.byType).slice(0, 1).map(([k, v]) => ({ label: `${typeLabel(k)} cover`, value: <Money value={v as number} compact /> }))]} />
 
       {!detail && kinds.length > 0 && <TabBar label="Kinds of policy" value={activeType} onChange={setFilter} tabs={[{ key: 'all', label: 'All', badge: data.policies.length }, ...kinds.map((t) => ({ key: t.value, label: t.label, badge: typeCount(t.value) }))]} />}
 

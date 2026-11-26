@@ -12,7 +12,6 @@ import { useAi } from '@/components/ai/useAi'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { LoadingBlock, PageHeader, Panel, Progress } from '@/components/wealth/kit'
-import { cn } from '@/lib/utils'
 
 const TABS = ['Ask', 'Quick add', 'Health score', 'Report'] as const
 

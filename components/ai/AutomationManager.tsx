@@ -110,8 +110,8 @@ function RuleForm({ rule, isNew, onClose, onSave }: { rule: any; isNew: boolean;
       <Field label="End date (optional)">{(id) => <DateInput id={id} value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} />}</Field>
       <FieldSet legend="Notify me by" className="full">
         <div className="grid grid-cols-2 gap-x-4 gap-y-3">{CHANNELS.map((c) => {
-          const unavailable = c.v === 'push' || (isDemo && (c.v === 'email' || c.v === 'sms'))
-          return <label key={c.v} className={cn('flex items-center gap-2 text-sm', unavailable && 'opacity-50')}><Checkbox disabled={unavailable} checked={!!channels[c.v] && !unavailable} onChange={(e) => setChannels({ ...channels, [c.v]: e.target.checked })} />{c.l}{c.v === 'push' ? ' (not set up)' : isDemo && c.v !== 'inApp' ? ' (not in demo)' : ''}</label>
+          const unavailable = c.v === 'push' || c.v === 'sms' || (isDemo && (c.v === 'email' || c.v === 'sms'))
+          return <label key={c.v} className={cn('flex items-center gap-2 text-sm', unavailable && 'opacity-50')}><Checkbox disabled={unavailable} checked={!!channels[c.v] && !unavailable} onChange={(e) => setChannels({ ...channels, [c.v]: e.target.checked })} />{c.l}{c.v === 'push' || c.v === 'sms' ? ' (not set up)' : isDemo && c.v !== 'inApp' ? ' (not in demo)' : ''}</label>
         })}</div></FieldSet>
       <label className="full flex items-center gap-2 border-t border-border pt-4 text-sm"><Checkbox checked={f.enabled} onChange={(e) => setF({ ...f, enabled: e.target.checked })} /><span><span className="font-medium">Enabled</span><span className="block text-xs text-muted-foreground">Switch off to pause it without deleting</span></span></label>
     </FormDialog>

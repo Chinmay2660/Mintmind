@@ -4,7 +4,7 @@ import { toastProblem } from '@/lib/notify'
 import { shortAccountName } from '@/lib/wealth/accountName'
 import { useMemo, useState } from 'react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
-import { ArrowDownLeft, ArrowUpRight, CheckSquare, ChevronLeft, ChevronRight, Copy, Download, MoreVertical, Pencil, Plus, Scale, Search, SlidersHorizontal, Split, Star, Trash2, X } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, CheckSquare, ChevronLeft, ChevronRight, Copy, MoreVertical, Pencil, Plus, Scale, Search, SlidersHorizontal, Split, Star, Trash2, X } from 'lucide-react'
 import { SnapCarousel } from '@/components/ui/snap-carousel'
 import { TxnRow } from './TxnRow'
 import { toast } from 'sonner'
@@ -33,8 +33,6 @@ import { cn } from '@/lib/utils'
 
 export interface Tx { key: string; kind: 'expense' | 'income' | 'transfer'; id: string; date: string; amount: number; category: string; title: string; sub: string; legacy?: boolean; raw: any }
 
-const KIND_STYLE = { expense: 'text-destructive', income: 'text-success', transfer: 'text-muted-foreground' } as const
-const sign = { expense: '-', income: '+', transfer: '' } as const
 
 /** The month in one plain row, as a money manager shows it: income, expenses and the total, each in its own colour. */
 export function MonthTotals({ list }: { list: Tx[] }) {
@@ -111,12 +109,6 @@ function Row({ t, onEdit, onDelete, onDuplicate, onSplit, onBookmark, selecting,
   )
 }
 
-function exportTxCsv(rows: Tx[], ym: string) {
-  const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`
-  const lines = ['Date,Type,Category,Description,Detail,Amount', ...rows.map((t) => [t.date, t.kind, t.category, t.title, t.sub, t.amount].map(esc).join(','))]
-  const url = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }))
-  const a = document.createElement('a'); a.href = url; a.download = `transactions-${ym}.csv`; a.click(); URL.revokeObjectURL(url)
-}
 
 /** Daily view: transactions grouped by date with day totals, search, filters, bookmarks and multi-select. */
 export function TransactionsView({ initialCategory = '', initialKind = 'all', list, ym, onEdit, onDelete, onAdd, onDuplicate, onSplit, onBookmark, onBulkDelete, onImport }: {

@@ -1,6 +1,5 @@
 'use client'
 
-import React from 'react'
 import { Search } from 'lucide-react'
 import { useAppSearch } from '@/contexts/AppSearchContext'
 import { Button } from '@/components/ui/button'

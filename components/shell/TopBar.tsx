@@ -11,7 +11,6 @@ import { NotificationsMenu } from './NotificationsMenu'
 import { Button } from '@/components/ui/button'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { useWealth } from '@/lib/wealth/WealthContext'
-import { usePathname } from 'next/navigation'
 import { Breadcrumbs } from '@/components/shell/Breadcrumbs'
 import { Wallet } from 'lucide-react'
 import Link from 'next/link'
@@ -19,7 +18,6 @@ import Link from 'next/link'
 export function TopBar() {
   const { isDemo, resetDemo } = useWealth()
   const { privacyMode, togglePrivacyMode } = usePrivacyMode()
-  const pathname = usePathname()
 
   return (
     <header className="print:hidden sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-4 backdrop-blur safe-area-inset-top md:px-6">
