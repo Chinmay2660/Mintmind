@@ -1,5 +1,6 @@
 // Device notifications: reminders shown by the browser/OS while the app or installed PWA is running.
 // Reminders are derived from data stored on this device, so there is no server push (and nothing leaves the device).
+import { toISO, istNow } from '@/lib/wealth/calc'
 
 const FLAG = 'mm-device-notify'
 const SEEN = 'mm-device-notify-seen'
@@ -22,7 +23,7 @@ type N = { key: string; title: string; severity?: string; href?: string; module?
 /** Shows each urgent reminder once per day (max 3 at a time). Returns how many were shown. */
 export async function showDueNotifications(list: N[], max = 3) {
   if (!deviceNotifyOn()) return 0
-  const today = new Date().toISOString().slice(0, 10)
+  const today = toISO(istNow())
   let seen: Record<string, string> = {}
   try { seen = JSON.parse(localStorage.getItem(SEEN) || '{}') } catch { /* ignore */ }
   const fresh = list.filter((n) => (n.severity === 'high' || n.severity === 'medium') && seen[n.key] !== today).slice(0, max)

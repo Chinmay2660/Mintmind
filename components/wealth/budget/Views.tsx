@@ -13,7 +13,7 @@ import { deleteCategory, renameCategory, saveCategories } from '@/lib/wealth/act
 import { categoryBreakdown, dailyTotals, groupByDay, inMonth, monthSummary } from '@/lib/wealth/transactions'
 import { useCategories } from '@/lib/wealth/useCategories'
 import { formatCompactINR, formatDate, formatINR, modeLabel } from '@/lib/wealth/format'
-import { daysInMonth } from '@/lib/wealth/calc'
+import { daysInMonth, toISO, istNow } from '@/lib/wealth/calc'
 import { Money } from '../Money'
 import { Pagination } from '@/components/ui/pagination'
 import { usePagination } from '@/lib/hooks/usePagination'
@@ -228,7 +228,7 @@ export function CalendarView({ list, ym, onEdit, onDelete, onDuplicate, onBookma
   const days = daysInMonth(y, m)
   const cells = [...Array(first).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)]
   const iso = (d: number) => `${ym}-${String(d).padStart(2, '0')}`
-  const todayIso = new Date().toISOString().slice(0, 10)
+  const todayIso = toISO(istNow())
   const dayItems = sel ? list.filter((t) => t.date === sel) : []
 
   return (

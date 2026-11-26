@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { addExpense, addIncome, remove, save } from '@/lib/wealth/actions'
 import { useCategories } from '@/lib/wealth/useCategories'
-import { availableBalance, toISO } from '@/lib/wealth/calc'
+import { availableBalance, toISO, istNow } from '@/lib/wealth/calc'
 import { formatCompactINR, formatDate, formatINR, modeLabel } from '@/lib/wealth/format'
 import { lastMonths, monthKey, monthLabel } from '@/lib/wealth/selectors'
 import { Money } from './Money'
@@ -36,7 +36,7 @@ export function DebitCardsTab() {
   const card = sel ? cards.find((c) => c.id === sel) : undefined
   useDetailCrumb(card ? `${card.bank} ${card.cardName}` : null, () => setSel(null))
   const acc = (id: string) => data.bankAccounts.find((a: any) => a.id === id)
-  const ym = toISO(new Date()).slice(0, 7)
+  const ym = toISO(istNow()).slice(0, 7)
 
   const spendOf = (id: string) => data.expenses.filter((e: any) => e.debitCardId === id)
   const monthSpend = cards.reduce((s, c) => s + spendOf(c.id).filter((e: any) => monthKey(e.date) === ym).reduce((x: number, e: any) => x + e.amount, 0), 0)
@@ -122,7 +122,7 @@ export function DebitCardsTab() {
 function DebitTxnForm({ cards, card, accountOf, onClose, onSpend, onRefund }: { cards: any[]; card?: any; accountOf: (id: string) => any; onClose: () => void; onSpend: (p: { cardId: string; accountId: string; amount: number; category: string; date: string; note: string }) => Promise<void>; onRefund: (p: { accountId: string; amount: number; date: string; note: string }) => Promise<void> }) {
   const cats = useCategories()
   const [mode, setMode] = useState<'spend' | 'refund'>('spend')
-  const [f, setF] = useState({ cardId: (card ?? cards[0])?.id ?? '', amount: '', date: toISO(new Date()), note: '', category: cats.expense[0] || 'Other' })
+  const [f, setF] = useState({ cardId: (card ?? cards[0])?.id ?? '', amount: '', date: toISO(istNow()), note: '', category: cats.expense[0] || 'Other' })
   const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
   const cur = cards.find((x) => x.id === f.cardId)
   const acct = cur ? accountOf(cur.accountId) : null

@@ -1,14 +1,15 @@
 'use client'
 
 import { returnTotals } from '@/lib/wealth/holdingsTotals'
+import { istNow, toISO } from '@/lib/wealth/calc'
 import { BackBar } from '@/components/shell/BackBar'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useAddParam } from '@/lib/hooks/useAddParam'
-import { Pencil, PiggyBank, RefreshCw, Trash2 } from 'lucide-react'
+import { ChevronRight, Pencil, PiggyBank, RefreshCw, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { remove, save } from '@/lib/wealth/actions'
-import { assetFacts, depositGroups, GROUPS } from '@/lib/wealth/portfolio'
+import { assetFacts, depositGroups, GROUPS, PROPERTY_GROUPS } from '@/lib/wealth/portfolio'
 import { assetGain, assetValue, renewFd } from '@/lib/wealth/holdings'
 import { ASSET_LABELS } from '@/lib/wealth/labels'
 import { formatDate, formatINR } from '@/lib/wealth/format'
@@ -18,13 +19,23 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Money } from '../Money'
 import { AssetForm } from '../AssetForm'
 import { ContributionForm } from '../LimitsPanel'
-import { Empty, Metric, PageHeader, Panel } from '../kit'
-import { DetailRows, HoldingCard, SummaryHeader } from '../HoldingUI'
+import { Empty, Metric, PageHeader, Panel, Progress } from '../kit'
+import { LIMITS, fyLabel, fyStart, limitStatus } from '@/lib/wealth/limits'
+import { DetailRows, SummaryHeader } from '../HoldingUI'
 
-type Kind = 'fd' | 'rd' | 'retirement' | 'market' | 'gold' | 'property'
-const SINGULAR: Record<Kind, string> = { fd: 'fixed deposit', rd: 'recurring deposit', retirement: 'retirement account', market: 'stock or ETF', gold: 'gold holding', property: 'asset' }
-// Things you own that are not investments. They count in net worth but not in the investment returns.
-const PROPERTY_GROUP = { key: 'property', label: 'Property & other', cats: ['realEstate', 'vehicle', 'other'] }
+/** One list of holdings, with a line between rows (the same list as the fund list). */
+function HoldingList({ title, children }: { title?: string; children: ReactNode }) {
+  if (!children) return null
+  return (
+    <section>
+      {title && <h3 className="mb-1 text-sm font-semibold text-muted-foreground">{title}</h3>}
+      <ul className="divide-y divide-border border-y border-border">{children}</ul>
+    </section>
+  )
+}
+
+type Kind = 'fd' | 'rd' | 'epf' | 'ppf' | 'nps' | 'market' | 'gold' | 'esop' | 'realEstate' | 'vehicle' | 'other'
+const SINGULAR: Record<Kind, string> = { fd: 'fixed deposit', rd: 'recurring deposit', epf: 'EPF account', ppf: 'PPF account', nps: 'NPS account', market: 'stock or ETF', gold: 'gold holding', esop: 'ESOP or RSU grant', realEstate: 'property', vehicle: 'vehicle', other: 'asset' }
 
 /**
  * One section of the portfolio: fixed deposits, recurring deposits, retirement accounts, stocks and ETFs, or gold.
@@ -32,8 +43,8 @@ const PROPERTY_GROUP = { key: 'property', label: 'Property & other', cats: ['rea
  */
 export function HoldingsTab({ kind }: { kind: Kind }) {
   const { data, db } = useWealth()
-  const today = useMemo(() => new Date(), [])
-  const group = kind === 'property' ? PROPERTY_GROUP : GROUPS.find((g) => g.key === kind)!
+  const today = useMemo(() => istNow(), [])
+  const group = [...GROUPS, ...PROPERTY_GROUPS].find((g) => g.key === kind)!
   const items = useMemo(() => (data.assets as any[]).filter((a) => group.cats.includes(a.category)), [data.assets, group.cats])
   const [sel, setSel] = useState<string | null>(null)
   const [form, setForm] = useState<null | { row?: any }>(null)
@@ -46,15 +57,20 @@ export function HoldingsTab({ kind }: { kind: Kind }) {
 
   const row = (a: any, extra?: { interest?: number; sub?: string }) => {
     const v = assetValue(a, today), g = assetGain(a, today)
+    const sub = extra?.sub ?? (a.category === 'vehicle' ? a.vehicleType : group.cats.length > 1 ? ASSET_LABELS[a.category as keyof typeof ASSET_LABELS] ?? a.category : undefined)
     return (
       <li key={a.id}>
-        <HoldingCard onClick={() => setSel(a.id)} ariaLabel={`${a.name}, open details`} title={a.name} tag={ASSET_LABELS[a.category as keyof typeof ASSET_LABELS] ?? a.category}
-          sub={extra?.sub}
-          figs={[
-            { label: 'Value', value: <Money value={v} /> },
-            extra?.interest != null ? { label: 'Interest', value: `+${formatINR(extra.interest)}`, tone: 'good' } : { label: 'Returns', value: g ? <Metric amount={g.gain} className="text-sm font-semibold" /> : '-', sub: g ? <Metric pct={g.pct} className="text-xs" /> : undefined },
-            { label: extra?.interest != null ? 'Rate' : 'Invested', value: extra?.interest != null ? (a.ratePct ? `${a.ratePct}%` : '-') : g ? <Money value={v - g.gain} compact /> : '-' },
-          ]} />
+        <button type="button" onClick={() => setSel(a.id)} aria-label={`${a.name}, open details`} className="flex min-h-[4.25rem] w-full items-center gap-3 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <span className="min-w-0 flex-1">
+            <span className="line-clamp-2 text-sm font-semibold leading-snug">{a.name}</span>
+            {sub && <span className="mt-0.5 block text-xs text-muted-foreground">{sub}</span>}
+          </span>
+          <span className="flex h-10 w-28 shrink-0 flex-col justify-center text-right">
+            <span className="block whitespace-nowrap text-sm font-semibold tabular-nums"><Money value={v} /></span>
+            {extra?.interest != null ? <span className="block whitespace-nowrap text-xs tabular-nums text-success">+{formatINR(extra.interest)}</span> : g ? <span className="block"><Metric arrow={false} amount={g.gain} className="text-xs" /></span> : <span className="block text-xs text-muted-foreground">-</span>}
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        </button>
       </li>
     )
   }
@@ -75,6 +91,16 @@ export function HoldingsTab({ kind }: { kind: Kind }) {
             <Button size="sm" variant="outline" onClick={() => setForm({ row: open })}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button><Button size="sm" variant="outline" onClick={() => setDel(open)}><Trash2 className="mr-1.5 h-4 w-4" />Delete</Button></div>
         </div>
         {(() => { const v = assetValue(open, today), g = assetGain(open, today); return <SummaryHeader label="Current value" value={<Money value={v} />} stats={g ? [{ label: 'Invested', value: <Money value={v - g.gain} compact /> }, { label: 'Returns', value: <Metric amount={g.gain} className="text-sm font-semibold" /> }, { label: 'Returns %', value: <Metric pct={g.pct} className="text-sm font-semibold" /> }] : []} /> })()}
+        {(open.category === 'ppf' || open.category === 'nps') && (() => {
+          const st = limitStatus([open], open.category, today), k = open.category as 'ppf' | 'nps'
+          return (
+            <Panel flat title={`This financial year, ${fyLabel(fyStart(toISO(today)))}`}>
+              <Progress value={st.pct} tone={st.over > 0 ? 'danger' : st.pct >= 90 ? 'warning' : 'primary'} label={`${LIMITS[k].label} used this year`} />
+              <p className="mt-1.5 text-sm tabular-nums"><strong><Money value={st.used} /></strong> of {formatINR(st.limit)} used{st.over > 0 ? <span className="font-semibold text-destructive"> · over by {formatINR(st.over)}</span> : <span className="text-muted-foreground"> · {formatINR(st.left)} left</span>}</p>
+              <p className="text-xs text-muted-foreground">{LIMITS[k].note} Tax rules change, so check the current limit.</p>
+            </Panel>
+          )
+        })()}
         <DetailRows title="Details" rows={facts.map((f) => ({ label: f.label, value: typeof f.value === 'object' ? ('money' in f.value ? <Money value={(f.value as any).money} /> : formatDate((f.value as any).date)) : String(f.value) }))} />
         {form && <AssetForm row={form.row} category={form.row?.category} onClose={() => setForm(null)} onSave={async (rec) => { await save(db, 'assets', rec); toast.success(form.row?.renewals?.length ? 'Renewed. Set the new maturity date if you know it.' : 'Saved') }} />}
         {contrib && (open.category === 'ppf' || open.category === 'nps') && <ContributionForm kind={open.category} assets={[open]} onClose={() => setContrib(false)} onSave={async (a) => { await save(db, 'assets', a); toast.success('Contribution added') }} />}
@@ -87,23 +113,32 @@ export function HoldingsTab({ kind }: { kind: Kind }) {
     <div className="flex flex-col gap-5">
       <div className="absolute"><PageHeader primaryAction={{ label: `Add ${SINGULAR[kind]}`, onClick: () => setForm({}) }} /></div>
       {items.length > 0 && (() => {
-        if (deposits) return <SummaryHeader label={`${group.label} value`} value={<Money value={deposits.value} />} stats={[{ label: kind === 'fd' ? 'Deposited' : 'Put in', value: <Money value={deposits.invested} compact /> }, { label: 'Interest', value: <Money value={deposits.interest} compact />, tone: 'good' }, { label: 'Avg rate', value: deposits.avgRate != null ? `${deposits.avgRate}%` : '-' }]} />
         const t = returnTotals(items.map((x) => { const g = assetGain(x, today); return { value: assetValue(x, today), gain: g ? g.gain : null } }))
-        // a holding with no cost recorded has no return to show, so those two figures only appear when there is something to say
-        return <SummaryHeader label={`${group.label} value`} value={<Money value={t.value} />} stats={[{ label: 'Holdings', value: items.length }, ...(t.gain != null ? [{ label: 'Returns', value: <Metric amount={t.gain} className="text-sm font-semibold" /> }] : []), ...(t.pct != null ? [{ label: 'Returns %', value: <Metric pct={t.pct} className="text-sm font-semibold" /> }] : [])]} />
+        // a holding with no cost recorded has no return to show, so those rows only appear when there is something to say
+        const rows: { label: string; value: ReactNode }[] = deposits
+          ? [{ label: kind === 'fd' ? 'Deposited' : 'Put in', value: <Money value={deposits.invested} /> }, { label: 'Interest earned', value: <span className="text-success">+<Money value={deposits.interest} /></span> }, ...(deposits.avgRate != null ? [{ label: 'Average rate', value: `${deposits.avgRate}%` }] : [])]
+          : [...(t.gain != null ? [{ label: 'Invested value', value: <Money value={t.value - t.gain} /> }, { label: 'Total returns', value: <span className="flex items-center gap-1.5"><Metric arrow={false} amount={t.gain} compact={false} className="text-sm font-semibold" />{t.pct != null && <span>(<Metric arrow={false} pct={t.pct} className="text-sm font-semibold" />)</span>}</span> }] : []), { label: 'Holdings', value: items.length }]
+        return (
+          <section aria-label={`${group.label} overview`} className="surface-card px-4">
+            <p className="pt-4 text-sm text-muted-foreground">Current value</p>
+            <p className="text-3xl font-bold tabular-nums"><Money value={deposits ? deposits.value : t.value} /></p>
+            <dl className="space-y-2.5 py-4 text-sm">
+              {rows.map((r) => <div key={r.label} className="flex items-center justify-between gap-3"><dt className="text-muted-foreground">{r.label}</dt><dd className="font-semibold tabular-nums">{r.value}</dd></div>)}
+            </dl>
+          </section>
+        )
       })()}
       {items.length === 0 ? (
-        <Empty title={`No ${group.label.toLowerCase()} yet`} description={`Add a ${SINGULAR[kind]} to see its details and what it has earned.`} action={<Button onClick={() => setForm({})}>Add {SINGULAR[kind]}</Button>} />
+        <Empty title={`Nothing added under ${group.label} yet`} description={`Add a ${SINGULAR[kind]} to see its details and what it has earned.`} action={<Button onClick={() => setForm({})}>Add {SINGULAR[kind]}</Button>} />
       ) : deposits ? (
         <>
-          <Panel flat title={`Running (${deposits.running.length})`}>{deposits.running.length ? <ul className="space-y-3">{deposits.running.map(depositRow)}</ul> : <p className="text-sm text-muted-foreground">None running.</p>}</Panel>
-          {deposits.matured.length > 0 && <Panel flat title={`Matured (${deposits.matured.length})`}><ul className="space-y-3">{deposits.matured.map(depositRow)}</ul></Panel>}
+          <HoldingList title={`Running (${deposits.running.length})`}>{deposits.running.length ? deposits.running.map(depositRow) : null}</HoldingList>
+          {deposits.matured.length > 0 && <HoldingList title={`Matured (${deposits.matured.length})`}>{deposits.matured.map(depositRow)}</HoldingList>}
         </>
       ) : (
         group.cats.map((cat) => {
           const list = items.filter((a) => a.category === cat)
-          if (!list.length) return null
-          return <Panel flat key={cat} title={`${ASSET_LABELS[cat as keyof typeof ASSET_LABELS] ?? cat} (${list.length})`}><ul className="space-y-3">{list.map((a) => row(a))}</ul></Panel>
+          return list.length ? <HoldingList key={cat} title={group.cats.length > 1 ? `${ASSET_LABELS[cat as keyof typeof ASSET_LABELS] ?? cat} (${list.length})` : undefined}>{list.map((a) => row(a))}</HoldingList> : null
         })
       )}
       {form && <AssetForm row={form.row} category={group.cats[0]} onClose={() => setForm(null)} onSave={async (rec) => { await save(db, 'assets', rec); toast.success('Saved') }} />}

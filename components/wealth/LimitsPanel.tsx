@@ -5,7 +5,7 @@ import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { save } from '@/lib/wealth/actions'
-import { toISO } from '@/lib/wealth/calc'
+import { toISO, istNow } from '@/lib/wealth/calc'
 import { LIMITS, LIMIT_RULES_FY, fyLabel, fyStart, limitStatus } from '@/lib/wealth/limits'
 import { uid } from '@/lib/wealth/db'
 import { formatDate, formatINR } from '@/lib/wealth/format'
@@ -23,7 +23,7 @@ import { DateInput, Field, FormDialog, Panel, Progress, Select } from './kit'
 export function LimitsPanel() {
   const { data, db } = useWealth()
   const [adding, setAdding] = useState<null | string>(null)
-  const today = new Date()
+  const today = istNow()
   const fy = fyLabel(fyStart(toISO(today)))
   const kinds = (['ppf', 'nps'] as const).map((k) => ({ k, items: data.assets.filter((a: any) => a.category === k), st: limitStatus(data.assets, k, today) }))
 
@@ -59,7 +59,7 @@ export function LimitsPanel() {
 export function ContributionForm({ kind, assets, onClose, onSave }: { kind: 'ppf' | 'nps'; assets: any[]; onClose: () => void; onSave: (a: any) => Promise<void> }) {
   const [assetId, setAssetId] = useState(assets[0]?.id || '')
   const [amount, setAmount] = useState('')
-  const [date, setDate] = useState(toISO(new Date()))
+  const [date, setDate] = useState(toISO(istNow()))
   const [addToBalance, setAddToBalance] = useState(true)
   return (
     <FormDialog open onOpenChange={(o) => !o && onClose()} title={`Log a ${LIMITS[kind].label.split(' ')[0]} contribution`} description="Counts towards this financial year's limit. Tick the box to also raise the balance of the account by the same amount."
@@ -69,12 +69,12 @@ export function ContributionForm({ kind, assets, onClose, onSave }: { kind: 'ppf
         if (!a) throw new Error('Choose the account')
         if (!(n > 0)) throw new Error('Enter an amount greater than zero')
         if (!date) throw new Error('Choose the date')
-        if (date > toISO(new Date())) throw new Error('The date cannot be in the future')
-        await onSave({ ...a, contributions: [...(a.contributions || []), { id: uid('ct'), date, amount: n }], ...(addToBalance ? { value: (Number(a.value) || 0) + n } : {}), updated: toISO(new Date()) })
+        if (date > toISO(istNow())) throw new Error('The date cannot be in the future')
+        await onSave({ ...a, contributions: [...(a.contributions || []), { id: uid('ct'), date, amount: n }], ...(addToBalance ? { value: (Number(a.value) || 0) + n, ...(Number(a.invested) > 0 ? { invested: Number(a.invested) + n } : {}) } : {}), updated: toISO(istNow()) })
       }}>
       {assets.length > 1 && <Field label="Account" className="full">{(id) => <Select id={id} value={assetId} onChange={(e) => setAssetId(e.target.value)}>{assets.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select>}</Field>}
       <Field label="Amount (₹)">{(id) => <Input id={id} type="number" min="0" step="any" inputMode="decimal" required value={amount} onChange={(e) => setAmount(e.target.value)} />}</Field>
-      <Field label="Date">{(id) => <DateInput id={id} required max={toISO(new Date())} value={date} onChange={(e) => setDate(e.target.value)} />}</Field>
+      <Field label="Date">{(id) => <DateInput id={id} required max={toISO(istNow())} value={date} onChange={(e) => setDate(e.target.value)} />}</Field>
       <label className="full flex items-center gap-2.5 text-sm"><Checkbox checked={addToBalance} onChange={(e) => setAddToBalance(e.target.checked)} aria-label="Also add to the balance" />Also add to the account balance</label>
       {assets[0]?.contributions?.length > 0 && <p className="full text-xs text-muted-foreground">Last logged: {formatDate(assets.flatMap((a) => a.contributions || []).sort((x: any, y: any) => y.date.localeCompare(x.date))[0].date)}</p>}
     </FormDialog>

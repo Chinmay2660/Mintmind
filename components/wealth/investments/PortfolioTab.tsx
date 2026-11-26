@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { istNow } from '@/lib/wealth/calc'
 import { ChevronRight } from 'lucide-react'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { portfolioOverview } from '@/lib/wealth/portfolio'
@@ -15,7 +16,7 @@ const slot = (i: number) => (((i % 6) + 1) as Slot)
 /** part: 'summary' is the figures strip alone (shown above the section tabs, as on Insurance); 'body' is the breakdown below. */
 export function PortfolioTab({ onOpen, part = 'body' }: { onOpen: (key: string) => void; part?: 'summary' | 'body' }) {
   const { data } = useWealth()
-  const today = useMemo(() => new Date(), [])
+  const today = useMemo(() => istNow(), [])
   const p = useMemo(() => portfolioOverview({ funds: data.funds as any[], fundTxns: data.fundTxns as any[], sips: data.sips as any[], assets: data.assets as any[], today }), [data.funds, data.fundTxns, data.sips, data.assets, today])
   const rows = p.rows.filter((r) => r.count > 0)
   const realised = useMemo(() => portfolioRealised(data.funds as any[], data.fundTxns as any[]), [data.funds, data.fundTxns])

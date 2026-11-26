@@ -52,6 +52,8 @@ export function GrowwChartImpl({ data, format, height = 160, tone = 'auto', zero
 
   if (data.length < 2) return <p className="flex items-center justify-center text-sm text-muted-foreground" style={{ height }}>Not enough history yet.</p>
   const last = data.reduce((n, d, i) => (d.y != null ? i : n), 0)
+  // the chart library reports which point is under the finger as an index (it no longer hands over the point itself)
+  const track = (st: any) => { const i = Number(st?.activeTooltipIndex); const pt = Number.isInteger(i) ? data[i] : undefined; if (pt) move(pt) }
   const move = (pt: GrowwPoint | null) => { setHover((cur) => (cur?.x === pt?.x ? cur : pt)); onHover?.(pt) }
 
   return (
@@ -64,7 +66,7 @@ export function GrowwChartImpl({ data, format, height = 160, tone = 'auto', zero
       )}
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 10, right: 8, left: 8, bottom: 6 }}
-          onMouseMove={(st: any) => { const pt = st?.activePayload?.[0]?.payload; if (pt) move(pt) }} onMouseLeave={() => move(null)}>
+          onMouseMove={track} onTouchMove={track} onMouseLeave={() => move(null)} onTouchEnd={() => move(null)}>
           <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity={0.22} /><stop offset="100%" stopColor={color} stopOpacity={0} /></linearGradient></defs>
           <XAxis dataKey="x" hide />
           <YAxis hide domain={domain} />

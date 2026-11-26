@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { toISO } from '@/lib/wealth/calc'
+import { toISO, istNow } from '@/lib/wealth/calc'
 import { Input } from '@/components/ui/input'
 import { Field, Select, StepFormDialog } from './kit'
 import { POPULAR_BANKS } from '@/lib/wealth/banks'
@@ -44,7 +44,7 @@ export function AccountForm({ row, onClose, onSave }: { row?: any; onClose: () =
           ...row, ...f,
           bankName: cash ? 'Cash' : f.bankName, nickname: cash ? 'Cash' : f.nickname, holderName: cash ? '-' : joint ? f.holderName.trim() : row?.holderName && row.type !== 'joint' ? row.holderName : ownerName,
           accountNumber: cash ? '' : f.accountNumber, ifsc: cash ? '' : f.ifsc.toUpperCase(),
-          currentBalance: cur, mab: cash ? 0 : Number(f.mab) || 0, lastUpdated: toISO(new Date()),
+          currentBalance: cur, mab: cash ? 0 : Number(f.mab) || 0, lastUpdated: toISO(istNow()),
         })
       }}
       steps={[

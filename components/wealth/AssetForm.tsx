@@ -1,14 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { toISO } from '@/lib/wealth/calc'
-import { ASSET_LABELS, MANUAL_ASSET_CATEGORIES } from '@/lib/wealth/labels'
+import { toISO, istNow } from '@/lib/wealth/calc'
+import { ASSET_LABELS, MANUAL_ASSET_CATEGORIES, VEHICLE_TYPES } from '@/lib/wealth/labels'
 import { epfTotal, etfDetails, fdValue, goldValue, KARAT, rdValue } from '@/lib/wealth/holdings'
 import { Input } from '@/components/ui/input'
 import { DateInput, Field, Select, StepFormDialog } from './kit'
 
 // how each kind reads in the title: acronyms stay in capitals
-const TITLE_NOUN: Record<string, string> = { fd: 'fixed deposit', rd: 'recurring deposit', epf: 'EPF', gold: 'physical gold', etf: 'ETF', stocks: 'stocks', ppf: 'PPF', nps: 'NPS', realEstate: 'property', vehicle: 'vehicle', other: 'asset' }
+const TITLE_NOUN: Record<string, string> = { fd: 'fixed deposit', rd: 'recurring deposit', epf: 'EPF', gold: 'physical gold', etf: 'ETF', stocks: 'stocks', ppf: 'PPF', nps: 'NPS', esop: 'ESOP or RSU grant', realEstate: 'property', vehicle: 'vehicle', other: 'asset' }
 const num = (v: string) => (v.trim() === '' ? 0 : Number(v))
 
 /** The asset form. Each kind of asset asks for the details it really has: an FD its rate and dates, EPF its three balances, and so on. */
@@ -25,13 +25,14 @@ export function AssetForm({ row, category: startCategory, onClose, onSave }: { r
     grams: String(row?.grams ?? ''), karat: String(row?.karat ?? 24), paidAmount: String(row?.paidAmount ?? row?.invested ?? ''), rate24: String(row?.rate24 ?? ''),
     // ETF
     units: String(row?.units ?? ''), avgPrice: String(row?.avgPrice ?? ''), currentNav: String(row?.currentNav ?? ''), etfKind: row?.etfKind || 'Equity ETF',
+    vehicleType: row?.vehicleType || 'Car',
     // property
     // what was paid or put in, for property, vehicles, stocks, PPF, NPS and other assets
     invested: String(row?.invested ?? row?.purchasePrice ?? ''),
   })
   const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
   const c = f.category
-  const today = toISO(new Date())
+  const today = toISO(istNow())
   const input = (k: keyof typeof f, label: string, hint?: string, step = 'any') => (
     <Field label={label} hint={hint}>{(id) => <Input id={id} type="number" min="0" step={step} inputMode="decimal" value={f[k]} onChange={set(k)} />}</Field>
   )
@@ -79,6 +80,7 @@ export function AssetForm({ row, category: startCategory, onClose, onSave }: { r
           Object.assign(rec, { value: num(f.value) })
           rec.invested = num(f.invested)
           if (c === 'realEstate') rec.purchasePrice = num(f.invested)
+          if (c === 'vehicle') rec.vehicleType = f.vehicleType
         }
         rec.value = Math.round(preview) // kept in step, so anything that reads the plain value stays right
         await onSave(rec)
@@ -129,6 +131,7 @@ export function AssetForm({ row, category: startCategory, onClose, onSave }: { r
       </>}
 
       {!['fd', 'rd', 'epf', 'gold', 'etf'].includes(c) && <>
+        {c === 'vehicle' && <Field label="Vehicle type">{(id) => <Select id={id} value={f.vehicleType} onChange={set('vehicleType')}>{VEHICLE_TYPES.map((t) => <option key={t}>{t}</option>)}</Select>}</Field>}
         {input('value', 'Current value (₹)')}
         {input('invested', ['stocks', 'ppf', 'nps'].includes(c) ? 'Amount invested (₹)' : 'Purchase amount (₹)', 'Optional. With it, the gain or loss is shown against the current value.')}
       </>}

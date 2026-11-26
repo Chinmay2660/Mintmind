@@ -67,7 +67,7 @@ function Screen({ tab, compact }: { tab: Tab; compact?: boolean }) {
     const d = path(PF)
     return (
       <div className="space-y-3">
-        <div><Label>Portfolio · now</Label><p className={cn('font-mono font-semibold tabular-nums', compact ? 'text-xl' : 'text-3xl')}>₹18,55,478</p><p className="text-[11px] font-medium text-success">+₹5,00,482 (+36.9%) <span className="text-muted-foreground">XIRR 17.0%</span></p></div>
+        <div><Label>Portfolio · now</Label><p className={cn('font-mono font-semibold tabular-nums', compact ? 'text-xl' : 'text-3xl')}>₹18,55,478</p><p className="text-[11px] font-medium text-success">+₹5,00,482 (+36.9%)</p></div>
         <svg viewBox="0 0 100 60" preserveAspectRatio="none" className={cn('w-full', compact ? 'h-20' : 'h-32')}>
           <path d={d} fill="none" stroke="hsl(var(--chart-4))" strokeWidth="1.8" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
         </svg>

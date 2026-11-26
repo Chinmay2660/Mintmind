@@ -1,5 +1,7 @@
 'use client'
 
+import { UpcomingRow } from '@/components/wealth/UpcomingRow'
+import { buildUpcoming } from '@/lib/wealth/upcoming'
 import { TabBar } from '@/components/ui/tab-bar'
 import { FEATURE_KEYS } from '@/lib/features'
 import { GrowwChart } from '@/components/wealth/GrowwChart'
@@ -13,16 +15,15 @@ import { TxnRow } from '@/components/wealth/budget/TxnRow'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useWealth } from '@/lib/wealth/WealthContext'
-import { toISO } from '@/lib/wealth/calc'
+import { toISO, istNow } from '@/lib/wealth/calc'
 import { budgetPacing, dayChange, growthVs, healthScore, portfolioSummary, rangeStart, cardUtilisation } from '@/lib/wealth/calc'
 import { ASSET_LABELS, LIABILITY_LABELS } from '@/lib/wealth/labels'
 import { coverageTotals, incomeVsExpenses, monthLabel } from '@/lib/wealth/selectors'
-import { upcomingCardDues, upcomingPremiums, upcomingSips, upcomingSubscriptions } from '@/lib/wealth/reminders'
 import { cn } from '@/lib/utils'
 import { assetValue } from '@/lib/wealth/holdings'
 import { formatCompactINR, formatDate, formatINR } from '@/lib/wealth/format'
 import { Money } from '@/components/wealth/Money'
-import { CHART_PALETTE, Delta, Empty, InfoTip, Metric, UsagePct, LoadingBlock, Panel, Progress, RangeTabs, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForPct, FootNote } from '@/components/wealth/kit'
+import { CHART_PALETTE, Delta, Empty, InfoTip, UsagePct, LoadingBlock, Panel, Progress, RangeTabs, chartAxis, chartColor, chartGrid, chartTooltipStyle, toneForPct, FootNote } from '@/components/wealth/kit'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { useAi } from '@/components/ai/useAi'
 import { useFeatures } from '@/lib/features/FeaturesContext'
@@ -75,7 +76,7 @@ function SectionHead({ icon: Icon, tone, title, hint, action }: { icon: LucideIc
   return (
     <div className="mb-1 flex items-center gap-2.5 border-b border-border pb-2">
       <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', tone === 'warning' ? 'bg-warning/15 text-warning' : 'bg-primary/15 text-primary')}><Icon className="h-4 w-4" aria-hidden /></span>
-      <div className="min-w-0 flex-1"><h2 className="text-sm font-semibold leading-tight">{title}</h2><p className="text-xs text-muted-foreground">{hint}</p></div>
+      <div className="min-w-0 flex-1"><h2 className="text-base font-semibold leading-tight">{title}</h2><p className="text-xs text-muted-foreground">{hint}</p></div>
       {action}
     </div>
   )
@@ -98,7 +99,7 @@ export default function DashboardPage() {
   const [showAllRows, setShowAllRows] = useState(false) // the Assets / Liabilities list shows the five biggest; View more shows the rest
   const [ovTab, setOvTab] = useState<OverviewTab>('dashboard')
   const [chartOpen, setChartOpen] = useState<boolean | null>(null) // the net worth chart: shut on a phone to save room, open on a wide screen, then whatever was chosen
-  const today = useMemo(() => new Date(), [])
+  const today = useMemo(() => istNow(), [])
   const layout = useDashboardLayout(DASHBOARD_BLOCKS)
   // The Assets and Liabilities lists are different lengths. The area keeps the height of the tallest list seen (not counting View more), so
   // switching tabs or kinds never makes the page below jump up or down. A resize starts the measuring again.
@@ -116,6 +117,16 @@ export default function DashboardPage() {
     try { saved = localStorage.getItem('mm-nw-chart') } catch { /* private window */ }
     setChartOpen(saved === '1' ? true : saved === '0' ? false : window.matchMedia('(min-width: 768px)').matches)
   }, [])
+  useEffect(() => {
+    if (!chartOpen) return
+    const away = (e: MouseEvent) => {
+      const t = e.target as Node | null
+      if (!t || document.getElementById('net-worth-chart')?.contains(t) || document.querySelector('[aria-controls="net-worth-chart"]')?.contains(t)) return
+      setChartOpen(false) // not saved: it is only put away, so the saved choice is untouched
+    }
+    document.addEventListener('click', away)
+    return () => document.removeEventListener('click', away)
+  }, [chartOpen])
   const toggleChart = () => setChartOpen((o) => { const next = !(o ?? false); try { localStorage.setItem('mm-nw-chart', next ? '1' : '0') } catch { /* private window */ } return next })
 
   const m = useMemo(() => {
@@ -147,12 +158,7 @@ export default function DashboardPage() {
       monthlyExpense: budget?.total || monthly, liquid: bankTotal, utilisation: util,
       insuranceCover: cover.byType.term || 0, annualIncome: (profile?.monthlyIncome || 0) * 12,
     })
-    const dues = [
-      ...upcomingCardDues(data.cards, today),
-      ...upcomingPremiums(data.policies, today),
-      ...upcomingSips(data.sips, data.funds, today),
-      ...upcomingSubscriptions((data.meta.find((x: any) => x.key === 'subscriptions')?.value ?? []) as any[], today),
-    ].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5)
+    const dues = buildUpcoming({ cards: data.cards, policies: data.policies, sips: data.sips, funds: data.funds, subs: (data.meta.find((x: any) => x.key === 'subscriptions')?.value ?? []) as any[], today })
     const assetPie = Object.entries(netWorth.assetBreakdown).filter(([, v]) => v > 0).map(([k, v]) => ({ key: k, name: ASSET_LABELS[k as keyof typeof ASSET_LABELS] ?? k, value: v }))
     const liabPie = Object.entries(netWorth.liabilityBreakdown).filter(([, v]) => v > 0).map(([k, v]) => ({ key: k, name: LIABILITY_LABELS[k as keyof typeof LIABILITY_LABELS] ?? k, value: v }))
     const recent = [
@@ -205,13 +211,13 @@ export default function DashboardPage() {
     health: ShieldCheck, life: ShieldCheck, term: ShieldCheck, motor: Car, home: Home,
     homeLoan: Home, carLoan: Car, personalLoan: User, educationLoan: GraduationCap, otherLoan: Percent,
   }
-  const GROUP_ICON: Record<string, LucideIcon> = { invest: PieIcon, banks: Landmark, property: Home, insurance: ShieldCheck, cards: CreditCard, loans: Percent }
+  const GROUP_ICON: Record<string, LucideIcon> = { invest: PieIcon, banks: Landmark, realEstate: Home, vehicle: Car, other: Home, insurance: ShieldCheck, cards: CreditCard, loans: Percent }
   const groups = netWorthGroups({ assetBreakdown: netWorth.assetBreakdown as any, bankAccounts: data.bankAccounts, cards: data.cards, liabilities: data.liabilities, cover: isEnabled('insurance') ? m.cover.total : 0, coverCount: m.cover.activeCount, funds: data.funds, balanceHistory: data.balanceHistory, expenses: data.expenses, cardPayments: data.cardPayments, todayIso: toISO(today), policies: data.policies.filter((p: any) => !p.endDate || p.endDate >= toISO(today)), labels: ASSET_LABELS as any })
   const shownGroups = (moneyTab === 'assets' ? groups.assets : groups.liabilities).filter((g) => g.key !== 'banks' || isEnabled('bank_accounts')).filter((g) => g.key !== 'cards' || isEnabled('credit_cards'))
   // the first kind is open by default; its holdings are listed biggest first, five at a time
   const openGroup = shownGroups.find((g) => g.key === moneySub) ?? shownGroups[0]
   const allRows: any[] = openGroup
-    ? (openGroup.children.length ? openGroup.children : [{ key: openGroup.key, kind: openGroup.key, label: openGroup.label, value: openGroup.value, href: openGroup.href }]).map((r: any) => ({ ...r, groupKey: openGroup.key })).sort((x: any, y: any) => y.value - x.value)
+    ? (openGroup.children.length ? openGroup.children : [{ key: openGroup.key, kind: openGroup.key, label: openGroup.label, value: openGroup.value, href: openGroup.href }]).map((r: any) => ({ ...r, groupKey: openGroup.key })).sort((x: any, y: any) => (openGroup.key === 'invest' || openGroup.key === 'insurance' ? 0 : y.value - x.value))
     : []
   const topRows = showAllRows ? allRows : allRows.slice(0, 5)
 
@@ -260,7 +266,7 @@ export default function DashboardPage() {
         </Widget>}
         {isEnabled('mutual_funds') && <Widget title="Mutual funds" href="/dashboard/mutual-funds" icon={PieIcon} tint="purple" spark={{ points: m.sparks.funds, label: 'Mutual funds' }}>
           <p className="mt-0.5 text-xl font-semibold tabular-nums tracking-tight"><Money value={m.portfolio.value} /></p>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">{m.portfolio.invested ? <Delta pill pct={m.portfolio.absReturnPct} /> : <span>No funds yet</span>}{m.portfolio.xirrPct != null && <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><span>XIRR</span><Metric pct={m.portfolio.xirrPct} /></span>}</div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">{m.portfolio.invested ? <Delta pill pct={m.portfolio.absReturnPct} /> : <span>No funds yet</span>}</div>
         </Widget>}
         {isEnabled('credit_cards') && <Widget title="Card outstanding" href="/dashboard/credit-cards" icon={CreditCard} tint="peach" spark={{ points: m.sparks.cards, label: 'Card outstanding', lowerIsBetter: true }}>
           <p className="mt-0.5 text-xl font-semibold tabular-nums tracking-tight"><Money value={m.outstanding} /></p>
@@ -348,23 +354,16 @@ export default function DashboardPage() {
       <div>
         {(isEnabled('credit_cards') || isEnabled('insurance') || isEnabled('mutual_funds')) && (
           <section aria-label="Coming up">
-            <SectionHead icon={CalendarClock} tone="warning" title="Coming up" hint="Cards, premiums, SIPs and recurring payments" />
+            <SectionHead icon={CalendarClock} tone="warning" title="Coming up" hint="Cards, premiums, SIPs and recurring payments" action={m.dues.length > 0 ? <Link className="inline-flex min-h-9 shrink-0 items-center gap-1 whitespace-nowrap px-1 text-xs font-medium text-primary hover:underline" href="/dashboard/upcoming">View all<ArrowRight className="h-3 w-3" aria-hidden /></Link> : undefined} />
             {m.dues.length === 0 ? <Empty title="Nothing due soon" /> : (
               <ul className="divide-y divide-border">
-                {m.dues.map((d) => (
-                  <li key={`${d.kind}-${d.id}`}>
-                    <Link href={d.href} className="flex items-center justify-between gap-3 py-2.5 text-sm hover:text-primary">
-                      <span className="min-w-0"><span className="block truncate font-medium">{d.title}</span><span className="text-xs text-muted-foreground">{d.kind === 'card' ? 'Card payment' : d.kind === 'premium' ? 'Premium' : d.kind === 'recurring' ? 'Recurring payment' : 'SIP'} · due {formatDate(d.date)}</span></span>
-                      <Money value={d.amount} className="shrink-0 font-medium" />
-                    </Link>
-                  </li>
-                ))}
+                {m.dues.slice(0, 5).map((d: any) => <li key={`${d.kind}-${d.id}`}><UpcomingRow item={d} today={today} /></li>)}
               </ul>
             )}
           </section>
         )}
         <section aria-label="Recent transactions" className="mt-5 border-t border-border pt-5">
-          <SectionHead icon={ReceiptText} tone="primary" title="Recent transactions" hint="Already happened" action={<Link className="inline-flex min-h-9 shrink-0 items-center gap-1 whitespace-nowrap px-1 text-xs font-medium text-primary hover:underline" href="/dashboard/budget?tab=transactions">See all<ArrowRight className="h-3 w-3" aria-hidden /></Link>} />
+          <SectionHead icon={ReceiptText} tone="primary" title="Recent transactions" hint="Already happened" action={<Link className="inline-flex min-h-9 shrink-0 items-center gap-1 whitespace-nowrap px-1 text-xs font-medium text-primary hover:underline" href="/dashboard/budget?tab=transactions">View all<ArrowRight className="h-3 w-3" aria-hidden /></Link>} />
           {m.recent.length === 0 ? <Empty title="No transactions yet" /> : (
             <ul className="divide-y divide-border">
               {m.recent.slice(0, 5).map((t) => <TxnRow key={t.id} kind={t.amount < 0 ? 'expense' : 'income'} title={t.title} category={t.sub} meta={`${t.sub} · ${formatDate(t.date)}`} amount={t.amount} />)}

@@ -11,7 +11,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { addExpense, deleteCard, payCard, save } from '@/lib/wealth/actions'
 import { useCategories } from '@/lib/wealth/useCategories'
-import { cardUtilisation, toISO } from '@/lib/wealth/calc'
+import { cardUtilisation, toISO, istNow } from '@/lib/wealth/calc'
 import { cap, formatCompactINR, formatDate, formatINR } from '@/lib/wealth/format'
 import { upcomingCardDues, nextDayOfMonth } from '@/lib/wealth/reminders'
 import { lastMonths, monthKey, monthLabel } from '@/lib/wealth/selectors'
@@ -34,7 +34,7 @@ function CreditCardsTab() {
   const [fromLink, setFromLink] = useState(false) // opened straight to one card (from the Overview): Back returns there
   useEffect(() => { const id = new URLSearchParams(window.location.search).get('card'); if (id) { setSel(id); setFromLink(true) } }, [])
   const [dlg, setDlg] = useState<null | { kind: 'card' | 'pay' | 'del'; row?: any }>(null)
-  const today = useMemo(() => new Date(), [])
+  const today = useMemo(() => istNow(), [])
   const t = useMemo(() => {
     const limit = data.cards.reduce((s, c) => s + c.limit, 0)
     const outstanding = data.cards.reduce((s, c) => s + c.outstanding, 0)
@@ -179,7 +179,7 @@ function CardTxnForm({ cards, card, accounts, onClose, onPay, onCharge }: { card
   const cats = useCategories()
   const first = card ?? cards[0]
   const [mode, setMode] = useState<'pay' | 'charge'>(card && card.outstanding > 0 ? 'pay' : 'charge')
-  const [f, setF] = useState({ cardId: first?.id ?? '', amount: card && card.outstanding > 0 ? String(card.outstanding) : '', accountId: '', date: toISO(new Date()), note: '', category: cats.expense[0] || 'Other' })
+  const [f, setF] = useState({ cardId: first?.id ?? '', amount: card && card.outstanding > 0 ? String(card.outstanding) : '', accountId: '', date: toISO(istNow()), note: '', category: cats.expense[0] || 'Other' })
   const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
   const cur = cards.find((x) => x.id === f.cardId)
   return (

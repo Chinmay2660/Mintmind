@@ -9,7 +9,7 @@ import { Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { remove, save } from '@/lib/wealth/actions'
-import { toISO } from '@/lib/wealth/calc'
+import { toISO, istNow } from '@/lib/wealth/calc'
 import { ASSET_LABELS, LIABILITY_LABELS, MANUAL_ASSET_CATEGORIES, MANUAL_LIABILITY_CATEGORIES } from '@/lib/wealth/labels'
 import { formatDate, formatINR } from '@/lib/wealth/format'
 import { Money } from './Money'
@@ -83,8 +83,8 @@ export function ItemForm({ kind, row, onClose, onSave }: { kind: Kind; row: any;
         const amount = Number(f.amount)
         if (!(amount >= 0)) throw new Error('Enter a valid amount')
         await onSave(isAsset
-          ? { ...row, name: f.name.trim(), category: f.category, value: amount, updated: toISO(new Date()), notes: f.notes }
-          : { ...row, name: f.name.trim(), category: f.category, outstanding: amount, emi: Number(f.emi) || 0, rate: Number(f.rate) || 0, updated: toISO(new Date()), notes: f.notes })
+          ? { ...row, name: f.name.trim(), category: f.category, value: amount, updated: toISO(istNow()), notes: f.notes }
+          : { ...row, name: f.name.trim(), category: f.category, outstanding: amount, emi: Number(f.emi) || 0, rate: Number(f.rate) || 0, updated: toISO(istNow()), notes: f.notes })
       }}
       steps={[
         { title: isAsset ? 'The asset' : 'The loan', description: isAsset ? 'What it is called and what kind it is.' : 'What it is called and what kind of loan.', content: <>

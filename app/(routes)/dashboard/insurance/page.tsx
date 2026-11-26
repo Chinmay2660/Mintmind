@@ -7,12 +7,12 @@ import { toastProblem } from '@/lib/notify'
 import { shortAccountName } from '@/lib/wealth/accountName'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 import { useEffect, useMemo, useState } from 'react'
-import { Check, ChevronRight, Paperclip, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, Paperclip, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { deletePolicy, recordPremiumPaid, save } from '@/lib/wealth/actions'
 import { premiumPayable } from '@/lib/wealth/premium'
-import { toISO } from '@/lib/wealth/calc'
+import { toISO, istNow } from '@/lib/wealth/calc'
 import { POLICY_TYPES, PREMIUM_FREQUENCIES } from '@/lib/wealth/labels'
 import { annualPremium, coverageTotals, daysUntil } from '@/lib/wealth/selectors'
 import { formatDate } from '@/lib/wealth/format'
@@ -34,24 +34,22 @@ const typeLabel = (v: string) => POLICY_TYPES.find((t) => t.value === v)?.label 
 export default function InsurancePage() {
   usePrivacyMode() // draws amounts again when balances are hidden or shown
   const { ready, data, db } = useWealth()
-  const [filter, setFilter] = useState('')
+  const [openType, setOpenType] = useState<string | null>(null) // the kind of policy that is open, showing its policies
   const [dlg, setDlg] = useState<null | { kind: 'edit' | 'del'; row?: any }>(null)
   const [detail, setDetail] = useState<string | null>(null)
   const router = useRouter()
   const [fromLink, setFromLink] = useState(false) // opened straight to one policy (from the Overview): Back returns there
-  useEffect(() => { const id = new URLSearchParams(window.location.search).get('policy'); if (id) { setDetail(id); setFromLink(true) } }, [])
+  useEffect(() => { const q = new URLSearchParams(window.location.search), id = q.get('policy'), type = q.get('type'); if (id) { setDetail(id); setFromLink(true) } else if (type) setOpenType(type) }, [])
   const closeDetail = () => { if (fromLink) router.back(); else setDetail(null) }
-  const today = useMemo(() => new Date(), [])
+  const today = useMemo(() => istNow(), [])
   const cover = useMemo(() => coverageTotals(data.policies, today), [data.policies, today])
   useDetailCrumb(detail && !fromLink ? data.policies.find((x: any) => x.id === detail)?.policyName ?? null : null, () => setDetail(null))
   if (!ready) return <LoadingBlock className="h-64" />
 
   const annual = data.policies.reduce((s, p) => s + annualPremium(p), 0)
-  // All first, then a tab for each kind of policy that exists
+  // each kind of policy that exists, with the cover it gives; a kind opens to show its policies
   const typeCount = (t: string) => data.policies.filter((p: any) => p.type === t).length
   const kinds = POLICY_TYPES.filter((t) => typeCount(t.value) > 0)
-  const activeType = kinds.some((t) => t.value === filter) ? filter : 'all'
-  const list = activeType === 'all' ? data.policies : data.policies.filter((p: any) => p.type === activeType)
 
   return (
     <div className="space-y-5">
@@ -59,12 +57,27 @@ export default function InsurancePage() {
       <SummaryHeader label="Total coverage" value={<Money value={cover.total} compact />}
         stats={[{ label: 'Active policies', value: cover.activeCount }, { label: 'Annual premium', value: <Money value={annual} compact /> }, ...Object.entries(cover.byType).slice(0, 1).map(([k, v]) => ({ label: `${typeLabel(k)} cover`, value: <Money value={v as number} compact /> }))]} />
 
-      {!detail && kinds.length > 0 && <TabBar label="Kinds of policy" value={activeType} onChange={setFilter} tabs={[{ key: 'all', label: 'All', badge: data.policies.length }, ...kinds.map((t) => ({ key: t.value, label: t.label, badge: typeCount(t.value) }))]} />}
-
-      {!detail && (list.length === 0 ? <Empty title="No policies" action={<Button onClick={() => setDlg({ kind: 'edit' })}>Add policy</Button>} /> : (
-        <div className="grid gap-3 lg:grid-cols-2">
-          {list.map((p) => <PolicyCard key={p.id} p={p} today={today} onOpen={() => setDetail(p.id)} />)}
-        </div>
+      {!detail && (kinds.length === 0 ? <Empty title="No policies" action={<Button onClick={() => setDlg({ kind: 'edit' })}>Add policy</Button>} /> : (
+        <ul className="divide-y divide-border border-y border-border" aria-label="Kinds of policy">
+          {kinds.map((t) => {
+            const isOpen = openType === t.value
+            const policies = data.policies.filter((p: any) => p.type === t.value)
+            return (
+              <li key={t.value}>
+                <button type="button" aria-expanded={isOpen} aria-controls={`policies-${t.value}`} onClick={() => setOpenType(isOpen ? null : t.value)} className="flex min-h-14 w-full items-center gap-3 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <ChevronDown className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform', !isOpen && '-rotate-90')} aria-hidden />
+                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{t.label}</span><span className="block text-xs text-muted-foreground">{policies.length} {policies.length === 1 ? 'policy' : 'policies'}</span></span>
+                  <span className="shrink-0 text-sm font-semibold tabular-nums"><Money value={(cover.byType as Record<string, number>)[t.value] ?? 0} /></span>
+                </button>
+                {isOpen && (
+                  <div id={`policies-${t.value}`} className="grid gap-3 pb-4 lg:grid-cols-2">
+                    {policies.map((p: any) => <PolicyCard key={p.id} p={p} today={today} onOpen={() => setDetail(p.id)} />)}
+                  </div>
+                )}
+              </li>
+            )
+          })}
+        </ul>
       ))}
 
 
@@ -167,7 +180,7 @@ function PolicyDetail({ p, today, doc, history, onClose, onPaid, onEdit, onDelet
 }
 
 function PolicyForm({ row, members, documents, accounts, onClose, onSave }: { row?: any; members: any[]; documents: any[]; accounts: any[]; onClose: () => void; onSave: (r: any) => Promise<void> }) {
-  const [f, setF] = useState({ accountId: row?.accountId || '', type: row?.type || 'health', company: row?.company || '', policyName: row?.policyName || '', policyNumber: row?.policyNumber || '', holder: row?.holder || '', nominee: row?.nominee || '', sumAssured: String(row?.sumAssured ?? ''), premium: String(row?.premium ?? ''), frequency: row?.frequency || 'yearly', startDate: row?.startDate || toISO(new Date()), endDate: row?.endDate || '', nextPremium: row?.nextPremium || '', documentId: row?.documentId || '', notes: row?.notes || '' })
+  const [f, setF] = useState({ accountId: row?.accountId || '', type: row?.type || 'health', company: row?.company || '', policyName: row?.policyName || '', policyNumber: row?.policyNumber || '', holder: row?.holder || '', nominee: row?.nominee || '', sumAssured: String(row?.sumAssured ?? ''), premium: String(row?.premium ?? ''), frequency: row?.frequency || 'yearly', startDate: row?.startDate || toISO(istNow()), endDate: row?.endDate || '', nextPremium: row?.nextPremium || '', documentId: row?.documentId || '', notes: row?.notes || '' })
   const [covered, setCovered] = useState<string[]>(row?.members || [])
   const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
   return (

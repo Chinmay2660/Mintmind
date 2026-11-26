@@ -78,7 +78,7 @@ export default function FundDetail() {
       </div>
       <SummaryHeader label="Current value" value={<Money value={m.value} />}
         sub={f.prevNav > 0 ? <span className="flex flex-wrap items-center gap-x-2 text-muted-foreground">NAV ₹{f.currentNav} · 1 day <Metric amount={(f.currentNav - f.prevNav) * f.units} compact={false} decimals className="text-sm font-semibold" /></span> : <span className="text-muted-foreground">NAV ₹{f.currentNav}</span>}
-        stats={[{ label: 'Invested', value: <Money value={m.invested} compact /> }, { label: 'Returns', value: <Metric amount={m.absReturn} className="text-sm font-semibold" />, sub: <Metric pct={m.absReturnPct} className="text-xs" /> }, { label: 'XIRR', value: <Metric pct={m.xirrPct} hint="Needs at least two dated cashflows" className="text-sm font-semibold" /> }]} />
+        stats={[{ label: 'Invested', value: <Money value={m.invested} compact /> }, { label: 'Returns', value: <Metric amount={m.absReturn} className="text-sm font-semibold" />, sub: <Metric pct={m.absReturnPct} className="text-xs" /> }]} />
       <section aria-label="How the fund has done">
         {shownPerf.length < 2 ? <Empty title="Not enough history" /> : (() => {
           const last = shownPerf[shownPerf.length - 1]

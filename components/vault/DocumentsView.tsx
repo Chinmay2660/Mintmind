@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import { Cloud, Lock, RefreshCw, Search, Upload } from 'lucide-react'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { uid } from '@/lib/wealth/db'
-import { toISO } from '@/lib/wealth/calc'
+import { toISO, istNow } from '@/lib/wealth/calc'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -86,7 +86,7 @@ export function DocumentsView() {
     setPending((l) => l.map((x) => (x.key === p.key ? { ...x, error: undefined, progress: 0 } : x)))
     try {
       if (isDemo) {
-        await db.documents.put({ id: uid('doc'), name: p.name, category: p.category, fileName: p.file.name, mimeType: p.file.type, size: p.file.size, source: 'demo', driveFileId: null, uploaded: toISO(new Date()), notes: p.notes, blob: p.file })
+        await db.documents.put({ id: uid('doc'), name: p.name, category: p.category, fileName: p.file.name, mimeType: p.file.type, size: p.file.size, source: 'demo', driveFileId: null, uploaded: toISO(istNow()), notes: p.notes, blob: p.file })
       } else {
         const fd = new FormData(); fd.set('file', p.file); fd.set('name', p.name); fd.set('category', p.category); fd.set('notes', p.notes)
         await axios.post('/api/drive/files', fd, { onUploadProgress: (e) => setPending((l) => l.map((x) => (x.key === p.key ? { ...x, progress: Math.round(((e.loaded || 0) / (e.total || p.file.size)) * 100) } : x))) })

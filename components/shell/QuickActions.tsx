@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { QUICK_ADD_EVENT, SHOW_SHORTCUTS_EVENT } from '@/components/shell/Shortcuts'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { save } from '@/lib/wealth/actions'
-import { toISO } from '@/lib/wealth/calc'
+import { toISO, istNow } from '@/lib/wealth/calc'
 import { TxnEntryDialog } from '@/components/wealth/budget/TxnEntryDialog'
 import { AccountForm } from '@/components/wealth/AccountForm'
 
@@ -59,7 +59,7 @@ export function QuickActions() {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {dlg === 'txn' && <TxnEntryDialog initialType="expense" defaultMonth={toISO(new Date()).slice(0, 7)} onClose={() => setDlg(null)} />}
+      {dlg === 'txn' && <TxnEntryDialog initialType="expense" defaultMonth={toISO(istNow()).slice(0, 7)} onClose={() => setDlg(null)} />}
       {dlg === 'account' && (
         <AccountForm onClose={() => setDlg(null)} onSave={async (rec) => {
           await save(db, 'bankAccounts', rec)

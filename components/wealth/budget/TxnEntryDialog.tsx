@@ -10,7 +10,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { ArrowRight, ChevronDown, ChevronLeft, Delete, Loader2, Tags, X } from 'lucide-react'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { addExpense, addIncome, addTransfer, updateExpense } from '@/lib/wealth/actions'
-import { availableBalance, toISO } from '@/lib/wealth/calc'
+import { availableBalance, toISO, istNow } from '@/lib/wealth/calc'
 import { PAYMENT_MODES } from '@/lib/wealth/labels'
 import { useCategories } from '@/lib/wealth/useCategories'
 import { formatDate, formatINR } from '@/lib/wealth/format'
@@ -89,7 +89,7 @@ export function TxnEntryDialog({ initialType = 'expense', row, draft, defaultMon
   const cats = useCategories()
   const [type, setType] = useState<TxnType>(row ? 'expense' : initialType)
   const seed = row ?? draft
-  const todayIso = toISO(new Date())
+  const todayIso = toISO(istNow())
   const startDate = seed?.date || (defaultMonth === todayIso.slice(0, 7) ? todayIso : `${defaultMonth}-01`)
 
   const accounts: any[] = data.bankAccounts

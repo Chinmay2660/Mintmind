@@ -1,5 +1,6 @@
 'use client'
 
+import { toISO, istNow } from '@/lib/wealth/calc'
 import { useMemo, useState } from 'react'
 import { useDetailCrumb } from '@/components/shell/DetailCrumb'
 import { useAddParam } from '@/lib/hooks/useAddParam'
@@ -169,7 +170,7 @@ function GoalForm({ row, suggested, onClose, onSave }: { row?: any; suggested: n
       onSubmit={async () => {
         const target = Number(f.target)
         if (!(target > 0)) throw new Error('Target amount must be positive')
-        if (f.targetDate && f.targetDate < new Date().toISOString().slice(0, 10)) throw new Error('Target date must be in the future')
+        if (f.targetDate && f.targetDate < toISO(istNow())) throw new Error('Target date must be in the future')
         await onSave({ ...row, id: row?.id, name: f.name.trim(), target, targetDate: f.targetDate || null, notes: f.notes, links })
       }}
       steps={[

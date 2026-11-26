@@ -7,7 +7,7 @@ import { useWealth } from '@/lib/wealth/WealthContext'
 import { useFeatures } from '@/lib/features/FeaturesContext'
 import { netWorthGroups } from '@/lib/wealth/netWorthGroups'
 import { coverageTotals } from '@/lib/wealth/selectors'
-import { toISO } from '@/lib/wealth/calc'
+import { toISO, istNow } from '@/lib/wealth/calc'
 import { ASSET_LABELS } from '@/lib/wealth/labels'
 import { Money } from './Money'
 import { Metric, Empty, LoadingBlock } from './kit'
@@ -17,7 +17,7 @@ import { SummaryHeader } from './HoldingUI'
 export function NetWorthSide({ side }: { side: 'assets' | 'liabilities' }) {
   const { ready, data, netWorth } = useWealth()
   const { isEnabled } = useFeatures()
-  const today = useMemo(() => new Date(), [])
+  const today = useMemo(() => istNow(), [])
   const groups = useMemo(() => {
     if (!ready) return null
     const cover = coverageTotals(data.policies, today)

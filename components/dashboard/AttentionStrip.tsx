@@ -39,7 +39,7 @@ export function AttentionStrip() {
   if (items.length === 0) return null
   return (
     <section aria-label="Needs attention" className="rounded-xl border border-warning/40 bg-warning/5 p-4">
-      <h2 className="flex items-center gap-2 text-sm font-semibold"><AlertCircle className="h-4 w-4 text-warning" aria-hidden />Needs attention</h2>
+      <h2 className="flex items-center gap-2 text-base font-semibold"><AlertCircle className="h-4 w-4 text-warning" aria-hidden />Needs attention</h2>
       <ul className="mt-2 divide-y divide-border/70">
         {items.map((n: any) => (
           <li key={n.key}>

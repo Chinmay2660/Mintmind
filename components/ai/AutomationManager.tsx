@@ -7,7 +7,7 @@ import { useWealth } from '@/lib/wealth/WealthContext'
 import { remove, save } from '@/lib/wealth/actions'
 import { CHANNELS, FREQUENCIES, TEMPLATES, defaultParams, newRule, runDueRules } from '@/lib/ai/automation'
 import { cap, formatDate, humanize } from '@/lib/wealth/format'
-import { toISO } from '@/lib/wealth/calc'
+import { toISO, istNow } from '@/lib/wealth/calc'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -56,7 +56,7 @@ export function AutomationManager() {
           <ul className="divide-y divide-border">{rules.map((r) => (
             <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
               <div className="min-w-0 flex-1"><p className="flex items-center gap-2 font-medium"><Zap className={cn('h-3.5 w-3.5', r.enabled ? 'text-primary' : 'text-muted-foreground')} />{r.name}{!r.enabled && <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">Paused</span>}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">{TEMPLATES[r.templateId]?.group} · {cap(r.frequency)} · {Object.keys(r.channels).filter((c) => r.channels[c]).map(humanize).join(', ') || 'No channel'} · Last run {r.lastRunAt ? formatDate(r.lastRunAt.slice(0, 10)) : 'never'} · Next {r.enabled ? (r.nextRunAt && r.nextRunAt > toISO(new Date()) ? formatDate(r.nextRunAt) : 'due now') : '-'}</p></div>
+                <p className="mt-0.5 text-xs text-muted-foreground">{TEMPLATES[r.templateId]?.group} · {cap(r.frequency)} · {Object.keys(r.channels).filter((c) => r.channels[c]).map(humanize).join(', ') || 'No channel'} · Last run {r.lastRunAt ? formatDate(r.lastRunAt.slice(0, 10)) : 'never'} · Next {r.enabled ? (r.nextRunAt && r.nextRunAt > toISO(istNow()) ? formatDate(r.nextRunAt) : 'due now') : '-'}</p></div>
               <div className="flex shrink-0 gap-1">
                 <Button size="icon" variant="ghost" className="h-8 w-8" aria-label={r.enabled ? `Pause ${r.name}` : `Resume ${r.name}`} title={r.enabled ? 'Pause' : 'Resume'} onClick={() => save(db, 'automations', { ...r, enabled: !r.enabled })}>{r.enabled ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}</Button>
                 <Button size="icon" variant="ghost" className="h-8 w-8" aria-label={`Test ${r.name}: see what it would say now`} title="Test: see what it would say now" onClick={() => test(r)}><FlaskConical className="h-3.5 w-3.5" /></Button>

@@ -54,6 +54,7 @@ export const DASHBOARD_SEARCH_ACTIONS: SearchItem[] = []
 export const DASHBOARD_SEARCH_ALL: SearchItem[] = [...DASHBOARD_SEARCH_PAGES, ...DASHBOARD_SEARCH_ACTIONS]
 
 export const DASHBOARD_PAGE_TITLES: Record<string, string> = {
+  '/dashboard/upcoming': 'Upcoming',
   ...Object.fromEntries([...DASHBOARD_NAV_ALL, { id: 99, name: 'My Wealth AI', icon: Sparkles, path: '/dashboard/ai' }].map((item) => [item.path, item.name])),
 }
 

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useWealth } from '@/lib/wealth/WealthContext'
 import { assetValue } from '@/lib/wealth/holdings'
-import { availableBalance, computeNetWorth, monthlyEquivalent, toISO } from '@/lib/wealth/calc'
+import { availableBalance, computeNetWorth, monthlyEquivalent, toISO, istNow } from '@/lib/wealth/calc'
 
 const KEY = 'planInputs' // a row of the synced `meta` table, so it follows the user to every device
 export type Inputs = { takeHome: string; spend: string; essentials: string; age: string; retireAge: string }
@@ -12,7 +12,7 @@ const sum = (rows: any[] = [], f: (r: any) => number) => rows.reduce((s, r) => s
 
 /** Editable "about you" numbers, prefilled from the user's own data and saved with the rest of the user's data. */
 export function useProfileInputs(data: any) {
-  const budget = data.budgets?.find((b: any) => b.id === toISO(new Date()).slice(0, 7))?.total || 0
+  const budget = data.budgets?.find((b: any) => b.id === toISO(istNow()).slice(0, 7))?.total || 0
   const [v, setV] = useState<Inputs>({ takeHome: '', spend: budget ? String(Math.round(budget)) : '', essentials: '', age: '30', retireAge: '60' })
   const { db } = useWealth()
   const stored = data.meta?.find((m: any) => m.key === KEY)?.value
