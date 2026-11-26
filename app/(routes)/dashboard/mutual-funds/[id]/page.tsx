@@ -6,10 +6,10 @@ import { BackBar } from '@/components/shell/BackBar'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
-import { Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useWealth } from '@/lib/wealth/WealthContext'
-import { addFundInvestment, deleteFund, redeemFund, save, updateNav } from '@/lib/wealth/actions'
+import { addFundInvestment, deleteFund, redeemFund, save } from '@/lib/wealth/actions'
 import { realisedGains } from '@/lib/wealth/realised'
 import { fundMetrics, nextSipDate } from '@/lib/wealth/calc'
 import { cap, formatDate, formatINR } from '@/lib/wealth/format'
@@ -17,7 +17,7 @@ import { Money } from '@/components/wealth/Money'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Empty, Metric, LoadingBlock, Panel } from '@/components/wealth/kit'
-import { FundForm, InvestmentForm, NavForm, RedeemForm } from '@/components/wealth/FundForms'
+import { FundForm, InvestmentForm, RedeemForm } from '@/components/wealth/FundForms'
 import { CopyValue } from '@/components/wealth/CopyButton'
 import { usePrivacyMode } from '@/contexts/PrivacyContext'
 
@@ -26,7 +26,7 @@ export default function FundDetail() {
   const router = useRouter()
   const { ready, data, db } = useWealth()
   const { privacyMode } = usePrivacyMode()
-  const [dlg, setDlg] = useState<null | 'edit' | 'nav' | 'inv' | 'del' | 'sell'>(null)
+  const [dlg, setDlg] = useState<null | 'edit' | 'inv' | 'del' | 'sell'>(null)
   const f = data.funds.find((x) => x.id === id)
   const txns = useMemo(() => data.fundTxns.filter((t) => t.fundId === id).sort((a, b) => a.date.localeCompare(b.date)), [data.fundTxns, id])
   const sips = data.sips.filter((s) => s.fundId === id)
@@ -53,8 +53,7 @@ export default function FundDetail() {
       <BackBar fallback="/dashboard/mutual-funds" />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0"><h2 className="text-xl font-semibold">{f.name}</h2><p className="flex flex-wrap items-center gap-x-1 text-sm text-muted-foreground">Folio <CopyValue value={f.folio} label="Folio number" mono /></p></div>
-        <div className="grid w-full grid-cols-[1fr_1fr_auto_auto] gap-2 sm:flex sm:w-auto sm:flex-wrap">
-          <Button size="sm" className="max-sm:h-10" onClick={() => setDlg('nav')}><RefreshCw className="mr-1.5 h-4 w-4" />Update NAV</Button>
+        <div className="grid w-full grid-cols-[1fr_auto_auto] gap-2 sm:flex sm:w-auto sm:flex-wrap">
           <Button size="sm" variant="outline" className="hidden sm:inline-flex" onClick={() => setDlg('inv')}><Plus className="mr-1.5 h-4 w-4" />Add investment</Button>
           <Button size="sm" variant="outline" disabled={!(f.units > 0)} onClick={() => setDlg('sell')}>Record sale</Button>
           <Button size="sm" variant="outline" onClick={() => setDlg('edit')}><Pencil className="h-4 w-4 sm:mr-1.5" /><span className="max-sm:sr-only">Edit</span></Button>
@@ -94,7 +93,6 @@ export default function FundDetail() {
         </Panel>
       </div>
       {dlg === 'edit' && <FundForm row={f} onClose={() => setDlg(null)} onSave={async (r) => { await save(db, 'funds', r); toast.success('Fund updated') }} />}
-      {dlg === 'nav' && <NavForm fund={f} onClose={() => setDlg(null)} onSave={async (nav, date) => { await updateNav(db, f.id, nav, date); toast.success('NAV updated') }} />}
       {dlg === 'sell' && <RedeemForm fund={f} onClose={() => setDlg(null)} onSave={async (v) => { const r = await redeemFund(db, f.id, v); toast.success(r.gain >= 0 ? `Sale recorded. Realised gain ${formatINR(r.gain)}` : `Sale recorded. Realised loss ${formatINR(Math.abs(r.gain))}`) }} />}
       {dlg === 'inv' && <InvestmentForm fund={f} onClose={() => setDlg(null)} onSave={async (v) => { await addFundInvestment(db, f.id, v); toast.success('Investment added') }} />}
       <ConfirmDialog open={dlg === 'del'} onOpenChange={(o) => !o && setDlg(null)} title="Delete this fund?" description="Its transactions and SIPs are removed too." confirmLabel="Delete" variant="destructive" onConfirm={async () => { await deleteFund(db, f.id); toast.success('Fund deleted'); router.push('/dashboard/mutual-funds') }} />

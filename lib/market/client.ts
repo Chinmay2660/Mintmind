@@ -1,29 +1,39 @@
 import axios from 'axios'
 import { updateNav } from '@/lib/wealth/actions'
+import { toISO } from '@/lib/wealth/calc'
+import { fundsToRefresh } from './freshness'
 
-const KEY = 'mm-prices-at'
-const SYNC_KEY = 'mm-prices-server-sync'
+// mfapi.in asks for sparing use and publishes one NAV a day, so a fund is looked up at most once a day.
+const DAY_KEY = 'mm-navs-day'
+const CONCURRENCY = 4
 
-/** When the server last pulled NAVs from the provider (ISO), or null. */
-export const lastMarketSync = (): string | null => { try { return localStorage.getItem(SYNC_KEY) } catch { return null } }
-const EVERY = 20 * 3600000 // NAVs are published daily
+export const pricesDue = () => { try { return localStorage.getItem(DAY_KEY) !== toISO(new Date()) } catch { return false } }
 
-export const pricesDue = () => { try { return Date.now() - Number(localStorage.getItem(KEY) || 0) > EVERY } catch { return false } }
+export interface RefreshResult { changed: number; checked: number; failed: number; unlinked: number; alreadyToday: boolean }
 
-/** Pulls the shared daily NAV cache for these funds and updates only NAV and value. Units and invested amounts are never touched. Returns how many funds changed. */
-export async function refreshNavs(db: any, funds: any[]): Promise<number> {
-  const eligible = funds.filter((f) => f.navSource !== 'manual-locked')
-  if (!eligible.length) return 0
-  const { data } = await axios.post('/api/market/prices', { funds: eligible.map((f) => ({ id: f.id, name: f.name, isin: f.isin, symbol: f.symbol, schemeCode: f.schemeCode })) })
-  let changed = 0
-  for (const p of data.prices as { id: string; nav: number; date: string | null; source: string }[]) {
-    const f = funds.find((x) => x.id === p.id)
-    // never replace a newer NAV with an older one
-    if (!f || !(p.nav > 0) || (f.navDate && p.date && p.date < f.navDate)) continue
-    if (Number(f.currentNav) === p.nav && f.navDate === p.date) { await db.funds.update(f.id, { navFetchedAt: new Date().toISOString() }); continue }
-    await updateNav(db, f.id, p.nav, p.date || undefined, 'market', { navFetchedAt: new Date().toISOString() })
-    changed++
+/** Fetches the latest NAV of every linked fund not yet looked up today. Only NAV and value change; units, invested amount and history never do. */
+export async function refreshNavs(db: any, funds: any[]): Promise<RefreshResult> {
+  const today = toISO(new Date())
+  const linked = funds.filter((f) => f.schemeCode)
+  const due = fundsToRefresh(funds, today)
+  const out: RefreshResult = { changed: 0, checked: 0, failed: 0, unlinked: funds.length - linked.length, alreadyToday: linked.length > 0 && due.length === 0 }
+  const queue = [...due]
+  const worker = async () => {
+    for (let f = queue.shift(); f; f = queue.shift()) {
+      try {
+        const { data } = await axios.get(`/api/mfapi/${encodeURIComponent(f.schemeCode)}`)
+        if (!(data.nav > 0)) { out.failed++; continue }
+        out.checked++
+        // never replace a newer NAV with an older one
+        if (!(f.navDate && data.navDate && data.navDate < f.navDate)) {
+          const same = Number(f.currentNav) === data.nav && f.navDate === data.navDate
+          if (same) await db.funds.update(f.id, { navFetchedAt: new Date().toISOString() })
+          else { await updateNav(db, f.id, data.nav, data.navDate || undefined, 'market', { navFetchedAt: new Date().toISOString() }); out.changed++ }
+        }
+      } catch { out.failed++ }
+    }
   }
-  try { localStorage.setItem(KEY, String(Date.now())); if (data.lastSyncAt) localStorage.setItem(SYNC_KEY, String(data.lastSyncAt)) } catch { /* ignore */ }
-  return changed
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, queue.length) }, worker))
+  if (!out.failed) { try { localStorage.setItem(DAY_KEY, today) } catch { /* ignore */ } }
+  return out
 }

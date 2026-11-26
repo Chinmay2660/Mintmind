@@ -1,7 +1,8 @@
 'use client'
 
 import { shortAccountName } from '@/lib/wealth/accountName'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import axios from 'axios'
 import { toISO } from '@/lib/wealth/calc'
 import { Input } from '@/components/ui/input'
 import { Field, FormDialog, Select, StepFormDialog } from './kit'
@@ -10,51 +11,114 @@ import { DateInput } from '@/components/ui/pickers'
 
 export const INVESTMENT_TYPES = ['Lumpsum', 'SIP', 'SIP + Lumpsum']
 
+const MIN_LETTERS = 3
+const DEBOUNCE_MS = 400
+const searched = new Map<string, { schemeCode: string; schemeName: string }[]>() // the same words are never searched twice in a session
+
+/** Search the public scheme list by name. Waits for a pause in typing, needs three letters, and drops an answer that is no longer wanted. */
+function SchemeSearch({ onPick }: { onPick: (s: { schemeCode: string; schemeName: string }) => void }) {
+  const [q, setQ] = useState('')
+  const [results, setResults] = useState<{ schemeCode: string; schemeName: string }[]>([])
+  const [state, setState] = useState<'idle' | 'waiting' | 'loading' | 'done' | 'error'>('idle')
+  const ctl = useRef<AbortController | null>(null)
+  useEffect(() => {
+    const key = q.trim().toLowerCase()
+    ctl.current?.abort()
+    if (key.length < MIN_LETTERS) { setResults([]); setState('idle'); return }
+    if (searched.has(key)) { setResults(searched.get(key)!); setState('done'); return }
+    setState('waiting')
+    const t = setTimeout(async () => {
+      const c = new AbortController(); ctl.current = c
+      setState('loading')
+      try {
+        const { data } = await axios.get('/api/mfapi/search', { params: { q: key }, signal: c.signal })
+        searched.set(key, data); setResults(data); setState('done')
+      } catch (e) { if (!axios.isCancel(e)) setState('error') }
+    }, DEBOUNCE_MS)
+    return () => { clearTimeout(t); ctl.current?.abort() }
+  }, [q])
+  return (
+    <div className="full space-y-2">
+      <Input aria-label="Search fund name" placeholder="Type at least 3 letters of the fund name, e.g. Axis small cap" value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" />
+      <p className="min-h-4 text-xs text-muted-foreground" aria-live="polite">
+        {state === 'waiting' || state === 'loading' ? 'Searching…' : state === 'error' ? 'Could not search right now. Try again in a moment.' : state === 'done' && !results.length ? 'No fund found. Try fewer or different words.' : ''}
+      </p>
+      {results.length > 0 && (
+        <ul className="max-h-56 divide-y divide-border overflow-y-auto rounded-lg border border-border" role="listbox" aria-label="Matching funds">
+          {results.map((r) => (
+            <li key={r.schemeCode} role="option" aria-selected={false}>
+              <button type="button" onClick={() => onPick(r)} className="block min-h-11 w-full px-3 py-2 text-left text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring">{r.schemeName}</button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 export function FundForm({ row, onClose, onSave }: { row?: any; onClose: () => void; onSave: (r: any) => Promise<void> }) {
   const [f, setF] = useState({
-    name: row?.name || '', folio: row?.folio || '', investmentType: row?.investmentType || 'Lumpsum',
-    investmentDate: row?.investmentDate || toISO(new Date()), units: String(row?.units ?? ''), purchaseNav: String(row?.purchaseNav ?? ''), currentNav: String(row?.currentNav ?? ''),
-    invested: String(row?.invested ?? ''), currentValue: String(row?.currentValue ?? ''), notes: row?.notes || '',
+    folio: row?.folio || '', investmentType: row?.investmentType || 'Lumpsum',
+    investmentDate: row?.investmentDate || toISO(new Date()), units: String(row?.units ?? ''), purchaseNav: String(row?.purchaseNav ?? ''),
+    invested: String(row?.invested ?? ''), notes: row?.notes || '',
   })
+  // the scheme and its current NAV come from the public API, never from typing
+  const [scheme, setScheme] = useState<{ schemeCode: string; name: string; fundHouse: string; category: string; nav: number; navDate: string | null } | null>(
+    row?.schemeCode ? { schemeCode: String(row.schemeCode), name: row.name, fundHouse: row.fundHouse || '', category: row.category || '', nav: Number(row.currentNav) || 0, navDate: row.navDate || null } : null)
+  const [pickError, setPickError] = useState('')
+  const [picking, setPicking] = useState(false)
+  const [changing, setChanging] = useState(!row)
   const set = (k: string) => (e: any) => setF((p) => ({ ...p, [k]: e.target.value }))
+  const pick = async (s: { schemeCode: string; schemeName: string }) => {
+    setPicking(true); setPickError('')
+    try {
+      const { data } = await axios.get(`/api/mfapi/${encodeURIComponent(s.schemeCode)}`)
+      if (!(data.nav > 0)) throw new Error('no nav')
+      setScheme({ schemeCode: s.schemeCode, name: data.schemeName || s.schemeName, fundHouse: data.fundHouse || '', category: data.category || '', nav: data.nav, navDate: data.navDate })
+      setChanging(false)
+    } catch { setPickError('Could not get the latest NAV for this fund. Try again in a moment.') } finally { setPicking(false) }
+  }
   return (
     <StepFormDialog open onOpenChange={(o) => !o && onClose()} title={row ? 'Edit fund' : 'Add mutual fund'} wide
       onSubmit={async () => {
-        const units = Number(f.units), pn = Number(f.purchaseNav), cn = Number(f.currentNav)
+        if (!scheme && !row) throw new Error('Search for the fund and pick it from the list')
+        const units = Number(f.units), pn = Number(f.purchaseNav)
         const invested = f.invested === '' ? units * pn : Number(f.invested)
-        const value = f.currentValue === '' ? units * cn : Number(f.currentValue)
         if (!(units > 0) || !(invested > 0)) throw new Error('Units and invested amount must be positive')
         if (!/^[A-Za-z0-9/\- ]{3,30}$/.test(f.folio)) throw new Error('Enter a valid folio number')
-        await onSave({ ...row, ...f, units, purchaseNav: pn || invested / units, currentNav: cn || (units ? value / units : 0), invested, currentValue: Math.round(value * 100) / 100 })
+        const nav = scheme ? scheme.nav : Number(row?.currentNav) || 0
+        const changed = !!scheme && (scheme.schemeCode !== row?.schemeCode || scheme.nav !== Number(row?.currentNav))
+        const linked = scheme ? { schemeCode: scheme.schemeCode, name: scheme.name, fundHouse: scheme.fundHouse || row?.fundHouse || '', category: scheme.category || row?.category || '', navDate: scheme.navDate || row?.navDate, ...(changed ? { navFetchedAt: new Date().toISOString() } : {}) } : {}
+        await onSave({ ...row, ...f, ...linked, units, purchaseNav: pn || invested / units, currentNav: nav, invested, currentValue: Math.round(units * nav * 100) / 100 })
       }}
       steps={[
         { title: "Fund", content: (<>
-      <Field label="Fund name" className="full">{(id) => <Input id={id} required value={f.name} onChange={set('name')} />}</Field>
+      {scheme && !changing ? (
+        <div className="full rounded-lg border border-border p-3">
+          <p className="text-sm font-medium">{scheme.name}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Latest NAV ₹{scheme.nav}{scheme.navDate ? ` on ${scheme.navDate}` : ''}. It updates by itself once a day.</p>
+          <button type="button" className="mt-2 min-h-9 text-xs font-medium text-primary hover:underline" onClick={() => setChanging(true)}>Change fund</button>
+        </div>
+      ) : (
+        <>
+          {row && !scheme && <p className="full text-xs text-muted-foreground">{row.name} is not linked to a fund yet, so its NAV cannot update. Search for it to link it.</p>}
+          <SchemeSearch onPick={pick} />
+          {picking && <p className="full text-xs text-muted-foreground">Getting the latest NAV…</p>}
+          {pickError && <p className="full text-xs text-destructive" role="alert">{pickError}</p>}
+          {row && scheme && changing && <button type="button" className="full min-h-9 text-left text-xs font-medium text-primary hover:underline" onClick={() => setChanging(false)}>Keep as it is</button>}
+        </>
+      )}
       <Field label="Folio number">{(id) => <Input id={id} required value={f.folio} onChange={set('folio')} />}</Field>
       <Field label="Investment type">{(id) => <Select id={id} value={f.investmentType} onChange={set('investmentType')}>{INVESTMENT_TYPES.map((t) => <option key={t}>{t}</option>)}</Select>}</Field>
       <Field label="First investment date">{(id) => <DateInput id={id} required value={f.investmentDate} onChange={set('investmentDate')} />}</Field>
         </>) },
         { title: "Holding", content: (<>
       <Field label="Units held">{(id) => <Input id={id} type="number" step="any" min="0" required value={f.units} onChange={set('units')} />}</Field>
-      <Field label="Purchase NAV (avg)">{(id) => <Input id={id} type="number" step="any" min="0" value={f.purchaseNav} onChange={set('purchaseNav')} />}</Field>
-      <Field label="Current NAV">{(id) => <Input id={id} type="number" step="any" min="0" required value={f.currentNav} onChange={set('currentNav')} />}</Field>
+      <Field label="Average purchase NAV">{(id) => <Input id={id} type="number" step="any" min="0" value={f.purchaseNav} onChange={set('purchaseNav')} />}</Field>
       <Field label="Invested amount (₹)">{(id) => <Input id={id} type="number" step="any" min="0" value={f.invested} onChange={set('invested')} placeholder="units × purchase NAV" />}</Field>
-      <Field label="Current value (₹)">{(id) => <Input id={id} type="number" step="any" min="0" value={f.currentValue} onChange={set('currentValue')} placeholder="units × current NAV" />}</Field>
       <Field label="Notes">{(id) => <Input id={id} value={f.notes} onChange={set('notes')} />}</Field>
         </>) },
       ]} />
-  )
-}
-
-export function NavForm({ fund, onClose, onSave }: { fund: any; onClose: () => void; onSave: (nav: number, date: string) => Promise<void> }) {
-  const [nav, setNav] = useState(String(fund.currentNav || ''))
-  const [date, setDate] = useState(toISO(new Date()))
-  return (
-    <FormDialog open onOpenChange={(o) => !o && onClose()} title={`Update NAV - ${fund.name}`}
-      onSubmit={async () => { if (!(Number(nav) > 0)) throw new Error('NAV must be positive'); await onSave(Number(nav), date) }}>
-      <Field label="NAV (₹)">{(id) => <Input id={id} type="number" step="any" required value={nav} onChange={(e) => setNav(e.target.value)} />}</Field>
-      <Field label="NAV date">{(id) => <DateInput id={id} required value={date} onChange={(e) => setDate(e.target.value)} />}</Field>
-    </FormDialog>
   )
 }
 

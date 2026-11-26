@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
-import { requireAuth, safeErrorResponse } from '@/lib/middleware/api';
+import { requireAuth, rateLimitOrRespond, safeErrorResponse } from '@/lib/middleware/api';
 import { fetchSchemeNav, fetchSchemeHistory } from '@/lib/services/mfapi';
 
 export async function GET(request, { params }) {
+  const limited = rateLimitOrRespond(request, { name: 'mfapi-nav', limit: 60, windowMs: 60_000 });
+  if (limited) return limited;
   try {
     const { schemeCode } = await params;
     const { response } = await requireAuth();
